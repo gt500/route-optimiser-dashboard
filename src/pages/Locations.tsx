@@ -146,7 +146,7 @@ const Locations = () => {
     }
   };
 
-  const LocationForm = ({ location, onSave, onCancel }) => {
+  const LocationForm = ({ location = null, onSave, onCancel }) => {
     const [formData, setFormData] = useState({
       id: location?.id || 0,
       name: location?.name || '',

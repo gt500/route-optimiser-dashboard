@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart, Truck, MapPin, Clock, Fuel, ArrowRight } from 'lucide-react';
+import { BarChart, Truck, MapPin, Clock, ArrowRight } from 'lucide-react';
 import {
   BarChart as ReBarChart,
   Bar,
@@ -72,7 +72,7 @@ const Dashboard = () => {
         <Card className="hover:shadow-md transition-shadow duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Fuel Savings</CardTitle>
-            <Fuel className="h-4 w-4 text-muted-foreground" />
+            <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R7,820</div>
@@ -198,7 +198,7 @@ const Dashboard = () => {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
                   <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                    <Map className="h-5 w-5" />
+                    <MapPin className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">Cape Town Area #{i}</div>

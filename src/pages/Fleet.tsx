@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, TruckIcon, GasPump, MapPin, Wrench, Activity } from 'lucide-react';
+import { Plus, TruckIcon, MapPin, Wrench, Activity } from 'lucide-react';
 
 // Sample vehicle data
 const vehicles = [
@@ -113,7 +113,7 @@ const Fleet = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <GasPump className="h-4 w-4 text-muted-foreground" />
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
                         <Progress 
                           value={vehicle.fuelLevel} 
                           className="h-2 w-16"
