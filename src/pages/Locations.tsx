@@ -1,13 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, MapPin, Pencil, Trash2, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Sample location data
 const locationData = [
@@ -19,7 +25,7 @@ const locationData = [
   { id: 6, name: 'Warehouse B', type: 'Storage', address: '567 Industrial Ave, Epping', lat: -33.9312, long: 18.5342, fullCylinders: 78, emptyCylinders: 12 },
 ];
 
-const LocationTable = ({ locations, onEdit }) => {
+const LocationTable = ({ locations, onEdit, onDelete }) => {
   return (
     <div className="border rounded-lg overflow-hidden">
       <Table>
@@ -28,6 +34,7 @@ const LocationTable = ({ locations, onEdit }) => {
             <TableHead>Name</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Address</TableHead>
+            <TableHead>GPS Coordinates</TableHead>
             <TableHead>Cylinders</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -42,6 +49,7 @@ const LocationTable = ({ locations, onEdit }) => {
                 </Badge>
               </TableCell>
               <TableCell className="max-w-xs truncate">{location.address}</TableCell>
+              <TableCell>{location.lat}, {location.long}</TableCell>
               <TableCell>
                 {location.type === 'Storage' ? (
                   <div className="flex gap-2">
@@ -63,7 +71,7 @@ const LocationTable = ({ locations, onEdit }) => {
                   <Button variant="ghost" size="icon" onClick={() => onEdit(location)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(location.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -91,16 +99,187 @@ const LocationMap = () => {
 };
 
 const Locations = () => {
-  const [editLocation, setEditLocation] = React.useState(null);
-  const [searchTerm, setSearchTerm] = React.useState('');
+  const [locations, setLocations] = useState(locationData);
+  const [editLocation, setEditLocation] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   
-  const filteredLocations = locationData.filter(loc => 
+  const filteredLocations = locations.filter(loc => 
     loc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     loc.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (location) => {
     setEditLocation(location);
+  };
+
+  const handleDelete = (id) => {
+    setLocations(locations.filter(loc => loc.id !== id));
+    toast({
+      title: "Location deleted",
+      description: "The location has been removed successfully.",
+    });
+  };
+
+  const handleSave = (updatedLocation) => {
+    if (editLocation) {
+      setLocations(locations.map(loc => 
+        loc.id === updatedLocation.id ? updatedLocation : loc
+      ));
+      setEditLocation(null);
+      toast({
+        title: "Location updated",
+        description: "The location details have been updated successfully.",
+      });
+    } else {
+      // Add new location
+      const newLocation = {
+        ...updatedLocation,
+        id: locations.length + 1,
+      };
+      setLocations([...locations, newLocation]);
+      setIsAddDialogOpen(false);
+      toast({
+        title: "Location added",
+        description: "New location has been added successfully.",
+      });
+    }
+  };
+
+  const LocationForm = ({ location, onSave, onCancel }) => {
+    const [formData, setFormData] = useState({
+      id: location?.id || 0,
+      name: location?.name || '',
+      type: location?.type || 'Customer',
+      address: location?.address || '',
+      lat: location?.lat || '',
+      long: location?.long || '',
+      fullCylinders: location?.fullCylinders || 0,
+      emptyCylinders: location?.emptyCylinders || 0,
+      isWarehouse: location?.type === 'Storage'
+    });
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData({ ...formData, [name]: value });
+    };
+
+    const handleCheckboxChange = (checked) => {
+      setFormData({ 
+        ...formData, 
+        isWarehouse: checked,
+        type: checked ? 'Storage' : 'Customer'
+      });
+    };
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      
+      // Basic validation
+      if (!formData.name || !formData.address || !formData.lat || !formData.long) {
+        toast({
+          title: "Validation error",
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      onSave(formData);
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <Label htmlFor="name">Location Name*</Label>
+            <Input 
+              id="name" 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange}
+              placeholder="Enter location name"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="isWarehouse" 
+              checked={formData.isWarehouse}
+              onCheckedChange={handleCheckboxChange}
+            />
+            <Label htmlFor="isWarehouse">This is a warehouse/storage location</Label>
+          </div>
+          
+          <div>
+            <Label htmlFor="address">Address*</Label>
+            <Textarea 
+              id="address" 
+              name="address" 
+              value={formData.address} 
+              onChange={handleChange}
+              placeholder="Enter full address"
+              className="min-h-[80px]"
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="lat">Latitude*</Label>
+              <Input 
+                id="lat" 
+                name="lat" 
+                value={formData.lat} 
+                onChange={handleChange}
+                placeholder="e.g. -33.9248"
+              />
+            </div>
+            <div>
+              <Label htmlFor="long">Longitude*</Label>
+              <Input 
+                id="long" 
+                name="long" 
+                value={formData.long} 
+                onChange={handleChange}
+                placeholder="e.g. 18.4173"
+              />
+            </div>
+          </div>
+          
+          {formData.isWarehouse && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fullCylinders">Full Cylinders</Label>
+                <Input 
+                  id="fullCylinders" 
+                  name="fullCylinders" 
+                  type="number" 
+                  value={formData.fullCylinders} 
+                  onChange={handleChange}
+                  min="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emptyCylinders">Empty Cylinders</Label>
+                <Input 
+                  id="emptyCylinders" 
+                  name="emptyCylinders" 
+                  type="number" 
+                  value={formData.emptyCylinders} 
+                  onChange={handleChange}
+                  min="0"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
+          <Button type="submit">Save</Button>
+        </div>
+      </form>
+    );
   };
 
   return (
@@ -110,7 +289,7 @@ const Locations = () => {
           <h1 className="text-2xl font-bold tracking-tight">Locations</h1>
           <p className="text-muted-foreground">Manage delivery and pickup locations</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Location
         </Button>
@@ -142,7 +321,11 @@ const Locations = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <LocationTable locations={filteredLocations} onEdit={handleEdit} />
+              <LocationTable 
+                locations={filteredLocations} 
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             </CardContent>
           </Card>
 
@@ -152,47 +335,12 @@ const Locations = () => {
                 <CardTitle>Edit Location</CardTitle>
                 <CardDescription>Modify location details</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Location Name</Label>
-                    <Input id="name" defaultValue={editLocation.name} />
-                  </div>
-                  <div>
-                    <Label htmlFor="type">Type</Label>
-                    <Input id="type" defaultValue={editLocation.type} />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue={editLocation.address} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="lat">Latitude</Label>
-                    <Input id="lat" defaultValue={editLocation.lat} />
-                  </div>
-                  <div>
-                    <Label htmlFor="long">Longitude</Label>
-                    <Input id="long" defaultValue={editLocation.long} />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="full">Full Cylinders</Label>
-                    <Input id="full" type="number" defaultValue={editLocation.fullCylinders} />
-                  </div>
-                  <div>
-                    <Label htmlFor="empty">Empty Cylinders</Label>
-                    <Input id="empty" type="number" defaultValue={editLocation.emptyCylinders} />
-                  </div>
-                </div>
-                
-                <div className="pt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setEditLocation(null)}>Cancel</Button>
-                  <Button>Save Changes</Button>
-                </div>
+              <CardContent>
+                <LocationForm 
+                  location={editLocation}
+                  onSave={handleSave}
+                  onCancel={() => setEditLocation(null)}
+                />
               </CardContent>
             </Card>
           )}
@@ -210,6 +358,22 @@ const Locations = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Location Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Add New Location</DialogTitle>
+            <DialogDescription>
+              Enter the details for the new location
+            </DialogDescription>
+          </DialogHeader>
+          <LocationForm 
+            onSave={handleSave}
+            onCancel={() => setIsAddDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
