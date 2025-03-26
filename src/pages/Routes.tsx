@@ -1,19 +1,16 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Map, TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
+import LocationSelector from '@/components/routes/LocationSelector';
+import { LocationType } from '@/components/locations/LocationEditDialog';
 
-// Advanced route map component
 const RouteMap = ({ route }) => {
   return (
     <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-lg relative overflow-hidden border border-border shadow-sm">
@@ -21,7 +18,6 @@ const RouteMap = ({ route }) => {
         {route ? (
           <div className="text-center space-y-3">
             <div className="w-full h-full absolute">
-              {/* SVG map with route paths would be rendered here */}
               <svg className="w-full h-full" viewBox="0 0 800 400">
                 <path 
                   d="M150,200 C250,100 350,300 450,150 S650,250 750,200" 
@@ -31,7 +27,6 @@ const RouteMap = ({ route }) => {
                   className="text-primary route-path"
                 />
                 
-                {/* Route points */}
                 {route.locations.map((location, i) => (
                   <circle 
                     key={i} 
@@ -68,8 +63,7 @@ const RouteMap = ({ route }) => {
   );
 };
 
-// Route details component
-const RouteDetails = ({ route }) => {
+const RouteDetails = ({ route, onRemoveLocation }) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -164,7 +158,12 @@ const RouteDetails = ({ route }) => {
                   {location.cylinders} cylinders
                 </Badge>
                 {index > 0 && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => onRemoveLocation(index)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
@@ -185,104 +184,6 @@ const RouteDetails = ({ route }) => {
   );
 };
 
-// Location selector component
-const LocationSelector = ({ onAdd }) => {
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [cylinders, setCylinders] = useState(10);
-  
-  // Sample locations data - in a real app, this would come from the database
-  const availableLocations = [
-    { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point' },
-    { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay' },
-    { id: 3, name: 'Restaurant C', address: '101 Long St, City Center' },
-    { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens' },
-    { id: 5, name: 'Restaurant E', address: '567 Main Rd, Green Point' },
-  ];
-  
-  const handleAdd = () => {
-    if (selectedLocation) {
-      onAdd({ ...selectedLocation, cylinders });
-      setSelectedLocation(null);
-      setCylinders(10);
-      toast.success(`Added ${selectedLocation.name} to route`);
-    } else {
-      toast.error("Please select a location");
-    }
-  };
-  
-  return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-base">Add Location to Route</CardTitle>
-        <CardDescription>Select a delivery location and specify the number of cylinders</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="location">Select Location</Label>
-          <RadioGroup 
-            value={selectedLocation ? selectedLocation.id.toString() : ''} 
-            onValueChange={(value) => {
-              const location = availableLocations.find(l => l.id.toString() === value);
-              setSelectedLocation(location);
-            }}
-          >
-            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-              {availableLocations.map((location) => (
-                <div 
-                  key={location.id}
-                  className="flex items-center space-x-2 border rounded-md p-3 bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer"
-                  onClick={() => setSelectedLocation(location)}
-                >
-                  <RadioGroupItem value={location.id.toString()} id={`location-${location.id}`} />
-                  <Label htmlFor={`location-${location.id}`} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{location.name}</div>
-                    <div className="text-xs text-muted-foreground">{location.address}</div>
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </RadioGroup>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="cylinders">Number of Cylinders</Label>
-            <div className="text-sm font-medium">{cylinders}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setCylinders(Math.max(1, cylinders - 1))}
-              disabled={cylinders <= 1}
-            >
-              -
-            </Button>
-            <Progress value={(cylinders/25)*100} className="flex-1 h-2" />
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setCylinders(Math.min(25, cylinders + 1))}
-              disabled={cylinders >= 25}
-            >
-              +
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">Maximum 25 cylinders per location</p>
-        </div>
-        
-        <div className="pt-2">
-          <Button onClick={handleAdd} className="w-full gap-2" disabled={!selectedLocation}>
-            <Plus className="h-4 w-4" />
-            Add to Route
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// Optimization parameters component
 const OptimizationParameters = ({ onOptimize }) => {
   const [prioritizeFuel, setPrioritizeFuel] = useState(false);
   const [avoidTraffic, setAvoidTraffic] = useState(true);
@@ -342,7 +243,14 @@ const OptimizationParameters = ({ onOptimize }) => {
 const Routes = () => {
   const [activeTab, setActiveTab] = useState('create');
   
-  // Sample route data
+  const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
+    { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', lat: -33.9113, long: 18.4053, fullCylinders: 0, emptyCylinders: 12 },
+    { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', lat: -33.9500, long: 18.3836, fullCylinders: 0, emptyCylinders: 15 },
+    { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', lat: -33.9248, long: 18.4173, fullCylinders: 0, emptyCylinders: 8 },
+    { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', lat: -33.9263, long: 18.4132, fullCylinders: 0, emptyCylinders: 23 },
+    { id: 5, name: 'Restaurant E', address: '567 Main Rd, Green Point', lat: -33.9317, long: 18.4232, fullCylinders: 0, emptyCylinders: 18 },
+  ]);
+  
   const [route, setRoute] = useState({
     distance: 45.7,
     fuelConsumption: 5.48,
@@ -364,11 +272,27 @@ const Routes = () => {
       locations: [...prev.locations, { ...location, id: prev.locations.length }]
     }));
   };
+
+  const removeLocationFromRoute = (index) => {
+    if (index === 0) return;
+    
+    setRoute(prev => {
+      const newLocations = [...prev.locations];
+      const removedLocation = newLocations[index];
+      newLocations.splice(index, 1);
+      
+      return {
+        ...prev,
+        cylinders: prev.cylinders - removedLocation.cylinders,
+        locations: newLocations
+      };
+    });
+    
+    toast.success("Location removed from route");
+  };
   
   const handleOptimize = (params) => {
     console.log("Optimizing with params:", params);
-    // In a real app, this would call an API to optimize the route
-    // For now, we'll just simulate it by slightly modifying the existing route
     setRoute(prev => ({
       ...prev,
       distance: params.prioritizeFuel ? prev.distance * 0.95 : prev.distance * 1.05,
@@ -388,6 +312,29 @@ const Routes = () => {
       ]
     });
     toast.info("New route created");
+  };
+
+  const handleUpdateLocations = (updatedLocations: LocationType[]) => {
+    setAvailableLocations(updatedLocations);
+    
+    setRoute(prev => {
+      const updatedRouteLocations = prev.locations.map(routeLoc => {
+        const updatedLoc = updatedLocations.find(loc => loc.id === routeLoc.id);
+        if (updatedLoc) {
+          return {
+            ...routeLoc,
+            name: updatedLoc.name,
+            address: updatedLoc.address
+          };
+        }
+        return routeLoc;
+      });
+      
+      return {
+        ...prev,
+        locations: updatedRouteLocations
+      };
+    });
   };
 
   return (
@@ -422,13 +369,17 @@ const Routes = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <RouteMap route={route} />
-                  <RouteDetails route={route} />
+                  <RouteDetails route={route} onRemoveLocation={removeLocationFromRoute} />
                 </CardContent>
               </Card>
             </div>
             
             <div className="space-y-4">
-              <LocationSelector onAdd={addLocationToRoute} />
+              <LocationSelector 
+                onAdd={addLocationToRoute} 
+                availableLocations={availableLocations}
+                onUpdateLocations={handleUpdateLocations}
+              />
               <OptimizationParameters onOptimize={handleOptimize} />
             </div>
           </div>
