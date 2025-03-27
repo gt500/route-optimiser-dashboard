@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +12,7 @@ import { toast } from 'sonner';
 import LocationSelector from '@/components/routes/LocationSelector';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
+import RouteEndpoints from '@/components/routes/RouteEndpoints';
 
 const RouteMap = ({ route }) => {
   return (
@@ -279,36 +279,59 @@ const Routes = () => {
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
-    { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', lat: -33.9113, long: 18.4053, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
+    { id: 1, name: 'Warehouse A', address: '123 Main St, Cape Town', lat: -33.9248, long: 18.4173, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
     { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', lat: -33.9500, long: 18.3836, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
     { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', lat: -33.9248, long: 18.4173, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
     { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', lat: -33.9263, long: 18.4132, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
     { id: 5, name: 'Restaurant E', address: '567 Main Rd, Green Point', lat: -33.9317, long: 18.4232, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
   ]);
   
+  const [startLocation, setStartLocation] = useState<LocationType | null>(null);
+  const [endLocation, setEndLocation] = useState<LocationType | null>(null);
+  
   const [route, setRoute] = useState({
     distance: 45.7,
     fuelConsumption: 5.48,
     fuelCost: 120.29,
     cylinders: 58,
-    locations: [
-      { id: 0, name: 'Warehouse', address: '123 Main St, Cape Town', cylinders: 0, type: 'Storage' },
-      { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', cylinders: 12, type: 'Customer' },
-      { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', cylinders: 15, type: 'Customer' },
-      { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', cylinders: 8, type: 'Customer' },
-      { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', cylinders: 23, type: 'Customer' }
-    ],
-    availableLocations: [] // Will be populated
+    locations: [] as any[],
+    availableLocations: [] as LocationType[]
   });
+
+  useEffect(() => {
+    if (startLocation) {
+      setRoute(prev => ({
+        ...prev,
+        locations: [
+          startLocation,
+          ...prev.locations.filter(loc => loc.id !== startLocation.id && loc.id !== endLocation?.id),
+          ...(endLocation ? [endLocation] : [])
+        ]
+      }));
+    }
+  }, [startLocation, endLocation]);
   
-  // Set available locations for popover
-  useState(() => {
+  useEffect(() => {
     setRoute(prev => ({
       ...prev,
-      availableLocations: availableLocations
+      availableLocations: availableLocations.filter(loc => 
+        loc.id !== startLocation?.id && 
+        loc.id !== endLocation?.id &&
+        !prev.locations.some(routeLoc => routeLoc.id === loc.id)
+      )
     }));
-  });
-  
+  }, [availableLocations, startLocation, endLocation]);
+
+  const handleStartLocationChange = (locationId: string) => {
+    const location = availableLocations.find(loc => loc.id.toString() === locationId);
+    setStartLocation(location || null);
+  };
+
+  const handleEndLocationChange = (locationId: string) => {
+    const location = availableLocations.find(loc => loc.id.toString() === locationId);
+    setEndLocation(location || null);
+  };
+
   const addLocationToRoute = (location) => {
     setRoute(prev => ({
       ...prev,
@@ -317,8 +340,8 @@ const Routes = () => {
     }));
   };
 
-  const removeLocationFromRoute = (index) => {
-    if (index === 0) return;
+  const removeLocationFromRoute = (index: number) => {
+    if (index === 0 || index === route.locations.length - 1) return;
     
     setRoute(prev => {
       const newLocations = [...prev.locations];
@@ -327,14 +350,15 @@ const Routes = () => {
       
       return {
         ...prev,
-        cylinders: prev.cylinders - removedLocation.cylinders,
-        locations: newLocations
+        cylinders: prev.cylinders - (removedLocation.cylinders || 0),
+        locations: newLocations,
+        availableLocations: [...prev.availableLocations, removedLocation]
       };
     });
     
     toast.success("Location removed from route");
   };
-  
+
   const handleOptimize = (params) => {
     console.log("Optimizing with params:", params);
     setRoute(prev => ({
@@ -344,16 +368,16 @@ const Routes = () => {
       fuelCost: params.prioritizeFuel ? prev.fuelCost * 0.9 : prev.fuelCost * 1.02,
     }));
   };
-  
+
   const handleCreateNewRoute = () => {
+    setStartLocation(null);
+    setEndLocation(null);
     setRoute({
       distance: 0,
       fuelConsumption: 0,
       fuelCost: 0,
       cylinders: 0,
-      locations: [
-        { id: 0, name: 'Warehouse', address: '123 Main St, Cape Town', cylinders: 0, type: 'Storage' }
-      ],
+      locations: [],
       availableLocations: availableLocations
     });
     toast.info("New route created");
@@ -397,7 +421,6 @@ const Routes = () => {
   };
 
   const handleSaveNewLocation = (location: LocationType) => {
-    // Add a new location to the available locations
     const newLocation = {
       ...location,
       id: availableLocations.length + 1
@@ -458,9 +481,16 @@ const Routes = () => {
             </div>
             
             <div className="space-y-4">
+              <RouteEndpoints
+                availableLocations={availableLocations}
+                startLocation={startLocation}
+                endLocation={endLocation}
+                onStartLocationChange={handleStartLocationChange}
+                onEndLocationChange={handleEndLocationChange}
+              />
               <LocationSelector 
                 onAdd={addLocationToRoute} 
-                availableLocations={availableLocations}
+                availableLocations={route.availableLocations}
                 onUpdateLocations={handleUpdateLocations}
               />
               <OptimizationParameters onOptimize={handleOptimize} />

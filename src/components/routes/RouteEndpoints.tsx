@@ -1,0 +1,84 @@
+
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { LocationType } from '../locations/LocationEditDialog';
+import { MapPin } from 'lucide-react';
+
+interface RouteEndpointsProps {
+  availableLocations: LocationType[];
+  startLocation: LocationType | null;
+  endLocation: LocationType | null;
+  onStartLocationChange: (locationId: string) => void;
+  onEndLocationChange: (locationId: string) => void;
+}
+
+const RouteEndpoints = ({
+  availableLocations,
+  startLocation,
+  endLocation,
+  onStartLocationChange,
+  onEndLocationChange,
+}: RouteEndpointsProps) => {
+  const warehouses = availableLocations.filter(loc => loc.type === 'Storage');
+  const allLocations = availableLocations;
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-base">Route Endpoints</CardTitle>
+        <CardDescription>Set your starting and ending locations</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="start-location">Start Location</Label>
+          <Select
+            value={startLocation?.id.toString()}
+            onValueChange={onStartLocationChange}
+          >
+            <SelectTrigger id="start-location" className="w-full">
+              <SelectValue placeholder="Select start location" />
+            </SelectTrigger>
+            <SelectContent>
+              {warehouses.map((location) => (
+                <SelectItem key={location.id.toString()} value={location.id.toString()}>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>{location.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Select a warehouse as your starting point</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="end-location">End Location</Label>
+          <Select
+            value={endLocation?.id.toString()}
+            onValueChange={onEndLocationChange}
+          >
+            <SelectTrigger id="end-location" className="w-full">
+              <SelectValue placeholder="Select end location" />
+            </SelectTrigger>
+            <SelectContent>
+              {allLocations.map((location) => (
+                <SelectItem key={location.id.toString()} value={location.id.toString()}>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>{location.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Choose where your route will end</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default RouteEndpoints;
