@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ const Routes = () => {
     cylinders: 0,
     locations: [] as LocationType[],
     availableLocations: [] as LocationType[],
-    trafficConditions: 'moderate',
+    trafficConditions: 'moderate' as 'light' | 'moderate' | 'heavy',
     estimatedDuration: 75,
     usingRealTimeData: false
   });
@@ -145,7 +146,7 @@ const Routes = () => {
       newDistance = route.distance * distanceMultiplier * realTimeTrafficFactor;
       newDuration = route.estimatedDuration * (1/distanceMultiplier) * realTimeTrafficFactor;
       
-      let trafficConditions = 'moderate';
+      let trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
       if (realTimeTrafficFactor < 0.9) trafficConditions = 'light';
       if (realTimeTrafficFactor > 1.1) trafficConditions = 'heavy';
       
@@ -281,15 +282,15 @@ const Routes = () => {
                 <CardContent className="space-y-4">
                   <RouteMap 
                     route={route.locations.length > 0 ? {
-                      ...route,
-                      trafficConditions: route.trafficConditions
+                      locations: route.locations,
+                      distance: route.distance,
+                      estimatedDuration: route.estimatedDuration,
+                      trafficConditions: route.trafficConditions,
+                      usingRealTimeData: route.usingRealTimeData
                     } : null} 
                   />
                   <RouteDetails 
-                    route={{
-                      ...route,
-                      availableLocations: filteredAvailableLocations
-                    }} 
+                    route={route} 
                     onRemoveLocation={removeLocationFromRoute} 
                     onAddNewLocation={handleAddNewLocationFromPopover}
                   />

@@ -20,7 +20,7 @@ interface RouteDetailsProps {
     locations: LocationType[];
     availableLocations: LocationType[];
     estimatedDuration?: number;
-    trafficConditions?: string;
+    trafficConditions?: 'light' | 'moderate' | 'heavy';
     usingRealTimeData?: boolean;
   };
   onRemoveLocation: (index: number) => void;
@@ -30,7 +30,7 @@ interface RouteDetailsProps {
 const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetailsProps) => {
   const [addLocationOpen, setAddLocationOpen] = useState(false);
   
-  const getTrafficBadgeVariant = (condition?: string) => {
+  const getTrafficBadgeVariant = (condition?: 'light' | 'moderate' | 'heavy') => {
     switch (condition) {
       case 'light': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'moderate': return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -64,7 +64,7 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
             <div className="text-2xl font-bold">{route.distance} km</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Estimated travel time: {route.estimatedDuration || Math.round(route.distance * 1.5)} min
+              <span>Estimated travel time: {route.estimatedDuration || Math.round(route.distance * 1.5)} min</span>
               {route.trafficConditions && (
                 <Badge variant="outline" className={getTrafficBadgeVariant(route.trafficConditions)}>
                   {route.trafficConditions} traffic

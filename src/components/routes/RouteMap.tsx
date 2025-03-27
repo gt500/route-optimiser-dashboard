@@ -15,7 +15,7 @@ interface RouteMapProps {
 }
 
 const RouteMap = ({ route }: RouteMapProps) => {
-  const getTrafficColor = (condition?: string) => {
+  const getTrafficColor = (condition?: 'light' | 'moderate' | 'heavy') => {
     switch (condition) {
       case 'light': return 'text-emerald-500';
       case 'moderate': return 'text-amber-500';
@@ -24,7 +24,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
     }
   };
 
-  const getPathClasses = (condition?: string) => {
+  const getPathClasses = (condition?: 'light' | 'moderate' | 'heavy') => {
     let baseClass = "text-primary route-path";
     
     if (!condition) return baseClass;

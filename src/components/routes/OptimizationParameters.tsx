@@ -19,7 +19,7 @@ interface OptimizationParametersProps {
 const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => {
   const [prioritizeFuel, setPrioritizeFuel] = useState(false);
   const [avoidTraffic, setAvoidTraffic] = useState(true);
-  const [useRealTimeData, setUseRealTimeData] = useState(false);
+  const [useRealTimeData, setUseRealTimeData] = useState(true);
   const [optimizeForDistance, setOptimizeForDistance] = useState(true);
   
   return (
