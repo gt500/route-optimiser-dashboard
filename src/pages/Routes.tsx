@@ -1,278 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Map, TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, AlertCircle, MapPin } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, TruckIcon, AlertCircle, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
-import LocationSelector from '@/components/routes/LocationSelector';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
 import RouteEndpoints from '@/components/routes/RouteEndpoints';
-
-const RouteMap = ({ route }) => {
-  return (
-    <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-lg relative overflow-hidden border border-border shadow-sm">
-      <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
-        {route ? (
-          <div className="text-center space-y-3">
-            <div className="w-full h-full absolute">
-              <svg className="w-full h-full" viewBox="0 0 800 400">
-                <path 
-                  d="M150,200 C250,100 350,300 450,150 S650,250 750,200" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="3" 
-                  className="text-primary route-path"
-                />
-                
-                {route.locations.map((location, i) => (
-                  <circle 
-                    key={i} 
-                    cx={150 + i * 150} 
-                    cy={200 + (i % 2 === 0 ? -50 : 50)} 
-                    r="8" 
-                    className="fill-primary" 
-                  />
-                ))}
-              </svg>
-            </div>
-            <div className="absolute bottom-4 right-4 z-10">
-              <Card className="w-auto bg-background/90 backdrop-blur-sm shadow-md">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">Route:</span> 
-                    <span className="text-muted-foreground">{route.distance} km</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">{Math.round(route.distance * 1.5)} min</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center space-y-3">
-            <Map className="h-12 w-12 mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">Map visualization will appear here</p>
-            <p className="text-xs text-muted-foreground max-w-xs mx-auto">Select locations and define a route to see the optimized path</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }) => {
-  const [addLocationOpen, setAddLocationOpen] = useState(false);
-  
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <span>Total Distance</span>
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full">
-                    <Info className="h-3 w-3" />
-                  </Button>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80">
-                  <div className="text-sm">
-                    Total distance calculated based on the optimized route between all stops.
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{route.distance} km</div>
-            <p className="text-xs text-muted-foreground">Estimated travel time: {Math.round(route.distance * 1.5)} min</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Fuel Consumption</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{route.fuelConsumption} L</div>
-            <p className="text-xs text-muted-foreground">Based on average consumption of 12L/100km</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Fuel Cost</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R {route.fuelCost}</div>
-            <p className="text-xs text-muted-foreground">At current price of R22/L</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Load</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{route.cylinders}/80 cylinders</div>
-            <Progress value={(route.cylinders/80)*100} className="h-2 mt-2" />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="bg-secondary/30 rounded-lg p-4 border border-border shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <TruckIcon className="h-5 w-5 text-muted-foreground" />
-            <div className="font-medium">Route Stops</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-7 gap-1">
-              <ArrowUpDown className="h-3 w-3" />
-              <span className="text-xs">Reorder</span>
-            </Button>
-            <Popover open={addLocationOpen} onOpenChange={setAddLocationOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 gap-1">
-                  <Plus className="h-3 w-3" />
-                  <span className="text-xs">Add Stop</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" align="end">
-                <div className="space-y-4">
-                  <h4 className="font-medium">Add New Stop</h4>
-                  <div className="space-y-2">
-                    <Select
-                      onValueChange={(value) => {
-                        const locationId = parseInt(value);
-                        onAddNewLocation(locationId);
-                        setAddLocationOpen(false);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {route.availableLocations && route.availableLocations.map((loc) => (
-                          <SelectItem key={loc.id} value={loc.id.toString()}>
-                            {loc.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          {route.locations.map((location, index) => (
-            <div 
-              key={index} 
-              className="flex items-center gap-3 bg-background rounded-lg p-3 relative border border-border/80 hover:border-border transition-colors shadow-sm"
-            >
-              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                {index + 1}
-              </div>
-              <div>
-                <div className="font-medium">{location.name}</div>
-                <div className="text-xs text-muted-foreground">{location.address}</div>
-              </div>
-              <div className="ml-auto text-sm font-medium flex items-center gap-2">
-                <Badge variant={index === 0 ? "secondary" : "outline"} className="gap-1">
-                  {location.cylinders} cylinders
-                </Badge>
-                {index > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => onRemoveLocation(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="flex justify-end gap-2">
-        <Button variant="outline">Save Route</Button>
-        <Button className="gap-1" onClick={() => toast.success("Route successfully optimized")}>
-          <RotateCw className="h-4 w-4" />
-          Re-optimize
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const OptimizationParameters = ({ onOptimize }) => {
-  const [prioritizeFuel, setPrioritizeFuel] = useState(false);
-  const [avoidTraffic, setAvoidTraffic] = useState(true);
-  
-  return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-base">Optimization Parameters</CardTitle>
-        <CardDescription>Configure how the route should be optimized</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-3">
-          <div>
-            <div className="font-medium">Prioritize Fuel Efficiency</div>
-            <div className="text-xs text-muted-foreground">May result in longer travel times</div>
-          </div>
-          <Button 
-            variant={prioritizeFuel ? "default" : "outline"} 
-            size="sm"
-            onClick={() => setPrioritizeFuel(!prioritizeFuel)}
-          >
-            {prioritizeFuel ? "On" : "Off"}
-          </Button>
-        </div>
-        
-        <div className="flex items-center justify-between border-b pb-3">
-          <div>
-            <div className="font-medium">Avoid Traffic</div>
-            <div className="text-xs text-muted-foreground">Uses real-time traffic data</div>
-          </div>
-          <Button 
-            variant={avoidTraffic ? "default" : "outline"} 
-            size="sm"
-            onClick={() => setAvoidTraffic(!avoidTraffic)}
-          >
-            {avoidTraffic ? "On" : "Off"}
-          </Button>
-        </div>
-        
-        <div className="pt-2">
-          <Button 
-            onClick={() => {
-              onOptimize({ prioritizeFuel, avoidTraffic });
-              toast.success("Route optimization settings updated");
-            }} 
-            className="w-full gap-2"
-          >
-            <RotateCw className="h-4 w-4" />
-            Apply Settings
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+import LocationSelector from '@/components/routes/LocationSelector';
+import RouteMap from '@/components/routes/RouteMap';
+import RouteDetails from '@/components/routes/RouteDetails';
+import OptimizationParameters from '@/components/routes/OptimizationParameters';
 
 const Routes = () => {
   const [activeTab, setActiveTab] = useState('create');
@@ -293,34 +32,44 @@ const Routes = () => {
     distance: 45.7,
     fuelConsumption: 5.48,
     fuelCost: 120.29,
-    cylinders: 58,
-    locations: [] as any[],
+    cylinders: 0,
+    locations: [] as LocationType[],
     availableLocations: [] as LocationType[]
   });
 
   useEffect(() => {
     if (startLocation) {
-      setRoute(prev => ({
-        ...prev,
-        locations: [
-          startLocation,
-          ...prev.locations.filter(loc => loc.id !== startLocation.id && loc.id !== endLocation?.id),
-          ...(endLocation ? [endLocation] : [])
-        ]
-      }));
+      setRoute(prev => {
+        const existingMiddleLocations = prev.locations.filter(loc => 
+          loc.id !== startLocation.id && 
+          loc.id !== endLocation?.id &&
+          (loc.id !== prev.locations[0]?.id) && 
+          (loc.id !== prev.locations[prev.locations.length - 1]?.id)
+        );
+        
+        return {
+          ...prev,
+          locations: [
+            startLocation,
+            ...existingMiddleLocations,
+            ...(endLocation ? [endLocation] : [])
+          ]
+        };
+      });
     }
   }, [startLocation, endLocation]);
   
   useEffect(() => {
-    setRoute(prev => ({
-      ...prev,
-      availableLocations: availableLocations.filter(loc => 
-        loc.id !== startLocation?.id && 
-        loc.id !== endLocation?.id &&
-        !prev.locations.some(routeLoc => routeLoc.id === loc.id)
-      )
-    }));
-  }, [availableLocations, startLocation, endLocation]);
+    setRoute(prev => {
+      const routeLocationIds = prev.locations.map(loc => loc.id);
+      return {
+        ...prev,
+        availableLocations: availableLocations.filter(loc => 
+          !routeLocationIds.includes(loc.id)
+        )
+      };
+    });
+  }, [availableLocations, route.locations]);
 
   const handleStartLocationChange = (locationId: string) => {
     const location = availableLocations.find(loc => loc.id.toString() === locationId);
@@ -332,16 +81,33 @@ const Routes = () => {
     setEndLocation(location || null);
   };
 
-  const addLocationToRoute = (location) => {
-    setRoute(prev => ({
-      ...prev,
-      cylinders: prev.cylinders + location.cylinders,
-      locations: [...prev.locations, { ...location, id: prev.locations.length }]
-    }));
+  const addLocationToRoute = (location: LocationType & { cylinders: number }) => {
+    const locationWithCylinders = {
+      ...location,
+      emptyCylinders: location.cylinders,
+    };
+    
+    setRoute(prev => {
+      const newLocations = [...prev.locations];
+      
+      // If we have an end location, insert before it, otherwise add to the end
+      if (endLocation && newLocations.length > 1) {
+        newLocations.splice(newLocations.length - 1, 0, locationWithCylinders);
+      } else {
+        newLocations.push(locationWithCylinders);
+      }
+      
+      return {
+        ...prev,
+        cylinders: prev.cylinders + location.cylinders,
+        locations: newLocations
+      };
+    });
   };
 
   const removeLocationFromRoute = (index: number) => {
-    if (index === 0 || index === route.locations.length - 1) return;
+    // Don't allow removing start or end locations
+    if (index === 0 || (endLocation && index === route.locations.length - 1)) return;
     
     setRoute(prev => {
       const newLocations = [...prev.locations];
@@ -350,7 +116,7 @@ const Routes = () => {
       
       return {
         ...prev,
-        cylinders: prev.cylinders - (removedLocation.cylinders || 0),
+        cylinders: prev.cylinders - (removedLocation.emptyCylinders || 0),
         locations: newLocations,
         availableLocations: [...prev.availableLocations, removedLocation]
       };
@@ -359,7 +125,7 @@ const Routes = () => {
     toast.success("Location removed from route");
   };
 
-  const handleOptimize = (params) => {
+  const handleOptimize = (params: { prioritizeFuel: boolean; avoidTraffic: boolean }) => {
     console.log("Optimizing with params:", params);
     setRoute(prev => ({
       ...prev,
@@ -402,8 +168,7 @@ const Routes = () => {
       
       return {
         ...prev,
-        locations: updatedRouteLocations,
-        availableLocations: updatedLocations
+        locations: updatedRouteLocations
       };
     });
   };
@@ -412,7 +177,7 @@ const Routes = () => {
     setNewLocationDialog(true);
   };
 
-  const handleAddNewLocationFromPopover = (locationId) => {
+  const handleAddNewLocationFromPopover = (locationId: number) => {
     const location = availableLocations.find(loc => loc.id === locationId);
     if (location) {
       addLocationToRoute({...location, cylinders: 10});
@@ -432,6 +197,15 @@ const Routes = () => {
     toast.success(`New location "${location.name}" added`);
     setNewLocationDialog(false);
   };
+
+  // Calculate the filtered available locations (excluding start and end locations)
+  const filteredAvailableLocations = React.useMemo(() => {
+    return availableLocations.filter(loc => 
+      loc.id !== startLocation?.id && 
+      loc.id !== endLocation?.id &&
+      !route.locations.some(routeLoc => routeLoc.id === loc.id)
+    );
+  }, [availableLocations, startLocation, endLocation, route.locations]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -470,9 +244,12 @@ const Routes = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <RouteMap route={route} />
+                  <RouteMap route={route.locations.length > 0 ? route : null} />
                   <RouteDetails 
-                    route={route} 
+                    route={{
+                      ...route,
+                      availableLocations: filteredAvailableLocations
+                    }} 
                     onRemoveLocation={removeLocationFromRoute} 
                     onAddNewLocation={handleAddNewLocationFromPopover}
                   />
@@ -490,7 +267,7 @@ const Routes = () => {
               />
               <LocationSelector 
                 onAdd={addLocationToRoute} 
-                availableLocations={route.availableLocations}
+                availableLocations={filteredAvailableLocations}
                 onUpdateLocations={handleUpdateLocations}
               />
               <OptimizationParameters onOptimize={handleOptimize} />

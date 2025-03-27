@@ -34,13 +34,13 @@ const RouteEndpoints = ({
         <div className="space-y-2">
           <Label htmlFor="start-location">Start Location</Label>
           <Select
-            value={startLocation?.id.toString()}
+            value={startLocation?.id.toString() || ""}
             onValueChange={onStartLocationChange}
           >
             <SelectTrigger id="start-location" className="w-full">
               <SelectValue placeholder="Select start location" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover">
               {warehouses.map((location) => (
                 <SelectItem key={location.id.toString()} value={location.id.toString()}>
                   <div className="flex items-center gap-2">
@@ -57,13 +57,13 @@ const RouteEndpoints = ({
         <div className="space-y-2">
           <Label htmlFor="end-location">End Location</Label>
           <Select
-            value={endLocation?.id.toString()}
+            value={endLocation?.id.toString() || ""}
             onValueChange={onEndLocationChange}
           >
             <SelectTrigger id="end-location" className="w-full">
               <SelectValue placeholder="Select end location" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover">
               {allLocations.map((location) => (
                 <SelectItem key={location.id.toString()} value={location.id.toString()}>
                   <div className="flex items-center gap-2">
