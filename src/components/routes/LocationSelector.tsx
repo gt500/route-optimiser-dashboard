@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Edit, Pencil } from 'lucide-react';
+import { Plus, Edit, Pencil, Search } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; 
 import { LocationType } from '../locations/LocationEditDialog';
 import LocationEditDialog from '../locations/LocationEditDialog';
 import { toast } from 'sonner';
@@ -23,6 +25,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
   const [searchTerm, setSearchTerm] = useState('');
   const [editLocation, setEditLocation] = useState<LocationType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('dropdown');
   
   const filteredLocations = availableLocations.filter(loc => 
     loc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -62,53 +65,110 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <Label htmlFor="location">Select Location</Label>
-              <Input 
-                placeholder="Search locations..." 
-                className="max-w-xs"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <RadioGroup 
-              value={selectedLocation ? selectedLocation.id.toString() : ''} 
-              onValueChange={(value) => {
-                const location = availableLocations.find(l => l.id.toString() === value);
-                setSelectedLocation(location || null);
-              }}
-            >
-              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                {filteredLocations.map((location) => (
-                  <div 
-                    key={location.id}
-                    className="flex items-center space-x-2 border rounded-md p-3 bg-secondary/20 hover:bg-secondary/40 transition-colors"
-                  >
-                    <RadioGroupItem 
-                      value={location.id.toString()} 
-                      id={`location-${location.id}`} 
-                      className="cursor-pointer"
-                      onClick={() => setSelectedLocation(location)}
-                    />
-                    <Label htmlFor={`location-${location.id}`} className="flex-1 cursor-pointer">
-                      <div className="font-medium">{location.name}</div>
-                      <div className="text-xs text-muted-foreground">{location.address}</div>
-                    </Label>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="h-7 w-7" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditClick(location);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search locations..." 
+                    className="pl-8 h-9 w-[200px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">View as {viewMode === 'list' ? 'Dropdown' : 'List'}</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setViewMode('list')}>
+                      List View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setViewMode('dropdown')}>
+                      Dropdown View
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </RadioGroup>
+            </div>
+            
+            {viewMode === 'dropdown' ? (
+              <Select
+                value={selectedLocation ? selectedLocation.id.toString() : ''}
+                onValueChange={(value) => {
+                  const location = availableLocations.find(l => l.id.toString() === value);
+                  setSelectedLocation(location || null);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a location" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {filteredLocations.map((location) => (
+                    <SelectItem key={location.id.toString()} value={location.id.toString()}>
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <div>
+                          <div className="font-medium">{location.name}</div>
+                          <div className="text-xs text-muted-foreground">{location.address}</div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-7 w-7 ml-auto" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleEditClick(location);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <RadioGroup 
+                value={selectedLocation ? selectedLocation.id.toString() : ''} 
+                onValueChange={(value) => {
+                  const location = availableLocations.find(l => l.id.toString() === value);
+                  setSelectedLocation(location || null);
+                }}
+              >
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                  {filteredLocations.map((location) => (
+                    <div 
+                      key={location.id}
+                      className="flex items-center space-x-2 border rounded-md p-3 bg-secondary/20 hover:bg-secondary/40 transition-colors"
+                    >
+                      <RadioGroupItem 
+                        value={location.id.toString()} 
+                        id={`location-${location.id}`} 
+                        className="cursor-pointer"
+                        onClick={() => setSelectedLocation(location)}
+                      />
+                      <Label htmlFor={`location-${location.id}`} className="flex-1 cursor-pointer">
+                        <div className="font-medium">{location.name}</div>
+                        <div className="text-xs text-muted-foreground">{location.address}</div>
+                      </Label>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-7 w-7" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditClick(location);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            )}
           </div>
           
           <div className="space-y-2">

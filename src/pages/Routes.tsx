@@ -1,15 +1,18 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Map, TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, AlertCircle } from 'lucide-react';
+import { Plus, Map, TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, AlertCircle, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import LocationSelector from '@/components/routes/LocationSelector';
 import { LocationType } from '@/components/locations/LocationEditDialog';
+import LocationEditDialog from '@/components/locations/LocationEditDialog';
 
 const RouteMap = ({ route }) => {
   return (
@@ -63,7 +66,9 @@ const RouteMap = ({ route }) => {
   );
 };
 
-const RouteDetails = ({ route, onRemoveLocation }) => {
+const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }) => {
+  const [addLocationOpen, setAddLocationOpen] = useState(false);
+  
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -133,10 +138,39 @@ const RouteDetails = ({ route, onRemoveLocation }) => {
               <ArrowUpDown className="h-3 w-3" />
               <span className="text-xs">Reorder</span>
             </Button>
-            <Button variant="outline" size="sm" className="h-7 gap-1">
-              <Plus className="h-3 w-3" />
-              <span className="text-xs">Add Stop</span>
-            </Button>
+            <Popover open={addLocationOpen} onOpenChange={setAddLocationOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 gap-1">
+                  <Plus className="h-3 w-3" />
+                  <span className="text-xs">Add Stop</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Add New Stop</h4>
+                  <div className="space-y-2">
+                    <Select
+                      onValueChange={(value) => {
+                        const locationId = parseInt(value);
+                        onAddNewLocation(locationId);
+                        setAddLocationOpen(false);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {route.availableLocations && route.availableLocations.map((loc) => (
+                          <SelectItem key={loc.id} value={loc.id.toString()}>
+                            {loc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         
@@ -242,13 +276,14 @@ const OptimizationParameters = ({ onOptimize }) => {
 
 const Routes = () => {
   const [activeTab, setActiveTab] = useState('create');
+  const [newLocationDialog, setNewLocationDialog] = useState(false);
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
-    { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', lat: -33.9113, long: 18.4053, fullCylinders: 0, emptyCylinders: 12 },
-    { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', lat: -33.9500, long: 18.3836, fullCylinders: 0, emptyCylinders: 15 },
-    { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', lat: -33.9248, long: 18.4173, fullCylinders: 0, emptyCylinders: 8 },
-    { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', lat: -33.9263, long: 18.4132, fullCylinders: 0, emptyCylinders: 23 },
-    { id: 5, name: 'Restaurant E', address: '567 Main Rd, Green Point', lat: -33.9317, long: 18.4232, fullCylinders: 0, emptyCylinders: 18 },
+    { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', lat: -33.9113, long: 18.4053, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
+    { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', lat: -33.9500, long: 18.3836, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
+    { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', lat: -33.9248, long: 18.4173, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
+    { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', lat: -33.9263, long: 18.4132, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
+    { id: 5, name: 'Restaurant E', address: '567 Main Rd, Green Point', lat: -33.9317, long: 18.4232, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
   ]);
   
   const [route, setRoute] = useState({
@@ -257,12 +292,21 @@ const Routes = () => {
     fuelCost: 120.29,
     cylinders: 58,
     locations: [
-      { id: 0, name: 'Warehouse', address: '123 Main St, Cape Town', cylinders: 0 },
-      { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', cylinders: 12 },
-      { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', cylinders: 15 },
-      { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', cylinders: 8 },
-      { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', cylinders: 23 }
-    ]
+      { id: 0, name: 'Warehouse', address: '123 Main St, Cape Town', cylinders: 0, type: 'Storage' },
+      { id: 1, name: 'Restaurant A', address: '456 Beach Rd, Sea Point', cylinders: 12, type: 'Customer' },
+      { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', cylinders: 15, type: 'Customer' },
+      { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', cylinders: 8, type: 'Customer' },
+      { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', cylinders: 23, type: 'Customer' }
+    ],
+    availableLocations: [] // Will be populated
+  });
+  
+  // Set available locations for popover
+  useState(() => {
+    setRoute(prev => ({
+      ...prev,
+      availableLocations: availableLocations
+    }));
   });
   
   const addLocationToRoute = (location) => {
@@ -308,8 +352,9 @@ const Routes = () => {
       fuelCost: 0,
       cylinders: 0,
       locations: [
-        { id: 0, name: 'Warehouse', address: '123 Main St, Cape Town', cylinders: 0 }
-      ]
+        { id: 0, name: 'Warehouse', address: '123 Main St, Cape Town', cylinders: 0, type: 'Storage' }
+      ],
+      availableLocations: availableLocations
     });
     toast.info("New route created");
   };
@@ -324,7 +369,8 @@ const Routes = () => {
           return {
             ...routeLoc,
             name: updatedLoc.name,
-            address: updatedLoc.address
+            address: updatedLoc.address,
+            type: updatedLoc.type
           };
         }
         return routeLoc;
@@ -332,9 +378,36 @@ const Routes = () => {
       
       return {
         ...prev,
-        locations: updatedRouteLocations
+        locations: updatedRouteLocations,
+        availableLocations: updatedLocations
       };
     });
+  };
+
+  const addNewLocation = () => {
+    setNewLocationDialog(true);
+  };
+
+  const handleAddNewLocationFromPopover = (locationId) => {
+    const location = availableLocations.find(loc => loc.id === locationId);
+    if (location) {
+      addLocationToRoute({...location, cylinders: 10});
+      toast.success(`Added ${location.name} to route`);
+    }
+  };
+
+  const handleSaveNewLocation = (location: LocationType) => {
+    // Add a new location to the available locations
+    const newLocation = {
+      ...location,
+      id: availableLocations.length + 1
+    };
+    
+    const updatedLocations = [...availableLocations, newLocation];
+    handleUpdateLocations(updatedLocations);
+    
+    toast.success(`New location "${location.name}" added`);
+    setNewLocationDialog(false);
   };
 
   return (
@@ -344,10 +417,16 @@ const Routes = () => {
           <h1 className="text-2xl font-bold tracking-tight">Route Optimizer</h1>
           <p className="text-muted-foreground">Create and manage delivery routes</p>
         </div>
-        <Button className="gap-2" onClick={handleCreateNewRoute}>
-          <Plus className="h-4 w-4" />
-          New Route
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-2" onClick={addNewLocation}>
+            <MapPin className="h-4 w-4" />
+            New Location
+          </Button>
+          <Button className="gap-2" onClick={handleCreateNewRoute}>
+            <Plus className="h-4 w-4" />
+            New Route
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -369,7 +448,11 @@ const Routes = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <RouteMap route={route} />
-                  <RouteDetails route={route} onRemoveLocation={removeLocationFromRoute} />
+                  <RouteDetails 
+                    route={route} 
+                    onRemoveLocation={removeLocationFromRoute} 
+                    onAddNewLocation={handleAddNewLocationFromPopover}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -435,6 +518,13 @@ const Routes = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <LocationEditDialog 
+        open={newLocationDialog}
+        onOpenChange={setNewLocationDialog}
+        location={null}
+        onSave={handleSaveNewLocation}
+      />
     </div>
   );
 };

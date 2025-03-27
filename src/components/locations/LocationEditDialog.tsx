@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 export type LocationType = {
@@ -60,6 +61,15 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
     setFormData({ ...formData, [name]: isNaN(numValue) ? 0 : numValue });
   };
 
+  const handleTypeChange = (value: string) => {
+    const isWarehouse = value === 'Storage';
+    setFormData({ 
+      ...formData, 
+      type: value,
+      isWarehouse: isWarehouse
+    });
+  };
+
   const handleCheckboxChange = (checked: boolean) => {
     setFormData({ 
       ...formData, 
@@ -104,13 +114,21 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
               />
             </div>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="isWarehouse" 
-                checked={formData.isWarehouse}
-                onCheckedChange={handleCheckboxChange}
-              />
-              <Label htmlFor="isWarehouse">This is a warehouse/storage location</Label>
+            <div>
+              <Label htmlFor="type">Location Type</Label>
+              <Select
+                value={formData.type}
+                onValueChange={handleTypeChange}
+              >
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Select location type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Customer">Customer</SelectItem>
+                  <SelectItem value="Storage">Storage/Warehouse</SelectItem>
+                  <SelectItem value="Distribution">Distribution Center</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
