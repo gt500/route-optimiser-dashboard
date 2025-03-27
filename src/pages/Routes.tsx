@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,10 @@ const Routes = () => {
     fuelCost: 120.29,
     cylinders: 0,
     locations: [] as LocationType[],
-    availableLocations: [] as LocationType[]
+    availableLocations: [] as LocationType[],
+    trafficConditions: 'moderate',
+    estimatedDuration: 75,
+    usingRealTimeData: false
   });
 
   useEffect(() => {
@@ -90,7 +92,6 @@ const Routes = () => {
     setRoute(prev => {
       const newLocations = [...prev.locations];
       
-      // If we have an end location, insert before it, otherwise add to the end
       if (endLocation && newLocations.length > 1) {
         newLocations.splice(newLocations.length - 1, 0, locationWithCylinders);
       } else {
@@ -106,7 +107,6 @@ const Routes = () => {
   };
 
   const removeLocationFromRoute = (index: number) => {
-    // Don't allow removing start or end locations
     if (index === 0 || (endLocation && index === route.locations.length - 1)) return;
     
     setRoute(prev => {
@@ -125,13 +125,44 @@ const Routes = () => {
     toast.success("Location removed from route");
   };
 
-  const handleOptimize = (params: { prioritizeFuel: boolean; avoidTraffic: boolean }) => {
+  const handleOptimize = (params: { 
+    prioritizeFuel: boolean; 
+    avoidTraffic: boolean;
+    useRealTimeData: boolean;
+    optimizeForDistance: boolean;
+  }) => {
     console.log("Optimizing with params:", params);
+    
+    const trafficMultiplier = params.avoidTraffic ? 0.85 : 1.1;
+    const fuelMultiplier = params.prioritizeFuel ? 0.9 : 1.0;
+    const distanceMultiplier = params.optimizeForDistance ? 0.9 : 1.05;
+    
+    let newDistance = route.distance;
+    let newDuration = route.estimatedDuration;
+    
+    if (params.useRealTimeData) {
+      const realTimeTrafficFactor = 0.8 + Math.random() * 0.4;
+      newDistance = route.distance * distanceMultiplier * realTimeTrafficFactor;
+      newDuration = route.estimatedDuration * (1/distanceMultiplier) * realTimeTrafficFactor;
+      
+      let trafficConditions = 'moderate';
+      if (realTimeTrafficFactor < 0.9) trafficConditions = 'light';
+      if (realTimeTrafficFactor > 1.1) trafficConditions = 'heavy';
+      
+      setRoute(prev => ({
+        ...prev,
+        trafficConditions,
+        usingRealTimeData: true
+      }));
+    }
+    
     setRoute(prev => ({
       ...prev,
-      distance: params.prioritizeFuel ? prev.distance * 0.95 : prev.distance * 1.05,
-      fuelConsumption: params.prioritizeFuel ? prev.fuelConsumption * 0.9 : prev.fuelConsumption * 1.02,
-      fuelCost: params.prioritizeFuel ? prev.fuelCost * 0.9 : prev.fuelCost * 1.02,
+      distance: Math.round(newDistance * 10) / 10,
+      estimatedDuration: Math.round(newDuration),
+      fuelConsumption: Math.round(newDistance * 0.12 * fuelMultiplier * 100) / 100,
+      fuelCost: Math.round(newDistance * 0.12 * 22 * fuelMultiplier * 100) / 100,
+      usingRealTimeData: params.useRealTimeData
     }));
   };
 
@@ -144,7 +175,10 @@ const Routes = () => {
       fuelCost: 0,
       cylinders: 0,
       locations: [],
-      availableLocations: availableLocations
+      availableLocations: availableLocations,
+      trafficConditions: 'moderate',
+      estimatedDuration: 75,
+      usingRealTimeData: false
     });
     toast.info("New route created");
   };
@@ -198,7 +232,6 @@ const Routes = () => {
     setNewLocationDialog(false);
   };
 
-  // Calculate the filtered available locations (excluding start and end locations)
   const filteredAvailableLocations = React.useMemo(() => {
     return availableLocations.filter(loc => 
       loc.id !== startLocation?.id && 
@@ -240,11 +273,18 @@ const Routes = () => {
                 <CardHeader>
                   <CardTitle>Route Preview</CardTitle>
                   <CardDescription>
-                    Optimized delivery path with cost calculations
+                    {route.usingRealTimeData 
+                      ? `Optimized with real-time traffic data (${route.trafficConditions} traffic)`
+                      : 'Optimized delivery path with cost calculations'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <RouteMap route={route.locations.length > 0 ? route : null} />
+                  <RouteMap 
+                    route={route.locations.length > 0 ? {
+                      ...route,
+                      trafficConditions: route.trafficConditions
+                    } : null} 
+                  />
                   <RouteDetails 
                     route={{
                       ...route,

@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, Plus } from 'lucide-react';
+import { TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, Plus, Clock } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { toast } from 'sonner';
 import { LocationType } from '../locations/LocationEditDialog';
@@ -19,6 +19,9 @@ interface RouteDetailsProps {
     cylinders: number;
     locations: LocationType[];
     availableLocations: LocationType[];
+    estimatedDuration?: number;
+    trafficConditions?: string;
+    usingRealTimeData?: boolean;
   };
   onRemoveLocation: (index: number) => void;
   onAddNewLocation: (locationId: number) => void;
@@ -26,6 +29,15 @@ interface RouteDetailsProps {
 
 const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetailsProps) => {
   const [addLocationOpen, setAddLocationOpen] = useState(false);
+  
+  const getTrafficBadgeVariant = (condition?: string) => {
+    switch (condition) {
+      case 'light': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'moderate': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'heavy': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-blue-50 text-blue-700 border-blue-200';
+    }
+  };
   
   return (
     <div className="space-y-4">
@@ -42,13 +54,23 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
                 </HoverCardTrigger>
                 <HoverCardContent className="w-80">
                   <div className="text-sm">
-                    Total distance calculated based on the optimized route between all stops.
+                    {route.usingRealTimeData 
+                      ? 'Distance calculated using real-time traffic data for the fastest route.' 
+                      : 'Total distance calculated based on the optimized route between all stops.'}
                   </div>
                 </HoverCardContent>
               </HoverCard>
             </h3>
             <div className="text-2xl font-bold">{route.distance} km</div>
-            <p className="text-xs text-muted-foreground">Estimated travel time: {Math.round(route.distance * 1.5)} min</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Estimated travel time: {route.estimatedDuration || Math.round(route.distance * 1.5)} min
+              {route.trafficConditions && (
+                <Badge variant="outline" className={getTrafficBadgeVariant(route.trafficConditions)}>
+                  {route.trafficConditions} traffic
+                </Badge>
+              )}
+            </p>
           </CardContent>
         </Card>
         
@@ -159,7 +181,11 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
       
       <div className="flex justify-end gap-2">
         <Button variant="outline">Save Route</Button>
-        <Button className="gap-1" onClick={() => toast.success("Route successfully optimized")}>
+        <Button className="gap-1" onClick={() => toast.success(
+          route.usingRealTimeData 
+            ? "Route re-optimized with latest traffic data" 
+            : "Route successfully optimized"
+        )}>
           <RotateCw className="h-4 w-4" />
           Re-optimize
         </Button>

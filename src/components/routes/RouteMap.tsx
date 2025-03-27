@@ -1,17 +1,42 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Map } from 'lucide-react';
+import { Map, AlertTriangle } from 'lucide-react';
 import { LocationType } from '../locations/LocationEditDialog';
 
 interface RouteMapProps {
   route: {
     locations: LocationType[];
     distance: number;
+    estimatedDuration?: number;
+    trafficConditions?: 'light' | 'moderate' | 'heavy';
+    usingRealTimeData?: boolean;
   } | null;
 }
 
 const RouteMap = ({ route }: RouteMapProps) => {
+  const getTrafficColor = (condition?: string) => {
+    switch (condition) {
+      case 'light': return 'text-emerald-500';
+      case 'moderate': return 'text-amber-500';
+      case 'heavy': return 'text-red-500';
+      default: return 'text-primary';
+    }
+  };
+
+  const getPathClasses = (condition?: string) => {
+    let baseClass = "text-primary route-path";
+    
+    if (!condition) return baseClass;
+    
+    switch (condition) {
+      case 'light': return baseClass + " text-emerald-500";
+      case 'moderate': return baseClass + " text-amber-500";
+      case 'heavy': return baseClass + " text-red-500";
+      default: return baseClass;
+    }
+  };
+  
   return (
     <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-lg relative overflow-hidden border border-border shadow-sm">
       <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
@@ -25,7 +50,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3" 
-                    className="text-primary route-path"
+                    className={getPathClasses(route.trafficConditions)}
                   />
                 )}
                 
@@ -47,7 +72,19 @@ const RouteMap = ({ route }: RouteMapProps) => {
                     <span className="font-medium">Route:</span> 
                     <span className="text-muted-foreground">{route.distance} km</span>
                     <span className="text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">{Math.round(route.distance * 1.5)} min</span>
+                    <span className="text-muted-foreground">
+                      {route.estimatedDuration || Math.round(route.distance * 1.5)} min
+                    </span>
+                    
+                    {route.trafficConditions && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <span className={`flex items-center gap-1 ${getTrafficColor(route.trafficConditions)}`}>
+                          {route.trafficConditions === 'heavy' && <AlertTriangle className="h-3 w-3" />}
+                          {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
+                        </span>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
