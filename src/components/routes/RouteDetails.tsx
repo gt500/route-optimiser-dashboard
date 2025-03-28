@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, Plus, Clock } from 'lucide-react';
+import { TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, Plus, Clock, Fuel } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { toast } from 'sonner';
 import { LocationType } from '../locations/LocationEditDialog';
@@ -61,7 +61,7 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
                 </HoverCardContent>
               </HoverCard>
             </h3>
-            <div className="text-2xl font-bold">{route.distance} km</div>
+            <div className="text-2xl font-bold">{route.distance.toFixed(1)} km</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
               <span>Estimated travel time: {route.estimatedDuration || Math.round(route.distance * 1.5)} min</span>
@@ -77,7 +77,7 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">Fuel Consumption</h3>
-            <div className="text-2xl font-bold">{route.fuelConsumption} L</div>
+            <div className="text-2xl font-bold">{route.fuelConsumption.toFixed(1)} L</div>
             <p className="text-xs text-muted-foreground">Based on average consumption of 12L/100km</p>
           </CardContent>
         </Card>
@@ -85,7 +85,7 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">Fuel Cost</h3>
-            <div className="text-2xl font-bold">R {route.fuelCost}</div>
+            <div className="text-2xl font-bold">R {route.fuelCost.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">At current price of R22/L</p>
           </CardContent>
         </Card>

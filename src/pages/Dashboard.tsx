@@ -55,8 +55,8 @@ const Dashboard = () => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">83</div>
-            <p className="text-xs text-muted-foreground">+2% from last week</p>
+            <div className="text-2xl font-bold">24</div>
+            <p className="text-xs text-muted-foreground">+2 from last month</p>
           </CardContent>
         </Card>
         <Card className="hover:shadow-md transition-shadow duration-300">
@@ -170,20 +170,42 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                  <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                    <Truck className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">Route #{i + 1000}</div>
-                    <div className="text-sm text-muted-foreground">{5 + i} locations • {40 + i * 7} cylinders</div>
-                  </div>
-                  <Button size="sm" variant="ghost">
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
+                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                  <Truck className="h-5 w-5" />
                 </div>
-              ))}
+                <div className="flex-1">
+                  <div className="font-medium">Cape Town Central Route</div>
+                  <div className="text-sm text-muted-foreground">7 locations • 48 cylinders</div>
+                </div>
+                <Button size="sm" variant="ghost">
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
+                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Stellenbosch Area Route</div>
+                  <div className="text-sm text-muted-foreground">5 locations • 35 cylinders</div>
+                </div>
+                <Button size="sm" variant="ghost">
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
+                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Western Cape Route</div>
+                  <div className="text-sm text-muted-foreground">6 locations • 42 cylinders</div>
+                </div>
+                <Button size="sm" variant="ghost">
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
               <Button variant="outline" className="w-full">View All</Button>
             </div>
           </CardContent>
@@ -195,20 +217,42 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                  <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">Cape Town Area #{i}</div>
-                    <div className="text-sm text-muted-foreground">{30 - i * 2} km • {i} day{i !== 1 ? 's' : ''} ago</div>
-                  </div>
-                  <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
-                    R{(300 + i * 45).toFixed(2)}
-                  </div>
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
+                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                  <MapPin className="h-5 w-5" />
                 </div>
-              ))}
+                <div className="flex-1">
+                  <div className="font-medium">Cape Town Area #1</div>
+                  <div className="text-sm text-muted-foreground">28 km • 1 day ago</div>
+                </div>
+                <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
+                  R345.00
+                </div>
+              </div>
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
+                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Paarl Area Route</div>
+                  <div className="text-sm text-muted-foreground">36 km • 2 days ago</div>
+                </div>
+                <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
+                  R442.00
+                </div>
+              </div>
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
+                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Strand Area Route</div>
+                  <div className="text-sm text-muted-foreground">24 km • 3 days ago</div>
+                </div>
+                <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
+                  R345.00
+                </div>
+              </div>
               <Button variant="outline" className="w-full">View All</Button>
             </div>
           </CardContent>

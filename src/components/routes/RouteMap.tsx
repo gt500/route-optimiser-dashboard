@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Map, AlertTriangle } from 'lucide-react';
+import { Map, AlertTriangle, CreditCard, Ruler } from 'lucide-react';
 import { LocationType } from '../locations/LocationEditDialog';
 
 interface RouteMapProps {
@@ -11,6 +11,8 @@ interface RouteMapProps {
     estimatedDuration?: number;
     trafficConditions?: 'light' | 'moderate' | 'heavy';
     usingRealTimeData?: boolean;
+    fuelConsumption?: number;
+    fuelCost?: number;
   } | null;
 }
 
@@ -68,23 +70,34 @@ const RouteMap = ({ route }: RouteMapProps) => {
             <div className="absolute bottom-4 right-4 z-10">
               <Card className="w-auto bg-background/90 backdrop-blur-sm shadow-md">
                 <CardContent className="p-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">Route:</span> 
-                    <span className="text-muted-foreground">{route.distance} km</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-muted-foreground">
-                      {route.estimatedDuration || Math.round(route.distance * 1.5)} min
-                    </span>
+                  <div className="flex flex-col gap-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-3 w-3" />
+                      <span className="font-medium">Distance:</span> 
+                      <span className="text-muted-foreground">{route.distance.toFixed(1)} km</span>
+                    </div>
                     
-                    {route.trafficConditions && (
-                      <>
-                        <span className="text-muted-foreground">•</span>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-3 w-3" />
+                      <span className="font-medium">Cost:</span> 
+                      <span className="text-muted-foreground">
+                        R {route.fuelCost ? route.fuelCost.toFixed(2) : ((route.distance * 22 * 0.12).toFixed(2))}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Time:</span>
+                      <span className="text-muted-foreground">
+                        {route.estimatedDuration || Math.round(route.distance * 1.5)} min
+                      </span>
+                      
+                      {route.trafficConditions && (
                         <span className={`flex items-center gap-1 ${getTrafficColor(route.trafficConditions)}`}>
                           {route.trafficConditions === 'heavy' && <AlertTriangle className="h-3 w-3" />}
                           {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
                         </span>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

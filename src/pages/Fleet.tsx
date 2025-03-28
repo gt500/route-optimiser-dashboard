@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,20 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, TruckIcon, MapPin, Wrench, Activity } from 'lucide-react';
 
-// Sample vehicle data
+// Updated vehicle data for South Africa
 const vehicles = [
-  { id: 'TRK-001', name: 'Truck 1', status: 'On Route', capacity: 80, load: 65, fuelLevel: 78, location: 'Cape Town CBD', lastService: '2023-10-15' },
-  { id: 'TRK-002', name: 'Truck 2', status: 'Available', capacity: 80, load: 0, fuelLevel: 92, location: 'Warehouse A', lastService: '2023-11-02' },
-  { id: 'TRK-003', name: 'Truck 3', status: 'Maintenance', capacity: 80, load: 0, fuelLevel: 45, location: 'Service Center', lastService: '2023-12-05' },
-  { id: 'TRK-004', name: 'Truck 4', status: 'Available', capacity: 80, load: 0, fuelLevel: 85, location: 'Warehouse B', lastService: '2023-10-30' },
+  { id: 'TRK-001', name: 'Isuzu NQR', status: 'On Route', capacity: 80, load: 65, fuelLevel: 78, location: 'Cape Town CBD', lastService: '2023-10-15' },
+  { id: 'TRK-002', name: 'Isuzu FVZ', status: 'Available', capacity: 80, load: 0, fuelLevel: 92, location: 'Afrox Epping Depot', lastService: '2023-11-02' },
+  { id: 'TRK-003', name: 'Hino 500', status: 'Maintenance', capacity: 80, load: 0, fuelLevel: 45, location: 'Service Center', lastService: '2023-12-05' },
+  { id: 'TRK-004', name: 'Isuzu NPR', status: 'Available', capacity: 80, load: 0, fuelLevel: 85, location: 'Storage Facility B', lastService: '2023-10-30' },
 ];
 
-// Sample maintenance schedule
+// Updated maintenance schedule
 const maintenanceSchedule = [
-  { vehicle: 'Truck 3', type: 'Engine Service', date: '2023-12-05', status: 'In Progress' },
-  { vehicle: 'Truck 1', type: 'Tire Replacement', date: '2023-12-12', status: 'Scheduled' },
-  { vehicle: 'Truck 2', type: 'Brake Inspection', date: '2023-12-15', status: 'Scheduled' },
-  { vehicle: 'Truck 4', type: 'Oil Change', date: '2023-12-18', status: 'Scheduled' },
+  { vehicle: 'Hino 500', type: 'Engine Service', date: '2023-12-05', status: 'In Progress' },
+  { vehicle: 'Isuzu NQR', type: 'Tire Replacement', date: '2023-12-12', status: 'Scheduled' },
+  { vehicle: 'Isuzu FVZ', type: 'Brake Inspection', date: '2023-12-15', status: 'Scheduled' },
+  { vehicle: 'Isuzu NPR', type: 'Oil Change', date: '2023-12-18', status: 'Scheduled' },
 ];
 
 const VehicleStatusCard = ({ status, count, icon: Icon, color }) => {
