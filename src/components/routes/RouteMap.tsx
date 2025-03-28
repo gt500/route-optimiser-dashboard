@@ -61,14 +61,15 @@ const RouteMap = ({ route }: RouteMapProps) => {
       {route && route.locations.length > 0 ? (
         <div className="w-full h-full">
           <MapContainer 
-            center={mapCenter} 
-            zoom={10} 
+            key={mapCenter.toString()}
             style={{ height: '100%', width: '100%' }}
             zoomControl={false}
+            zoom={10}
+            center={mapCenter}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             
             {route.locations.map((location, idx) => (
@@ -86,8 +87,10 @@ const RouteMap = ({ route }: RouteMapProps) => {
             {routePath.length > 1 && (
               <Polyline 
                 positions={routePath}
-                color={getTrafficColor(route.trafficConditions)}
-                weight={4}
+                pathOptions={{
+                  color: getTrafficColor(route.trafficConditions),
+                  weight: 4
+                }}
               />
             )}
           </MapContainer>
@@ -117,7 +120,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
                     </span>
                     
                     {route.trafficConditions && (
-                      <span className={`flex items-center gap-1 text-[${getTrafficColor(route.trafficConditions)}]`}>
+                      <span className={`flex items-center gap-1`} style={{ color: getTrafficColor(route.trafficConditions) }}>
                         {route.trafficConditions === 'heavy' && <AlertTriangle className="h-3 w-3" />}
                         {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
                       </span>
