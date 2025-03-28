@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Map as MapIcon, AlertTriangle, CreditCard, Ruler } from 'lucide-react';
 import { LocationType } from '../locations/LocationEditDialog';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
@@ -25,8 +25,43 @@ interface RouteMapProps {
     usingRealTimeData?: boolean;
     fuelConsumption?: number;
     fuelCost?: number;
+    priority?: 'low' | 'medium' | 'high';
   } | null;
 }
+
+// Custom marker icons for different priority levels
+const priorityIcons = {
+  high: new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+    className: 'marker-priority-high'
+  }),
+  medium: new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+    className: 'marker-priority-medium'
+  }),
+  low: new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+    className: 'marker-priority-low'
+  })
+};
 
 const RouteMap = ({ route }: RouteMapProps) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([-33.9249, 18.4241]); // Cape Town default
@@ -50,6 +85,15 @@ const RouteMap = ({ route }: RouteMapProps) => {
       case 'heavy': return '#ef4444'; // red-500
       default: return '#3b82f6'; // blue-500
     }
+  };
+
+  // Function to determine marker priority based on position in route
+  const getMarkerPriority = (index: number, total: number): 'high' | 'medium' | 'low' => {
+    if (index === 0) return 'high'; // Start location
+    if (index === total - 1 && total > 1) return 'high'; // End location
+    if (index <= Math.ceil(total * 0.3)) return 'high';
+    if (index <= Math.ceil(total * 0.7)) return 'medium';
+    return 'low';
   };
 
   // Component to add the routing control to the map
@@ -99,13 +143,37 @@ const RouteMap = ({ route }: RouteMapProps) => {
     return null;
   };
 
+  // Add custom CSS for marker priority styling
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .marker-priority-high .leaflet-marker-icon {
+        filter: hue-rotate(240deg) saturate(1.5);
+        z-index: 1000 !important;
+      }
+      .marker-priority-medium .leaflet-marker-icon {
+        filter: hue-rotate(120deg) saturate(1.2);
+        z-index: 900 !important;
+      }
+      .marker-priority-low .leaflet-marker-icon {
+        filter: grayscale(0.5);
+        z-index: 800 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
     <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-lg relative overflow-hidden border border-border shadow-sm">
       {route && route.locations.length > 0 ? (
         <div className="w-full h-full">
           <MapContainer 
             key={mapCenter.toString()}
-            center={mapCenter as L.LatLngExpression} 
+            center={mapCenter}
             zoom={10}
             style={{ height: '100%', width: '100%' }}
           >
@@ -118,10 +186,22 @@ const RouteMap = ({ route }: RouteMapProps) => {
               <Marker 
                 key={idx} 
                 position={[location.lat || 0, location.long || 0]}
+                icon={priorityIcons[getMarkerPriority(idx, route.locations.length)]}
               >
+                <Tooltip permanent={false} direction="top" offset={[0, -35]}>
+                  {location.name}
+                </Tooltip>
                 <Popup>
                   <div className="text-sm font-medium">{location.name}</div>
                   <div className="text-xs">{location.address}</div>
+                  <div className="text-xs mt-1">
+                    {location.type === 'Customer' && location.emptyCylinders && 
+                      <span>Empty cylinders: {location.emptyCylinders}</span>
+                    }
+                    {location.type === 'Storage' && location.fullCylinders && 
+                      <span>Full cylinders: {location.fullCylinders}</span>
+                    }
+                  </div>
                 </Popup>
               </Marker>
             ))}

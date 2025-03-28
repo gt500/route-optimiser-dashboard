@@ -9,6 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
@@ -19,6 +22,10 @@ import {
   Settings,
   Map,
   BarChart,
+  FileText,
+  Calendar,
+  Clock,
+  Wrench,
 } from "lucide-react";
 
 const menuItems = [
@@ -41,6 +48,30 @@ const menuItems = [
     title: "Fleet",
     icon: Truck,
     path: "/fleet",
+  },
+  {
+    title: "Reports",
+    icon: FileText,
+    path: "/reports",
+    subItems: [
+      {
+        title: "Delivery Reports",
+        path: "/reports/delivery",
+        subItems: [
+          { title: "Daily Reports", path: "/reports/delivery/daily" },
+          { title: "Weekly Reports", path: "/reports/delivery/weekly" },
+          { title: "Monthly Reports", path: "/reports/delivery/monthly" },
+        ]
+      },
+      {
+        title: "Maintenance Reports",
+        path: "/reports/maintenance",
+        subItems: [
+          { title: "Maintenance Schedule", path: "/reports/maintenance/schedule" },
+          { title: "Fleet Management", path: "/reports/maintenance/fleet" },
+        ]
+      }
+    ]
   },
   {
     title: "Analytics",
@@ -74,12 +105,49 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.path} className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                  {!item.subItems ? (
+                    <SidebarMenuButton asChild>
+                      <Link to={item.path} className="flex items-center gap-3">
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  ) : (
+                    <>
+                      <SidebarMenuButton asChild>
+                        <Link to={item.path} className="flex items-center gap-3">
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuSub>
+                        {item.subItems.map((subItem) => (
+                          <React.Fragment key={subItem.title}>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild>
+                                <Link to={subItem.path}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            {subItem.subItems && (
+                              <SidebarMenuSub>
+                                {subItem.subItems.map((nestedItem) => (
+                                  <SidebarMenuSubItem key={nestedItem.title}>
+                                    <SidebarMenuSubButton asChild size="sm">
+                                      <Link to={nestedItem.path}>
+                                        <span>{nestedItem.title}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </SidebarMenuSub>
+                    </>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
