@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Map as MapIcon, AlertTriangle, CreditCard, Ruler } from 'lucide-react';
 import { LocationType } from '../locations/LocationEditDialog';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
@@ -53,16 +53,16 @@ const RouteMap = ({ route }: RouteMapProps) => {
   };
 
   // Component to add the routing control to the map
-  const RoutingMachine = ({ locations }: { locations: LocationType[] }) => {
-    const map = React.useRef<L.Map | null>(null);
+  const RoutingMachineLayer = ({ locations }: { locations: LocationType[] }) => {
+    const map = useMap();
     
     React.useEffect(() => {
-      if (!map.current || locations.length < 2) return;
+      if (!map || locations.length < 2) return;
       
       const waypoints = locations.map(loc => L.latLng(loc.lat || 0, loc.long || 0));
       
       // Remove any existing routing control
-      const container = map.current.getContainer();
+      const container = map.getContainer();
       const existingRoutingControls = container.getElementsByClassName('leaflet-routing-container');
       while(existingRoutingControls[0]) {
         existingRoutingControls[0].remove();
@@ -81,20 +81,20 @@ const RouteMap = ({ route }: RouteMapProps) => {
         fitSelectedRoutes: true,
         showAlternatives: false,
         routeWhileDragging: false,
-      }).addTo(map.current);
+      }).addTo(map);
       
       // Remove the default routing container that shows turn-by-turn directions
       routingControl.on('routesfound', function() {
-        const container = document.getElementsByClassName('leaflet-routing-container')[0];
+        const container = document.getElementsByClassName('leaflet-routing-container')[0] as HTMLElement;
         if (container) {
           container.style.display = 'none';
         }
       });
       
       return () => {
-        map.current?.removeControl(routingControl);
+        map.removeControl(routingControl);
       };
-    }, [locations]);
+    }, [map, locations]);
     
     return null;
   };
@@ -108,9 +108,6 @@ const RouteMap = ({ route }: RouteMapProps) => {
             center={mapCenter}
             zoom={10}
             style={{ height: '100%', width: '100%' }}
-            whenCreated={(mapInstance) => {
-              (mapInstance as any).map = mapInstance;
-            }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -130,7 +127,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
             ))}
             
             {route.locations.length >= 2 && (
-              <RoutingMachine locations={route.locations} />
+              <RoutingMachineLayer locations={route.locations} />
             )}
           </MapContainer>
           
