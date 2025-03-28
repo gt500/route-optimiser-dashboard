@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Map as MapIcon, AlertTriangle, CreditCard, Ruler } from 'lucide-react';
 import { LocationType } from '../locations/LocationEditDialog';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import 'leaflet-routing-machine';
 
 // Fix Leaflet icon issues
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,7 +30,6 @@ interface RouteMapProps {
 
 const RouteMap = ({ route }: RouteMapProps) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([-33.9249, 18.4241]); // Cape Town default
-  const [routePath, setRoutePath] = useState<[number, number][]>([]);
 
   useEffect(() => {
     if (route && route.locations.length > 0) {
@@ -40,10 +40,6 @@ const RouteMap = ({ route }: RouteMapProps) => {
       const centerLong = longSum / route.locations.length;
       
       setMapCenter([centerLat, centerLong]);
-
-      // Create path for the route (for now just direct lines, we'd need a routing API for actual roads)
-      const path = route.locations.map(loc => [loc.lat || 0, loc.long || 0] as [number, number]);
-      setRoutePath(path);
     }
   }, [route]);
 
@@ -56,6 +52,53 @@ const RouteMap = ({ route }: RouteMapProps) => {
     }
   };
 
+  // Component to add the routing control to the map
+  const RoutingMachine = ({ locations }: { locations: LocationType[] }) => {
+    const map = React.useRef<L.Map>(null);
+    
+    React.useEffect(() => {
+      if (!map.current || locations.length < 2) return;
+      
+      const waypoints = locations.map(loc => L.latLng(loc.lat || 0, loc.long || 0));
+      
+      // Remove any existing routing control
+      const container = map.current.getContainer();
+      const existingRoutingControls = container.getElementsByClassName('leaflet-routing-container');
+      while(existingRoutingControls[0]) {
+        existingRoutingControls[0].remove();
+      }
+      
+      // Add the new routing control
+      const routingControl = L.Routing.control({
+        waypoints,
+        lineOptions: {
+          styles: [{ color: getTrafficColor(route?.trafficConditions), weight: 4 }],
+          extendToWaypoints: true,
+          missingRouteTolerance: 0
+        },
+        addWaypoints: false,
+        draggableWaypoints: false,
+        fitSelectedRoutes: true,
+        showAlternatives: false,
+        routeWhileDragging: false,
+      }).addTo(map.current);
+      
+      // Remove the default routing container that shows turn-by-turn directions
+      routingControl.on('routesfound', function() {
+        const container = document.getElementsByClassName('leaflet-routing-container')[0];
+        if (container) {
+          container.style.display = 'none';
+        }
+      });
+      
+      return () => {
+        map.current?.removeControl(routingControl);
+      };
+    }, [locations]);
+    
+    return null;
+  };
+
   return (
     <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-lg relative overflow-hidden border border-border shadow-sm">
       {route && route.locations.length > 0 ? (
@@ -63,9 +106,13 @@ const RouteMap = ({ route }: RouteMapProps) => {
           <MapContainer 
             key={mapCenter.toString()}
             style={{ height: '100%', width: '100%' }}
-            zoomControl={false}
             zoom={10}
             center={mapCenter}
+            ref={(mapRef: L.Map | null) => {
+              if (mapRef) {
+                (mapRef as any).map = mapRef;
+              }
+            }}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -84,14 +131,8 @@ const RouteMap = ({ route }: RouteMapProps) => {
               </Marker>
             ))}
             
-            {routePath.length > 1 && (
-              <Polyline 
-                positions={routePath}
-                pathOptions={{
-                  color: getTrafficColor(route.trafficConditions),
-                  weight: 4
-                }}
-              />
+            {route.locations.length >= 2 && (
+              <RoutingMachine locations={route.locations} />
             )}
           </MapContainer>
           
@@ -120,7 +161,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
                     </span>
                     
                     {route.trafficConditions && (
-                      <span className={`flex items-center gap-1`} style={{ color: getTrafficColor(route.trafficConditions) }}>
+                      <span className="flex items-center gap-1" style={{ color: getTrafficColor(route.trafficConditions) }}>
                         {route.trafficConditions === 'heavy' && <AlertTriangle className="h-3 w-3" />}
                         {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
                       </span>
