@@ -21,7 +21,14 @@ const RouteEndpoints = ({
   onStartLocationChange,
   onEndLocationChange,
 }: RouteEndpointsProps) => {
-  const warehouses = availableLocations.filter(loc => loc.type === 'Storage');
+  // Identify storage/warehouses (Afrox depot, Shell stations)
+  const warehouses = availableLocations.filter(loc => 
+    loc.type === 'Storage' || 
+    loc.name.toLowerCase().includes('afrox') || 
+    loc.name.toLowerCase().includes('shell') || 
+    loc.name.toLowerCase().includes('depot')
+  );
+  
   const allLocations = availableLocations;
 
   return (
@@ -51,7 +58,7 @@ const RouteEndpoints = ({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">Select a warehouse as your starting point</p>
+          <p className="text-xs text-muted-foreground">Select a warehouse or depot as your starting point</p>
         </div>
 
         <div className="space-y-2">

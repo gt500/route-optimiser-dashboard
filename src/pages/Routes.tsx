@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,25 +17,43 @@ const Routes = () => {
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
-    { id: 1, name: 'Warehouse A', address: '123 Main St, Cape Town', lat: -33.9248, long: 18.4173, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
-    { id: 2, name: 'Hotel B', address: '789 Mountain View, Camps Bay', lat: -33.9500, long: 18.3836, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-    { id: 3, name: 'Restaurant C', address: '101 Long St, City Center', lat: -33.9248, long: 18.4173, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
-    { id: 4, name: 'Hotel D', address: '234 Kloof St, Gardens', lat: -33.9263, long: 18.4132, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
-    { id: 5, name: 'Restaurant E', address: '567 Main Rd, Green Point', lat: -33.9317, long: 18.4232, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
+    { id: 1, name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
+    { id: 2, name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', lat: -33.731659, long: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
+    { id: 3, name: 'Food Lovers Sunningdale', address: 'Sunningdale, KwaZulu-Natal', lat: -29.7486, long: 31.0462, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
+    { id: 4, name: 'Haasendaal Gables', address: 'Haasendaal, Western Cape', lat: -33.907776, long: 18.698757, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
+    { id: 5, name: 'Pick n Pay TableView', address: 'Table View, Cape Town', lat: -33.8258, long: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
+    { id: 6, name: 'SUPERSPAR Parklands', address: 'Parklands, Cape Town', lat: -33.815781, long: 18.495968, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
+    { id: 7, name: 'West Coast Village', address: 'West Coast, Cape Town', lat: -33.803329, long: 18.485944, type: 'Customer', fullCylinders: 0, emptyCylinders: 16 },
+    { id: 8, name: 'KWIKSPAR Paarl', address: 'Paarl, Western Cape', lat: -33.708061, long: 18.962563, type: 'Customer', fullCylinders: 0, emptyCylinders: 10 },
+    { id: 9, name: 'SUPERSPAR Plattekloof', address: 'Plattekloof, Cape Town', lat: -33.873642, long: 18.578856, type: 'Customer', fullCylinders: 0, emptyCylinders: 14 },
+    { id: 10, name: 'OK Foods Strand', address: 'Strand, Western Cape', lat: -34.12169719, long: 18.836937, type: 'Customer', fullCylinders: 0, emptyCylinders: 9 },
+    { id: 11, name: 'OK Urban Sonstraal', address: 'Sonstraal, Western Cape', lat: -33.511, long: 18.3945, type: 'Customer', fullCylinders: 0, emptyCylinders: 11 },
+    { id: 12, name: 'Clara Anna', address: 'Clara Anna, Western Cape', lat: -33.818184, long: 18.632576, type: 'Customer', fullCylinders: 0, emptyCylinders: 7 },
+    { id: 13, name: 'Laborie', address: 'Laborie, Western Cape', lat: -33.764587, long: 18.960768, type: 'Customer', fullCylinders: 0, emptyCylinders: 13 },
+    { id: 14, name: 'Burgundy Square', address: 'Burgundy, Cape Town', lat: -33.841858, long: 18.545229, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
+    { id: 15, name: 'Shell Sea Point', address: 'Sea Point, Cape Town', lat: -33.4812, long: 18.3855, type: 'Storage', fullCylinders: 75, emptyCylinders: 0 },
+    { id: 16, name: 'Shell Hugo Street', address: 'Hugo Street, Cape Town', lat: -33.900848, long: 18.564976, type: 'Storage', fullCylinders: 80, emptyCylinders: 0 },
+    { id: 17, name: 'Shell Meadowridge', address: 'Meadowridge, Cape Town', lat: -34.038963, long: 18.455086, type: 'Storage', fullCylinders: 65, emptyCylinders: 0 },
+    { id: 18, name: 'Simonsrust Shopping Centre', address: 'Simonsrust, Western Cape', lat: -33.926464, long: 18.877136, type: 'Customer', fullCylinders: 0, emptyCylinders: 19 },
+    { id: 19, name: 'Shell Stellenbosch Square', address: 'Stellenbosch, Western Cape', lat: -33.976185, long: 18.843523, type: 'Storage', fullCylinders: 70, emptyCylinders: 0 },
+    { id: 20, name: 'Willowridge Shopping Centre', address: 'Willowridge, Western Cape', lat: -33.871166, long: 18.63283, type: 'Customer', fullCylinders: 0, emptyCylinders: 17 },
+    { id: 21, name: 'Zevenwacht', address: 'Zevenwacht, Western Cape', lat: -33.949867, long: 18.696407, type: 'Customer', fullCylinders: 0, emptyCylinders: 21 },
+    { id: 22, name: 'Killarney Shell', address: 'Killarney, Cape Town', lat: -33.854279, long: 18.516291, type: 'Storage', fullCylinders: 85, emptyCylinders: 0 },
+    { id: 23, name: 'Shell Constantia', address: 'Constantia, Cape Town', lat: -33.979988, long: 18.453421, type: 'Storage', fullCylinders: 90, emptyCylinders: 0 },
   ]);
   
   const [startLocation, setStartLocation] = useState<LocationType | null>(null);
   const [endLocation, setEndLocation] = useState<LocationType | null>(null);
   
   const [route, setRoute] = useState({
-    distance: 45.7,
-    fuelConsumption: 5.48,
-    fuelCost: 120.29,
+    distance: 0,
+    fuelConsumption: 0,
+    fuelCost: 0,
     cylinders: 0,
     locations: [] as LocationType[],
     availableLocations: [] as LocationType[],
     trafficConditions: 'moderate' as 'light' | 'moderate' | 'heavy',
-    estimatedDuration: 75,
+    estimatedDuration: 0,
     usingRealTimeData: false
   });
 
@@ -134,17 +151,40 @@ const Routes = () => {
   }) => {
     console.log("Optimizing with params:", params);
     
+    let calculatedDistance = 0;
+    const locations = route.locations;
+    
+    if (locations.length > 1) {
+      for (let i = 0; i < locations.length - 1; i++) {
+        const lat1 = locations[i].lat || 0;
+        const lon1 = locations[i].long || 0;
+        const lat2 = locations[i + 1].lat || 0;
+        const lon2 = locations[i + 1].long || 0;
+        
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        calculatedDistance += distance * 1.3;
+      }
+    }
+    
     const trafficMultiplier = params.avoidTraffic ? 0.85 : 1.1;
     const fuelMultiplier = params.prioritizeFuel ? 0.9 : 1.0;
     const distanceMultiplier = params.optimizeForDistance ? 0.9 : 1.05;
     
-    let newDistance = route.distance;
-    let newDuration = route.estimatedDuration;
+    let newDistance = calculatedDistance || 45.7;
+    let newDuration = calculatedDistance * 1.5;
     
     if (params.useRealTimeData) {
       const realTimeTrafficFactor = 0.8 + Math.random() * 0.4;
-      newDistance = route.distance * distanceMultiplier * realTimeTrafficFactor;
-      newDuration = route.estimatedDuration * (1/distanceMultiplier) * realTimeTrafficFactor;
+      newDistance = newDistance * distanceMultiplier * realTimeTrafficFactor;
+      newDuration = newDuration * (1/distanceMultiplier) * realTimeTrafficFactor;
       
       let trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
       if (realTimeTrafficFactor < 0.9) trafficConditions = 'light';
@@ -165,6 +205,8 @@ const Routes = () => {
       fuelCost: Math.round(newDistance * 0.12 * 22 * fuelMultiplier * 100) / 100,
       usingRealTimeData: params.useRealTimeData
     }));
+    
+    toast.success("Route optimized with selected parameters");
   };
 
   const handleCreateNewRoute = () => {
@@ -246,7 +288,7 @@ const Routes = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Route Optimizer</h1>
-          <p className="text-muted-foreground">Create and manage delivery routes</p>
+          <p className="text-muted-foreground">Create and manage delivery routes in South Africa</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2" onClick={addNewLocation}>
@@ -286,7 +328,9 @@ const Routes = () => {
                       distance: route.distance,
                       estimatedDuration: route.estimatedDuration,
                       trafficConditions: route.trafficConditions,
-                      usingRealTimeData: route.usingRealTimeData
+                      usingRealTimeData: route.usingRealTimeData,
+                      fuelConsumption: route.fuelConsumption,
+                      fuelCost: route.fuelCost
                     } : null} 
                   />
                   <RouteDetails 

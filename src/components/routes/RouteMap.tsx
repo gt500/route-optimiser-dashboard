@@ -1,8 +1,19 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Map, AlertTriangle, CreditCard, Ruler } from 'lucide-react';
+import { Map as MapIcon, AlertTriangle, CreditCard, Ruler } from 'lucide-react';
 import { LocationType } from '../locations/LocationEditDialog';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet icon issues
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 
 interface RouteMapProps {
   route: {
@@ -17,132 +28,117 @@ interface RouteMapProps {
 }
 
 const RouteMap = ({ route }: RouteMapProps) => {
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-33.9249, 18.4241]); // Cape Town default
+  const [routePath, setRoutePath] = useState<[number, number][]>([]);
+
+  useEffect(() => {
+    if (route && route.locations.length > 0) {
+      // Calculate the center of all locations
+      const latSum = route.locations.reduce((sum, loc) => sum + (loc.lat || 0), 0);
+      const longSum = route.locations.reduce((sum, loc) => sum + (loc.long || 0), 0);
+      const centerLat = latSum / route.locations.length;
+      const centerLong = longSum / route.locations.length;
+      
+      setMapCenter([centerLat, centerLong]);
+
+      // Create path for the route (for now just direct lines, we'd need a routing API for actual roads)
+      const path = route.locations.map(loc => [loc.lat || 0, loc.long || 0] as [number, number]);
+      setRoutePath(path);
+    }
+  }, [route]);
+
   const getTrafficColor = (condition?: 'light' | 'moderate' | 'heavy') => {
     switch (condition) {
-      case 'light': return 'text-emerald-500';
-      case 'moderate': return 'text-amber-500';
-      case 'heavy': return 'text-red-500';
-      default: return 'text-primary';
+      case 'light': return '#10b981'; // emerald-500
+      case 'moderate': return '#f59e0b'; // amber-500
+      case 'heavy': return '#ef4444'; // red-500
+      default: return '#3b82f6'; // blue-500
     }
   };
 
-  const getPathClasses = (condition?: 'light' | 'moderate' | 'heavy') => {
-    let baseClass = "text-primary route-path";
-    
-    if (!condition) return baseClass;
-    
-    switch (condition) {
-      case 'light': return baseClass + " text-emerald-500";
-      case 'moderate': return baseClass + " text-amber-500";
-      case 'heavy': return baseClass + " text-red-500";
-      default: return baseClass;
-    }
-  };
-  
   return (
     <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-lg relative overflow-hidden border border-border shadow-sm">
-      <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
-        {route && route.locations.length > 0 ? (
-          <div className="text-center space-y-3 w-full h-full">
-            <div className="w-full h-full absolute">
-              <svg className="w-full h-full" viewBox="0 0 800 400">
-                {route.locations.length > 1 && (
-                  <path 
-                    d={generatePathFromLocations(route.locations)}
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="3" 
-                    className={getPathClasses(route.trafficConditions)}
-                  />
-                )}
-                
-                {route.locations.map((location, i) => (
-                  <circle 
-                    key={i} 
-                    cx={150 + (i * (500 / Math.max(1, route.locations.length - 1)))} 
-                    cy={200 + (i % 2 === 0 ? -50 : 50)} 
-                    r="8" 
-                    className="fill-primary" 
-                  />
-                ))}
-              </svg>
-            </div>
-            <div className="absolute bottom-4 right-4 z-10">
-              <Card className="w-auto bg-background/90 backdrop-blur-sm shadow-md">
-                <CardContent className="p-3">
-                  <div className="flex flex-col gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Ruler className="h-3 w-3" />
-                      <span className="font-medium">Distance:</span> 
-                      <span className="text-muted-foreground">{route.distance.toFixed(1)} km</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-3 w-3" />
-                      <span className="font-medium">Cost:</span> 
-                      <span className="text-muted-foreground">
-                        R {route.fuelCost ? route.fuelCost.toFixed(2) : ((route.distance * 22 * 0.12).toFixed(2))}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Time:</span>
-                      <span className="text-muted-foreground">
-                        {route.estimatedDuration || Math.round(route.distance * 1.5)} min
-                      </span>
-                      
-                      {route.trafficConditions && (
-                        <span className={`flex items-center gap-1 ${getTrafficColor(route.trafficConditions)}`}>
-                          {route.trafficConditions === 'heavy' && <AlertTriangle className="h-3 w-3" />}
-                          {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
-                        </span>
-                      )}
-                    </div>
+      {route && route.locations.length > 0 ? (
+        <div className="w-full h-full">
+          <MapContainer 
+            center={mapCenter} 
+            zoom={10} 
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            
+            {route.locations.map((location, idx) => (
+              <Marker 
+                key={idx} 
+                position={[location.lat || 0, location.long || 0]}
+              >
+                <Popup>
+                  <div className="text-sm font-medium">{location.name}</div>
+                  <div className="text-xs">{location.address}</div>
+                </Popup>
+              </Marker>
+            ))}
+            
+            {routePath.length > 1 && (
+              <Polyline 
+                positions={routePath}
+                color={getTrafficColor(route.trafficConditions)}
+                weight={4}
+              />
+            )}
+          </MapContainer>
+          
+          <div className="absolute bottom-4 right-4 z-[1000]">
+            <Card className="w-auto bg-background/90 backdrop-blur-sm shadow-md">
+              <CardContent className="p-3">
+                <div className="flex flex-col gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-3 w-3" />
+                    <span className="font-medium">Distance:</span> 
+                    <span className="text-muted-foreground">{route.distance.toFixed(1)} km</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-3 w-3" />
+                    <span className="font-medium">Cost:</span> 
+                    <span className="text-muted-foreground">
+                      R {route.fuelCost ? route.fuelCost.toFixed(2) : ((route.distance * 22 * 0.12).toFixed(2))}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Time:</span>
+                    <span className="text-muted-foreground">
+                      {route.estimatedDuration || Math.round(route.distance * 1.5)} min
+                    </span>
+                    
+                    {route.trafficConditions && (
+                      <span className={`flex items-center gap-1 text-[${getTrafficColor(route.trafficConditions)}]`}>
+                        {route.trafficConditions === 'heavy' && <AlertTriangle className="h-3 w-3" />}
+                        {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        ) : (
+        </div>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-secondary/50">
           <div className="text-center space-y-3">
-            <Map className="h-12 w-12 mx-auto text-muted-foreground" />
+            <MapIcon className="h-12 w-12 mx-auto text-muted-foreground" />
             <p className="text-muted-foreground">Map visualization will appear here</p>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">Select locations and define a route to see the optimized path</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
-};
-
-// Generate a path string for SVG based on locations
-const generatePathFromLocations = (locations: LocationType[]): string => {
-  if (locations.length < 2) return "";
-  
-  const points: string[] = [];
-  const numPoints = locations.length;
-  
-  // Create a more natural looking path
-  locations.forEach((_, index) => {
-    const x = 150 + (index * (500 / Math.max(1, numPoints - 1)));
-    const y = 200 + (index % 2 === 0 ? -50 : 50);
-    
-    if (index === 0) {
-      points.push(`M${x},${y}`);
-    } else {
-      const prevX = 150 + ((index - 1) * (500 / Math.max(1, numPoints - 1)));
-      const prevY = 200 + ((index - 1) % 2 === 0 ? -50 : 50);
-      
-      const cpx1 = prevX + (x - prevX) / 2;
-      const cpy1 = prevY;
-      const cpx2 = prevX + (x - prevX) / 2;
-      const cpy2 = y;
-      
-      points.push(`C${cpx1},${cpy1} ${cpx2},${cpy2} ${x},${y}`);
-    }
-  });
-  
-  return points.join(' ');
 };
 
 export default RouteMap;
