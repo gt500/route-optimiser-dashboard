@@ -117,9 +117,8 @@ const Locations = () => {
 
   const handleDelete = (id) => {
     setLocations(locations.filter(loc => loc.id !== id));
-    toast({
-      title: "Location deleted",
-      description: "The location has been removed successfully.",
+    toast("Location deleted", {
+      description: "The location has been removed successfully."
     });
   };
 
@@ -129,9 +128,8 @@ const Locations = () => {
         loc.id === updatedLocation.id ? updatedLocation : loc
       ));
       setEditLocation(null);
-      toast({
-        title: "Location updated",
-        description: "The location details have been updated successfully.",
+      toast("Location updated", {
+        description: "The location details have been updated successfully."
       });
     } else {
       const newLocation = {
@@ -139,9 +137,8 @@ const Locations = () => {
         id: locations.length + 1,
       };
       setLocations([...locations, newLocation]);
-      toast({
-        title: "Location added",
-        description: "New location has been added successfully.",
+      toast("Location added", {
+        description: "New location has been added successfully."
       });
     }
     setIsAddDialogOpen(false);

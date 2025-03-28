@@ -105,14 +105,13 @@ const RouteMap = ({ route }: RouteMapProps) => {
         <div className="w-full h-full">
           <MapContainer 
             key={mapCenter.toString()}
-            center={mapCenter as any} // Type casting to fix TypeScript error
+            center={mapCenter as L.LatLngExpression} 
             zoom={10}
-            style={{ height: '100%', width: '100%' } as React.CSSProperties}
+            style={{ height: '100%', width: '100%' }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              // ^ Type issues with react-leaflet will be handled by casting
             />
             
             {route.locations.map((location, idx) => (
