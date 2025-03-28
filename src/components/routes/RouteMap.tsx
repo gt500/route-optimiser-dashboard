@@ -54,7 +54,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
 
   // Component to add the routing control to the map
   const RoutingMachine = ({ locations }: { locations: LocationType[] }) => {
-    const map = React.useRef<L.Map>(null);
+    const map = React.useRef<L.Map | null>(null);
     
     React.useEffect(() => {
       if (!map.current || locations.length < 2) return;
@@ -105,18 +105,16 @@ const RouteMap = ({ route }: RouteMapProps) => {
         <div className="w-full h-full">
           <MapContainer 
             key={mapCenter.toString()}
-            style={{ height: '100%', width: '100%' }}
-            zoom={10}
             center={mapCenter}
-            ref={(mapRef: L.Map | null) => {
-              if (mapRef) {
-                (mapRef as any).map = mapRef;
-              }
+            zoom={10}
+            style={{ height: '100%', width: '100%' }}
+            whenCreated={(mapInstance) => {
+              (mapInstance as any).map = mapInstance;
             }}
           >
             <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
             {route.locations.map((location, idx) => (
