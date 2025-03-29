@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import { createLocationIcon } from './Icons';
-import { MarkerProps } from 'react-leaflet';
 
 interface DepotMarkerProps {
   depot: {
@@ -20,10 +20,17 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot }) => {
   // Use either latitude/longitude or lat/long
   const lat = depot.latitude || depot.lat || 0;
   const lng = depot.longitude || depot.long || 0;
+  
+  // Skip invalid locations
+  if (lat === 0 && lng === 0) {
+    console.warn("Invalid depot coordinates for:", depot.name);
+    return null;
+  }
+  
   const position: [number, number] = [lat, lng];
   
   // Create a custom icon for depots
-  const depotIcon = createLocationIcon({
+  const iconHtml = createLocationIcon({
     text: 'D',
     backgroundColor: '#10B981',
     textColor: 'white',
@@ -31,10 +38,17 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot }) => {
     size: 30
   });
   
+  const depotIcon = L.divIcon({
+    className: 'custom-depot-marker',
+    html: iconHtml,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+  
   return (
     <Marker 
       position={position}
-      icon={depotIcon as any}
+      icon={depotIcon}
     >
       <Popup>
         <div>

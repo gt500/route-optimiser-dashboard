@@ -28,11 +28,30 @@ interface RouteDetailsProps {
   onRemoveLocation: (index: number) => void;
   onAddNewLocation: (locationId: number) => void;
   onFuelCostUpdate?: (newFuelCost: number) => void;
+  onRouteDataUpdate?: (distance: number, duration: number) => void;
 }
 
-const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation, onFuelCostUpdate }: RouteDetailsProps) => {
+const RouteDetails = ({ 
+  route, 
+  onRemoveLocation, 
+  onAddNewLocation, 
+  onFuelCostUpdate,
+  onRouteDataUpdate 
+}: RouteDetailsProps) => {
   const [addLocationOpen, setAddLocationOpen] = useState(false);
   const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
+  const [routeDistance, setRouteDistance] = useState(route.distance);
+  const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
+  
+  // Update local state when route data changes
+  useEffect(() => {
+    if (route.distance > 0) {
+      setRouteDistance(route.distance);
+    }
+    if (route.estimatedDuration && route.estimatedDuration > 0) {
+      setRouteDuration(route.estimatedDuration);
+    }
+  }, [route.distance, route.estimatedDuration]);
   
   useEffect(() => {
     // Fetch current fuel cost from the database
@@ -75,11 +94,31 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation, onFuelCostUpd
     }
   };
   
+  // Handle route data updates from the map component
+  const handleRouteDataUpdate = (distance: number, duration: number) => {
+    setRouteDistance(distance);
+    setRouteDuration(duration);
+    if (onRouteDataUpdate) {
+      onRouteDataUpdate(distance, duration);
+    }
+  };
+  
+  // Calculate the actual fuel consumption based on distance
+  const calculateFuelConsumption = () => {
+    return routeDistance * 0.12; // 12L per 100km
+  };
+  
   // Calculate the actual fuel cost based on distance and current fuel price
   const calculateFuelCost = () => {
-    const consumption = route.fuelConsumption || route.distance * 0.12; // L/km
+    const consumption = calculateFuelConsumption();
     return consumption * fuelCostPerLiter;
   };
+  
+  // Use calculated values or fallback to route props
+  const displayDistance = routeDistance > 0 ? routeDistance : route.distance;
+  const displayDuration = routeDuration > 0 ? routeDuration : (route.estimatedDuration || Math.round(displayDistance * 1.5));
+  const displayConsumption = calculateFuelConsumption() || route.fuelConsumption;
+  const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
   return (
     <div className="space-y-4">
@@ -103,10 +142,10 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation, onFuelCostUpd
                 </HoverCardContent>
               </HoverCard>
             </h3>
-            <div className="text-2xl font-bold">{route.distance.toFixed(1)} km</div>
+            <div className="text-2xl font-bold">{displayDistance.toFixed(1)} km</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>Estimated travel time: {route.estimatedDuration || Math.round(route.distance * 1.5)} min</span>
+              <span>Estimated travel time: {displayDuration} min</span>
               {route.trafficConditions && (
                 <Badge variant="outline" className={getTrafficBadgeVariant(route.trafficConditions)}>
                   {route.trafficConditions} traffic
@@ -119,7 +158,7 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation, onFuelCostUpd
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">Fuel Consumption</h3>
-            <div className="text-2xl font-bold">{route.fuelConsumption.toFixed(1)} L</div>
+            <div className="text-2xl font-bold">{displayConsumption.toFixed(1)} L</div>
             <p className="text-xs text-muted-foreground">Based on average consumption of 12L/100km</p>
           </CardContent>
         </Card>
@@ -133,7 +172,7 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation, onFuelCostUpd
                 onFuelCostChange={handleFuelCostChange} 
               />
             </h3>
-            <div className="text-2xl font-bold">R {calculateFuelCost().toFixed(2)}</div>
+            <div className="text-2xl font-bold">R {displayFuelCost.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">At current price of R{fuelCostPerLiter.toFixed(2)}/L</p>
           </CardContent>
         </Card>

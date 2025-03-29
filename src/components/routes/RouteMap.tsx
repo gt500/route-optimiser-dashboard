@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, ZoomControl, AttributionControl, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MapContainer, TileLayer, ZoomControl, AttributionControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -62,6 +62,7 @@ interface RouteMapProps {
     coords: [number, number];
   }>;
   forceRouteUpdate?: boolean;
+  onRouteDataUpdate?: (distance: number, duration: number) => void;
 }
 
 // MapInitializer component to handle map setup
@@ -69,9 +70,18 @@ const MapInitializer: React.FC<{
   center: [number, number];
   allCoordinates: Array<[number, number]>;
 }> = ({ center, allCoordinates }) => {
-  const map = useMap();
+  const mapRef = React.useRef<L.Map | null>(null);
+  
+  const setMapRef = useCallback((map: L.Map) => {
+    if (map) {
+      mapRef.current = map;
+    }
+  }, []);
   
   useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    
     if (allCoordinates.length > 0) {
       try {
         const bounds = L.latLngBounds(allCoordinates.map(coord => [coord[0], coord[1]]));
@@ -121,7 +131,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   startLocation,
   endLocation,
   waypoints = [],
-  forceRouteUpdate = false
+  forceRouteUpdate = false,
+  onRouteDataUpdate
 }) => {
   // Default center based on South Africa
   const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
@@ -179,6 +190,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Unique ID for the map to prevent remnants
   const mapId = React.useId();
   
+  // Handle route data updates
+  const handleRouteFound = useCallback((distance: number, duration: number) => {
+    console.log("Route found with distance:", distance, "km and duration:", duration, "min");
+    if (onRouteDataUpdate) {
+      onRouteDataUpdate(distance, duration);
+    }
+  }, [onRouteDataUpdate]);
+  
   // Cleanup effect for when component unmounts
   useEffect(() => {
     return () => {
@@ -214,8 +233,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
       <MapContainer 
         style={{ height: '100%', width: '100%' }}
         zoom={11}
+        center={mapCenter}
         zoomControl={false}
-        whenReady={(map: any) => {
+        whenReady={(map) => {
           // Set up user interaction tracking
           map.target.on('zoomstart', () => setIsUserInteracting(true));
           map.target.on('zoomend', () => {
@@ -223,13 +243,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
           });
           
           // Capture all user interactions to prevent zoom resets
-          map.target.on('dragend', () => map.target._lastInteraction = Date.now());
-          map.target.on('zoomend', () => map.target._lastInteraction = Date.now());
+          map.target.on('dragend', () => {
+            map.target._lastInteraction = Date.now();
+          });
+          map.target.on('zoomend', () => {
+            map.target._lastInteraction = Date.now();
+          });
         }}
         key={mapId}
       >
         <ZoomControl position="topright" />
-        <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
         <SetViewOnChange coordinates={allCoordinates} />
         
         <TileLayer
@@ -246,6 +269,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             color="#6366F1"
             fitBounds={false} // Prevent RoutingMachine from resetting the view bounds
             forceUpdate={forceRouteUpdate} // Force route update after load confirmation
+            onRouteFound={handleRouteFound}
           />
         )}
         

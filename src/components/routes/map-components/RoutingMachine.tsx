@@ -9,13 +9,15 @@ interface RoutingMachineProps {
   color?: string;
   fitBounds?: boolean;
   forceUpdate?: boolean;
+  onRouteFound?: (distance: number, duration: number) => void;
 }
 
 export const RoutingMachine: React.FC<RoutingMachineProps> = ({ 
   waypoints, 
   color = '#6366F1',
   fitBounds = true,
-  forceUpdate = false
+  forceUpdate = false,
+  onRouteFound
 }) => {
   const map = useMap();
   const routingControlRef = useRef<L.Routing.Control | null>(null);
@@ -36,6 +38,11 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
       routingControlRef.current = null;
     }
 
+    // Reset initialization state if force update is requested
+    if (forceUpdate) {
+      isInitializedRef.current = false;
+    }
+
     try {
       // Override the _zoomToRoute function to prevent automatic zooming
       const originalZoomToRoute = L.Routing.Plan.prototype._zoomToRoute;
@@ -46,9 +53,20 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         }
       };
 
+      // Create valid waypoints for the router
+      const validWaypoints = waypoints
+        .filter(wp => wp[0] !== 0 && wp[1] !== 0)
+        .map(wp => L.latLng(wp[0], wp[1]));
+
+      // Only proceed if we have at least 2 valid waypoints
+      if (validWaypoints.length < 2) {
+        console.warn("Not enough valid waypoints for routing");
+        return;
+      }
+
       // Create routing control with real-time traffic consideration
       const routingControl = L.Routing.control({
-        waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
+        waypoints: validWaypoints,
         routeWhileDragging: false,
         showAlternatives: true, // Show alternative routes
         addWaypoints: false, // Prevent adding new waypoints by clicking
@@ -82,11 +100,6 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         })
       }).addTo(map);
 
-      // Force routes to be visible even after load confirmation
-      if (forceUpdate) {
-        isInitializedRef.current = false;
-      }
-
       // Disable the fitSelectedRoutes feature after initial setup
       routingControl.options.fitSelectedRoutes = false;
 
@@ -102,10 +115,19 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         // Get the fastest route (usually the first one)
         if (e.routes && e.routes.length > 0) {
-          // Calculate the traffic factor based on actual vs expected time
+          // Extract route data
           const route = e.routes[0];
+          const totalDistance = route.summary.totalDistance / 1000; // Convert to km
+          const totalDuration = Math.round(route.summary.totalTime / 60); // Convert to minutes
+          
+          // Calculate the traffic factor based on actual vs expected time
           const trafficFactor = route.summary.totalTime / route.summary.totalDistance;
           console.log(`Traffic factor: ${trafficFactor}`);
+          
+          // Call the callback with route data if provided
+          if (onRouteFound) {
+            onRouteFound(totalDistance, totalDuration);
+          }
         }
         
         // Short timeout to let the routes render before resetting the view if needed
@@ -137,7 +159,7 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         routingControlRef.current = null;
       }
     };
-  }, [waypoints, map, color, fitBounds, forceUpdate]); // Added forceUpdate to dependencies
+  }, [waypoints, map, color, fitBounds, forceUpdate, onRouteFound]);
 
   return null;
 };
