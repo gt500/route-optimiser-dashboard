@@ -14,15 +14,15 @@ interface LocationCardProps {
 
 const LocationCard: React.FC<LocationCardProps> = ({ location, onEdit, onDelete }) => {
   return (
-    <Card key={location.id} className="hover:shadow-md transition-shadow bg-black">
+    <Card key={location.id} className="hover:shadow-md transition-shadow bg-white">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{location.name}</CardTitle>
+          <CardTitle className="text-lg text-black">{location.name}</CardTitle>
           <Badge variant={location.type === 'Storage' ? "secondary" : "outline"}>
             {location.type || 'Customer'}
           </Badge>
         </div>
-        <CardDescription className="flex items-center gap-1">
+        <CardDescription className="flex items-center gap-1 text-gray-600">
           <MapPin className="h-3 w-3" /> 
           {location.address}
         </CardDescription>
@@ -31,12 +31,12 @@ const LocationCard: React.FC<LocationCardProps> = ({ location, onEdit, onDelete 
         <div className="flex justify-between items-center">
           <div className="space-y-1">
             {location.type === 'Storage' && (
-              <p className="text-sm text-white">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
+              <p className="text-sm text-black">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
             )}
             {location.type === 'Customer' && (
-              <p className="text-sm text-white">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
+              <p className="text-sm text-black">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500">
               Hours: {location.open_time || '08:00'} - {location.close_time || '17:00'}
             </p>
           </div>

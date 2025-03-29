@@ -10,9 +10,9 @@ interface LocationMapProps {
 
 const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
   return (
-    <Card className="bg-black">
+    <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Map View</CardTitle>
+        <CardTitle className="text-black">Map View</CardTitle>
         <CardDescription>Visual overview of all locations</CardDescription>
       </CardHeader>
       <CardContent>

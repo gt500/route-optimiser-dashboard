@@ -1,4 +1,6 @@
 
+import { Icon, DivIcon } from 'leaflet';
+
 export interface LocationType {
   id: string;
   name: string;
@@ -41,7 +43,7 @@ export interface SupabaseLocation {
 export interface LeafletComponentProps {
   position: [number, number];
   children?: React.ReactNode;
-  icon?: L.Icon | L.DivIcon;
+  icon?: Icon | DivIcon;
   eventHandlers?: {
     click?: () => void;
     [key: string]: (() => void) | undefined;
