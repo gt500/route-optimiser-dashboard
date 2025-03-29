@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { createLocationIcon } from './Icons';
+import { createIcon, createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
   id: string;
@@ -46,13 +46,14 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   return (
     <Marker 
       position={position}
+      icon={markerIcon}
       eventHandlers={eventHandlers}
     >
       <Popup>
         <div className="p-2">
           <div className="font-medium">{name}</div>
           {index !== undefined && (
-            <div className="text-xs bg-primary/10 px-2 py-1 rounded-sm text-primary-foreground/90 mt-1 inline-block">
+            <div className="text-xs bg-primary/10 px-2 py-1 rounded-sm text-primary mt-1 inline-block">
               Stop #{index}
             </div>
           )}

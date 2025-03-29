@@ -37,9 +37,13 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
       }
       
       try {
-        // Use the L.Routing global
+        // Use the L.Routing global with proper road-following settings
         routingControl = L.Routing.control({
           waypoints: waypoints,
+          router: L.Routing.osrm({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: 'driving'
+          }),
           lineOptions: {
             styles: [{ color: '#6366F1', weight: 4, opacity: 0.7 }],
             extendToWaypoints: true,
@@ -49,9 +53,11 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
           addWaypoints: false,
           draggableWaypoints: false,
           fitSelectedRoutes: false,
-          showAlternatives: false
+          showAlternatives: false,
+          show: false // Hide the instruction panel
         }).addTo(map);
         
+        // Hide the routing control UI but show the route path
         routingControl.hide();
         
         // Extract route information when a route is found

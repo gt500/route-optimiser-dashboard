@@ -37,9 +37,9 @@ const LocationTabs: React.FC<LocationTabsProps> = ({
       <TabsContent value="all" className="space-y-4">
         <LocationMap locations={filteredLocations} />
         
-        <Card className="bg-black">
+        <Card className="bg-white">
           <CardHeader>
-            <CardTitle>All Locations ({filteredLocations.length})</CardTitle>
+            <CardTitle className="text-black">All Locations ({filteredLocations.length})</CardTitle>
             <CardDescription>
               View and manage all your delivery and storage locations
             </CardDescription>
@@ -53,9 +53,9 @@ const LocationTabs: React.FC<LocationTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="customers" className="space-y-4">
-        <Card className="bg-black">
+        <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Customer Locations</CardTitle>
+            <CardTitle className="text-black">Customer Locations</CardTitle>
             <CardDescription>All customer delivery locations</CardDescription>
           </CardHeader>
           <LocationGrid 
@@ -67,9 +67,9 @@ const LocationTabs: React.FC<LocationTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="storage" className="space-y-4">
-        <Card className="bg-black">
+        <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Storage Locations</CardTitle>
+            <CardTitle className="text-black">Storage Locations</CardTitle>
             <CardDescription>All storage and depot locations</CardDescription>
           </CardHeader>
           <LocationGrid 
