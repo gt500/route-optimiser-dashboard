@@ -29,7 +29,10 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   });
 
   return (
-    <Marker position={position} icon={icon}>
+    <Marker 
+      position={position} 
+      icon={icon as L.Icon}
+    >
       <Popup>
         <div className="text-sm">
           <strong>{isStart ? 'Start: ' : isEnd ? 'End: ' : ''}{name}</strong>

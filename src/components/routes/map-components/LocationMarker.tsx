@@ -47,7 +47,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   return (
     <Marker 
       position={position}
-      icon={getCustomIcon()}
+      icon={getCustomIcon() as L.Icon}
       eventHandlers={{
         click: handleMarkerClick
       }}
