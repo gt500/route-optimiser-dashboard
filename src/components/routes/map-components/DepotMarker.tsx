@@ -23,7 +23,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
   return (
     <Marker 
       position={position} 
-      icon={WarehouseIcon as any}
+      icon={WarehouseIcon}
     >
       <Popup>
         <div>

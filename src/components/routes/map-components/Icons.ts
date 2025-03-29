@@ -23,7 +23,7 @@ export const locationIcon = new L.Icon({
   popupAnchor: [0, -25],
 });
 
-// Add missing icons
+// Customer location icon
 export const CustomerIcon = new L.Icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484167.png',
   iconSize: [25, 25],
@@ -31,6 +31,7 @@ export const CustomerIcon = new L.Icon({
   popupAnchor: [0, -25],
 });
 
+// Warehouse/depot icon
 export const WarehouseIcon = new L.Icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/1479/1479733.png',
   iconSize: [30, 30],

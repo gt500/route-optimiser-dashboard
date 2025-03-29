@@ -154,7 +154,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        zoom={11}
         scrollWheelZoom={true}
       >
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />

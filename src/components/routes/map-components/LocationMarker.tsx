@@ -25,7 +25,7 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
   return (
     <Marker 
       position={position} 
-      icon={CustomerIcon as any}
+      icon={CustomerIcon}
       eventHandlers={{
         click: () => {
           if (onLocationClick) {
