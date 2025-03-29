@@ -2,7 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { locationIcon, createIcon, createLocationIcon } from './Icons';
+import { createIcon, createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
   id: string;
@@ -24,7 +24,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   // Create a custom icon based on the index
   const iconWithIndex = index !== undefined 
     ? createIcon(createLocationIcon({ label: index }), [28, 28])
-    : locationIcon;
+    : createIcon(createLocationIcon({}), [28, 28]);
   
   const eventHandlers = onClick ? {
     click: onClick
@@ -34,7 +34,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      icon={iconWithIndex as any}
+      icon={iconWithIndex}
     >
       <Popup>
         <div className="p-2">

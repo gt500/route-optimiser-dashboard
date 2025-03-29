@@ -32,14 +32,14 @@ const RouteEndpoints = ({
   const allLocations = availableLocations;
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm bg-black">
       <CardHeader>
-        <CardTitle className="text-base">Route Endpoints</CardTitle>
-        <CardDescription>Set your starting and ending locations</CardDescription>
+        <CardTitle className="text-base text-white">Route Endpoints</CardTitle>
+        <CardDescription className="text-gray-300">Set your starting and ending locations</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="start-location">Start Location</Label>
+          <Label htmlFor="start-location" className="text-white">Start Location</Label>
           <Select
             value={startLocation?.id.toString() || ""}
             onValueChange={onStartLocationChange}
@@ -58,11 +58,11 @@ const RouteEndpoints = ({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">Select a warehouse or depot as your starting point</p>
+          <p className="text-xs text-gray-300">Select a warehouse or depot as your starting point</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="end-location">End Location</Label>
+          <Label htmlFor="end-location" className="text-white">End Location</Label>
           <Select
             value={endLocation?.id.toString() || ""}
             onValueChange={onEndLocationChange}
@@ -81,7 +81,7 @@ const RouteEndpoints = ({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">Choose where your route will end</p>
+          <p className="text-xs text-gray-300">Choose where your route will end</p>
         </div>
       </CardContent>
     </Card>

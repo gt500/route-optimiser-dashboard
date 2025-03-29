@@ -57,6 +57,20 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
     toast.success(`Location "${updatedLocation.name}" updated successfully`);
   };
   
+  // Debug logging
+  useEffect(() => {
+    console.log("LocationSelector - Available locations:", availableLocations);
+    console.log("LocationSelector - Selected location:", selectedLocation);
+  }, [availableLocations, selectedLocation]);
+
+  // Handle dropdown selection properly
+  const handleLocationSelect = (value: string) => {
+    console.log("Location selected with ID:", value);
+    const location = availableLocations.find(loc => loc.id.toString() === value);
+    console.log("Found location:", location);
+    setSelectedLocation(location || null);
+  };
+  
   return (
     <>
       <Card className="shadow-sm bg-black">
@@ -97,10 +111,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
             {viewMode === 'dropdown' ? (
               <Select
                 value={selectedLocation ? selectedLocation.id.toString() : ''}
-                onValueChange={(value) => {
-                  const location = availableLocations.find(l => l.id.toString() === value);
-                  setSelectedLocation(location || null);
-                }}
+                onValueChange={handleLocationSelect}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a location" />
@@ -134,6 +145,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
               <RadioGroup 
                 value={selectedLocation ? selectedLocation.id.toString() : ''} 
                 onValueChange={(value) => {
+                  console.log("Radio selection changed:", value);
                   const location = availableLocations.find(l => l.id.toString() === value);
                   setSelectedLocation(location || null);
                 }}
@@ -148,11 +160,10 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                         value={location.id.toString()} 
                         id={`location-${location.id}`} 
                         className="cursor-pointer"
-                        onClick={() => setSelectedLocation(location)}
                       />
                       <Label htmlFor={`location-${location.id}`} className="flex-1 cursor-pointer">
-                        <div className="font-medium">{location.name}</div>
-                        <div className="text-xs text-muted-foreground">{location.address}</div>
+                        <div className="font-medium text-white">{location.name}</div>
+                        <div className="text-xs text-gray-300">{location.address}</div>
                       </Label>
                       <Button 
                         variant="ghost" 
