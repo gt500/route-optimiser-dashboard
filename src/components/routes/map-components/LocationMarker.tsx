@@ -15,7 +15,8 @@ export interface LocationMarkerProps {
 const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, address, index }) => {
   const popupRef = React.useRef<L.Popup>(null);
   
-  if (position.some(coord => isNaN(coord) || coord === 0)) {
+  // Enhanced validation for position coordinates
+  if (!position || position.length !== 2 || position.some(coord => isNaN(coord) || coord === 0)) {
     console.warn(`Skipping marker for ${name} due to invalid coordinates:`, position);
     return null;
   }

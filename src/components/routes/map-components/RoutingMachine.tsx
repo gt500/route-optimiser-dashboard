@@ -37,12 +37,23 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
       }
       
       try {
-        // Ensure all waypoints are valid LatLng objects
-        const validWaypoints = waypoints.filter(wp => 
-          wp && wp.lat !== undefined && wp.lng !== undefined && 
-          !isNaN(wp.lat) && !isNaN(wp.lng) && 
-          wp.lat !== 0 && wp.lng !== 0
-        );
+        // Ensure all waypoints are valid LatLng objects with extra validation
+        const validWaypoints = waypoints.filter(wp => {
+          // Extra checks to ensure valid latitude and longitude
+          if (!wp || typeof wp.lat !== 'function' || typeof wp.lng !== 'function') {
+            return false;
+          }
+          
+          const lat = wp.lat();
+          const lng = wp.lng();
+          
+          return (
+            lat !== undefined && lng !== undefined &&
+            !isNaN(lat) && !isNaN(lng) && 
+            lat !== 0 && lng !== 0 &&
+            Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+          );
+        });
         
         if (validWaypoints.length < 2) {
           console.log("Not enough valid waypoints to create route:", validWaypoints);
