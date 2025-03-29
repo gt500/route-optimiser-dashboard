@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,10 +64,8 @@ const Locations: React.FC = () => {
 
       if (data) {
         const mappedLocations = data.map(item => {
-          // Determine the type based on the location name or use existing type
           let locationType = item.type || 'Customer';
           
-          // Specifically set Epping Depot as Storage if no type is set
           if (!item.type) {
             if (item.name?.toLowerCase().includes('epping') && item.name?.toLowerCase().includes('depot')) {
               locationType = 'Storage';
@@ -124,7 +121,6 @@ const Locations: React.FC = () => {
   const handleSaveLocation = async (location: any) => {
     console.log('Saving location:', location);
     try {
-      // Construct the data object with the correct field names for the database
       const locationData = {
         name: location.name,
         address: location.address,
@@ -138,7 +134,6 @@ const Locations: React.FC = () => {
       console.log('Location data to save:', locationData);
       
       if (location.id) {
-        // It's an edit
         const { data, error } = await supabase
           .from('locations')
           .update(locationData)
@@ -152,7 +147,6 @@ const Locations: React.FC = () => {
         
         console.log('Updated location:', data);
         
-        // Update local state
         setLocations(prev => 
           prev.map(loc => loc.id === location.id ? {
             ...loc,
@@ -167,7 +161,6 @@ const Locations: React.FC = () => {
         );
         toast.success(`Location "${location.name}" updated`);
       } else {
-        // It's a new location
         const newLocationId = crypto.randomUUID();
         
         const { data, error } = await supabase
@@ -185,7 +178,6 @@ const Locations: React.FC = () => {
         
         console.log('Created new location:', data);
         
-        // Add to local state
         const newLocation: LocationInfo = {
           id: newLocationId,
           name: location.name,
@@ -203,12 +195,8 @@ const Locations: React.FC = () => {
         toast.success(`Location "${location.name}" created`);
       }
       
-      // Close the dialog after a delay to ensure state is updated
-      setTimeout(() => {
-        setIsEditDialogOpen(false);
-        setEditLocation(null);
-      }, 100);
-      
+      setIsEditDialogOpen(false);
+      setEditLocation(null);
     } catch (error) {
       console.error('Error saving location:', error);
       toast.error('Failed to save location');
@@ -231,7 +219,6 @@ const Locations: React.FC = () => {
       
       if (error) throw error;
       
-      // Remove from local state
       setLocations(prev => prev.filter(location => location.id !== locationToDelete));
       toast.success('Location permanently deleted');
     } catch (error) {
@@ -292,7 +279,7 @@ const Locations: React.FC = () => {
         </TabsList>
         
         <TabsContent value="all" className="space-y-4">
-          <Card>
+          <Card className="bg-black">
             <CardHeader>
               <CardTitle>Map View</CardTitle>
               <CardDescription>Visual overview of all locations</CardDescription>
@@ -313,7 +300,7 @@ const Locations: React.FC = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-black">
             <CardHeader>
               <CardTitle>All Locations ({filteredLocations.length})</CardTitle>
               <CardDescription>
@@ -323,7 +310,7 @@ const Locations: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLocations.map((location) => (
-                  <Card key={location.id} className="hover:shadow-md transition-shadow">
+                  <Card key={location.id} className="hover:shadow-md transition-shadow bg-black">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-lg">{location.name}</CardTitle>
@@ -340,10 +327,10 @@ const Locations: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <div className="space-y-1">
                           {location.type === 'Storage' && (
-                            <p className="text-sm">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
+                            <p className="text-sm text-white">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
                           )}
                           {location.type === 'Customer' && (
-                            <p className="text-sm">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
+                            <p className="text-sm text-white">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
                           )}
                           <p className="text-xs text-muted-foreground">
                             Hours: {location.open_time || '08:00'} - {location.close_time || '17:00'}
@@ -367,15 +354,15 @@ const Locations: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="customers" className="space-y-4">
-          <Card>
+          <Card className="bg-black">
             <CardHeader>
               <CardTitle>Customer Locations</CardTitle>
               <CardDescription>All customer delivery locations</CardDescription>
             </CardHeader>
-            <CardContent className="bg-black p-4 rounded-md">
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLocations.map((location) => (
-                  <Card key={location.id} className="hover:shadow-md transition-shadow">
+                  <Card key={location.id} className="hover:shadow-md transition-shadow bg-black">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{location.name}</CardTitle>
                       <CardDescription className="flex items-center gap-1">
@@ -386,7 +373,7 @@ const Locations: React.FC = () => {
                     <CardContent>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-sm">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
+                          <p className="text-sm text-white">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
                         </div>
                         <div className="flex gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>
@@ -406,7 +393,7 @@ const Locations: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="storage" className="space-y-4">
-          <Card>
+          <Card className="bg-black">
             <CardHeader>
               <CardTitle>Storage Locations</CardTitle>
               <CardDescription>All storage and depot locations</CardDescription>
@@ -414,7 +401,7 @@ const Locations: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLocations.map((location) => (
-                  <Card key={location.id} className="hover:shadow-md transition-shadow">
+                  <Card key={location.id} className="hover:shadow-md transition-shadow bg-black">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{location.name}</CardTitle>
                       <CardDescription className="flex items-center gap-1">
@@ -425,7 +412,7 @@ const Locations: React.FC = () => {
                     <CardContent>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-sm">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
+                          <p className="text-sm text-white">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
                         </div>
                         <div className="flex gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>
@@ -457,7 +444,9 @@ const Locations: React.FC = () => {
           type: editLocation.type || 'Customer',
           fullCylinders: editLocation.fullCylinders,
           emptyCylinders: editLocation.emptyCylinders,
-          isWarehouse: editLocation.type === 'Storage'
+          isWarehouse: editLocation.type === 'Storage',
+          open_time: editLocation.open_time,
+          close_time: editLocation.close_time
         } : null}
         onSave={handleSaveLocation}
       />

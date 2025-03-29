@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,10 +44,11 @@ const RouteDetails = ({
   const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   
-  // Debug logging for route locations
+  // Debug logging for route locations and available locations
   useEffect(() => {
     console.log("RouteDetails - Current route locations:", route.locations);
-  }, [route.locations]);
+    console.log("RouteDetails - Available locations:", route.availableLocations);
+  }, [route.locations, route.availableLocations]);
   
   // Update local state when route data changes
   useEffect(() => {
@@ -238,11 +240,15 @@ const RouteDetails = ({
                         <SelectValue placeholder="Select a location" />
                       </SelectTrigger>
                       <SelectContent>
-                        {route.availableLocations && route.availableLocations.map((loc) => (
-                          <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
-                            {loc.name}
-                          </SelectItem>
-                        ))}
+                        {route.availableLocations && route.availableLocations.length > 0 ? (
+                          route.availableLocations.map((loc) => (
+                            <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
+                              {loc.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>No locations available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <Button 

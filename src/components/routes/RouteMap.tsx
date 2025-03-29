@@ -148,7 +148,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   return (
     <MapContainer
-      ref={handleMapInit}
+      ref={(ref) => {
+        if (ref) handleMapInit(ref);
+      }}
       center={mapCenter}
       zoom={zoom}
       style={{ height, width: '100%' }}

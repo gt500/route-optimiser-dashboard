@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, MarkerProps } from 'react-leaflet';
 import L from 'leaflet';
 import { createIcon, createLocationIcon } from './Icons';
 
@@ -26,10 +26,11 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
     iconAnchor: [14, 14] as L.PointExpression
   });
   
+  // Use the correct props for the Marker component
   return (
     <Marker 
       position={position}
-      icon={markerIcon as any} // Type cast to any to resolve the type error
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">
