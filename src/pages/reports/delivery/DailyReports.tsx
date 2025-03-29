@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
@@ -15,8 +15,9 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-// Sample data for daily deliveries
+// Sample data for daily deliveries (will be replaced with real data from Supabase)
 const sampleDeliveries = [
   { id: 1, siteName: 'Afrox Epping Depot', cylinders: 12, kms: 15.3, fuelCost: 24.50, date: '2023-07-10' },
   { id: 2, siteName: 'Food Lovers Sunningdale', cylinders: 8, kms: 8.7, fuelCost: 14.10, date: '2023-07-10' },
@@ -34,10 +35,14 @@ const DailyReports = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadConfirmed, setIsLoadConfirmed] = useState(false);
+  const [deliveries, setDeliveries] = useState(sampleDeliveries);
+
+  useEffect(() => {
+    fetchDeliveryData();
+  }, [date]);
 
   const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
-  const filteredDeliveries = sampleDeliveries.filter(
+  const filteredDeliveries = deliveries.filter(
     delivery => delivery.date === formattedDate
   );
 
@@ -46,12 +51,40 @@ const DailyReports = () => {
   const totalKms = filteredDeliveries.reduce((sum, delivery) => sum + delivery.kms, 0);
   const totalFuelCost = filteredDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
 
-  const handleRefresh = () => {
+  const fetchDeliveryData = async () => {
+    // In a real implementation, we would fetch data from Supabase
     setIsLoading(true);
+    
     // Simulate data loading
     setTimeout(() => {
       setIsLoading(false);
     }, 800);
+    
+    // Example of how we would fetch from Supabase
+    // const { data, error } = await supabase
+    //   .from('routes')
+    //   .select('*, deliveries(*)')
+    //   .eq('date', formattedDate);
+    
+    // if (data) {
+    //   // Transform data to match our expected format
+    //   const transformedData = data.flatMap(route => 
+    //     route.deliveries.map(delivery => ({
+    //       id: delivery.id,
+    //       siteName: delivery.location_name,
+    //       cylinders: delivery.cylinders,
+    //       kms: route.total_distance / route.deliveries.length,
+    //       fuelCost: route.estimated_cost / route.deliveries.length,
+    //       date: route.date
+    //     }))
+    //   );
+    //   setDeliveries(transformedData);
+    // }
+  };
+
+  const handleRefresh = () => {
+    setIsLoading(true);
+    fetchDeliveryData();
   };
 
   const handleTabChange = (value: string) => {
@@ -68,16 +101,6 @@ const DailyReports = () => {
       default:
         break;
     }
-  };
-
-  const confirmLoad = () => {
-    setIsLoadConfirmed(true);
-    toast.success('Load confirmed successfully', {
-      description: `Delivery data for ${formattedDate} has been stored.`
-    });
-    
-    // In a real implementation, this would save the data to Supabase or other backend
-    // Example: supabase.from('deliveries').insert([...filteredDeliveries])
   };
 
   return (
@@ -114,14 +137,6 @@ const DailyReports = () => {
                   </>
                 )}
               </Button>
-              <Button 
-                onClick={confirmLoad} 
-                className="w-full bg-green-500 hover:bg-green-600" 
-                disabled={isLoadConfirmed || filteredDeliveries.length === 0}
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" /> 
-                {isLoadConfirmed ? 'Load Confirmed' : 'Confirm Load'}
-              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full">
@@ -147,40 +162,32 @@ const DailyReports = () => {
           </CardHeader>
           <CardContent>
             {filteredDeliveries.length > 0 ? (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Site Name</TableHead>
-                      <TableHead>Cylinders</TableHead>
-                      <TableHead>Distance (km)</TableHead>
-                      <TableHead>Fuel Cost</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Site Name</TableHead>
+                    <TableHead>Cylinders</TableHead>
+                    <TableHead>Distance (km)</TableHead>
+                    <TableHead>Fuel Cost</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDeliveries.map((delivery) => (
+                    <TableRow key={delivery.id}>
+                      <TableCell>{delivery.siteName}</TableCell>
+                      <TableCell>{delivery.cylinders}</TableCell>
+                      <TableCell>{delivery.kms.toFixed(1)}</TableCell>
+                      <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDeliveries.map((delivery) => (
-                      <TableRow key={delivery.id}>
-                        <TableCell>{delivery.siteName}</TableCell>
-                        <TableCell>{delivery.cylinders}</TableCell>
-                        <TableCell>{delivery.kms.toFixed(1)}</TableCell>
-                        <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="font-bold">
-                      <TableCell>TOTALS</TableCell>
-                      <TableCell>{totalCylinders}</TableCell>
-                      <TableCell>{totalKms.toFixed(1)}</TableCell>
-                      <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-                {isLoadConfirmed && (
-                  <div className="mt-4 p-2 bg-green-100 text-green-800 rounded-md flex items-center">
-                    <CheckCircle2 className="mr-2 h-5 w-5" /> 
-                    Load confirmed and saved for this date
-                  </div>
-                )}
-              </>
+                  ))}
+                  <TableRow className="font-bold">
+                    <TableCell>TOTALS</TableCell>
+                    <TableCell>{totalCylinders}</TableCell>
+                    <TableCell>{totalKms.toFixed(1)}</TableCell>
+                    <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             ) : (
               <div className="flex items-center justify-center h-64">
                 <p className="text-muted-foreground">No deliveries found for this date.</p>

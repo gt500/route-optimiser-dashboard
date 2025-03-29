@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, TruckIcon, AlertCircle, MapPin } from 'lucide-react';
+import { Plus, TruckIcon, AlertCircle, MapPin, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
@@ -17,6 +17,7 @@ const Routes = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
+  const [isLoadConfirmed, setIsLoadConfirmed] = useState(false);
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
     { id: 1, name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -377,6 +378,68 @@ const Routes = () => {
     });
   };
 
+  const confirmLoad = async () => {
+    if (route.locations.length < 2) {
+      toast.error("Cannot confirm load with insufficient stops");
+      return;
+    }
+
+    try {
+      const routeId = crypto.randomUUID();
+      
+      const routeData = {
+        id: routeId,
+        name: `Route ${new Date().toLocaleDateString()}`,
+        date: new Date().toISOString(),
+        status: 'confirmed',
+        total_distance: route.distance,
+        total_duration: route.estimatedDuration,
+        total_cylinders: route.cylinders,
+        estimated_cost: route.fuelCost
+      };
+      
+      const { data: routeInsert, error: routeError } = await supabase
+        .from('routes')
+        .insert(routeData)
+        .select('id')
+        .single();
+      
+      if (routeError) {
+        console.error('Error saving route:', routeError);
+        toast.error("Failed to confirm load");
+        return;
+      }
+      
+      if (routeInsert) {
+        const deliveries = route.locations.map((location, index) => ({
+          id: crypto.randomUUID(),
+          route_id: routeInsert.id,
+          location_id: location.id.toString(),
+          cylinders: location.emptyCylinders || 0,
+          sequence: index
+        }));
+        
+        const { error: deliveryError } = await supabase
+          .from('deliveries')
+          .insert(deliveries);
+        
+        if (deliveryError) {
+          console.error('Error saving deliveries:', deliveryError);
+          toast.error("Failed to save delivery details");
+          return;
+        }
+      }
+      
+      setIsLoadConfirmed(true);
+      toast.success("Load confirmed successfully", {
+        description: `Delivery data for ${new Date().toLocaleDateString()} has been stored.`
+      });
+    } catch (error) {
+      console.error("Error confirming load:", error);
+      toast.error("An error occurred while confirming the load");
+    }
+  };
+
   const filteredAvailableLocations = React.useMemo(() => {
     return availableLocations.filter(loc => 
       loc.id !== startLocation?.id && 
@@ -464,6 +527,24 @@ const Routes = () => {
                     onAddNewLocation={handleAddNewLocationFromPopover}
                     onFuelCostUpdate={handleFuelCostUpdate}
                   />
+                  
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={confirmLoad} 
+                      className="bg-green-500 hover:bg-green-600" 
+                      disabled={isLoadConfirmed || route.locations.length < 2}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" /> 
+                      {isLoadConfirmed ? 'Load Confirmed' : 'Confirm Load'}
+                    </Button>
+                  </div>
+                  
+                  {isLoadConfirmed && (
+                    <div className="mt-2 p-2 bg-green-100 text-green-800 rounded-md flex items-center">
+                      <CheckCircle2 className="mr-2 h-5 w-5" /> 
+                      Load confirmed and saved for this date
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
