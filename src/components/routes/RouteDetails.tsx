@@ -44,6 +44,11 @@ const RouteDetails = ({
   const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   
+  // Debug logging for route locations
+  useEffect(() => {
+    console.log("RouteDetails - Current route locations:", route.locations);
+  }, [route.locations]);
+  
   // Update local state when route data changes
   useEffect(() => {
     if (route.distance > 0) {
@@ -122,6 +127,7 @@ const RouteDetails = ({
   const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
   const handleLocationChange = (locationId: string) => {
+    console.log("Selected location ID to add:", locationId);
     setSelectedLocationId(locationId);
   };
   
@@ -134,6 +140,8 @@ const RouteDetails = ({
       setAddLocationOpen(false);
       setSelectedLocationId("");
       toast.success("Location added to route");
+    } else {
+      toast.error("Please select a location first");
     }
   };
   
@@ -234,7 +242,7 @@ const RouteDetails = ({
                       </SelectTrigger>
                       <SelectContent>
                         {route.availableLocations && route.availableLocations.map((loc) => (
-                          <SelectItem key={loc.id} value={loc.id.toString()}>
+                          <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
                             {loc.name}
                           </SelectItem>
                         ))}
@@ -255,7 +263,7 @@ const RouteDetails = ({
         </div>
         
         <div className="space-y-3">
-          {route.locations.length > 0 ? (
+          {route.locations && route.locations.length > 0 ? (
             route.locations.map((location, index) => (
               <div 
                 key={`route-stop-${index}-${location.id}`}
@@ -277,7 +285,10 @@ const RouteDetails = ({
                       variant="ghost" 
                       size="icon" 
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveLocation(index)}
+                      onClick={() => {
+                        console.log("Removing location at index:", index);
+                        onRemoveLocation(index);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

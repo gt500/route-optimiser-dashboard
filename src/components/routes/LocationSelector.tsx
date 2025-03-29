@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Edit, Pencil, Search } from 'lucide-react';
+import { Plus, Pencil, Search } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; 
@@ -153,7 +153,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                   {filteredLocations.map((location) => (
                     <div 
-                      key={location.id}
+                      key={location.id.toString()}
                       className="flex items-center space-x-2 border rounded-md p-3 bg-secondary/20 hover:bg-secondary/40 transition-colors"
                     >
                       <RadioGroupItem 
