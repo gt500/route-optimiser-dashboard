@@ -37,7 +37,7 @@ const locationIcon = new L.Icon({
 });
 
 // Map bounds control component
-const SetViewOnChange = ({ coordinates }) => {
+const SetViewOnChange = ({ coordinates }: { coordinates: Array<[number, number]> }) => {
   const map = useMap();
   
   useEffect(() => {
@@ -51,7 +51,7 @@ const SetViewOnChange = ({ coordinates }) => {
 };
 
 // Routing control component
-const RoutingMachine = ({ waypoints }) => {
+const RoutingMachine = ({ waypoints }: { waypoints: Array<[number, number]> }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -82,10 +82,12 @@ interface RouteMapProps {
   height?: string;
   width?: string;
   locations?: Array<{
-    id: string;
+    id: string | number;
     name: string;
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    long?: number;
     address: string;
   }>;
   routes?: Array<{
@@ -98,10 +100,25 @@ interface RouteMapProps {
   onLocationClick?: (locationId: string) => void;
   onMapClick?: (lat: number, lng: number) => void;
   depot?: {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    long?: number;
     name: string;
   };
+  showRouting?: boolean;
+  startLocation?: {
+    name: string;
+    coords: [number, number];
+  };
+  endLocation?: {
+    name: string;
+    coords: [number, number];
+  };
+  waypoints?: Array<{
+    name: string;
+    coords: [number, number];
+  }>;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -117,14 +134,18 @@ const RouteMap: React.FC<RouteMapProps> = ({
     latitude: -33.9258,
     longitude: 18.4232,
     name: 'Cape Town Depot'
-  }
+  },
+  showRouting = false,
+  startLocation,
+  endLocation,
+  waypoints = []
 }) => {
   // Default center if no locations or depot
   const defaultCenter: [number, number] = [-33.9258, 18.4232]; // Cape Town
   
   // Calculate center based on available data
   const [mapCenter, setMapCenter] = useState<[number, number]>(
-    depot ? [depot.latitude, depot.longitude] : defaultCenter
+    depot ? [depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]] : defaultCenter
   );
   
   // Collect all coordinates for bounds
@@ -132,13 +153,13 @@ const RouteMap: React.FC<RouteMapProps> = ({
   
   // Add depot coordinates
   if (depot) {
-    allCoordinates.push([depot.latitude, depot.longitude]);
+    allCoordinates.push([depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]);
   }
   
   // Add location coordinates
   if (locations && locations.length > 0) {
     locations.forEach(loc => {
-      allCoordinates.push([loc.latitude, loc.longitude]);
+      allCoordinates.push([loc.latitude || loc.lat || 0, loc.longitude || loc.long || 0]);
     });
   }
   
@@ -146,18 +167,31 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const selectedRoute = routes.find(route => route.id === selectedRouteId);
   const routeWaypoints = selectedRoute ? selectedRoute.points : [];
   
-  const handleMapClick = (e: L.LeafletMouseEvent) => {
-    if (isEditable && onMapClick) {
-      onMapClick(e.latlng.lat, e.latlng.lng);
-    }
-  };
+  // Handle routing waypoints
+  const routingWaypoints = showRouting ? [] : routeWaypoints;
 
+  // If explicit routing is requested, use provided waypoints
+  if (showRouting) {
+    if (startLocation) {
+      routingWaypoints.push(startLocation.coords);
+    }
+    
+    waypoints.forEach(wp => {
+      routingWaypoints.push(wp.coords);
+    });
+    
+    if (endLocation) {
+      routingWaypoints.push(endLocation.coords);
+    }
+  }
+  
   return (
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        zoom={13}
-        scrollWheelZoom={true}
+        center={mapCenter}
+        zoom={11}
+        scrollWheelZoom
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -167,14 +201,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {/* Add bounds controller */}
         <SetViewOnChange coordinates={allCoordinates} />
         
-        {/* Add routing if a route is selected */}
-        {selectedRoute && <RoutingMachine waypoints={routeWaypoints} />}
+        {/* Add routing if a route is selected or explicit routing is requested */}
+        {(selectedRoute || (showRouting && routingWaypoints.length >= 2)) && (
+          <RoutingMachine waypoints={routingWaypoints} />
+        )}
         
         {/* Add depot marker */}
         {depot && (
           <Marker 
-            position={[depot.latitude, depot.longitude]} 
-            icon={homeIcon as any}
+            position={[depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]}
+            icon={homeIcon}
           >
             <Popup>
               <div>
@@ -188,12 +224,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {/* Add location markers */}
         {locations.map(location => (
           <Marker 
-            key={location.id}
-            position={[location.latitude, location.longitude]}
-            icon={locationIcon as any}
+            key={location.id.toString()}
+            position={[location.latitude || location.lat || 0, location.longitude || location.long || 0]}
+            icon={locationIcon}
             eventHandlers={{
               click: () => {
-                if (onLocationClick) onLocationClick(location.id);
+                if (onLocationClick) onLocationClick(location.id.toString());
               }
             }}
           >

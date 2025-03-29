@@ -385,6 +385,16 @@ const Routes = () => {
     );
   }, [availableLocations, startLocation, endLocation, route.locations]);
 
+  const transformedLocations = React.useMemo(() => {
+    return route.locations.map(loc => ({
+      id: loc.id.toString(),
+      name: loc.name,
+      latitude: loc.lat,
+      longitude: loc.long,
+      address: loc.address || '',
+    }));
+  }, [route.locations]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -427,20 +437,24 @@ const Routes = () => {
                   <div className="h-[400px]">
                     {route.locations.length > 0 && (
                       <RouteMap 
-                        locations={route.locations}
+                        locations={transformedLocations}
                         showRouting={true}
                         startLocation={route.locations[0] ? { 
                           name: route.locations[0].name, 
-                          coords: [route.locations[0].lat, route.locations[0].long] 
+                          coords: [route.locations[0].lat || 0, route.locations[0].long || 0] 
                         } : undefined}
                         endLocation={route.locations.length > 1 ? { 
                           name: route.locations[route.locations.length - 1].name, 
-                          coords: [route.locations[route.locations.length - 1].lat, route.locations[route.locations.length - 1].long] 
+                          coords: [
+                            route.locations[route.locations.length - 1].lat || 0, 
+                            route.locations[route.locations.length - 1].long || 0
+                          ] 
                         } : undefined}
                         waypoints={route.locations.slice(1, -1).map(loc => ({
                           name: loc.name,
-                          coords: [loc.lat, loc.long]
+                          coords: [loc.lat || 0, loc.long || 0]
                         }))}
+                        height="100%"
                       />
                     )}
                   </div>

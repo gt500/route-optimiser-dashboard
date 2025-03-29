@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,15 @@ const Locations = () => {
     setIsEditDialogOpen(false);
   };
 
+  // Transform locations for the map component
+  const mapLocations = locations.map(loc => ({
+    id: loc.id,
+    name: loc.name,
+    latitude: loc.lat,
+    longitude: loc.long,
+    address: loc.address,
+  }));
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -207,7 +217,10 @@ const Locations = () => {
             </CardHeader>
             <CardContent className="h-[600px]">
               {locations.length > 0 && (
-                <RouteMap locations={locations} />
+                <RouteMap 
+                  locations={locations} 
+                  height="100%" 
+                />
               )}
             </CardContent>
           </Card>
