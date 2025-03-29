@@ -31,8 +31,7 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   return (
     <Marker 
       position={position}
-      // Fix: Use icon property correctly
-      icon={markerIcon}
+      icon={markerIcon as any}
     >
       <Popup>
         <div className="p-2">

@@ -11,7 +11,7 @@ interface LocationMarkerProps {
   index?: number;
   onClick?: () => void;
   type?: 'customer' | 'storage';
-  address?: string; // Add address back as an optional prop
+  address?: string;
 }
 
 const LocationMarker: React.FC<LocationMarkerProps> = ({ 
@@ -26,7 +26,9 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   const eventHandlers = useMemo(
     () => ({
       click: () => {
-        if (onClick) onClick();
+        if (onClick) {
+          onClick();
+        }
       },
     }),
     [onClick]
@@ -35,10 +37,10 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   const iconType = type === 'storage' ? 'storage' : 'customer';
   const iconHtml = createIcon(createLocationIcon({ 
     type: iconType, 
-    label: index !== undefined ? String(index + 1) : undefined 
+    label: index !== undefined ? String(index) : ''
   }), [24, 24]);
-
-  // Create a Leaflet icon
+  
+  // Create a Leaflet icon using useMemo to avoid unnecessary re-renders
   const markerIcon = useMemo(() => {
     return L.divIcon({
       className: 'custom-div-icon',
@@ -46,14 +48,13 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     });
-  }, [iconHtml]);
-
+  }, [iconHtml, index]);
+  
   return (
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      // Fix: Use icon property correctly
-      icon={markerIcon}
+      icon={markerIcon as any}
     >
       <Popup>
         <div className="p-2">

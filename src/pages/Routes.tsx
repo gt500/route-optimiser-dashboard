@@ -719,9 +719,16 @@ const RoutesList = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Route Optimizer</h1>
-          <p className="text-muted-foreground">Create and manage delivery routes in South Africa</p>
+        <div className="flex items-center gap-4">
+          <img 
+            src="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png" 
+            alt="GAZ2GO" 
+            className="h-12 w-auto" 
+          />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Route Optimiser</h1>
+            <p className="text-muted-foreground">Create and manage delivery routes in South Africa</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2" onClick={addNewLocation}>
@@ -785,17 +792,6 @@ const RoutesList = () => {
                         onRouteDataUpdate={handleRouteDataUpdate}
                       />
                     )}
-                  </div>
-                  <div className="bg-primary-foreground p-4">
-                    <pre className="text-xs text-primary overflow-auto max-h-32">
-                      Debug route state: {JSON.stringify({
-                        locationCount: route.locations.length,
-                        startLocationId: startLocation?.id,
-                        endLocationId: endLocation?.id,
-                        firstStopName: route.locations[0]?.name,
-                        availableLocationsCount: route.availableLocations.length
-                      }, null, 2)}
-                    </pre>
                   </div>
                   <RouteDetails 
                     route={route} 

@@ -26,7 +26,7 @@ export function AppHeader() {
       case '/':
         return 'Dashboard';
       case '/routes':
-        return 'Routes';
+        return 'Route Optimiser';
       case '/locations':
         return 'Locations';
       case '/fleet':
@@ -51,11 +51,21 @@ export function AppHeader() {
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   };
 
+  // Show the logo only on the routes page
+  const showLogo = location.pathname === '/routes';
+
   return (
     <header className="h-16 border-b border-border bg-background/95 backdrop-blur-sm flex items-center px-4 sticky top-0 z-30">
       <div className="md:hidden">
         <SidebarTrigger />
       </div>
+      {showLogo && (
+        <img 
+          src="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png" 
+          alt="GAZ2GO" 
+          className="h-8 w-auto mr-3" 
+        />
+      )}
       <div className="font-medium text-xl pl-3">{getPageTitle()}</div>
       <div className="flex-1" />
       <div className="hidden md:flex items-center max-w-sm w-full mr-4">
