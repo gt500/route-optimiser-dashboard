@@ -30,24 +30,22 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   };
 
   // Create a custom icon with the index number if provided
-  const getCustomIcon = () => {
-    const html = createLocationIcon({ 
-      label: index !== undefined ? String(index) : '',
-      type: 'Customer'
-    });
-    
-    return L.divIcon({
-      className: 'custom-div-icon',
-      html: html,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
-  };
+  const customIconHtml = createLocationIcon({ 
+    label: index !== undefined ? String(index) : '',
+    type: 'Customer'
+  });
+  
+  const icon = new L.DivIcon({
+    className: 'custom-div-icon',
+    html: customIconHtml,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
 
   return (
     <Marker 
       position={position}
-      icon={getCustomIcon() as L.Icon}
+      icon={icon}
       eventHandlers={{
         click: handleMarkerClick
       }}

@@ -57,9 +57,14 @@ export const createLocationIcon = (options: LocationIconOptions = {}): string =>
   `;
 };
 
-// Create a Leaflet icon from HTML
-export const createIcon = (html: string, size: [number, number] = [28, 28]): string => {
-  return html;
+// Create a Leaflet icon from HTML - updated to return a proper icon
+export const createIcon = (html: string, size: [number, number] = [28, 28]): L.DivIcon => {
+  return new L.DivIcon({
+    className: 'custom-div-icon',
+    html: html,
+    iconSize: size,
+    iconAnchor: [size[0] / 2, size[1] / 2]
+  });
 };
 
 // Export specific Leaflet icons for direct use
