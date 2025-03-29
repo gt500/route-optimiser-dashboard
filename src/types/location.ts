@@ -39,28 +39,26 @@ export interface SupabaseLocation {
   close_time?: string;
 }
 
-// Define specialized properties for Leaflet components
+// Define prop interfaces for react-leaflet components
 export interface LeafletMarkerProps {
   position: [number, number];
-  icon?: any;
-  eventHandlers?: {
-    click?: () => void;
-    [key: string]: (() => void) | undefined;
-  };
   children?: React.ReactNode;
 }
 
 export interface LeafletMapProps {
-  center?: [number, number];
-  zoom?: number;
-  whenReady?: () => void;
+  children?: React.ReactNode;
   style?: React.CSSProperties;
   className?: string;
-  children?: React.ReactNode;
 }
 
 export interface LeafletTileLayerProps {
   url: string;
-  attribution?: string;
   children?: React.ReactNode;
+}
+
+// Add proper type definitions for default Leaflet props
+export interface LeafletEventHandlerProps {
+  eventHandlers?: {
+    [key: string]: (() => void) | undefined;
+  };
 }

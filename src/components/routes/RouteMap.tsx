@@ -89,9 +89,19 @@ const RouteMap: React.FC<RouteMapProps> = ({
       return center;
     }
 
+    // Filter out any invalid coordinates (NaN values or zeros)
+    const validPoints = points.filter(point => 
+      !isNaN(point[0]) && !isNaN(point[1]) && 
+      point[0] !== 0 && point[1] !== 0
+    );
+    
+    if (validPoints.length === 0) {
+      return center;
+    }
+
     // Calculate the center of all points
-    const lat = points.reduce((sum, point) => sum + point[0], 0) / points.length;
-    const lng = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+    const lat = validPoints.reduce((sum, point) => sum + point[0], 0) / validPoints.length;
+    const lng = validPoints.reduce((sum, point) => sum + point[1], 0) / validPoints.length;
     return [lat, lng] as [number, number];
   };
 
@@ -123,7 +133,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
     // Add intermediate waypoints
     if (waypoints && waypoints.length > 0) {
       waypoints.forEach((wp) => {
-        routeWaypoints.push(L.latLng(wp.coords[0], wp.coords[1]));
+        if (!isNaN(wp.coords[0]) && !isNaN(wp.coords[1]) && 
+            wp.coords[0] !== 0 && wp.coords[1] !== 0) {
+          routeWaypoints.push(L.latLng(wp.coords[0], wp.coords[1]));
+        }
       });
     }
 
@@ -146,10 +159,34 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
   };
 
+  // Extract valid coordinates from locations for SetViewOnChange
+  const allCoordinates = React.useMemo(() => {
+    const coords: [number, number][] = [];
+    
+    if (startLocation) {
+      coords.push(startLocation.coords);
+    }
+    
+    waypoints.forEach(wp => {
+      coords.push(wp.coords);
+    });
+    
+    if (endLocation) {
+      coords.push(endLocation.coords);
+    }
+    
+    locations.forEach(loc => {
+      if (loc.latitude && loc.longitude) {
+        coords.push([loc.latitude, loc.longitude]);
+      }
+    });
+    
+    return coords;
+  }, [startLocation, endLocation, waypoints, locations]);
+
   return (
     <MapContainer
-      ref={handleMapInit as any}
-      zoom={zoom}
+      ref={handleMapInit}
       style={{ height, width: '100%' }}
       className="leaflet-container"
     >
@@ -157,7 +194,11 @@ const RouteMap: React.FC<RouteMapProps> = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      <SetViewOnChange center={mapCenter} />
+      <SetViewOnChange 
+        center={mapCenter} 
+        coordinates={allCoordinates}
+        zoom={zoom}
+      />
 
       {mapReady && showRouting && allWaypoints.length >= 2 && (
         <RoutingMachine

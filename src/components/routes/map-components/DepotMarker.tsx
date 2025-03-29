@@ -23,15 +23,14 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
     return new L.DivIcon({
       className: 'custom-div-icon',
       html: iconHtml as string,
-      iconSize: [28, 28] as L.PointExpression,
-      iconAnchor: [14, 14] as L.PointExpression
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
     });
   }, [iconHtml]);
   
   return (
     <Marker 
-      position={position} 
-      icon={markerIcon}
+      position={position}
     >
       <Popup>
         <div className="p-2">

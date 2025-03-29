@@ -33,20 +33,20 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     return new L.DivIcon({
       className: 'custom-div-icon',
       html: iconHtml,
-      iconSize: [28, 28] as L.PointExpression,
-      iconAnchor: [14, 14] as L.PointExpression
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
     });
   }, [iconHtml]);
   
+  // Use proper event handlers format for react-leaflet
   const eventHandlers = onClick ? {
     click: onClick
-  } : {};
+  } : undefined;
 
   return (
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">
