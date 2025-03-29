@@ -21,11 +21,16 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
     depot.longitude || depot.long || defaultCenter[1]
   ];
   
+  // Create a new instance of the icon to avoid TypeScript issues
+  const warehouseIcon = new L.Icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1479/1479733.png',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30],
+  });
+  
   return (
-    <Marker 
-      position={position} 
-      icon={WarehouseIcon as L.Icon}
-    >
+    <Marker position={position} icon={warehouseIcon}>
       <Popup>
         <div>
           <h3 className="font-medium">{depot.name}</h3>

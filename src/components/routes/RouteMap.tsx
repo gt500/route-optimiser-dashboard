@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, ZoomControl, AttributionControl } from 'react-leaflet';
+import { MapContainer, TileLayer, ZoomControl, useMap, AttributionControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -175,7 +175,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        attributionControl={false}
       >
         <AttributionControl position="bottomright" />
         <ZoomControl position="topright" />

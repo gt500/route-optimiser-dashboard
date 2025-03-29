@@ -24,10 +24,18 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
     location.longitude || location.long || 0
   ];
   
+  // Create a new instance of the icon to avoid TypeScript issues
+  const customerIcon = new L.Icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484167.png',
+    iconSize: [25, 25],
+    iconAnchor: [12, 25],
+    popupAnchor: [0, -25],
+  });
+  
   return (
     <Marker 
       position={position} 
-      icon={CustomerIcon as L.Icon}
+      icon={customerIcon}
       eventHandlers={{
         click: () => {
           if (onLocationClick) {
