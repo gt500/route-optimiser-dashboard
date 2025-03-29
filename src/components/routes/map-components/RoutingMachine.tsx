@@ -35,6 +35,15 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
     }
 
     try {
+      // Override the _zoomToRoute function to prevent automatic zooming
+      const originalZoomToRoute = L.Routing.Plan.prototype._zoomToRoute;
+      L.Routing.Plan.prototype._zoomToRoute = function(...args: any[]) {
+        if (!isInitializedRef.current) {
+          originalZoomToRoute.apply(this, args);
+          isInitializedRef.current = true;
+        }
+      };
+
       const routingControl = L.Routing.control({
         waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
         routeWhileDragging: false,
@@ -46,12 +55,34 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
           extendToWaypoints: true,
           missingRouteTolerance: 0
         },
-        createMarker: function() { return null; } // Disable default markers
+        createMarker: function() { return null; }, // Disable default markers
+        useZoomParameter: false, // Disable automatic zoom changes
+        autoRoute: true, // Calculate routes automatically
+        useHints: false, // Don't use routing hints (can cause issues)
+        show: false // Don't show the routing control panel
       }).addTo(map);
 
-      // Set initialization flag to prevent repeated zooming
-      isInitializedRef.current = true;
+      // Disable the fitSelectedRoutes feature after initial setup
+      routingControl.options.fitSelectedRoutes = false;
+
       routingControlRef.current = routingControl;
+      
+      // Preserve user's zoom level after routing is added
+      const currentZoom = map.getZoom();
+      const currentCenter = map.getCenter();
+      
+      // Listen for the routesfound event
+      routingControl.on('routesfound', () => {
+        // Short timeout to let the routes render before resetting the view if needed
+        setTimeout(() => {
+          if (!isInitializedRef.current) {
+            isInitializedRef.current = true;
+          } else {
+            // Restore the user's view if already initialized
+            map.setView(currentCenter, currentZoom);
+          }
+        }, 100);
+      });
     } catch (err) {
       console.error("Error creating routing control:", err);
     }

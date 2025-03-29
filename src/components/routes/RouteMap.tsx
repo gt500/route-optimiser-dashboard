@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, ZoomControl, useMap, AttributionControl } from 'react-leaflet';
 import L from 'leaflet';
@@ -86,13 +85,20 @@ const MapInitializer: React.FC<{
       map.setView(center, 11);
     }
     
-    // This helps prevent constant zooming issues
-    return () => {
-      map._handlers.forEach(function(handler) {
-        if (handler._zoomAnimated) {
-          handler._zoomAnimated = false;
-        }
-      });
+    // Disable handlers that might interfere with zoom operation
+    map._handlers.forEach(function(handler: any) {
+      if (handler._zoomAnimated) {
+        handler._zoomAnimated = false;
+      }
+    });
+    
+    // Prevent automatic zoom resets
+    const originalFitBounds = map.fitBounds;
+    map.fitBounds = function(...args: any[]) {
+      if (map._loaded && !map._lastInteraction) {
+        return originalFitBounds.apply(this, args);
+      }
+      return map;
     };
   }, [map, center, allCoordinates]);
   
@@ -169,6 +175,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
     sequence: loc.sequence !== undefined ? loc.sequence : index
   }));
 
+  // User interaction tracking
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
+  
   // Cleanup effect for when component unmounts
   useEffect(() => {
     return () => {
@@ -185,6 +194,11 @@ const RouteMap: React.FC<RouteMapProps> = ({
           delete (window as any)._leaflet_map_instances[leafletId];
         }
       });
+      
+      // Remove any remaining event listeners
+      document.querySelectorAll('.leaflet-container').forEach(el => {
+        el.replaceWith(el.cloneNode(true));
+      });
     };
   }, []);
   
@@ -192,8 +206,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
+        zoom={11}
+        zoomControl={false}
+        whenCreated={(mapInstance) => {
+          // Set up user interaction tracking
+          mapInstance.on('zoomstart', () => setIsUserInteracting(true));
+          mapInstance.on('zoomend', () => {
+            setTimeout(() => setIsUserInteracting(false), 200);
+          });
+        }}
       >
-        <AttributionControl position="bottomright" />
         <ZoomControl position="topright" />
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
         
@@ -201,6 +223,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        
+        {/* Position attribution at bottom right and only show one instance */}
+        <AttributionControl position="bottomright" prefix={false} />
         
         {/* Add routing if a route is selected or explicit routing is requested */}
         {(selectedRoute || (showRouting && routingWaypoints.length >= 2)) && (
