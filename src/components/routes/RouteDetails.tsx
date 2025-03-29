@@ -120,12 +120,19 @@ const RouteDetails = ({
   const displayConsumption = calculateFuelConsumption() || route.fuelConsumption;
   const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
+  const handleAddLocation = (locationId: string) => {
+    // Convert string ID to number as the interface expects a number
+    const numericId = parseInt(locationId, 10);
+    onAddNewLocation(numericId);
+    setAddLocationOpen(false);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-black">
           <CardContent className="p-4">
-            <h3 className="text-sm flex items-center gap-2 font-medium mb-2">
+            <h3 className="text-sm flex items-center gap-2 font-medium mb-2 text-white">
               <span>Total Distance</span>
               <HoverCard>
                 <HoverCardTrigger asChild>
@@ -142,7 +149,7 @@ const RouteDetails = ({
                 </HoverCardContent>
               </HoverCard>
             </h3>
-            <div className="text-2xl font-bold">{displayDistance.toFixed(1)} km</div>
+            <div className="text-2xl font-bold text-white">{displayDistance.toFixed(1)} km</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
               <span>Estimated travel time: {displayDuration} min</span>
@@ -155,41 +162,41 @@ const RouteDetails = ({
           </CardContent>
         </Card>
         
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-black">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Fuel Consumption</h3>
-            <div className="text-2xl font-bold">{displayConsumption.toFixed(1)} L</div>
+            <h3 className="text-sm font-medium mb-2 text-white">Fuel Consumption</h3>
+            <div className="text-2xl font-bold text-white">{displayConsumption.toFixed(1)} L</div>
             <p className="text-xs text-muted-foreground">Based on average consumption of 12L/100km</p>
           </CardContent>
         </Card>
         
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-black">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-medium mb-2 flex items-center justify-between text-white">
               <span>Fuel Cost</span>
               <FuelCostEditor 
                 currentFuelCost={fuelCostPerLiter} 
                 onFuelCostChange={handleFuelCostChange} 
               />
             </h3>
-            <div className="text-2xl font-bold">R {displayFuelCost.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-white">R {displayFuelCost.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">At current price of R{fuelCostPerLiter.toFixed(2)}/L</p>
           </CardContent>
         </Card>
         
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-black">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Load</h3>
-            <div className="text-2xl font-bold">{route.cylinders}/80 cylinders</div>
+            <h3 className="text-sm font-medium mb-2 text-white">Load</h3>
+            <div className="text-2xl font-bold text-white">{route.cylinders}/80 cylinders</div>
             <Progress value={(route.cylinders/80)*100} className="h-2 mt-2" />
           </CardContent>
         </Card>
       </div>
 
-      <div className="bg-secondary/30 rounded-lg p-4 border border-border shadow-sm">
+      <div className="bg-black rounded-lg p-4 border border-border shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <TruckIcon className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-2 text-white">
+            <TruckIcon className="h-5 w-5" />
             <div className="font-medium">Route Stops</div>
           </div>
           <div className="flex items-center gap-2">
@@ -209,11 +216,7 @@ const RouteDetails = ({
                   <h4 className="font-medium">Add New Stop</h4>
                   <div className="space-y-2">
                     <Select
-                      onValueChange={(value) => {
-                        const locationId = parseInt(value);
-                        onAddNewLocation(locationId);
-                        setAddLocationOpen(false);
-                      }}
+                      onValueChange={handleAddLocation}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a location" />

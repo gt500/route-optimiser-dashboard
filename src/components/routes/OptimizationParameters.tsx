@@ -23,18 +23,18 @@ const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => 
   const [optimizeForDistance, setOptimizeForDistance] = useState(true);
   
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm bg-black">
       <CardHeader>
-        <CardTitle className="text-base">Optimization Parameters</CardTitle>
+        <CardTitle className="text-base text-white">Optimization Parameters</CardTitle>
         <CardDescription>Configure how the route should be optimized</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-3">
+        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex gap-2 items-center">
-            <FuelIcon className="h-4 w-4 text-muted-foreground" />
+            <FuelIcon className="h-4 w-4 text-gray-400" />
             <div>
-              <div className="font-medium">Prioritize Fuel Efficiency</div>
-              <div className="text-xs text-muted-foreground">May result in longer travel times</div>
+              <div className="font-medium text-white">Prioritize Fuel Efficiency</div>
+              <div className="text-xs text-gray-400">May result in longer travel times</div>
             </div>
           </div>
           <Switch 
@@ -44,12 +44,12 @@ const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => 
           />
         </div>
         
-        <div className="flex items-center justify-between border-b pb-3">
+        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex gap-2 items-center">
-            <TimerIcon className="h-4 w-4 text-muted-foreground" />
+            <TimerIcon className="h-4 w-4 text-gray-400" />
             <div>
-              <div className="font-medium">Avoid Traffic</div>
-              <div className="text-xs text-muted-foreground">Uses traffic data to avoid congested areas</div>
+              <div className="font-medium text-white">Avoid Traffic</div>
+              <div className="text-xs text-gray-400">Uses traffic data to avoid congested areas</div>
             </div>
           </div>
           <Switch 
@@ -59,12 +59,12 @@ const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => 
           />
         </div>
         
-        <div className="flex items-center justify-between border-b pb-3">
+        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex gap-2 items-center">
-            <MapIcon className="h-4 w-4 text-muted-foreground" />
+            <MapIcon className="h-4 w-4 text-gray-400" />
             <div>
-              <div className="font-medium">Use Real-Time Traffic Data</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="font-medium text-white">Use Real-Time Traffic Data</div>
+              <div className="text-xs text-gray-400">
                 <span className={useRealTimeData ? "text-emerald-500 font-medium" : ""}>
                   {useRealTimeData ? "Live traffic updates enabled" : "Static routing"}
                 </span>
@@ -80,10 +80,10 @@ const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => 
         
         <div className="flex items-center justify-between pb-3">
           <div className="flex gap-2 items-center">
-            <RotateCw className="h-4 w-4 text-muted-foreground" />
+            <RotateCw className="h-4 w-4 text-gray-400" />
             <div>
-              <div className="font-medium">Optimize For Distance</div>
-              <div className="text-xs text-muted-foreground">Find the shortest possible route</div>
+              <div className="font-medium text-white">Optimize For Distance</div>
+              <div className="text-xs text-gray-400">Find the shortest possible route</div>
             </div>
           </div>
           <Switch 
