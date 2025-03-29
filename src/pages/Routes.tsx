@@ -11,10 +11,12 @@ import LocationSelector from '@/components/routes/LocationSelector';
 import RouteMap from '@/components/routes/RouteMap';
 import RouteDetails from '@/components/routes/RouteDetails';
 import OptimizationParameters from '@/components/routes/OptimizationParameters';
+import { supabase } from '@/integrations/supabase/client';
 
 const Routes = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [newLocationDialog, setNewLocationDialog] = useState(false);
+  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
     { id: 1, name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -56,6 +58,40 @@ const Routes = () => {
     estimatedDuration: 0,
     usingRealTimeData: false
   });
+
+  useEffect(() => {
+    const fetchFuelCost = async () => {
+      const { data, error } = await supabase
+        .from('cost_factors')
+        .select('value')
+        .eq('name', 'fuel_cost_per_liter')
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') {
+          console.error('Error fetching fuel cost:', error);
+        }
+        const { error: insertError } = await supabase
+          .from('cost_factors')
+          .insert({ 
+            name: 'fuel_cost_per_liter', 
+            value: 22, 
+            description: 'Cost per liter of fuel in Rand' 
+          });
+          
+        if (insertError) {
+          console.error('Error creating fuel cost record:', insertError);
+        }
+        return;
+      }
+      
+      if (data) {
+        setFuelCostPerLiter(data.value);
+      }
+    };
+    
+    fetchFuelCost();
+  }, []);
 
   useEffect(() => {
     if (startLocation) {
@@ -197,14 +233,60 @@ const Routes = () => {
       }));
     }
     
+    const fuelConsumption = Math.round(newDistance * 0.12 * fuelMultiplier * 100) / 100;
+    
     setRoute(prev => ({
       ...prev,
       distance: Math.round(newDistance * 10) / 10,
       estimatedDuration: Math.round(newDuration),
-      fuelConsumption: Math.round(newDistance * 0.12 * fuelMultiplier * 100) / 100,
-      fuelCost: Math.round(newDistance * 0.12 * 22 * fuelMultiplier * 100) / 100,
+      fuelConsumption: fuelConsumption,
+      fuelCost: Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100,
       usingRealTimeData: params.useRealTimeData
     }));
+    
+    const saveRouteToDatabase = async () => {
+      if (route.locations.length < 2) return;
+      
+      const routeData = {
+        name: `Route ${new Date().toLocaleDateString()}`,
+        date: new Date().toISOString(),
+        status: 'planned',
+        total_distance: Math.round(newDistance * 10) / 10,
+        total_duration: Math.round(newDuration),
+        total_cylinders: route.cylinders,
+        estimated_cost: Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100
+      };
+      
+      const { data: routeInsert, error: routeError } = await supabase
+        .from('routes')
+        .insert(routeData)
+        .select('id')
+        .single();
+      
+      if (routeError) {
+        console.error('Error saving route:', routeError);
+        return;
+      }
+      
+      if (routeInsert) {
+        const deliveries = route.locations.map((location, index) => ({
+          route_id: routeInsert.id,
+          location_id: location.id.toString(),
+          cylinders: location.emptyCylinders || 0,
+          sequence: index
+        }));
+        
+        const { error: deliveryError } = await supabase
+          .from('deliveries')
+          .insert(deliveries);
+        
+        if (deliveryError) {
+          console.error('Error saving deliveries:', deliveryError);
+        }
+      }
+    };
+    
+    saveRouteToDatabase().catch(console.error);
     
     toast.success("Route optimized with selected parameters");
   };
@@ -275,6 +357,18 @@ const Routes = () => {
     setNewLocationDialog(false);
   };
 
+  const handleFuelCostUpdate = (newCost: number) => {
+    setFuelCostPerLiter(newCost);
+    
+    setRoute(prev => {
+      const consumption = prev.fuelConsumption || prev.distance * 0.12;
+      return {
+        ...prev,
+        fuelCost: Math.round(consumption * newCost * 100) / 100
+      };
+    });
+  };
+
   const filteredAvailableLocations = React.useMemo(() => {
     return availableLocations.filter(loc => 
       loc.id !== startLocation?.id && 
@@ -337,6 +431,7 @@ const Routes = () => {
                     route={route} 
                     onRemoveLocation={removeLocationFromRoute} 
                     onAddNewLocation={handleAddNewLocationFromPopover}
+                    onFuelCostUpdate={handleFuelCostUpdate}
                   />
                 </CardContent>
               </Card>

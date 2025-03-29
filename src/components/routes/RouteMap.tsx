@@ -112,7 +112,7 @@ const RouteMap = ({ route }: RouteMapProps) => {
         existingRoutingControls[0].remove();
       }
       
-      // Add the new routing control
+      // Add the new routing control to show actual roads between waypoints
       const routingControl = L.Routing.control({
         waypoints,
         lineOptions: {
@@ -125,6 +125,10 @@ const RouteMap = ({ route }: RouteMapProps) => {
         fitSelectedRoutes: true,
         showAlternatives: false,
         routeWhileDragging: false,
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1',
+          profile: 'driving'
+        })
       }).addTo(map);
       
       // Remove the default routing container that shows turn-by-turn directions
@@ -172,14 +176,13 @@ const RouteMap = ({ route }: RouteMapProps) => {
       {route && route.locations.length > 0 ? (
         <div className="w-full h-full">
           <MapContainer 
-            key={mapCenter.toString()}
             center={mapCenter}
             zoom={10}
             style={{ height: '100%', width: '100%' }}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             
             {route.locations.map((location, idx) => (
@@ -188,7 +191,10 @@ const RouteMap = ({ route }: RouteMapProps) => {
                 position={[location.lat || 0, location.long || 0]}
                 icon={priorityIcons[getMarkerPriority(idx, route.locations.length)]}
               >
-                <Tooltip permanent={false} direction="top" offset={[0, -35]}>
+                <Tooltip 
+                  direction="top" 
+                  offset={[0, -35]}
+                >
                   {location.name}
                 </Tooltip>
                 <Popup>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -10,6 +10,8 @@ import { TruckIcon, RotateCw, Info, Trash2, ArrowUpDown, Plus, Clock, Fuel } fro
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { toast } from 'sonner';
 import { LocationType } from '../locations/LocationEditDialog';
+import FuelCostEditor from './FuelCostEditor';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RouteDetailsProps {
   route: {
@@ -25,10 +27,37 @@ interface RouteDetailsProps {
   };
   onRemoveLocation: (index: number) => void;
   onAddNewLocation: (locationId: number) => void;
+  onFuelCostUpdate?: (newFuelCost: number) => void;
 }
 
-const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetailsProps) => {
+const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation, onFuelCostUpdate }: RouteDetailsProps) => {
   const [addLocationOpen, setAddLocationOpen] = useState(false);
+  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
+  
+  useEffect(() => {
+    // Fetch current fuel cost from the database
+    const fetchFuelCost = async () => {
+      const { data, error } = await supabase
+        .from('cost_factors')
+        .select('value')
+        .eq('name', 'fuel_cost_per_liter')
+        .single();
+      
+      if (error) {
+        console.error('Error fetching fuel cost:', error);
+        return;
+      }
+      
+      if (data) {
+        setFuelCostPerLiter(data.value);
+        if (onFuelCostUpdate) {
+          onFuelCostUpdate(data.value);
+        }
+      }
+    };
+    
+    fetchFuelCost();
+  }, [onFuelCostUpdate]);
   
   const getTrafficBadgeVariant = (condition?: 'light' | 'moderate' | 'heavy') => {
     switch (condition) {
@@ -37,6 +66,19 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
       case 'heavy': return 'bg-red-50 text-red-700 border-red-200';
       default: return 'bg-blue-50 text-blue-700 border-blue-200';
     }
+  };
+
+  const handleFuelCostChange = (newCost: number) => {
+    setFuelCostPerLiter(newCost);
+    if (onFuelCostUpdate) {
+      onFuelCostUpdate(newCost);
+    }
+  };
+  
+  // Calculate the actual fuel cost based on distance and current fuel price
+  const calculateFuelCost = () => {
+    const consumption = route.fuelConsumption || route.distance * 0.12; // L/km
+    return consumption * fuelCostPerLiter;
   };
   
   return (
@@ -84,9 +126,15 @@ const RouteDetails = ({ route, onRemoveLocation, onAddNewLocation }: RouteDetail
         
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Fuel Cost</h3>
-            <div className="text-2xl font-bold">R {route.fuelCost.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">At current price of R22/L</p>
+            <h3 className="text-sm font-medium mb-2 flex items-center justify-between">
+              <span>Fuel Cost</span>
+              <FuelCostEditor 
+                currentFuelCost={fuelCostPerLiter} 
+                onFuelCostChange={handleFuelCostChange} 
+              />
+            </h3>
+            <div className="text-2xl font-bold">R {calculateFuelCost().toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">At current price of R{fuelCostPerLiter.toFixed(2)}/L</p>
           </CardContent>
         </Card>
         

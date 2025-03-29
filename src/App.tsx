@@ -15,6 +15,8 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import ReportsLayout from "./pages/reports/ReportsLayout";
+import DailyReports from "./pages/reports/delivery/DailyReports";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +39,20 @@ const App = () => (
                 <Route path="/fleet" element={<Fleet />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/settings" element={<Settings />} />
+                
+                {/* Reports routes */}
+                <Route path="/reports" element={<ReportsLayout />}>
+                  <Route index element={<Navigate to="/reports/delivery/daily" replace />} />
+                  <Route path="delivery">
+                    <Route path="daily" element={<DailyReports />} />
+                    <Route path="weekly" element={<DailyReports />} />
+                    <Route path="monthly" element={<DailyReports />} />
+                  </Route>
+                  <Route path="maintenance">
+                    <Route path="schedule" element={<DailyReports />} />
+                    <Route path="fleet" element={<DailyReports />} />
+                  </Route>
+                </Route>
               </Route>
             </Route>
             
