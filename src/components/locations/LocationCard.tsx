@@ -20,7 +20,7 @@ const LocationCard: React.FC<LocationCardProps> = ({ location, onEdit, onDelete 
           <CardTitle className="text-lg text-white">{location.name}</CardTitle>
           <Badge 
             variant={location.type === 'Storage' ? "secondary" : "outline"} 
-            className="text-white"
+            className={location.type === 'Storage' ? "text-black" : "text-white"}
           >
             {location.type || 'Customer'}
           </Badge>
