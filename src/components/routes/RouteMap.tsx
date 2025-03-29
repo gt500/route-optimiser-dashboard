@@ -155,7 +155,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {mapReady && showRouting && (
+      {mapReady && showRouting && allWaypoints.length >= 2 && (
         <RoutingMachine
           waypoints={allWaypoints}
           forceRouteUpdate={forceRouteUpdate}

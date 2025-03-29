@@ -10,15 +10,21 @@ interface RoutingMachineProps {
   onRouteFound?: (route: { 
     distance: number; 
     duration: number; 
-    coordinates: [number, number][];
+    coordinates: [number, number][]; 
   }) => void;
 }
 
-const RoutingMachine: React.FC<RoutingMachineProps> = ({ waypoints = [], forceRouteUpdate, onRouteFound }) => {
+const RoutingMachine: React.FC<RoutingMachineProps> = ({ 
+  waypoints = [], 
+  forceRouteUpdate, 
+  onRouteFound 
+}) => {
   const map = useMap();
   
   useEffect(() => {
     if (!map || waypoints.length < 2) return;
+    
+    console.log("Creating route with waypoints:", waypoints);
     
     let routingControl: any = null;
     
@@ -51,6 +57,8 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({ waypoints = [], forceRo
           const route = routes[0];
           const totalDistance = route.summary.totalDistance / 1000; // convert to km
           const totalTime = route.summary.totalTime / 60; // convert to minutes
+          
+          console.log(`Route found: ${totalDistance.toFixed(2)} km, ${totalTime.toFixed(0)} minutes`);
           
           // Extract the coordinates from the route
           const coordinates: [number, number][] = route.coordinates.map((coord: any) => [

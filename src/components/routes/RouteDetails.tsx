@@ -42,6 +42,7 @@ const RouteDetails = ({
   const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
   const [routeDistance, setRouteDistance] = useState(route.distance);
   const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   
   // Update local state when route data changes
   useEffect(() => {
@@ -120,11 +121,19 @@ const RouteDetails = ({
   const displayConsumption = calculateFuelConsumption() || route.fuelConsumption;
   const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
-  const handleAddLocation = (locationId: string) => {
-    // Convert string ID to number as the interface expects a number
-    const numericId = parseInt(locationId, 10);
-    onAddNewLocation(numericId);
-    setAddLocationOpen(false);
+  const handleLocationChange = (locationId: string) => {
+    setSelectedLocationId(locationId);
+  };
+  
+  const handleAddLocation = () => {
+    if (selectedLocationId) {
+      // Convert string ID to number as the interface expects a number
+      const numericId = parseInt(selectedLocationId, 10);
+      console.log("Adding location with ID:", numericId);
+      onAddNewLocation(numericId);
+      setAddLocationOpen(false);
+      setSelectedLocationId("");
+    }
   };
   
   return (
@@ -152,7 +161,7 @@ const RouteDetails = ({
             <div className="text-2xl font-bold text-white">{displayDistance.toFixed(1)} km</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>Estimated travel time: {displayDuration} min</span>
+              <span className="text-gray-300">Estimated travel time: {displayDuration} min</span>
               {route.trafficConditions && (
                 <Badge variant="outline" className={getTrafficBadgeVariant(route.trafficConditions)}>
                   {route.trafficConditions} traffic
@@ -166,7 +175,7 @@ const RouteDetails = ({
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2 text-white">Fuel Consumption</h3>
             <div className="text-2xl font-bold text-white">{displayConsumption.toFixed(1)} L</div>
-            <p className="text-xs text-muted-foreground">Based on average consumption of 12L/100km</p>
+            <p className="text-xs text-gray-300">Based on average consumption of 12L/100km</p>
           </CardContent>
         </Card>
         
@@ -180,7 +189,7 @@ const RouteDetails = ({
               />
             </h3>
             <div className="text-2xl font-bold text-white">R {displayFuelCost.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">At current price of R{fuelCostPerLiter.toFixed(2)}/L</p>
+            <p className="text-xs text-gray-300">At current price of R{fuelCostPerLiter.toFixed(2)}/L</p>
           </CardContent>
         </Card>
         
@@ -216,7 +225,8 @@ const RouteDetails = ({
                   <h4 className="font-medium">Add New Stop</h4>
                   <div className="space-y-2">
                     <Select
-                      onValueChange={handleAddLocation}
+                      value={selectedLocationId}
+                      onValueChange={handleLocationChange}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a location" />
@@ -229,6 +239,13 @@ const RouteDetails = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <Button 
+                      onClick={handleAddLocation} 
+                      className="w-full"
+                      disabled={!selectedLocationId}
+                    >
+                      Add to Route
+                    </Button>
                   </div>
                 </div>
               </PopoverContent>
@@ -239,7 +256,7 @@ const RouteDetails = ({
         <div className="space-y-3">
           {route.locations.map((location, index) => (
             <div 
-              key={index} 
+              key={`route-stop-${index}-${location.id}`}
               className="flex items-center gap-3 bg-background rounded-lg p-3 relative border border-border/80 hover:border-border transition-colors shadow-sm"
             >
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
