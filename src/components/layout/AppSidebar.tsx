@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
   SidebarMenuSubItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Truck,
@@ -27,7 +27,10 @@ import {
   Calendar,
   Clock,
   Wrench,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const menuItems = [
   {
@@ -57,7 +60,7 @@ const menuItems = [
     subItems: [
       {
         title: "Delivery Reports",
-        path: "/reports/delivery",
+        path: "/reports/delivery/daily",
         subItems: [
           { title: "Daily Reports", path: "/reports/delivery/daily" },
           { title: "Weekly Reports", path: "/reports/delivery/weekly" },
@@ -66,10 +69,9 @@ const menuItems = [
       },
       {
         title: "Maintenance Reports",
-        path: "/reports/maintenance",
+        path: "/reports/maintenance/schedule",
         subItems: [
           { title: "Maintenance Schedule", path: "/reports/maintenance/schedule" },
-          { title: "Fleet Management", path: "/reports/maintenance/fleet" },
         ]
       }
     ]
@@ -87,6 +89,24 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const location = useLocation();
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (title: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
+
+  // Check if a path is the current path or a parent of the current path
+  const isActivePath = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <Sidebar>
       <SidebarHeader className="p-6 flex items-center">
@@ -108,46 +128,73 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   {!item.subItems ? (
                     <SidebarMenuButton asChild>
-                      <Link to={item.path} className="flex items-center gap-3">
+                      <Link 
+                        to={item.path} 
+                        className={`flex items-center gap-3 ${isActivePath(item.path) ? 'font-medium text-primary' : ''}`}
+                      >
                         <item.icon className="h-5 w-5" />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   ) : (
-                    <>
-                      <SidebarMenuButton asChild>
-                        <Link to={item.path} className="flex items-center gap-3">
-                          <item.icon className="h-5 w-5" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                      <SidebarMenuSub>
-                        {item.subItems.map((subItem) => (
-                          <React.Fragment key={subItem.title}>
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton asChild>
-                                <Link to={subItem.path}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                            {subItem.subItems && (
-                              <SidebarMenuSub>
-                                {subItem.subItems.map((nestedItem) => (
-                                  <SidebarMenuSubItem key={nestedItem.title}>
-                                    <SidebarMenuSubButton asChild size="sm">
-                                      <Link to={nestedItem.path}>
-                                        <span>{nestedItem.title}</span>
-                                      </Link>
+                    <Collapsible 
+                      open={openSections[item.title] || isActivePath(item.path)} 
+                      onOpenChange={() => toggleSection(item.title)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton 
+                          className={`w-full justify-between ${isActivePath(item.path) ? 'font-medium text-primary' : ''}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <item.icon className="h-5 w-5" />
+                            <span>{item.title}</span>
+                          </div>
+                          <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.subItems.map((subItem) => (
+                            <React.Fragment key={subItem.title}>
+                              <SidebarMenuSubItem>
+                                <Collapsible 
+                                  open={openSections[subItem.title] || isActivePath(subItem.path)} 
+                                  onOpenChange={() => toggleSection(subItem.title)}
+                                >
+                                  <CollapsibleTrigger asChild>
+                                    <SidebarMenuSubButton 
+                                      className={`w-full justify-between ${isActivePath(subItem.path) ? 'font-medium text-primary' : ''}`}
+                                    >
+                                      <span>{subItem.title}</span>
+                                      {subItem.subItems && <ChevronRight className="h-4 w-4 transition-transform duration-200" />}
                                     </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </SidebarMenuSub>
-                    </>
+                                  </CollapsibleTrigger>
+                                  {subItem.subItems && (
+                                    <CollapsibleContent>
+                                      <SidebarMenuSub>
+                                        {subItem.subItems.map((nestedItem) => (
+                                          <SidebarMenuSubItem key={nestedItem.title}>
+                                            <SidebarMenuSubButton 
+                                              asChild 
+                                              size="sm"
+                                              className={isActivePath(nestedItem.path) ? 'font-medium text-primary' : ''}
+                                            >
+                                              <Link to={nestedItem.path}>
+                                                <span>{nestedItem.title}</span>
+                                              </Link>
+                                            </SidebarMenuSubButton>
+                                          </SidebarMenuSubItem>
+                                        ))}
+                                      </SidebarMenuSub>
+                                    </CollapsibleContent>
+                                  )}
+                                </Collapsible>
+                              </SidebarMenuSubItem>
+                            </React.Fragment>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
                 </SidebarMenuItem>
               ))}

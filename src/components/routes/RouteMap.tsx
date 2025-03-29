@@ -1,201 +1,205 @@
 
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
-// Need to fix leaflet icon issues
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+// Define marker icons
+const startIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-// Define location icons for different types and priorities
-const createLocationIcon = (color: string, priority: number = 0) => {
-  return L.divIcon({
-    className: `custom-marker-icon priority-${priority}`,
-    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${priority ? priority : ''}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-  });
-};
+const endIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-// Fix default marker icons not loading
-const fixDefaultIcons = () => {
-  const DefaultIcon = L.icon({
-    iconRetinaUrl,
-    iconUrl,
-    shadowUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
-  });
-  L.Marker.prototype.options.icon = DefaultIcon;
-};
+const waypointIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-// Set up icons for different location types
-const depotIcon = createLocationIcon('#2563eb');
-const customerIcon = createLocationIcon('#f97316');
-
-// Set up different priority icons
-const priorityIcons = [
-  createLocationIcon('#10b981', 1), // First priority - green
-  createLocationIcon('#3b82f6', 2), // Second priority - blue
-  createLocationIcon('#6366f1', 3), // Third priority - indigo
-  createLocationIcon('#8b5cf6', 4), // Fourth priority - purple
-  createLocationIcon('#ec4899', 5), // Fifth priority - pink
+// Sample location data
+const locations = [
+  { 
+    id: 1, 
+    name: 'Afrox Epping Depot', 
+    description: 'Industrial gas supplier', 
+    address: '121 Bofors Circle, Epping Industria 2, Cape Town', 
+    coords: [-33.927771, 18.535212],
+    type: 'start'
+  },
+  { 
+    id: 2, 
+    name: 'Food Lovers Sunningdale', 
+    description: 'Grocery store', 
+    address: 'Sunningdale Shopping Centre, Sunningdale, Cape Town', 
+    coords: [-33.796696, 18.482478],
+    type: 'waypoint'
+  },
+  { 
+    id: 3, 
+    name: 'Pick n Pay TableView', 
+    description: 'Grocery store', 
+    address: 'Bayside Mall, Blaauwberg Rd, Table View, Cape Town', 
+    coords: [-33.825340, 18.485180],
+    type: 'waypoint'
+  },
+  { 
+    id: 4, 
+    name: 'SUPERSPAR Parklands', 
+    description: 'Grocery store', 
+    address: 'Village Square, Parklands Main Rd, Parklands, Cape Town', 
+    coords: [-33.817554, 18.488649],
+    type: 'waypoint'
+  },
+  { 
+    id: 5, 
+    name: 'West Coast Village', 
+    description: 'Shopping center', 
+    address: 'West Coast Village Shopping Centre, West Coast, Cape Town', 
+    coords: [-33.827917, 18.487117],
+    type: 'end'
+  }
 ];
 
-// Component to handle routing between points
-const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (!map || waypoints.length < 2) return;
-    
-    // Remove any existing routing control
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Routing.Control) {
-        map.removeLayer(layer);
-      }
-    });
-    
-    // Create and add new routing control
-    const routingControl = L.Routing.control({
-      waypoints,
-      routeWhileDragging: false,
-      showAlternatives: false,
-      fitSelectedRoutes: true,
-      lineOptions: {
-        styles: [
-          { color: '#6366F1', opacity: 0.8, weight: 6 },
-          { color: '#818CF8', opacity: 0.5, weight: 2 }
-        ],
-        extendToWaypoints: true,
-        missingRouteTolerance: 10
-      },
-      createMarker: () => null, // Don't create default markers
-      addWaypoints: false, // Prevent adding waypoints by clicking on the map
-    }).addTo(map);
-    
-    // Hide the routing instructions
-    const container = routingControl.getContainer();
-    if (container) {
-      container.style.display = 'none';
-    }
-    
-    // Fix the map view to include all waypoints
-    setTimeout(() => {
-      const bounds = L.latLngBounds(waypoints);
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }, 500);
-    
-    return () => {
-      map.removeControl(routingControl);
-    };
-  }, [map, waypoints]);
-  
-  return null;
-};
-
-// Define the props interface for RouteMap
 interface RouteMapProps {
-  route: {
-    locations: {
-      id: number | string;
-      name: string;
-      lat?: number;
-      long?: number;
-      type?: string;
-      emptyCylinders?: number;
-    }[];
-    distance: number;
-    estimatedDuration?: number;
-    trafficConditions?: 'light' | 'moderate' | 'heavy';
-    usingRealTimeData?: boolean;
-    fuelConsumption?: number;
-    fuelCost?: number;
-  } | null;
+  startLocation?: { name: string; coords: [number, number] };
+  endLocation?: { name: string; coords: [number, number] };
+  waypoints?: { name: string; coords: [number, number] }[];
+  showRouting?: boolean;
+  allowSelection?: boolean;
+  onLocationSelect?: (location: any) => void;
 }
 
-const RouteMap: React.FC<RouteMapProps> = ({ route }) => {
-  // Initialize leaflet icons once
-  useEffect(() => {
-    fixDefaultIcons();
-  }, []);
+const RouteMap: React.FC<RouteMapProps> = ({
+  startLocation,
+  endLocation,
+  waypoints = [],
+  showRouting = false,
+  allowSelection = false,
+  onLocationSelect
+}) => {
+  const navigate = useNavigate();
   
-  if (!route || route.locations.length < 1) {
-    return (
-      <div className="h-[400px] w-full bg-gray-100 flex items-center justify-center rounded-md border border-dashed">
-        <p className="text-gray-500">Select locations to visualize the route</p>
-      </div>
-    );
-  }
+  // Use Cape Town as default center if no points are provided
+  const defaultCenter: [number, number] = [-33.915538, 18.572645];
   
-  // Filter out locations that don't have latitude/longitude
-  const validLocations = route.locations.filter(
-    loc => typeof loc.lat === 'number' && typeof loc.long === 'number'
-  );
-  
-  if (validLocations.length === 0) {
-    toast.error("No valid coordinates found for the selected locations");
+  // If we have a start and end, calculate center point between them
+  const calculateCenterAndZoom = () => {
+    if (startLocation && endLocation) {
+      const lat = (startLocation.coords[0] + endLocation.coords[0]) / 2;
+      const lng = (startLocation.coords[1] + endLocation.coords[1]) / 2;
+      return [lat, lng] as [number, number];
+    }
     
-    return (
-      <div className="h-[400px] w-full bg-gray-100 flex items-center justify-center rounded-md border border-dashed">
-        <p className="text-gray-500">No valid coordinates for selected locations</p>
-      </div>
-    );
-  }
-  
-  // Use the first location as center if available, otherwise use Cape Town
-  const defaultCenter: [number, number] = [-33.9249, 18.4241]; // Cape Town coordinates
-  
-  // Create waypoints for routing
-  const waypoints = validLocations.map(
-    loc => new L.LatLng(loc.lat || 0, loc.long || 0)
-  );
-  
+    if (startLocation) {
+      return startLocation.coords;
+    }
+    
+    if (endLocation) {
+      return endLocation.coords;
+    }
+    
+    return defaultCenter;
+  };
+
+  const center = calculateCenterAndZoom();
+
+  // Initialize routing when the map is loaded
+  const initializeRouting = (map: L.Map) => {
+    if (showRouting && startLocation && endLocation) {
+      const routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(startLocation.coords[0], startLocation.coords[1]),
+          ...waypoints.map(wp => L.latLng(wp.coords[0], wp.coords[1])),
+          L.latLng(endLocation.coords[0], endLocation.coords[1])
+        ],
+        routeWhileDragging: false,
+        showAlternatives: true,
+        fitSelectedRoutes: true,
+        show: false, // Hide the routing instructions
+        lineOptions: {
+          styles: [{ color: '#6366F1', opacity: 0.8, weight: 6 }]
+        },
+        altLineOptions: {
+          styles: [{ color: '#D1D5DB', opacity: 0.8, weight: 6 }]
+        }
+      }).addTo(map);
+
+      // Hide the routing container
+      const routingContainer = document.querySelector('.leaflet-routing-container');
+      if (routingContainer) {
+        routingContainer.classList.add('hidden');
+      }
+    }
+  };
+
+  const getMarkerIcon = (type: string) => {
+    switch (type) {
+      case 'start':
+        return startIcon;
+      case 'end':
+        return endIcon;
+      default:
+        return waypointIcon;
+    }
+  };
+
   return (
-    <div className="h-[400px] w-full rounded-md overflow-hidden border">
+    <div className="h-full w-full rounded-md overflow-hidden border">
       <MapContainer 
-        defaultCenter={defaultCenter}
-        zoom={10} 
-        style={{ height: "100%", width: "100%" }}
+        center={center}
+        zoom={11} 
+        style={{ height: '100%', width: '100%' }}
+        whenCreated={initializeRouting}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {validLocations.map((location, index) => (
+        {/* Display markers for all locations */}
+        {locations.map((location) => (
           <Marker 
-            key={location.id.toString()} 
-            position={[location.lat || 0, location.long || 0]}
-            icon={
-              index === 0 || index === validLocations.length - 1
-                ? (location.type === 'Storage' ? depotIcon : customerIcon)
-                : (index < 6 ? priorityIcons[index - 1] : priorityIcons[4])
-            }
+            key={location.id}
+            position={location.coords} 
+            icon={getMarkerIcon(location.type)}
           >
-            <Tooltip>
-              {location.name}
-            </Tooltip>
             <Popup>
-              <div className="text-sm">
-                <p className="font-semibold">{location.name}</p>
-                <p>Type: {location.type || 'Customer'}</p>
-                {location.emptyCylinders !== undefined && (
-                  <p>Cylinders: {location.emptyCylinders}</p>
+              <div className="p-1">
+                <h3 className="font-semibold">{location.name}</h3>
+                <p className="text-sm text-gray-600">{location.description}</p>
+                <p className="text-xs text-gray-500">{location.address}</p>
+                {allowSelection && (
+                  <Button 
+                    size="sm" 
+                    className="mt-2 w-full" 
+                    onClick={() => onLocationSelect && onLocationSelect(location)}
+                  >
+                    Select
+                  </Button>
                 )}
               </div>
             </Popup>
           </Marker>
         ))}
-        
-        {waypoints.length >= 2 && <RoutingMachine waypoints={waypoints} />}
       </MapContainer>
     </div>
   );
