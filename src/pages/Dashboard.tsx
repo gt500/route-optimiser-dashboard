@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart, Truck, MapPin, Clock, ArrowRight } from 'lucide-react';
+import { BarChart, Truck, MapPin, Clock, ArrowRight, Calendar } from 'lucide-react';
 import {
   BarChart as ReBarChart,
   Bar,
@@ -16,10 +16,37 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
+
+interface RouteData {
+  id: string;
+  name: string;
+  date: string;
+  total_cylinders: number;
+  total_distance: number;
+  total_duration: number;
+  status: string;
+  estimated_cost: number;
+}
+
+interface DeliveryData {
+  id: string;
+  route_id: string;
+  location_id: string;
+  sequence: number;
+  cylinders: number;
+  location_name?: string;
+}
 
 const Dashboard = () => {
-  // Sample data for charts
-  const deliveryData = [
+  const [totalRoutes, setTotalRoutes] = useState(0);
+  const [totalLocations, setTotalLocations] = useState(0);
+  const [avgTimeSaved, setAvgTimeSaved] = useState(0);
+  const [fuelSavings, setFuelSavings] = useState(0);
+  const [upcomingDeliveries, setUpcomingDeliveries] = useState<RouteData[]>([]);
+  const [recentRoutes, setRecentRoutes] = useState<RouteData[]>([]);
+  const [optimizationData, setOptimizationData] = useState<{ name: string; value: number }[]>([]);
+  const [deliveryData, setDeliveryData] = useState([
     { name: 'Mon', deliveries: 24 },
     { name: 'Tue', deliveries: 18 },
     { name: 'Wed', deliveries: 29 },
@@ -27,68 +54,201 @@ const Dashboard = () => {
     { name: 'Fri', deliveries: 27 },
     { name: 'Sat', deliveries: 15 },
     { name: 'Sun', deliveries: 8 },
-  ];
-
-  const fuelData = [
-    { name: 'Routes Optimized', value: 68 },
-    { name: 'Standard Routes', value: 32 },
-  ];
+  ]);
 
   const COLORS = ['#0088FE', '#D3D3D3'];
+
+  useEffect(() => {
+    // Function to fetch all dashboard data
+    const fetchDashboardData = async () => {
+      try {
+        // Get date range for last week
+        const today = new Date();
+        const lastWeek = new Date(today);
+        lastWeek.setDate(today.getDate() - 7);
+
+        const lastWeekFormatted = lastWeek.toISOString();
+        const todayFormatted = today.toISOString();
+
+        // Fetch routes from last week
+        const { data: recentRoutesData, error: routesError } = await supabase
+          .from('routes')
+          .select('*')
+          .gte('date', lastWeekFormatted)
+          .order('date', { ascending: false });
+
+        if (routesError) {
+          console.error('Error fetching recent routes:', routesError);
+          return;
+        }
+
+        // Calculate dashboard metrics
+        if (recentRoutesData) {
+          // Set total routes from last week
+          setTotalRoutes(recentRoutesData.length);
+          
+          // Get unique locations delivered to
+          const { data: deliveryData, error: deliveryError } = await supabase
+            .from('deliveries')
+            .select('location_id, route_id')
+            .in('route_id', recentRoutesData.map(route => route.id));
+            
+          if (deliveryError) {
+            console.error('Error fetching deliveries:', deliveryError);
+          } else if (deliveryData) {
+            const uniqueLocations = new Set(deliveryData.map(d => d.location_id));
+            setTotalLocations(uniqueLocations.size);
+          }
+          
+          // Calculate average time saved
+          const standardRouteTime = 95; // minutes for standard route
+          const totalTimeSaved = recentRoutesData.reduce((total, route) => {
+            // Assume standard time would be 25% longer than optimized
+            const standardTime = route.total_duration * 1.25;
+            return total + (standardTime - route.total_duration);
+          }, 0);
+          
+          const avgTimePerRoute = recentRoutesData.length > 0 ? 
+            totalTimeSaved / recentRoutesData.length : 0;
+          
+          setAvgTimeSaved(Math.round(avgTimePerRoute));
+          
+          // Calculate fuel savings
+          const fuelCostPerLiter = 21.95;
+          const totalFuelSaved = recentRoutesData.reduce((total, route) => {
+            // Assume optimized route saves about 15% fuel
+            const standardFuelCost = route.estimated_cost * 1.15;
+            return total + (standardFuelCost - route.estimated_cost);
+          }, 0);
+          
+          setFuelSavings(Math.round(totalFuelSaved));
+          
+          // Set optimization data for pie chart
+          setOptimizationData([
+            { name: 'Routes Optimized', value: recentRoutesData.length },
+            { name: 'Standard Routes', value: Math.round(recentRoutesData.length * 0.32) },
+          ]);
+        }
+
+        // Get upcoming deliveries (scheduled but not completed)
+        const { data: upcomingData, error: upcomingError } = await supabase
+          .from('routes')
+          .select('*')
+          .eq('status', 'scheduled')
+          .order('date', { ascending: true })
+          .limit(3);
+          
+        if (upcomingError) {
+          console.error('Error fetching upcoming deliveries:', upcomingError);
+        } else if (upcomingData) {
+          // Get location details for each upcoming delivery
+          const upcomingWithDetails = await Promise.all(upcomingData.map(async (route) => {
+            const { data: deliveries } = await supabase
+              .from('deliveries')
+              .select('*, locations!inner(*)')
+              .eq('route_id', route.id);
+              
+            return {
+              ...route,
+              locations: deliveries?.length || 0,
+              cylinders: route.total_cylinders
+            };
+          }));
+          
+          setUpcomingDeliveries(upcomingWithDetails);
+        }
+
+        // Get recent completed routes
+        const { data: completedData, error: completedError } = await supabase
+          .from('routes')
+          .select('*')
+          .eq('status', 'completed')
+          .order('date', { ascending: false })
+          .limit(3);
+          
+        if (completedError) {
+          console.error('Error fetching completed routes:', completedError);
+        } else if (completedData) {
+          setRecentRoutes(completedData);
+        } else {
+          // Use recent routes as fallback if no completed ones
+          setRecentRoutes(recentRoutesData?.slice(0, 3) || []);
+        }
+
+        // Get weekly delivery data for chart
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const weeklyData = daysOfWeek.map(day => ({ name: day, deliveries: 0 }));
+        
+        if (recentRoutesData && recentRoutesData.length > 0) {
+          recentRoutesData.forEach(route => {
+            const routeDate = new Date(route.date);
+            const dayIndex = routeDate.getDay();
+            weeklyData[dayIndex].deliveries += 1;
+          });
+          
+          setDeliveryData(weeklyData);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Routes</CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
+            <Truck className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">127</div>
-            <p className="text-xs text-muted-foreground">+5% from last week</p>
+            <div className="text-2xl font-bold">{totalRoutes}</div>
+            <p className="text-xs text-gray-400">From last week</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Locations</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <MapPin className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">+2 from last month</p>
+            <div className="text-2xl font-bold">{totalLocations}</div>
+            <p className="text-xs text-gray-400">Delivered to last week</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Avg. Time Saved</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23.5 min</div>
-            <p className="text-xs text-muted-foreground">Per optimized route</p>
+            <div className="text-2xl font-bold">{avgTimeSaved.toFixed(1)} min</div>
+            <p className="text-xs text-gray-400">Per optimized route</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Fuel Savings</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <MapPin className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R7,820</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">R{fuelSavings.toLocaleString()}</div>
+            <p className="text-xs text-gray-400">This week</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 hover:shadow-md transition-shadow duration-300">
+        <Card className="lg:col-span-2 hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Weekly Deliveries</CardTitle>
-              <p className="text-sm text-muted-foreground">Overview of deliveries this week</p>
+              <p className="text-sm text-gray-400">Overview of deliveries this week</p>
             </div>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
+            <BarChart className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -103,8 +263,8 @@ const Dashboard = () => {
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <XAxis dataKey="name" stroke="#fff" />
+                  <YAxis stroke="#fff" />
                   <Tooltip 
                     contentStyle={{ 
                       borderRadius: '12px', 
@@ -120,17 +280,17 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader>
             <CardTitle>Route Optimization</CardTitle>
-            <p className="text-sm text-muted-foreground">Fuel efficiency improvements</p>
+            <p className="text-sm text-gray-400">Fuel efficiency improvements</p>
           </CardHeader>
           <CardContent>
             <div className="h-80 flex flex-col items-center justify-center">
               <ResponsiveContainer width="100%" height="80%">
                 <PieChart>
                   <Pie
-                    data={fuelData}
+                    data={optimizationData}
                     cx="50%"
                     cy="50%"
                     innerRadius={70}
@@ -139,7 +299,7 @@ const Dashboard = () => {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {fuelData.map((entry, index) => (
+                    {optimizationData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -155,8 +315,12 @@ const Dashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="text-center mt-2">
-                <div className="text-2xl font-bold">68%</div>
-                <p className="text-xs text-muted-foreground">Routes optimized</p>
+                <div className="text-2xl font-bold">
+                  {optimizationData.length > 0 && 
+                    Math.round((optimizationData[0].value / (optimizationData[0].value + optimizationData[1].value)) * 100)
+                  }%
+                </div>
+                <p className="text-xs text-gray-400">Routes optimized</p>
               </div>
             </div>
           </CardContent>
@@ -164,95 +328,85 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader>
             <CardTitle>Upcoming Deliveries</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                  <Truck className="h-5 w-5" />
+              {upcomingDeliveries.length > 0 ? (
+                upcomingDeliveries.map((delivery) => (
+                  <div key={delivery.id} className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
+                    <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{delivery.name}</div>
+                      <div className="text-sm text-gray-400">
+                        {delivery.locations} locations • {delivery.cylinders} cylinders • {new Date(delivery.date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
+                  <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                    <Truck className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">Cape Town Central Route</div>
+                    <div className="text-sm text-gray-400">7 locations • 48 cylinders</div>
+                  </div>
+                  <Button size="sm" variant="ghost">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium">Cape Town Central Route</div>
-                  <div className="text-sm text-muted-foreground">7 locations • 48 cylinders</div>
-                </div>
-                <Button size="sm" variant="ghost">
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Stellenbosch Area Route</div>
-                  <div className="text-sm text-muted-foreground">5 locations • 35 cylinders</div>
-                </div>
-                <Button size="sm" variant="ghost">
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Western Cape Route</div>
-                  <div className="text-sm text-muted-foreground">6 locations • 42 cylinders</div>
-                </div>
-                <Button size="sm" variant="ghost">
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
+              )}
               <Button variant="outline" className="w-full">View All</Button>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
           <CardHeader>
             <CardTitle>Recent Routes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                  <MapPin className="h-5 w-5" />
+              {recentRoutes.length > 0 ? (
+                recentRoutes.map((route) => (
+                  <div key={route.id} className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
+                    <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{route.name}</div>
+                      <div className="text-sm text-gray-400">
+                        {route.total_distance.toFixed(1)} km • {new Date(route.date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="text-xs font-medium bg-gray-700 text-white py-1 px-2 rounded-full">
+                      R{route.estimated_cost?.toFixed(2) || '0.00'}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
+                  <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">Cape Town Area #1</div>
+                    <div className="text-sm text-gray-400">28 km • 1 day ago</div>
+                  </div>
+                  <div className="text-xs font-medium bg-gray-700 text-white py-1 px-2 rounded-full">
+                    R345.00
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium">Cape Town Area #1</div>
-                  <div className="text-sm text-muted-foreground">28 km • 1 day ago</div>
-                </div>
-                <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
-                  R345.00
-                </div>
-              </div>
-              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                  <MapPin className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Paarl Area Route</div>
-                  <div className="text-sm text-muted-foreground">36 km • 2 days ago</div>
-                </div>
-                <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
-                  R442.00
-                </div>
-              </div>
-              <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                  <MapPin className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Strand Area Route</div>
-                  <div className="text-sm text-muted-foreground">24 km • 3 days ago</div>
-                </div>
-                <div className="text-xs font-medium bg-secondary text-secondary-foreground py-1 px-2 rounded-full">
-                  R345.00
-                </div>
-              </div>
+              )}
               <Button variant="outline" className="w-full">View All</Button>
             </div>
           </CardContent>

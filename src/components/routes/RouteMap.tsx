@@ -1,250 +1,205 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import L from 'leaflet';
+import SetViewOnChange from './map-components/SetViewOnChange';
 import LocationMarker from './map-components/LocationMarker';
 import DepotMarker from './map-components/DepotMarker';
 import RoutingMachine from './map-components/RoutingMachine';
 
-// Ensure leaflet icons work
-// @ts-ignore - L.Icon.Default exists
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+// Make sure the marker images are available
+import '../../../node_modules/leaflet/dist/images/marker-icon.png';
+import '../../../node_modules/leaflet/dist/images/marker-shadow.png';
 
-interface LocationInfo {
+// Define the types for the component props
+interface LocationPoint {
   id: string;
   name: string;
-  latitude: number | null | undefined;
-  longitude: number | null | undefined;
+  latitude?: number;
+  longitude?: number;
   address?: string;
 }
 
-interface WaypointInfo {
+interface NamedCoords {
   name: string;
   coords: [number, number];
 }
 
-// Custom component to set view based on location changes
-const SetViewOnChange = ({ center, allCoordinates, onCenterChange }: {
-  center: [number, number];
-  allCoordinates: [number, number][];
-  onCenterChange?: (center: [number, number]) => void;
-}) => {
-  const mapRef = useRef<L.Map | null>(null);
-  
-  // Set map reference
-  const setMap = (map: L.Map | null) => {
-    if (map) {
-      mapRef.current = map;
-      if (onCenterChange) {
-        onCenterChange(center);
-      }
-    }
-  };
-  
-  // Get map reference
-  useEffect(() => {
-    if (!mapRef.current) {
-      const map = L.DomUtil.get('map') as HTMLElement;
-      if (map && map._leaflet_id) {
-        // @ts-ignore - _leaflet_id exists on the HTMLElement
-        setMap(L.Map.getMap(map._leaflet_id));
-      }
-    }
-  }, []);
-  
-  useEffect(() => {
-    const currentMap = mapRef.current;
-    if (!currentMap) return;
-    
-    if (allCoordinates.length > 0) {
-      try {
-        const bounds = L.latLngBounds(allCoordinates.map(coord => [coord[0], coord[1]]));
-        // Add padding to bounds to prevent markers from being at the edge
-        currentMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-      } catch(err) {
-        console.error("Error fitting bounds:", err);
-        // Fallback to center view if bounds calculation fails
-        currentMap.setView(center, 11);
-      }
-    } else {
-      // Default view if no coordinates
-      currentMap.setView(center, 11);
-    }
-    
-    // Disable handlers that might interfere with zoom operation
-    currentMap._handlers.forEach(function(handler: any) {
-      if (handler._zoomAnimated) {
-        handler._zoomAnimated = false;
-      }
-    });
-    
-    // Prevent automatic zoom resets
-    const originalFitBounds = currentMap.fitBounds;
-    currentMap.fitBounds = function(...args: any[]) {
-      if (currentMap._loaded && !currentMap._lastInteraction) {
-        return originalFitBounds.apply(this, args);
-      }
-      return currentMap;
-    };
-  }, [center, allCoordinates]);
-  
-  return null;
-};
-
 interface RouteMapProps {
-  locations: LocationInfo[];
-  startLocation?: WaypointInfo;
-  endLocation?: WaypointInfo;
-  waypoints?: WaypointInfo[];
-  showRouting?: boolean;
+  center?: [number, number];
+  zoom?: number;
   height?: string;
-  width?: string;
+  showRouting?: boolean;
+  routeColor?: string;
+  locations?: LocationPoint[];
+  waypoints?: NamedCoords[];
+  startLocation?: NamedCoords;
+  endLocation?: NamedCoords;
   forceRouteUpdate?: boolean;
-  onRouteCalculated?: (routeInfo: {
-    distance: number;
-    duration: number;
-  }) => void;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
-  locations,
+  center = [-33.918861, 18.423300], // Cape Town default
+  zoom = 11,
+  height = '400px',
+  showRouting = false,
+  routeColor = '#3b82f6',
+  locations = [],
+  waypoints = [],
   startLocation,
   endLocation,
-  waypoints = [],
-  showRouting = false,
-  height = '500px',
-  width = '100%',
   forceRouteUpdate = false,
-  onRouteCalculated
 }) => {
-  const [isUserInteracting, setIsUserInteracting] = useState(false);
-  const [mapId, setMapId] = useState<string>(`map-${Date.now()}`);
-  
-  // Default map center (Cape Town, South Africa)
-  const defaultCenter: [number, number] = [-33.9249, 18.4241];
-  const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
-  
-  // Extract valid coordinates for all locations, start and end points
-  const validLocations = locations.filter(loc => 
-    loc.latitude !== null && loc.latitude !== undefined && 
-    loc.longitude !== null && loc.longitude !== undefined
-  );
-  
-  // Generate coordinates array for all markers
-  const allCoordinates: [number, number][] = [
-    // Add start location
-    ...(startLocation?.coords ? [startLocation.coords] : []),
-    // Add waypoints
-    ...(waypoints?.map(wp => wp.coords) || []),
-    // Add end location
-    ...(endLocation?.coords ? [endLocation.coords] : [])
-  ];
-  
-  // Create waypoints for routing in the format expected by Leaflet Routing Machine
-  const routingWaypoints = allCoordinates.map(coord => ({ lat: coord[0], lng: coord[1] }));
-  
-  // Calculate a better center point based on all coordinates
-  useEffect(() => {
-    if (allCoordinates.length > 0) {
-      // Calculate the average of all coordinates
-      const sumLat = allCoordinates.reduce((sum, coord) => sum + coord[0], 0);
-      const sumLng = allCoordinates.reduce((sum, coord) => sum + coord[1], 0);
-      
-      const avgLat = sumLat / allCoordinates.length;
-      const avgLng = sumLng / allCoordinates.length;
-      
-      setMapCenter([avgLat, avgLng]);
+  const routingMachineRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  // Calculate center based on all markers if not provided
+  const calculateCenter = () => {
+    if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
+      return center;
     }
-  }, [allCoordinates]);
-  
-  // Handle route calculation
-  const handleRouteFound = (route: { distance: number; duration: number; coordinates: [number, number][] }) => {
-    if (onRouteCalculated) {
-      onRouteCalculated({
-        distance: route.distance,
-        duration: route.duration
+
+    const points: [number, number][] = [];
+
+    if (startLocation) {
+      points.push(startLocation.coords);
+    }
+
+    if (endLocation) {
+      points.push(endLocation.coords);
+    }
+
+    waypoints.forEach((wp) => {
+      points.push(wp.coords);
+    });
+
+    locations.forEach((loc) => {
+      if (loc.latitude && loc.longitude) {
+        points.push([loc.latitude, loc.longitude]);
+      }
+    });
+
+    if (points.length === 0) {
+      return center;
+    }
+
+    // Calculate the center of all points
+    const lat = points.reduce((sum, point) => sum + point[0], 0) / points.length;
+    const lng = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+    return [lat, lng] as [number, number];
+  };
+
+  const calculatedCenter = calculateCenter();
+
+  useEffect(() => {
+    if (mapRef.current && showRouting) {
+      // Ensure the map is fully loaded
+      if (!mapRef.current._leaflet_id) {
+        return;
+      }
+
+      setMapReady(true);
+    }
+  }, [mapRef.current]);
+
+  useEffect(() => {
+    if (!mapReady || !showRouting || !mapRef.current) return;
+
+    const allWaypoints: L.LatLng[] = [];
+
+    // Add start location
+    if (startLocation) {
+      allWaypoints.push(L.latLng(startLocation.coords[0], startLocation.coords[1]));
+    }
+
+    // Add intermediate waypoints
+    if (waypoints && waypoints.length > 0) {
+      waypoints.forEach((wp) => {
+        allWaypoints.push(L.latLng(wp.coords[0], wp.coords[1]));
       });
     }
+
+    // Add end location
+    if (endLocation) {
+      allWaypoints.push(L.latLng(endLocation.coords[0], endLocation.coords[1]));
+    }
+
+    // Update routing if we have at least 2 waypoints
+    if (allWaypoints.length >= 2 && routingMachineRef.current) {
+      routingMachineRef.current.setWaypoints(allWaypoints);
+    }
+  }, [startLocation, endLocation, waypoints, mapReady, showRouting, forceRouteUpdate]);
+
+  const handleMapInit = (mapInstance: L.Map) => {
+    mapRef.current = mapInstance;
   };
-  
+
   return (
-    <div style={{ height, width }}>
-      <MapContainer
-        id={mapId}
-        style={{ height: '100%', width: '100%' }}
-        zoom={11}
-        center={mapCenter}
-        zoomControl={false}
-        whenReady={(mapInstance) => {
-          // Set up user interaction tracking
-          mapInstance.target.on('zoomstart', () => setIsUserInteracting(true));
-          mapInstance.target.on('zoomend', () => {
-            setTimeout(() => setIsUserInteracting(false), 200);
-          });
-          
-          // Capture all user interactions to prevent zoom resets
-          mapInstance.target.on('dragend', () => {
-            mapInstance.target._lastInteraction = Date.now();
-          });
-          mapInstance.target.on('zoomend', () => {
-            mapInstance.target._lastInteraction = Date.now();
-          });
-        }}
-        key={mapId}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <MapContainer
+      center={calculatedCenter}
+      zoom={zoom}
+      style={{ height, width: '100%' }}
+      whenCreated={handleMapInit as any}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      {mapReady && showRouting && (
+        <RoutingMachine
+          ref={routingMachineRef}
+          color={routeColor}
+          startLatLng={startLocation ? L.latLng(startLocation.coords[0], startLocation.coords[1]) : undefined}
+          endLatLng={endLocation ? L.latLng(endLocation.coords[0], endLocation.coords[1]) : undefined}
+          waypoints={waypoints?.map(wp => L.latLng(wp.coords[0], wp.coords[1]))}
         />
-        <ZoomControl position="bottomright" />
-        
-        <SetViewOnChange center={mapCenter} allCoordinates={allCoordinates} />
-        
-        {/* Render routing if requested and we have at least 2 points */}
-        {showRouting && routingWaypoints.length >= 2 && (
-          <RoutingMachine 
-            waypoints={routingWaypoints} 
-            forceRouteUpdate={forceRouteUpdate}
-            onRouteFound={handleRouteFound}
-          />
-        )}
-        
-        {/* Render start location */}
-        {startLocation?.coords && (
-          <DepotMarker
-            position={startLocation.coords}
-            name={startLocation.name}
-            isStart={true}
-          />
-        )}
-        
-        {/* Render waypoints */}
-        {waypoints?.map((waypoint, idx) => (
+      )}
+
+      <SetViewOnChange center={calculatedCenter} zoom={zoom} />
+
+      {startLocation && (
+        <DepotMarker
+          name={startLocation.name}
+          position={startLocation.coords}
+          isStart={true}
+        />
+      )}
+
+      {endLocation && (
+        <DepotMarker
+          name={endLocation.name}
+          position={endLocation.coords}
+          isEnd={true}
+        />
+      )}
+
+      {waypoints.map((wp, index) => (
+        <LocationMarker
+          key={`waypoint-${index}`}
+          id={`waypoint-${index}`}
+          name={wp.name}
+          position={wp.coords}
+          index={index + 1}
+        />
+      ))}
+
+      {locations.map((loc, index) => {
+        if (!loc.latitude || !loc.longitude) return null;
+        return (
           <LocationMarker
-            key={`waypoint-${idx}`}
-            position={waypoint.coords}
-            name={waypoint.name}
-            index={idx + 1}
+            key={loc.id || `loc-${index}`}
+            id={loc.id}
+            name={loc.name}
+            position={[loc.latitude, loc.longitude]}
+            address={loc.address}
           />
-        ))}
-        
-        {/* Render end location */}
-        {endLocation?.coords && (
-          <DepotMarker
-            position={endLocation.coords}
-            name={endLocation.name}
-            isEnd={true}
-          />
-        )}
-      </MapContainer>
-    </div>
+        );
+      })}
+    </MapContainer>
   );
 };
 

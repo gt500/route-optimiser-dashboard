@@ -2,87 +2,77 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { createLocationIcon, createIcon } from './Icons';
+import { createIcon, createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
-  position: [number, number];
+  id: string | number;
   name: string;
+  position: [number, number];
   address?: string;
-  cylinders?: number;
+  type?: string;
+  cylinders?: number | string;
+  fullCylinders?: number;
+  emptyCylinders?: number;
   index?: number;
-  onLocationClick?: () => void;
+  onClick?: (id: string | number) => void;
 }
 
 const LocationMarker: React.FC<LocationMarkerProps> = ({
-  position,
+  id,
   name,
+  position,
   address,
+  type,
   cylinders,
+  fullCylinders,
+  emptyCylinders,
   index,
-  onLocationClick
+  onClick
 }) => {
   if (!position || position.some(isNaN)) {
     console.error("Invalid position for LocationMarker:", position);
     return null;
   }
 
+  // Handle click event if provided
   const handleClick = () => {
-    if (onLocationClick) {
-      onLocationClick();
-    }
+    if (onClick) onClick(id);
   };
-  
-  const getIconOptions = () => {
-    let options: { label?: string | number; color?: string; customSize?: number } = {
-      customSize: 28
-    };
-    
-    if (index !== undefined) {
-      options.label = index;
-      
-      // Different colors based on index ranges
-      if (index < 5) {
-        options.color = '#6366F1'; // indigo
-      } else if (index < 10) {
-        options.color = '#8b5cf6'; // violet
-      } else if (index < 15) {
-        options.color = '#ec4899'; // pink
-      } else {
-        options.color = '#f97316'; // orange
-      }
-    } else {
-      options.label = 'L';
-      options.color = '#6366F1';
-    }
-    
-    return options;
-  };
-  
-  const iconHtml = createLocationIcon(getIconOptions());
-  
-  const locationIcon = createIcon(iconHtml);
+
+  // Create marker icon based on location type and index
+  let iconHtml;
+  if (index !== undefined) {
+    iconHtml = createLocationIcon({
+      label: `${index}`,
+      type: type || 'Customer'
+    });
+  } else {
+    iconHtml = createLocationIcon({
+      type: type || 'Customer'
+    });
+  }
+
+  const locationIcon = createIcon(iconHtml, [30, 30]);
 
   return (
-    <Marker 
+    <Marker
       position={position}
-      eventHandlers={onLocationClick ? { click: handleClick } : {}}
-      icon={locationIcon}
+      eventHandlers={onClick ? { click: handleClick } : {}}
+      icon={locationIcon as L.Icon}
     >
       <Popup>
         <div>
           <div className="font-semibold">{name}</div>
           {address && <div className="text-sm text-gray-600">{address}</div>}
+          {type && <div className="text-sm text-gray-600">Type: {type}</div>}
           {cylinders !== undefined && (
-            <div className="text-sm mt-1">
-              <span className="font-medium">Cylinders: </span> 
-              {cylinders}
-            </div>
+            <div className="text-sm text-gray-600">Cylinders: {cylinders}</div>
           )}
-          {index !== undefined && (
-            <div className="text-sm">
-              <span className="font-medium">Stop: </span> 
-              #{index}
-            </div>
+          {fullCylinders !== undefined && (
+            <div className="text-sm text-green-600">Full cylinders: {fullCylinders}</div>
+          )}
+          {emptyCylinders !== undefined && (
+            <div className="text-sm text-red-600">Empty cylinders: {emptyCylinders}</div>
           )}
         </div>
       </Popup>
