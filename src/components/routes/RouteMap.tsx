@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, ZoomControl, useMap, AttributionControl } from 'react-leaflet';
+import { MapContainer, TileLayer, ZoomControl, AttributionControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -105,6 +106,9 @@ const MapInitializer: React.FC<{
   return null;
 };
 
+// Fix useMap import
+import { useMap } from 'react-leaflet';
+
 const RouteMap: React.FC<RouteMapProps> = ({
   height = '600px',
   width = '100%',
@@ -124,19 +128,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
   
   // Calculate center based on available data
-  const mapCenter: [number, number] = depot ? 
-    [depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]] : 
-    locations.length > 0 ? 
-      [locations[0].latitude || locations[0].lat || defaultCenter[0], locations[0].longitude || locations[0].long || defaultCenter[1]] :
-      defaultCenter;
+  const mapCenter: [number, number] = locations.length > 0 ? 
+    [locations[0].latitude || locations[0].lat || defaultCenter[0], locations[0].longitude || locations[0].long || defaultCenter[1]] :
+    defaultCenter;
   
   // Collect all coordinates for bounds
   const allCoordinates: Array<[number, number]> = [];
-  
-  // Add depot coordinates
-  if (depot) {
-    allCoordinates.push([depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]);
-  }
   
   // Add location coordinates
   if (locations && locations.length > 0) {
@@ -178,6 +175,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // User interaction tracking
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   
+  // Unique ID for the map to prevent remnants
+  const mapId = React.useId();
+  
   // Cleanup effect for when component unmounts
   useEffect(() => {
     return () => {
@@ -189,39 +189,50 @@ const RouteMap: React.FC<RouteMapProps> = ({
       // Clean up any leaflet layers that might be lingering
       const mapContainers = document.querySelectorAll('.leaflet-container');
       mapContainers.forEach(container => {
-        const leafletId = container.getAttribute('id');
-        if (leafletId && (window as any)._leaflet_map_instances) {
-          delete (window as any)._leaflet_map_instances[leafletId];
+        // Force remove any map instances
+        const mapInstance = (L as any).DomUtil.getLeafletMap?.(container);
+        if (mapInstance) {
+          mapInstance.remove();
         }
+        
+        // Clean up DOM
+        container.innerHTML = '';
       });
       
-      // Remove any remaining event listeners
-      document.querySelectorAll('.leaflet-container').forEach(el => {
-        el.replaceWith(el.cloneNode(true));
-      });
+      // Clean up global Leaflet remnants
+      if ((window as any)._leaflet_map_instances) {
+        Object.keys((window as any)._leaflet_map_instances).forEach(key => {
+          delete (window as any)._leaflet_map_instances[key];
+        });
+      }
     };
   }, []);
   
   return (
     <div style={{ height, width }}>
-      <MapContainer
+      <MapContainer 
         style={{ height: '100%', width: '100%' }}
-        zoom={11}
+        center={mapCenter}
         zoomControl={false}
-        whenCreated={(mapInstance) => {
+        whenCreated={(mapInstance: any) => {
           // Set up user interaction tracking
           mapInstance.on('zoomstart', () => setIsUserInteracting(true));
           mapInstance.on('zoomend', () => {
             setTimeout(() => setIsUserInteracting(false), 200);
           });
+          
+          // Capture all user interactions to prevent zoom resets
+          mapInstance.on('dragend', () => mapInstance._lastInteraction = Date.now());
+          mapInstance.on('zoomend', () => mapInstance._lastInteraction = Date.now());
         }}
+        key={mapId}
       >
         <ZoomControl position="topright" />
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
         
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
         {/* Position attribution at bottom right and only show one instance */}
@@ -235,9 +246,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
             fitBounds={false} // Prevent RoutingMachine from resetting the view bounds
           />
         )}
-        
-        {/* Add depot marker only if depot is provided */}
-        {depot && <DepotMarker depot={depot} defaultCenter={defaultCenter} />}
         
         {/* Add location markers with sequence numbers */}
         {locationsWithSequence.map(location => (

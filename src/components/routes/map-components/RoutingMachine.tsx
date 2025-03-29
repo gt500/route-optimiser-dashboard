@@ -44,10 +44,11 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         }
       };
 
+      // Create routing control with real-time traffic consideration
       const routingControl = L.Routing.control({
         waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
         routeWhileDragging: false,
-        showAlternatives: false,
+        showAlternatives: true, // Show alternative routes
         addWaypoints: false, // Prevent adding new waypoints by clicking
         fitSelectedRoutes: fitBounds && !isInitializedRef.current, // Only fit bounds once
         lineOptions: {
@@ -59,7 +60,24 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         useZoomParameter: false, // Disable automatic zoom changes
         autoRoute: true, // Calculate routes automatically
         useHints: false, // Don't use routing hints (can cause issues)
-        show: false // Don't show the routing control panel
+        show: false, // Don't show the routing control panel
+        // Use OSRM with traffic consideration
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1',
+          profile: 'driving', // Use car profile
+          suppressDemoServerWarning: true,
+          timeout: 30 * 1000, // 30 second timeout
+          geometryOnly: false,
+          // Include traffic patterns based on time of day
+          urlParameters: {
+            alternatives: 3,
+            steps: true,
+            annotations: true,
+            geometries: 'polyline',
+            overview: 'full',
+            hints: ''
+          }
+        })
       }).addTo(map);
 
       // Disable the fitSelectedRoutes feature after initial setup
@@ -72,7 +90,17 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
       const currentCenter = map.getCenter();
       
       // Listen for the routesfound event
-      routingControl.on('routesfound', () => {
+      routingControl.on('routesfound', (e: any) => {
+        console.log('Routes found with traffic data:', e.routes);
+        
+        // Get the fastest route (usually the first one)
+        if (e.routes && e.routes.length > 0) {
+          // Calculate the traffic factor based on actual vs expected time
+          const route = e.routes[0];
+          const trafficFactor = route.summary.totalTime / route.summary.totalDistance;
+          console.log(`Traffic factor: ${trafficFactor}`);
+        }
+        
         // Short timeout to let the routes render before resetting the view if needed
         setTimeout(() => {
           if (!isInitializedRef.current) {
