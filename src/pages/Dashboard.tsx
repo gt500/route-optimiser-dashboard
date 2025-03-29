@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,8 @@ interface RouteData {
   total_duration: number;
   status: string;
   estimated_cost: number;
+  locationsCount?: number;
+  cylindersCount?: number;
 }
 
 interface DeliveryData {
@@ -59,10 +60,8 @@ const Dashboard = () => {
   const COLORS = ['#0088FE', '#D3D3D3'];
 
   useEffect(() => {
-    // Function to fetch all dashboard data
     const fetchDashboardData = async () => {
       try {
-        // Get date range for last week
         const today = new Date();
         const lastWeek = new Date(today);
         lastWeek.setDate(today.getDate() - 7);
@@ -70,7 +69,6 @@ const Dashboard = () => {
         const lastWeekFormatted = lastWeek.toISOString();
         const todayFormatted = today.toISOString();
 
-        // Fetch routes from last week
         const { data: recentRoutesData, error: routesError } = await supabase
           .from('routes')
           .select('*')
@@ -82,12 +80,9 @@ const Dashboard = () => {
           return;
         }
 
-        // Calculate dashboard metrics
         if (recentRoutesData) {
-          // Set total routes from last week
           setTotalRoutes(recentRoutesData.length);
-          
-          // Get unique locations delivered to
+
           const { data: deliveryData, error: deliveryError } = await supabase
             .from('deliveries')
             .select('location_id, route_id')
@@ -100,10 +95,8 @@ const Dashboard = () => {
             setTotalLocations(uniqueLocations.size);
           }
           
-          // Calculate average time saved
-          const standardRouteTime = 95; // minutes for standard route
+          const standardRouteTime = 95;
           const totalTimeSaved = recentRoutesData.reduce((total, route) => {
-            // Assume standard time would be 25% longer than optimized
             const standardTime = route.total_duration * 1.25;
             return total + (standardTime - route.total_duration);
           }, 0);
@@ -113,24 +106,20 @@ const Dashboard = () => {
           
           setAvgTimeSaved(Math.round(avgTimePerRoute));
           
-          // Calculate fuel savings
           const fuelCostPerLiter = 21.95;
           const totalFuelSaved = recentRoutesData.reduce((total, route) => {
-            // Assume optimized route saves about 15% fuel
             const standardFuelCost = route.estimated_cost * 1.15;
             return total + (standardFuelCost - route.estimated_cost);
           }, 0);
           
           setFuelSavings(Math.round(totalFuelSaved));
           
-          // Set optimization data for pie chart
           setOptimizationData([
             { name: 'Routes Optimized', value: recentRoutesData.length },
             { name: 'Standard Routes', value: Math.round(recentRoutesData.length * 0.32) },
           ]);
         }
 
-        // Get upcoming deliveries (scheduled but not completed)
         const { data: upcomingData, error: upcomingError } = await supabase
           .from('routes')
           .select('*')
@@ -141,7 +130,6 @@ const Dashboard = () => {
         if (upcomingError) {
           console.error('Error fetching upcoming deliveries:', upcomingError);
         } else if (upcomingData) {
-          // Get location details for each upcoming delivery
           const upcomingWithDetails = await Promise.all(upcomingData.map(async (route) => {
             const { data: deliveries } = await supabase
               .from('deliveries')
@@ -150,15 +138,14 @@ const Dashboard = () => {
               
             return {
               ...route,
-              locations: deliveries?.length || 0,
-              cylinders: route.total_cylinders
+              locationsCount: deliveries?.length || 0,
+              cylindersCount: route.total_cylinders
             };
           }));
           
           setUpcomingDeliveries(upcomingWithDetails);
         }
 
-        // Get recent completed routes
         const { data: completedData, error: completedError } = await supabase
           .from('routes')
           .select('*')
@@ -171,11 +158,9 @@ const Dashboard = () => {
         } else if (completedData) {
           setRecentRoutes(completedData);
         } else {
-          // Use recent routes as fallback if no completed ones
           setRecentRoutes(recentRoutesData?.slice(0, 3) || []);
         }
 
-        // Get weekly delivery data for chart
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const weeklyData = daysOfWeek.map(day => ({ name: day, deliveries: 0 }));
         
@@ -343,7 +328,7 @@ const Dashboard = () => {
                     <div className="flex-1">
                       <div className="font-medium">{delivery.name}</div>
                       <div className="text-sm text-gray-400">
-                        {delivery.locations} locations • {delivery.cylinders} cylinders • {new Date(delivery.date).toLocaleDateString()}
+                        {delivery.locationsCount} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
                       </div>
                     </div>
                     <Button size="sm" variant="ghost">

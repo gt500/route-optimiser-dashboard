@@ -145,14 +145,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   return (
     <MapContainer
+      ref={handleMapInit}
       center={calculatedCenter}
       zoom={zoom}
       style={{ height, width: '100%' }}
-      whenCreated={handleMapInit as any}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
       {mapReady && showRouting && allWaypoints.length >= 2 && (

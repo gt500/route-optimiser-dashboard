@@ -18,10 +18,18 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
     label: isEnd ? 'E' : 'S'
   }), [28, 28]);
   
+  // Create a Leaflet icon
+  const markerIcon = new L.DivIcon({
+    className: 'custom-div-icon',
+    html: icon as string,
+    iconSize: [28, 28] as L.PointExpression,
+    iconAnchor: [14, 14] as L.PointExpression
+  });
+  
   return (
     <Marker 
       position={position}
-      icon={icon as L.Icon}
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">

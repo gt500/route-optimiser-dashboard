@@ -22,9 +22,17 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   onClick
 }) => {
   // Create a custom icon based on the index
-  const iconWithIndex = index !== undefined 
-    ? createIcon(createLocationIcon({ label: index }), [28, 28])
-    : createIcon(createLocationIcon({}), [28, 28]);
+  const iconHtml = index !== undefined 
+    ? createLocationIcon({ label: index })
+    : createLocationIcon({});
+  
+  // Create a Leaflet icon
+  const markerIcon = new L.DivIcon({
+    className: 'custom-div-icon',
+    html: iconHtml,
+    iconSize: [28, 28] as L.PointExpression,
+    iconAnchor: [14, 14] as L.PointExpression
+  });
   
   const eventHandlers = onClick ? {
     click: onClick
@@ -34,7 +42,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      icon={iconWithIndex as L.Icon}
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">
