@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, ZoomControl, AttributionControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -30,6 +30,7 @@ interface RouteMapProps {
     lat?: number;
     long?: number;
     address: string;
+    sequence?: number;
   }>;
   routes?: Array<{
     id: string;
@@ -69,18 +70,30 @@ const MapInitializer: React.FC<{
 }> = ({ center, allCoordinates }) => {
   const map = useMap();
   
-  React.useEffect(() => {
-    map.setView(center, 11);
-    
-    // Add bounds controller if coordinates are available
+  useEffect(() => {
     if (allCoordinates.length > 0) {
       try {
         const bounds = L.latLngBounds(allCoordinates.map(coord => [coord[0], coord[1]]));
-        map.fitBounds(bounds, { padding: [50, 50] });
+        // Add padding to bounds to prevent markers from being at the edge
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
       } catch(err) {
         console.error("Error fitting bounds:", err);
+        // Fallback to center view if bounds calculation fails
+        map.setView(center, 11);
       }
+    } else {
+      // Default view if no coordinates
+      map.setView(center, 11);
     }
+    
+    // This helps prevent constant zooming issues
+    return () => {
+      map._handlers.forEach(function(handler) {
+        if (handler._zoomAnimated) {
+          handler._zoomAnimated = false;
+        }
+      });
+    };
   }, [map, center, allCoordinates]);
   
   return null;
@@ -124,7 +137,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Add location coordinates
   if (locations && locations.length > 0) {
     locations.forEach(loc => {
-      allCoordinates.push([loc.latitude || loc.lat || 0, loc.longitude || loc.long || 0]);
+      if ((loc.latitude || loc.lat) && (loc.longitude || loc.long)) {
+        allCoordinates.push([loc.latitude || loc.lat || 0, loc.longitude || loc.long || 0]);
+      }
     });
   }
   
@@ -150,12 +165,20 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
   }
   
+  // Add sequence numbers to locations for display order
+  const locationsWithSequence = locations.map((loc, index) => ({
+    ...loc,
+    sequence: index
+  }));
+  
   return (
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        scrollWheelZoom={true}
+        attributionControl={false}
       >
+        <AttributionControl position="bottomright" />
+        <ZoomControl position="topright" />
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
         
         <TileLayer
@@ -165,14 +188,18 @@ const RouteMap: React.FC<RouteMapProps> = ({
         
         {/* Add routing if a route is selected or explicit routing is requested */}
         {(selectedRoute || (showRouting && routingWaypoints.length >= 2)) && (
-          <RoutingMachine waypoints={routingWaypoints} />
+          <RoutingMachine 
+            waypoints={routingWaypoints}
+            color="#6366F1"
+            fitBounds={false} // Prevent RoutingMachine from resetting the view bounds
+          />
         )}
         
         {/* Add depot marker */}
         {depot && <DepotMarker depot={depot} defaultCenter={defaultCenter} />}
         
-        {/* Add location markers */}
-        {locations.map(location => (
+        {/* Add location markers with sequence numbers */}
+        {locationsWithSequence.map(location => (
           <LocationMarker 
             key={location.id.toString()}
             location={location}
