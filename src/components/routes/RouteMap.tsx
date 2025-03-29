@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -38,24 +38,26 @@ const locationIcon = new L.Icon({
 
 // Map bounds control component
 const SetViewOnChange = ({ coordinates }: { coordinates: Array<[number, number]> }) => {
-  const map = useMap();
+  const mapRef = React.useRef<L.Map | null>(null);
   
-  useEffect(() => {
+  React.useEffect(() => {
+    if (!mapRef.current) return;
+    
     if (coordinates && coordinates.length > 0) {
       const bounds = L.latLngBounds(coordinates.map(coord => [coord[0], coord[1]]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [coordinates, map]);
+  }, [coordinates]);
   
   return null;
 };
 
 // Routing control component
 const RoutingMachine = ({ waypoints }: { waypoints: Array<[number, number]> }) => {
-  const map = useMap();
+  const mapRef = React.useRef<L.Map | null>(null);
 
-  useEffect(() => {
-    if (!waypoints || waypoints.length < 2) return;
+  React.useEffect(() => {
+    if (!mapRef.current || !waypoints || waypoints.length < 2) return;
 
     const routingControl = L.Routing.control({
       waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
@@ -68,12 +70,14 @@ const RoutingMachine = ({ waypoints }: { waypoints: Array<[number, number]> }) =
         missingRouteTolerance: 0
       },
       createMarker: function() { return null; } // Disable default markers
-    }).addTo(map);
+    }).addTo(mapRef.current);
 
     return () => {
-      map.removeControl(routingControl);
+      if (mapRef.current) {
+        mapRef.current.removeControl(routingControl);
+      }
     };
-  }, [waypoints, map]);
+  }, [waypoints]);
 
   return null;
 };
@@ -184,13 +188,18 @@ const RouteMap: React.FC<RouteMapProps> = ({
       routingWaypoints.push(endLocation.coords);
     }
   }
+
+  // Use ref for map instance
+  const mapRef = React.useRef<L.Map | null>(null);
   
   return (
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        center={mapCenter}
-        zoom={11}
+        whenCreated={(map) => {
+          mapRef.current = map;
+          map.setView(mapCenter, 11);
+        }}
         scrollWheelZoom
       >
         <TileLayer
@@ -199,7 +208,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
         />
         
         {/* Add bounds controller */}
-        <SetViewOnChange coordinates={allCoordinates} />
+        {allCoordinates.length > 0 && (
+          <SetViewOnChange coordinates={allCoordinates} />
+        )}
         
         {/* Add routing if a route is selected or explicit routing is requested */}
         {(selectedRoute || (showRouting && routingWaypoints.length >= 2)) && (
@@ -210,7 +221,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {depot && (
           <Marker 
             position={[depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]}
-            icon={homeIcon}
+            icon={homeIcon as any}
           >
             <Popup>
               <div>
@@ -226,7 +237,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           <Marker 
             key={location.id.toString()}
             position={[location.latitude || location.lat || 0, location.longitude || location.long || 0]}
-            icon={locationIcon}
+            icon={locationIcon as any}
             eventHandlers={{
               click: () => {
                 if (onLocationClick) onLocationClick(location.id.toString());
