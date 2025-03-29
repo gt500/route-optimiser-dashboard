@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -95,15 +94,6 @@ const RouteDetails = ({
     }
   };
   
-  // Handle route data updates from the map component
-  const handleRouteDataUpdate = (distance: number, duration: number) => {
-    setRouteDistance(distance);
-    setRouteDuration(duration);
-    if (onRouteDataUpdate) {
-      onRouteDataUpdate(distance, duration);
-    }
-  };
-  
   // Calculate the actual fuel consumption based on distance
   const calculateFuelConsumption = () => {
     return routeDistance * 0.12; // 12L per 100km
@@ -122,11 +112,13 @@ const RouteDetails = ({
   const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
   const handleLocationChange = (locationId: string) => {
+    console.log("Selected location ID:", locationId);
     setSelectedLocationId(locationId);
   };
   
   const handleAddLocation = () => {
     if (selectedLocationId) {
+      console.log("Adding location with ID:", selectedLocationId);
       onAddNewLocation(selectedLocationId);
       setAddLocationOpen(false);
       setSelectedLocationId("");

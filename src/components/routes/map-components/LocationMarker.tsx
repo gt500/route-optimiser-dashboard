@@ -16,6 +16,12 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   // Only create ref for popup if we're actually showing one
   const popupRef = React.useRef<L.Popup>(null);
   
+  // Skip rendering if position contains NaN or zeros
+  if (position.some(coord => isNaN(coord) || coord === 0)) {
+    console.warn(`Skipping marker for ${name} due to invalid coordinates:`, position);
+    return null;
+  }
+  
   // Handle marker click to open popup
   const handleMarkerClick = () => {
     if (popupRef.current) {
@@ -26,7 +32,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   // Create a custom icon with the index number if provided
   const getCustomIcon = () => {
     const html = createLocationIcon({ 
-      label: index !== undefined ? index : '',
+      label: index !== undefined ? String(index) : '',
       type: 'Customer'
     });
     
@@ -38,15 +44,10 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
     });
   };
 
-  // Skip rendering if position contains NaN or zeros
-  if (position.some(coord => isNaN(coord) || coord === 0)) {
-    console.warn(`Skipping marker for ${name} due to invalid coordinates:`, position);
-    return null;
-  }
-
   return (
     <Marker 
       position={position}
+      icon={getCustomIcon()}
       eventHandlers={{
         click: handleMarkerClick
       }}

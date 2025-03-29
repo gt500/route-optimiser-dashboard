@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -225,7 +226,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
       {waypoints.map((wp, index) => (
         <LocationMarker
-          key={`waypoint-${index}`}
+          key={`waypoint-${wp.name}-${index}`}
           id={`waypoint-${index}`}
           name={wp.name}
           position={wp.coords}
@@ -237,7 +238,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         if (!loc.latitude || !loc.longitude) return null;
         return (
           <LocationMarker
-            key={loc.id || `loc-${index}`}
+            key={`location-${loc.id}-${index}`}
             id={loc.id}
             name={loc.name}
             position={[loc.latitude, loc.longitude]}
