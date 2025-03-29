@@ -26,7 +26,6 @@ import {
   FileText,
   Calendar,
   Clock,
-  Wrench,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -60,7 +59,7 @@ const menuItems = [
     subItems: [
       {
         title: "Delivery Reports",
-        path: "/reports/delivery/daily",
+        path: "/reports/delivery",
         isSubmenu: true,
         subItems: [
           { title: "Daily Reports", path: "/reports/delivery/daily" },
@@ -70,7 +69,7 @@ const menuItems = [
       },
       {
         title: "Maintenance Reports",
-        path: "/reports/maintenance/schedule",
+        path: "/reports/maintenance",
         isSubmenu: true,
         subItems: [
           { title: "Maintenance Schedule", path: "/reports/maintenance/schedule" },
@@ -92,7 +91,10 @@ const menuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    Reports: true, // Open reports section by default
+    "Delivery Reports": true, // Open delivery reports subsection by default
+  });
 
   const toggleSection = (title: string) => {
     setOpenSections(prev => ({
@@ -151,7 +153,7 @@ export function AppSidebar() {
                             <item.icon className="h-5 w-5" />
                             <span>{item.title}</span>
                           </div>
-                          <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openSections[item.title] ? 'rotate-180' : ''}`} />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
@@ -168,7 +170,7 @@ export function AppSidebar() {
                                       className={`w-full justify-between ${isActivePath(subItem.path) ? 'font-medium text-primary' : ''}`}
                                     >
                                       <span>{subItem.title}</span>
-                                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openSections[subItem.title] ? 'rotate-180' : ''}`} />
                                     </SidebarMenuSubButton>
                                   </CollapsibleTrigger>
                                   <CollapsibleContent>

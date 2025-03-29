@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { Download, FileSpreadsheet, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns';
+import { Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
 
 // Sample data for daily deliveries
 const sampleDeliveries = [
@@ -30,29 +29,10 @@ const sampleDeliveries = [
   { id: 10, siteName: 'Clara Anna', cylinders: 5, kms: 10.5, fuelCost: 16.90, date: '2023-07-12' },
 ];
 
-const DailyReports = () => {
+const WeeklyReports = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadConfirmed, setIsLoadConfirmed] = useState(false);
-
-  const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
-  const filteredDeliveries = sampleDeliveries.filter(
-    delivery => delivery.date === formattedDate
-  );
-
-  // Calculate totals
-  const totalCylinders = filteredDeliveries.reduce((sum, delivery) => sum + delivery.cylinders, 0);
-  const totalKms = filteredDeliveries.reduce((sum, delivery) => sum + delivery.kms, 0);
-  const totalFuelCost = filteredDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
-
-  const handleRefresh = () => {
-    setIsLoading(true);
-    // Simulate data loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-  };
 
   const handleTabChange = (value: string) => {
     switch (value) {
@@ -70,19 +50,55 @@ const DailyReports = () => {
     }
   };
 
-  const confirmLoad = () => {
-    setIsLoadConfirmed(true);
-    toast.success('Load confirmed successfully', {
-      description: `Delivery data for ${formattedDate} has been stored.`
-    });
+  const handleRefresh = () => {
+    setIsLoading(true);
+    // Simulate data loading
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+  };
+
+  // Calculate week start and end dates
+  const weekStart = date ? startOfWeek(date, { weekStartsOn: 1 }) : startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = date ? endOfWeek(date, { weekStartsOn: 1 }) : endOfWeek(new Date(), { weekStartsOn: 1 });
+  
+  // Format for display
+  const weekRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+
+  // Create daily summary for the selected week
+  const dailySummary = Array.from({ length: 7 }, (_, i) => {
+    const currentDate = addDays(weekStart, i);
+    const formattedDate = format(currentDate, 'yyyy-MM-dd');
     
-    // In a real implementation, this would save the data to Supabase or other backend
-    // Example: supabase.from('deliveries').insert([...filteredDeliveries])
+    const dayDeliveries = sampleDeliveries.filter(
+      delivery => delivery.date === formattedDate
+    );
+    
+    const totalCylinders = dayDeliveries.reduce((sum, delivery) => sum + delivery.cylinders, 0);
+    const totalKms = dayDeliveries.reduce((sum, delivery) => sum + delivery.kms, 0);
+    const totalFuelCost = dayDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
+    
+    return {
+      date: currentDate,
+      formattedDate: format(currentDate, 'EEE, MMM d'),
+      deliveries: dayDeliveries.length,
+      totalCylinders,
+      totalKms,
+      totalFuelCost
+    };
+  });
+
+  // Calculate weekly totals
+  const weeklyTotals = {
+    deliveries: dailySummary.reduce((sum, day) => sum + day.deliveries, 0),
+    cylinders: dailySummary.reduce((sum, day) => sum + day.totalCylinders, 0),
+    kms: dailySummary.reduce((sum, day) => sum + day.totalKms, 0),
+    fuelCost: dailySummary.reduce((sum, day) => sum + day.totalFuelCost, 0)
   };
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="daily" onValueChange={handleTabChange}>
+      <Tabs defaultValue="weekly" onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="daily">Daily</TabsTrigger>
           <TabsTrigger value="weekly">Weekly</TabsTrigger>
@@ -93,7 +109,7 @@ const DailyReports = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Select Date</CardTitle>
+            <CardTitle>Select Week</CardTitle>
           </CardHeader>
           <CardContent>
             <Calendar
@@ -113,14 +129,6 @@ const DailyReports = () => {
                     <RefreshCw className="mr-2 h-4 w-4" /> Refresh Data
                   </>
                 )}
-              </Button>
-              <Button 
-                onClick={confirmLoad} 
-                className="w-full bg-green-500 hover:bg-green-600" 
-                disabled={isLoadConfirmed || filteredDeliveries.length === 0}
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" /> 
-                {isLoadConfirmed ? 'Load Confirmed' : 'Confirm Load'}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -143,49 +151,38 @@ const DailyReports = () => {
 
         <Card className="col-span-1 md:col-span-2">
           <CardHeader>
-            <CardTitle>Daily Deliveries: {formattedDate}</CardTitle>
+            <CardTitle>Weekly Summary: {weekRange}</CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredDeliveries.length > 0 ? (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Site Name</TableHead>
-                      <TableHead>Cylinders</TableHead>
-                      <TableHead>Distance (km)</TableHead>
-                      <TableHead>Fuel Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDeliveries.map((delivery) => (
-                      <TableRow key={delivery.id}>
-                        <TableCell>{delivery.siteName}</TableCell>
-                        <TableCell>{delivery.cylinders}</TableCell>
-                        <TableCell>{delivery.kms.toFixed(1)}</TableCell>
-                        <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="font-bold">
-                      <TableCell>TOTALS</TableCell>
-                      <TableCell>{totalCylinders}</TableCell>
-                      <TableCell>{totalKms.toFixed(1)}</TableCell>
-                      <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-                {isLoadConfirmed && (
-                  <div className="mt-4 p-2 bg-green-100 text-green-800 rounded-md flex items-center">
-                    <CheckCircle2 className="mr-2 h-5 w-5" /> 
-                    Load confirmed and saved for this date
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">No deliveries found for this date.</p>
-              </div>
-            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Day</TableHead>
+                  <TableHead>Deliveries</TableHead>
+                  <TableHead>Cylinders</TableHead>
+                  <TableHead>Distance (km)</TableHead>
+                  <TableHead>Fuel Cost</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dailySummary.map((day) => (
+                  <TableRow key={day.formattedDate}>
+                    <TableCell>{day.formattedDate}</TableCell>
+                    <TableCell>{day.deliveries}</TableCell>
+                    <TableCell>{day.totalCylinders}</TableCell>
+                    <TableCell>{day.totalKms.toFixed(1)}</TableCell>
+                    <TableCell>R{day.totalFuelCost.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-bold">
+                  <TableCell>WEEKLY TOTALS</TableCell>
+                  <TableCell>{weeklyTotals.deliveries}</TableCell>
+                  <TableCell>{weeklyTotals.cylinders}</TableCell>
+                  <TableCell>{weeklyTotals.kms.toFixed(1)}</TableCell>
+                  <TableCell>R{weeklyTotals.fuelCost.toFixed(2)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
@@ -193,4 +190,4 @@ const DailyReports = () => {
   );
 };
 
-export default DailyReports;
+export default WeeklyReports;

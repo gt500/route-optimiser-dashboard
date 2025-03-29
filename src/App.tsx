@@ -17,6 +17,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import ReportsLayout from "./pages/reports/ReportsLayout";
 import DailyReports from "./pages/reports/delivery/DailyReports";
+import WeeklyReports from "./pages/reports/delivery/WeeklyReports";
+import MonthlyReports from "./pages/reports/delivery/MonthlyReports";
 
 const queryClient = new QueryClient();
 
@@ -45,8 +47,8 @@ const App = () => (
                   <Route index element={<Navigate to="/reports/delivery/daily" replace />} />
                   <Route path="delivery">
                     <Route path="daily" element={<DailyReports />} />
-                    <Route path="weekly" element={<DailyReports />} />
-                    <Route path="monthly" element={<DailyReports />} />
+                    <Route path="weekly" element={<WeeklyReports />} />
+                    <Route path="monthly" element={<MonthlyReports />} />
                   </Route>
                   <Route path="maintenance">
                     <Route path="schedule" element={<DailyReports />} />

@@ -1,239 +1,210 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { Truck, Home, MapPin } from 'lucide-react';
 
-// Define marker icons
-const startIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Fix Leaflet icon issues
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-const endIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Custom icons
+const truckIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3774/3774278.png',
+  iconSize: [35, 35],
+  iconAnchor: [17, 35],
+  popupAnchor: [0, -35],
 });
 
-const waypointIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+const homeIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/25/25694.png',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30],
 });
 
-// Sample location data
-const locations = [
-  { 
-    id: 1, 
-    name: 'Afrox Epping Depot', 
-    description: 'Industrial gas supplier', 
-    address: '121 Bofors Circle, Epping Industria 2, Cape Town', 
-    coords: [-33.927771, 18.535212],
-    type: 'start'
-  },
-  { 
-    id: 2, 
-    name: 'Food Lovers Sunningdale', 
-    description: 'Grocery store', 
-    address: 'Sunningdale Shopping Centre, Sunningdale, Cape Town', 
-    coords: [-33.796696, 18.482478],
-    type: 'waypoint'
-  },
-  { 
-    id: 3, 
-    name: 'Pick n Pay TableView', 
-    description: 'Grocery store', 
-    address: 'Bayside Mall, Blaauwberg Rd, Table View, Cape Town', 
-    coords: [-33.825340, 18.485180],
-    type: 'waypoint'
-  },
-  { 
-    id: 4, 
-    name: 'SUPERSPAR Parklands', 
-    description: 'Grocery store', 
-    address: 'Village Square, Parklands Main Rd, Parklands, Cape Town', 
-    coords: [-33.817554, 18.488649],
-    type: 'waypoint'
-  },
-  { 
-    id: 5, 
-    name: 'West Coast Village', 
-    description: 'Shopping center', 
-    address: 'West Coast Village Shopping Centre, West Coast, Cape Town', 
-    coords: [-33.827917, 18.487117],
-    type: 'end'
-  }
-];
+const locationIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1483/1483336.png',
+  iconSize: [25, 25],
+  iconAnchor: [12, 25],
+  popupAnchor: [0, -25],
+});
 
-interface RouteMapProps {
-  startLocation?: { name: string; coords: [number, number] };
-  endLocation?: { name: string; coords: [number, number] };
-  waypoints?: { name: string; coords: [number, number] }[];
-  showRouting?: boolean;
-  allowSelection?: boolean;
-  onLocationSelect?: (location: any) => void;
-  locations?: any[];
-}
-
-// Component to initialize routing after the map is loaded
-const RoutingMachine: React.FC<{
-  startLocation?: { coords: [number, number] };
-  endLocation?: { coords: [number, number] };
-  waypoints?: { coords: [number, number] }[];
-  showRouting: boolean;
-}> = ({ startLocation, endLocation, waypoints = [], showRouting }) => {
+// Map bounds control component
+const SetViewOnChange = ({ coordinates }) => {
   const map = useMap();
   
   useEffect(() => {
-    if (showRouting && startLocation && endLocation) {
-      const routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(startLocation.coords[0], startLocation.coords[1]),
-          ...waypoints.map(wp => L.latLng(wp.coords[0], wp.coords[1])),
-          L.latLng(endLocation.coords[0], endLocation.coords[1])
-        ],
-        routeWhileDragging: false,
-        showAlternatives: true,
-        fitSelectedRoutes: true,
-        show: false, // Hide the routing instructions
-        lineOptions: {
-          styles: [{ color: '#6366F1', opacity: 0.8, weight: 6 }]
-        },
-        altLineOptions: {
-          styles: [{ color: '#D1D5DB', opacity: 0.8, weight: 6 }]
-        }
-      }).addTo(map);
-
-      // Hide the routing container
-      const routingContainer = document.querySelector('.leaflet-routing-container');
-      if (routingContainer) {
-        routingContainer.classList.add('hidden');
-      }
-      
-      return () => {
-        map.removeControl(routingControl);
-      };
+    if (coordinates && coordinates.length > 0) {
+      const bounds = L.latLngBounds(coordinates.map(coord => [coord[0], coord[1]]));
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [map, startLocation, endLocation, waypoints, showRouting]);
+  }, [coordinates, map]);
   
   return null;
 };
 
+// Routing control component
+const RoutingMachine = ({ waypoints }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!waypoints || waypoints.length < 2) return;
+
+    const routingControl = L.Routing.control({
+      waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
+      routeWhileDragging: false,
+      showAlternatives: false,
+      fitSelectedRoutes: true,
+      lineOptions: {
+        styles: [{ color: '#6366F1', weight: 4 }],
+        extendToWaypoints: true,
+        missingRouteTolerance: 0
+      },
+      createMarker: function() { return null; } // Disable default markers
+    }).addTo(map);
+
+    return () => {
+      map.removeControl(routingControl);
+    };
+  }, [waypoints, map]);
+
+  return null;
+};
+
+interface RouteMapProps {
+  height?: string;
+  width?: string;
+  locations?: Array<{
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    address: string;
+  }>;
+  routes?: Array<{
+    id: string;
+    name: string;
+    points: Array<[number, number]>;
+  }>;
+  selectedRouteId?: string;
+  isEditable?: boolean;
+  onLocationClick?: (locationId: string) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  depot?: {
+    latitude: number;
+    longitude: number;
+    name: string;
+  };
+}
+
 const RouteMap: React.FC<RouteMapProps> = ({
-  startLocation,
-  endLocation,
-  waypoints = [],
-  showRouting = false,
-  allowSelection = false,
-  onLocationSelect,
-  locations: customLocations
+  height = '600px',
+  width = '100%',
+  locations = [],
+  routes = [],
+  selectedRouteId,
+  isEditable = false,
+  onLocationClick,
+  onMapClick,
+  depot = {
+    latitude: -33.9258,
+    longitude: 18.4232,
+    name: 'Cape Town Depot'
+  }
 }) => {
-  const navigate = useNavigate();
+  // Default center if no locations or depot
+  const defaultCenter: [number, number] = [-33.9258, 18.4232]; // Cape Town
   
-  // Use Cape Town as default center if no points are provided
-  const defaultCenter: [number, number] = [-33.915538, 18.572645];
+  // Calculate center based on available data
+  const [mapCenter, setMapCenter] = useState<[number, number]>(
+    depot ? [depot.latitude, depot.longitude] : defaultCenter
+  );
   
-  // If we have a start and end, calculate center point between them
-  const calculateCenterAndZoom = () => {
-    if (startLocation && endLocation) {
-      const lat = (startLocation.coords[0] + endLocation.coords[0]) / 2;
-      const lng = (startLocation.coords[1] + endLocation.coords[1]) / 2;
-      return [lat, lng] as [number, number];
-    }
-    
-    if (startLocation) {
-      return startLocation.coords;
-    }
-    
-    if (endLocation) {
-      return endLocation.coords;
-    }
-    
-    return defaultCenter;
-  };
-
-  const center = calculateCenterAndZoom();
-
-  const getMarkerIcon = (type: string) => {
-    switch (type) {
-      case 'start':
-        return startIcon;
-      case 'end':
-        return endIcon;
-      default:
-        return waypointIcon;
+  // Collect all coordinates for bounds
+  const allCoordinates: Array<[number, number]> = [];
+  
+  // Add depot coordinates
+  if (depot) {
+    allCoordinates.push([depot.latitude, depot.longitude]);
+  }
+  
+  // Add location coordinates
+  if (locations && locations.length > 0) {
+    locations.forEach(loc => {
+      allCoordinates.push([loc.latitude, loc.longitude]);
+    });
+  }
+  
+  // Get selected route
+  const selectedRoute = routes.find(route => route.id === selectedRouteId);
+  const routeWaypoints = selectedRoute ? selectedRoute.points : [];
+  
+  const handleMapClick = (e: L.LeafletMouseEvent) => {
+    if (isEditable && onMapClick) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
     }
   };
-
-  // Determine which locations to display
-  const displayLocations = customLocations || locations;
 
   return (
-    <div className="h-full w-full rounded-md overflow-hidden border">
-      <MapContainer 
-        center={center}
-        zoom={11}
+    <div style={{ height, width }}>
+      <MapContainer
         style={{ height: '100%', width: '100%' }}
+        zoom={13}
+        scrollWheelZoom={true}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {showRouting && startLocation && endLocation && (
-          <RoutingMachine 
-            startLocation={startLocation}
-            endLocation={endLocation}
-            waypoints={waypoints}
-            showRouting={showRouting}
-          />
+        {/* Add bounds controller */}
+        <SetViewOnChange coordinates={allCoordinates} />
+        
+        {/* Add routing if a route is selected */}
+        {selectedRoute && <RoutingMachine waypoints={routeWaypoints} />}
+        
+        {/* Add depot marker */}
+        {depot && (
+          <Marker 
+            position={[depot.latitude, depot.longitude]} 
+            icon={homeIcon as any}
+          >
+            <Popup>
+              <div>
+                <h3 className="font-bold">{depot.name}</h3>
+                <p>Depot / Starting Point</p>
+              </div>
+            </Popup>
+          </Marker>
         )}
         
-        {/* Display markers for all locations */}
-        {displayLocations && displayLocations.map((location) => {
-          // Convert location to needed format if it's from the Locations page
-          const coords = location.coords || [location.lat, location.long];
-          const locationType = location.type?.toLowerCase() === 'storage' ? 'start' : 'waypoint';
-          
-          return (
-            <Marker 
-              key={location.id}
-              position={coords as [number, number]}
-              icon={getMarkerIcon(location.type || locationType)}
-            >
-              <Popup>
-                <div className="p-1">
-                  <h3 className="font-semibold">{location.name}</h3>
-                  <p className="text-sm text-gray-600">{location.description || location.type}</p>
-                  <p className="text-xs text-gray-500">{location.address}</p>
-                  {allowSelection && (
-                    <Button 
-                      size="sm" 
-                      className="mt-2 w-full" 
-                      onClick={() => onLocationSelect && onLocationSelect(location)}
-                    >
-                      Select
-                    </Button>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+        {/* Add location markers */}
+        {locations.map(location => (
+          <Marker 
+            key={location.id}
+            position={[location.latitude, location.longitude]}
+            icon={locationIcon as any}
+            eventHandlers={{
+              click: () => {
+                if (onLocationClick) onLocationClick(location.id);
+              }
+            }}
+          >
+            <Popup>
+              <div>
+                <h3 className="font-bold">{location.name}</h3>
+                <p className="text-sm">{location.address}</p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );
