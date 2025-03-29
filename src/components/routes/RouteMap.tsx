@@ -79,40 +79,40 @@ const MapInitializer: React.FC<{
   }, []);
   
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
+    const currentMap = mapRef.current;
+    if (!currentMap) return;
     
     if (allCoordinates.length > 0) {
       try {
         const bounds = L.latLngBounds(allCoordinates.map(coord => [coord[0], coord[1]]));
         // Add padding to bounds to prevent markers from being at the edge
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+        currentMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
       } catch(err) {
         console.error("Error fitting bounds:", err);
         // Fallback to center view if bounds calculation fails
-        map.setView(center, 11);
+        currentMap.setView(center, 11);
       }
     } else {
       // Default view if no coordinates
-      map.setView(center, 11);
+      currentMap.setView(center, 11);
     }
     
     // Disable handlers that might interfere with zoom operation
-    map._handlers.forEach(function(handler: any) {
+    currentMap._handlers.forEach(function(handler: any) {
       if (handler._zoomAnimated) {
         handler._zoomAnimated = false;
       }
     });
     
     // Prevent automatic zoom resets
-    const originalFitBounds = map.fitBounds;
-    map.fitBounds = function(...args: any[]) {
-      if (map._loaded && !map._lastInteraction) {
+    const originalFitBounds = currentMap.fitBounds;
+    currentMap.fitBounds = function(...args: any[]) {
+      if (currentMap._loaded && !currentMap._lastInteraction) {
         return originalFitBounds.apply(this, args);
       }
-      return map;
+      return currentMap;
     };
-  }, [map, center, allCoordinates]);
+  }, [center, allCoordinates]);
   
   return null;
 };
@@ -235,19 +235,19 @@ const RouteMap: React.FC<RouteMapProps> = ({
         zoom={11}
         center={mapCenter}
         zoomControl={false}
-        whenReady={(map) => {
+        whenReady={(mapInstance) => {
           // Set up user interaction tracking
-          map.target.on('zoomstart', () => setIsUserInteracting(true));
-          map.target.on('zoomend', () => {
+          mapInstance.target.on('zoomstart', () => setIsUserInteracting(true));
+          mapInstance.target.on('zoomend', () => {
             setTimeout(() => setIsUserInteracting(false), 200);
           });
           
           // Capture all user interactions to prevent zoom resets
-          map.target.on('dragend', () => {
-            map.target._lastInteraction = Date.now();
+          mapInstance.target.on('dragend', () => {
+            mapInstance.target._lastInteraction = Date.now();
           });
-          map.target.on('zoomend', () => {
-            map.target._lastInteraction = Date.now();
+          mapInstance.target.on('zoomend', () => {
+            mapInstance.target._lastInteraction = Date.now();
           });
         }}
         key={mapId}

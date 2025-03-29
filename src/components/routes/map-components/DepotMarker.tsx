@@ -48,7 +48,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot }) => {
   return (
     <Marker 
       position={position}
-      icon={depotIcon}
+      icon={depotIcon as any}
     >
       <Popup>
         <div>

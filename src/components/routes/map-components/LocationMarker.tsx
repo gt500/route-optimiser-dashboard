@@ -68,9 +68,11 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
     return options;
   };
   
+  const iconHtml = createLocationIcon(getIconOptions());
+  
   const locationIcon = L.divIcon({
     className: 'custom-location-marker',
-    html: createLocationIcon(getIconOptions()),
+    html: iconHtml,
     iconSize: [28, 28],
     iconAnchor: [14, 14]
   });
@@ -85,7 +87,7 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
     <Marker 
       position={position}
       eventHandlers={onLocationClick ? { click: handleClick } : {}}
-      icon={locationIcon}
+      icon={locationIcon as any}
     >
       <Popup>
         <div>
