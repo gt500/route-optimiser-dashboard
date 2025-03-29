@@ -91,6 +91,7 @@ export type Database = {
           longitude: number
           name: string
           open_time: string | null
+          type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -102,6 +103,7 @@ export type Database = {
           longitude: number
           name: string
           open_time?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -113,6 +115,7 @@ export type Database = {
           longitude?: number
           name?: string
           open_time?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Relationships: []

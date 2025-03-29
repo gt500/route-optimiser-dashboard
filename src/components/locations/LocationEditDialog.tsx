@@ -46,6 +46,7 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
 
   useEffect(() => {
     if (location) {
+      console.log('Editing location:', location);
       setFormData({
         ...location,
         isWarehouse: location.type === 'Storage'
@@ -98,8 +99,8 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
       return;
     }
 
+    console.log('Form data to be saved:', formData);
     onSave(formData);
-    onOpenChange(false);
   };
 
   return (

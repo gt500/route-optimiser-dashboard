@@ -65,14 +65,16 @@ const Locations: React.FC = () => {
 
       if (data) {
         const mappedLocations = data.map(item => {
-          // Determine the type based on the location name
+          // Determine the type based on the location name or use existing type
           let locationType = item.type || 'Customer';
           
-          // Specifically set Epping Depot as Storage
-          if (item.name?.toLowerCase().includes('epping') && item.name?.toLowerCase().includes('depot')) {
-            locationType = 'Storage';
-          } else if (item.name?.toLowerCase().includes('depot') || item.name?.toLowerCase().includes('storage')) {
-            locationType = 'Storage';
+          // Specifically set Epping Depot as Storage if no type is set
+          if (!item.type) {
+            if (item.name?.toLowerCase().includes('epping') && item.name?.toLowerCase().includes('depot')) {
+              locationType = 'Storage';
+            } else if (item.name?.toLowerCase().includes('depot') || item.name?.toLowerCase().includes('storage')) {
+              locationType = 'Storage';
+            }
           }
           
           return {
@@ -105,16 +107,20 @@ const Locations: React.FC = () => {
   };
   
   const handleSaveLocation = async (location: any) => {
+    console.log('Saving location:', location);
     try {
+      // Construct the data object with the correct field names for the database
       const locationData = {
         name: location.name,
         address: location.address,
         latitude: location.lat,
         longitude: location.long,
+        type: location.type,
         open_time: location.open_time || '08:00',
-        close_time: location.close_time || '17:00',
-        type: location.type
+        close_time: location.close_time || '17:00'
       };
+      
+      console.log('Location data to save:', locationData);
       
       if (location.id) {
         // It's an edit
@@ -123,7 +129,10 @@ const Locations: React.FC = () => {
           .update(locationData)
           .eq('id', location.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating location:', error);
+          throw error;
+        }
         
         // Update local state
         setLocations(prev => 
@@ -150,7 +159,10 @@ const Locations: React.FC = () => {
             id: newLocationId
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating location:', error);
+          throw error;
+        }
         
         // Add to local state
         const newLocation: LocationInfo = {
