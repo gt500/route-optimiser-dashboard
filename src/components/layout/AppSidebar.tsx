@@ -115,10 +115,12 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-6 flex items-center">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <Truck className="text-white h-5 w-5" />
-          </div>
-          <span className="font-semibold text-xl">RouteOptima</span>
+          <img 
+            src="/lovable-uploads/0efc8897-38bc-4f0e-939a-58f79b569c17.png" 
+            alt="GAZ2GO" 
+            className="w-8 h-8"
+          />
+          <span className="font-semibold text-xl">Route Optimiser</span>
         </div>
         <div className="flex-1" />
         <SidebarTrigger className="hidden md:flex" />
