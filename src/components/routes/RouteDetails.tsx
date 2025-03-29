@@ -44,12 +44,6 @@ const RouteDetails = ({
   const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   
-  // Debug logging for route locations and available locations
-  useEffect(() => {
-    console.log("RouteDetails - Current route locations:", route.locations);
-    console.log("RouteDetails - Available locations:", route.availableLocations);
-  }, [route.locations, route.availableLocations]);
-  
   // Update local state when route data changes
   useEffect(() => {
     if (route.distance > 0) {
@@ -128,13 +122,11 @@ const RouteDetails = ({
   const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
   const handleLocationChange = (locationId: string) => {
-    console.log("Selected location ID to add:", locationId);
     setSelectedLocationId(locationId);
   };
   
   const handleAddLocation = () => {
     if (selectedLocationId) {
-      console.log("Adding location with ID:", selectedLocationId);
       onAddNewLocation(selectedLocationId);
       setAddLocationOpen(false);
       setSelectedLocationId("");
@@ -289,7 +281,6 @@ const RouteDetails = ({
                       size="icon" 
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       onClick={() => {
-                        console.log("Removing location at index:", index);
                         onRemoveLocation(index);
                       }}
                     >

@@ -8,67 +8,54 @@ interface LocationMarkerProps {
   id: string;
   name: string;
   position: [number, number];
-  index?: number;
-  onClick?: () => void;
-  type?: 'customer' | 'storage';
   address?: string;
+  onClick?: () => void;
 }
 
 const LocationMarker: React.FC<LocationMarkerProps> = ({ 
   id, 
   name, 
   position, 
-  index, 
-  onClick,
-  type = 'customer',
-  address
+  address, 
+  onClick 
 }) => {
-  const eventHandlers = useMemo(
-    () => ({
-      click: () => {
-        if (onClick) {
-          onClick();
-        }
-      },
-    }),
-    [onClick]
-  );
-
-  const iconType = type === 'storage' ? 'storage' : 'customer';
-  const iconHtml = createIcon(createLocationIcon({ 
-    type: iconType, 
-    label: index !== undefined ? String(index) : ''
-  }), [24, 24]);
+  // Create an HTML icon for the location marker
+  const iconHtml = useMemo(() => {
+    return createIcon(
+      createLocationIcon({
+        type: 'location',
+      }), 
+      [28, 28]
+    );
+  }, []);
   
-  // Create a Leaflet icon using useMemo to avoid unnecessary re-renders
+  // Create a Leaflet icon
   const markerIcon = useMemo(() => {
     return L.divIcon({
       className: 'custom-div-icon',
       html: iconHtml as string,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
     });
-  }, [iconHtml, index]);
+  }, [iconHtml]);
   
+  const eventHandlers = useMemo(() => ({
+    click: () => {
+      if (onClick) onClick();
+    }
+  }), [onClick]);
+
   return (
     <Marker 
-      position={position}
+      position={position} 
       eventHandlers={eventHandlers}
-      icon={markerIcon as any}
+      // Use this syntax for the icon prop to fix TypeScript error
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">
           <div className="font-medium">{name}</div>
-          {index !== undefined && (
-            <div className="text-xs bg-primary/10 px-2 py-1 rounded-sm text-primary mt-1 inline-block">
-              Stop #{index}
-            </div>
-          )}
-          {address && (
-            <div className="text-xs text-muted-foreground mt-1">
-              {address}
-            </div>
-          )}
+          {address && <div className="text-xs text-muted-foreground">{address}</div>}
         </div>
       </Popup>
     </Marker>

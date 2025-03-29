@@ -31,7 +31,8 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   return (
     <Marker 
       position={position}
-      icon={markerIcon as any}
+      // Use this syntax for the icon prop to fix TypeScript error
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">
