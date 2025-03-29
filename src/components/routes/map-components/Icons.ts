@@ -38,3 +38,45 @@ export const WarehouseIcon = new L.Icon({
   iconAnchor: [15, 30],
   popupAnchor: [0, -30],
 });
+
+// Function to create a custom location icon with a text label
+interface CreateLocationIconOptions {
+  text: string;
+  backgroundColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  size?: number;
+}
+
+export const createLocationIcon = (options: CreateLocationIconOptions): L.DivIcon => {
+  const { 
+    text, 
+    backgroundColor = '#6366F1', 
+    textColor = 'white', 
+    borderColor = '#4F46E5',
+    size = 26
+  } = options;
+  
+  return L.divIcon({
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size/2, size],
+    html: `
+      <div style="
+        background-color: ${backgroundColor}; 
+        color: ${textColor}; 
+        border: 2px solid ${borderColor};
+        width: ${size}px; 
+        height: ${size}px; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        border-radius: 50%; 
+        font-weight: bold;
+        font-size: ${size * 0.6}px;
+      ">
+        ${text}
+      </div>
+    `
+  });
+};

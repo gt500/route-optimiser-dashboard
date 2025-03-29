@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
 import { createLocationIcon } from './Icons';
 
 interface DepotMarkerProps {
@@ -32,7 +31,10 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot }) => {
   });
   
   return (
-    <Marker position={position}>
+    <Marker 
+      position={position}
+      icon={depotIcon}
+    >
       <Popup>
         <div>
           <h3 className="font-medium">{depot.name}</h3>

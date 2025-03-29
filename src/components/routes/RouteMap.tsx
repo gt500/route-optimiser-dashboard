@@ -211,7 +211,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer 
         style={{ height: '100%', width: '100%' }}
-        center={mapCenter}
         zoom={11}
         zoomControl={false}
         whenReady={(map) => {
@@ -229,11 +228,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
       >
         <ZoomControl position="topright" />
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
-        <SetViewOnChange coordinates={allCoordinates} center={mapCenter} />
+        <SetViewOnChange coordinates={allCoordinates} />
         
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
         {/* Position attribution at bottom right and only show one instance */}

@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
 import { createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
@@ -33,24 +32,24 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
   const position: [number, number] = [lat, lng];
   
   // Create a custom icon with sequence number if provided
-  let customerIcon;
+  let markerIcon;
   
   if (location.sequence !== undefined) {
-    customerIcon = createLocationIcon({
+    markerIcon = createLocationIcon({
       text: `${location.sequence + 1}`,
       backgroundColor: isSelected ? '#818cf8' : '#6366F1',
       textColor: 'white',
       borderColor: isSelected ? '#4f46e5' : '#4f46e5',
     });
   } else if (location.type === 'Storage') {
-    customerIcon = createLocationIcon({
+    markerIcon = createLocationIcon({
       text: 'S',
       backgroundColor: '#10B981',
       textColor: 'white',
       borderColor: '#059669',
     });
   } else {
-    customerIcon = createLocationIcon({
+    markerIcon = createLocationIcon({
       text: 'C',
       backgroundColor: '#F59E0B',
       textColor: 'white',
@@ -73,16 +72,18 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
     return details.join(', ');
   };
   
-  // Event handlers with proper type
-  const eventHandlers = onLocationClick ? {
-    click: () => {
+  // Handle click event
+  const handleClick = () => {
+    if (onLocationClick) {
       onLocationClick(location.id.toString());
     }
-  } : {};
+  };
   
   return (
     <Marker 
-      position={position} 
+      position={position}
+      icon={markerIcon}
+      eventHandlers={onLocationClick ? { click: handleClick } : {}}
     >
       <Popup>
         <div className="p-1">
