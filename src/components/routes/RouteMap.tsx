@@ -212,24 +212,27 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer 
         style={{ height: '100%', width: '100%' }}
-        center={mapCenter}
+        // Fix: use 'center' as an initial position for the map and pass it to SetViewOnChange
+        // Remove the props that aren't supported
         zoomControl={false}
-        whenCreated={(mapInstance: any) => {
+        whenReady={(map: any) => {
           // Set up user interaction tracking
-          mapInstance.on('zoomstart', () => setIsUserInteracting(true));
-          mapInstance.on('zoomend', () => {
+          map.target.on('zoomstart', () => setIsUserInteracting(true));
+          map.target.on('zoomend', () => {
             setTimeout(() => setIsUserInteracting(false), 200);
           });
           
           // Capture all user interactions to prevent zoom resets
-          mapInstance.on('dragend', () => mapInstance._lastInteraction = Date.now());
-          mapInstance.on('zoomend', () => mapInstance._lastInteraction = Date.now());
+          map.target.on('dragend', () => map.target._lastInteraction = Date.now());
+          map.target.on('zoomend', () => map.target._lastInteraction = Date.now());
         }}
         key={mapId}
       >
         <ZoomControl position="topright" />
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
+        <SetViewOnChange center={mapCenter} />
         
+        {/* Fix: update TileLayer props */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

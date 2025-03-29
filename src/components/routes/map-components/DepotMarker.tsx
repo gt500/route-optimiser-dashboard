@@ -26,7 +26,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
   ];
   
   // Create a depot icon
-  const depotIcon = new L.Icon({
+  const depotIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448609.png',
     iconSize: [35, 35],
     iconAnchor: [17, 35],
@@ -36,6 +36,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
   return (
     <Marker 
       position={position}
+      // Correctly define the icon as a React-Leaflet expects it
       icon={depotIcon}
     >
       <Popup>

@@ -25,7 +25,7 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
   ];
   
   // Create a customer icon
-  const customerIcon = new L.Icon({
+  const customerIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484167.png',
     iconSize: [25, 25],
     iconAnchor: [12, 25],
@@ -82,17 +82,20 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
     }
   };
   
+  // Define the event handlers using the correct format
+  const eventHandlers = {
+    click: () => {
+      if (onLocationClick) {
+        onLocationClick(location.id.toString());
+      }
+    }
+  };
+  
   return (
     <Marker 
       position={position}
       icon={customerIcon}
-      eventHandlers={{
-        click: () => {
-          if (onLocationClick) {
-            onLocationClick(location.id.toString());
-          }
-        }
-      }}
+      eventHandlers={eventHandlers}
     >
       <Popup>
         <div className="p-1">
