@@ -2,6 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { createDepotIcon } from './Icons';
+import type { Icon } from 'leaflet';
 
 interface DepotMarkerProps {
   name: string;
@@ -19,8 +20,8 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   
   const label = isStart ? 'S' : isEnd ? 'E' : 'D';
   
-  // Create a custom icon - directly using the function that returns L.DivIcon
-  const customIcon = createDepotIcon({ label, isStart, isEnd });
+  // Create a custom icon and properly type it as Icon
+  const customIcon = createDepotIcon({ label, isStart, isEnd }) as unknown as Icon;
 
   return (
     <Marker 
