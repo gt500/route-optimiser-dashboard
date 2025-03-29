@@ -21,16 +21,11 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   
   // Create a custom icon with proper typing
   const customIcon = createDepotIcon({ label, isStart, isEnd });
-
-  // Create the marker element with the properly typed icon
-  const markerElement = React.useMemo(() => {
-    return L.marker(position, { icon: customIcon });
-  }, [position, customIcon]);
-
+  
   return (
     <Marker 
       position={position} 
-      element={markerElement}
+      icon={customIcon}
     >
       <Popup>
         <div className="text-sm">

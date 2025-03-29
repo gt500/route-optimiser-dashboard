@@ -32,15 +32,10 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
     type: 'Customer'
   });
 
-  // Create the marker element with the properly typed icon
-  const markerElement = React.useMemo(() => {
-    return L.marker(position, { icon: customIcon });
-  }, [position, customIcon]);
-
   return (
     <Marker 
       position={position}
-      element={markerElement}
+      icon={customIcon}
       eventHandlers={{
         click: handleMarkerClick
       }}
