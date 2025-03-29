@@ -43,7 +43,6 @@ const RouteDetails = ({
   const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   
-  // Update local state when route data changes
   useEffect(() => {
     if (route.distance > 0) {
       setRouteDistance(route.distance);
@@ -54,7 +53,6 @@ const RouteDetails = ({
   }, [route.distance, route.estimatedDuration]);
   
   useEffect(() => {
-    // Fetch current fuel cost from the database
     const fetchFuelCost = async () => {
       const { data, error } = await supabase
         .from('cost_factors')
@@ -94,18 +92,15 @@ const RouteDetails = ({
     }
   };
   
-  // Calculate the actual fuel consumption based on distance
   const calculateFuelConsumption = () => {
     return routeDistance * 0.12; // 12L per 100km
   };
   
-  // Calculate the actual fuel cost based on distance and current fuel price
   const calculateFuelCost = () => {
     const consumption = calculateFuelConsumption();
     return consumption * fuelCostPerLiter;
   };
   
-  // Use calculated values or fallback to route props
   const displayDistance = routeDistance > 0 ? routeDistance : route.distance;
   const displayDuration = routeDuration > 0 ? routeDuration : (route.estimatedDuration || Math.round(displayDistance * 1.5));
   const displayConsumption = calculateFuelConsumption() || route.fuelConsumption;
@@ -119,7 +114,7 @@ const RouteDetails = ({
   const handleAddLocation = () => {
     if (selectedLocationId) {
       console.log("Adding location with ID:", selectedLocationId);
-      onAddNewLocation(selectedLocationId);
+      onAddNewLocation(selectedLocationId.toString());
       setAddLocationOpen(false);
       setSelectedLocationId("");
       toast.success("Location added to route");

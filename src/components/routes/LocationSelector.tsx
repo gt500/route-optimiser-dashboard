@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,12 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
   const handleAdd = () => {
     if (selectedLocation) {
       console.log("Adding location with cylinders:", cylinders, selectedLocation);
-      onAdd({ ...selectedLocation, cylinders });
+      const locationWithStringId = {
+        ...selectedLocation,
+        id: selectedLocation.id.toString(),
+        cylinders
+      };
+      onAdd(locationWithStringId);
       setSelectedLocation(null);
       setCylinders(10);
       toast.success(`Added ${selectedLocation.name} to route`);
@@ -57,23 +61,21 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
     );
     onUpdateLocations(updatedLocations);
     toast.success(`Location "${updatedLocation.name}" updated successfully`);
-    setIsEditDialogOpen(false); // Close dialog after saving
+    setIsEditDialogOpen(false);
   };
-  
-  // Debug logging
+
   useEffect(() => {
     console.log("LocationSelector - Available locations:", availableLocations);
     console.log("LocationSelector - Selected location:", selectedLocation);
   }, [availableLocations, selectedLocation]);
 
-  // Handle dropdown selection properly
   const handleLocationSelect = (value: string) => {
     console.log("Location selected with ID:", value);
     const location = availableLocations.find(loc => loc.id.toString() === value);
     console.log("Found location:", location);
     setSelectedLocation(location || null);
   };
-  
+
   return (
     <>
       <Card className="shadow-sm bg-black">

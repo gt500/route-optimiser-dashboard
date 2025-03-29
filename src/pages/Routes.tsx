@@ -264,8 +264,10 @@ const RoutesList = () => {
 
   const addLocationToRoute = (location: LocationType & { cylinders: number }) => {
     console.log("Adding location to route:", location);
+    
     const locationWithCylinders = {
       ...location,
+      id: location.id.toString(),
       emptyCylinders: location.cylinders,
     };
     
@@ -294,7 +296,7 @@ const RoutesList = () => {
     });
     
     setAvailableLocations(prev => 
-      prev.filter(loc => loc.id !== location.id)
+      prev.filter(loc => loc.id.toString() !== location.id.toString())
     );
   };
 
@@ -506,7 +508,7 @@ const RoutesList = () => {
   const handleAddNewLocationFromPopover = (locationId: string | number) => {
     console.log("Adding location from popover with ID:", locationId);
     const stringLocationId = String(locationId);
-    const location = availableLocations.find(loc => loc.id === stringLocationId);
+    const location = availableLocations.find(loc => loc.id.toString() === stringLocationId);
     
     if (location) {
       console.log("Found location to add:", location);
