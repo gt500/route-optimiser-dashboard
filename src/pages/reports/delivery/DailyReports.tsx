@@ -17,25 +17,35 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-// Sample data for daily deliveries (will be replaced with real data from Supabase)
-const sampleDeliveries = [
-  { id: 1, siteName: 'Afrox Epping Depot', cylinders: 12, kms: 15.3, fuelCost: 24.50, date: '2023-07-10' },
-  { id: 2, siteName: 'Food Lovers Sunningdale', cylinders: 8, kms: 8.7, fuelCost: 14.10, date: '2023-07-10' },
-  { id: 3, siteName: 'Pick n Pay TableView', cylinders: 15, kms: 12.5, fuelCost: 20.30, date: '2023-07-10' },
-  { id: 4, siteName: 'SUPERSPAR Parklands', cylinders: 10, kms: 9.8, fuelCost: 15.80, date: '2023-07-10' },
-  { id: 5, siteName: 'West Coast Village', cylinders: 6, kms: 7.2, fuelCost: 11.60, date: '2023-07-11' },
-  { id: 6, siteName: 'KWIKSPAR Paarl', cylinders: 9, kms: 18.5, fuelCost: 29.90, date: '2023-07-11' },
-  { id: 7, siteName: 'SUPERSPAR Plattekloof', cylinders: 11, kms: 14.1, fuelCost: 22.80, date: '2023-07-11' },
-  { id: 8, siteName: 'OK Foods Strand', cylinders: 7, kms: 25.3, fuelCost: 40.90, date: '2023-07-12' },
-  { id: 9, siteName: 'OK Urban Sonstraal', cylinders: 14, kms: 16.8, fuelCost: 27.20, date: '2023-07-12' },
-  { id: 10, siteName: 'Clara Anna', cylinders: 5, kms: 10.5, fuelCost: 16.90, date: '2023-07-12' },
-];
+interface DeliveryData {
+  id: string;
+  siteName: string;
+  cylinders: number;
+  kms: number;
+  fuelCost: number;
+  date: string;
+}
+
+interface RouteDelivery {
+  routeId: string;
+  routeName: string;
+  date: string;
+  totalDistance: number;
+  totalDuration: number;
+  estimatedCost: number;
+  deliveries: {
+    id: string;
+    locationName: string;
+    cylinders: number;
+    sequence: number;
+  }[];
+}
 
 const DailyReports = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
-  const [deliveries, setDeliveries] = useState(sampleDeliveries);
+  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
 
   useEffect(() => {
     fetchDeliveryData();
@@ -52,34 +62,112 @@ const DailyReports = () => {
   const totalFuelCost = filteredDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
 
   const fetchDeliveryData = async () => {
-    // In a real implementation, we would fetch data from Supabase
+    if (!date) return;
+    
     setIsLoading(true);
+    const formattedDateStr = format(date, 'yyyy-MM-dd');
     
-    // Simulate data loading
-    setTimeout(() => {
+    try {
+      // Fetch routes for the selected date
+      const { data: routesData, error: routesError } = await supabase
+        .from('routes')
+        .select('id, name, date, total_distance, total_duration, estimated_cost, status')
+        .eq('date', formattedDateStr)
+        .order('created_at', { ascending: false });
+      
+      if (routesError) throw routesError;
+      
+      if (!routesData || routesData.length === 0) {
+        setDeliveries([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Collect all route IDs
+      const routeIds = routesData.map(route => route.id);
+      
+      // Fetch all related deliveries
+      const { data: deliveriesData, error: deliveriesError } = await supabase
+        .from('deliveries')
+        .select('id, route_id, location_id, cylinders, sequence')
+        .in('route_id', routeIds);
+      
+      if (deliveriesError) throw deliveriesError;
+      
+      // Get all location IDs to fetch location details
+      const locationIds = deliveriesData.map(delivery => delivery.location_id);
+      
+      // Fetch location details
+      const { data: locationsData, error: locationsError } = await supabase
+        .from('locations')
+        .select('id, name, address, latitude, longitude')
+        .in('id', locationIds);
+      
+      if (locationsError) throw locationsError;
+      
+      // Create a map of locations for easy lookup
+      const locationsMap = (locationsData || []).reduce((acc, location) => {
+        acc[location.id] = location;
+        return acc;
+      }, {});
+      
+      // Create a structured representation of routes with their deliveries
+      const routeDeliveries: RouteDelivery[] = routesData.map(route => {
+        const routeDeliveries = deliveriesData
+          .filter(delivery => delivery.route_id === route.id)
+          .map(delivery => ({
+            id: delivery.id,
+            locationName: locationsMap[delivery.location_id]?.name || 'Unknown Location',
+            cylinders: delivery.cylinders,
+            sequence: delivery.sequence
+          }))
+          .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+          
+        return {
+          routeId: route.id,
+          routeName: route.name,
+          date: route.date,
+          totalDistance: route.total_distance || 0,
+          totalDuration: route.total_duration || 0,
+          estimatedCost: route.estimated_cost || 0,
+          deliveries: routeDeliveries
+        };
+      });
+      
+      // Transform the data into the format needed for the table
+      const transformedData: DeliveryData[] = [];
+      
+      routeDeliveries.forEach(route => {
+        // Calculate km per delivery by dividing total distance by number of deliveries
+        const deliveriesCount = route.deliveries.length;
+        const kmsPerDelivery = deliveriesCount > 0 ? route.totalDistance / deliveriesCount : 0;
+        const costPerDelivery = deliveriesCount > 0 ? route.estimatedCost / deliveriesCount : 0;
+        
+        route.deliveries.forEach(delivery => {
+          transformedData.push({
+            id: delivery.id,
+            siteName: delivery.locationName,
+            cylinders: delivery.cylinders,
+            kms: parseFloat(kmsPerDelivery.toFixed(1)),
+            fuelCost: parseFloat(costPerDelivery.toFixed(2)),
+            date: formattedDateStr
+          });
+        });
+      });
+      
+      setDeliveries(transformedData);
+      
+      if (transformedData.length > 0) {
+        toast.success(`Loaded ${transformedData.length} deliveries for ${formattedDateStr}`);
+      } else {
+        toast.info(`No deliveries found for ${formattedDateStr}`);
+      }
+    } catch (error) {
+      console.error('Error fetching delivery data:', error);
+      toast.error('Failed to load delivery data');
+    } finally {
       setIsLoading(false);
-    }, 800);
-    
-    // Example of how we would fetch from Supabase
-    // const { data, error } = await supabase
-    //   .from('routes')
-    //   .select('*, deliveries(*)')
-    //   .eq('date', formattedDate);
-    
-    // if (data) {
-    //   // Transform data to match our expected format
-    //   const transformedData = data.flatMap(route => 
-    //     route.deliveries.map(delivery => ({
-    //       id: delivery.id,
-    //       siteName: delivery.location_name,
-    //       cylinders: delivery.cylinders,
-    //       kms: route.total_distance / route.deliveries.length,
-    //       fuelCost: route.estimated_cost / route.deliveries.length,
-    //       date: route.date
-    //     }))
-    //   );
-    //   setDeliveries(transformedData);
-    // }
+    }
   };
 
   const handleRefresh = () => {
@@ -190,7 +278,11 @@ const DailyReports = () => {
               </Table>
             ) : (
               <div className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">No deliveries found for this date.</p>
+                <p className="text-muted-foreground">
+                  {isLoading 
+                    ? "Loading delivery data..." 
+                    : "No deliveries found for this date."}
+                </p>
               </div>
             )}
           </CardContent>
