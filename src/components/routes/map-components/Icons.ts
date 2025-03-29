@@ -16,7 +16,7 @@ interface LocationIconOptions {
 }
 
 // Create depot marker icon
-export const createDepotIcon = (options: DepotIconOptions) => {
+export const createDepotIcon = (options: DepotIconOptions = {}) => {
   const { label, isStart = false, isEnd = false, customSize = 34 } = options;
   
   const bgColor = isStart ? '#22c55e' : isEnd ? '#ef4444' : '#6366F1';
@@ -32,7 +32,7 @@ export const createDepotIcon = (options: DepotIconOptions) => {
 };
 
 // Create location marker icon
-export const createLocationIcon = (options: LocationIconOptions) => {
+export const createLocationIcon = (options: LocationIconOptions = {}) => {
   const { label, type, color = '#6366F1', customSize = 28 } = options;
   
   // Determine color based on location type
@@ -65,4 +65,4 @@ export const createIcon = (html: string, size: [number, number] = [28, 28]) => {
 // Export specific icons
 export const startIcon = createIcon(createDepotIcon({ isStart: true }), [34, 34]);
 export const endIcon = createIcon(createDepotIcon({ isEnd: true }), [34, 34]);
-export const locationIcon = createIcon(createLocationIcon(), [28, 28]);
+export const locationIcon = createIcon(createLocationIcon({}), [28, 28]);
