@@ -1,10 +1,11 @@
 
+import React, { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import L from 'leaflet';
 import 'leaflet-routing-machine';
 
 interface RoutingMachineProps {
-  waypoints: { lat: number; lng: number }[];
+  waypoints?: L.LatLng[];
   forceRouteUpdate?: boolean;
   onRouteFound?: (route: { 
     distance: number; 
@@ -13,10 +14,7 @@ interface RoutingMachineProps {
   }) => void;
 }
 
-// @ts-ignore - L.Routing is not in the types
-const L = window.L;
-
-const RoutingMachine = ({ waypoints, forceRouteUpdate, onRouteFound }: RoutingMachineProps) => {
+const RoutingMachine: React.FC<RoutingMachineProps> = ({ waypoints = [], forceRouteUpdate, onRouteFound }) => {
   const map = useMap();
   
   useEffect(() => {
@@ -29,6 +27,7 @@ const RoutingMachine = ({ waypoints, forceRouteUpdate, onRouteFound }: RoutingMa
         map.removeControl(routingControl);
       }
       
+      // @ts-ignore - L.Routing is not in the types
       routingControl = L.Routing.control({
         waypoints: waypoints,
         lineOptions: {
@@ -77,7 +76,6 @@ const RoutingMachine = ({ waypoints, forceRouteUpdate, onRouteFound }: RoutingMa
         map.removeControl(routingControl);
       }
     };
-    // Add forceRouteUpdate as a dependency to recreate route when it changes
   }, [map, waypoints, forceRouteUpdate, onRouteFound]);
   
   return null;

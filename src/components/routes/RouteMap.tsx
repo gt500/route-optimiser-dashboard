@@ -4,7 +4,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import SetViewOnChange from './map-components/SetViewOnChange';
+import { SetViewOnChange } from './map-components/SetViewOnChange';
 import LocationMarker from './map-components/LocationMarker';
 import DepotMarker from './map-components/DepotMarker';
 import RoutingMachine from './map-components/RoutingMachine';
@@ -142,7 +142,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       center={calculatedCenter}
       zoom={zoom}
       style={{ height, width: '100%' }}
-      whenCreated={handleMapInit as any}
+      whenReady={handleMapInit}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -151,15 +151,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
       {mapReady && showRouting && (
         <RoutingMachine
-          ref={routingMachineRef}
-          color={routeColor}
-          startLatLng={startLocation ? L.latLng(startLocation.coords[0], startLocation.coords[1]) : undefined}
-          endLatLng={endLocation ? L.latLng(endLocation.coords[0], endLocation.coords[1]) : undefined}
-          waypoints={waypoints?.map(wp => L.latLng(wp.coords[0], wp.coords[1]))}
+          waypoints={allWaypoints || []}
+          forceRouteUpdate={forceRouteUpdate}
         />
       )}
 
-      <SetViewOnChange center={calculatedCenter} zoom={zoom} />
+      <SetViewOnChange center={calculatedCenter} />
 
       {startLocation && (
         <DepotMarker

@@ -58,7 +58,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker
       position={position}
       eventHandlers={onClick ? { click: handleClick } : {}}
-      icon={locationIcon as L.Icon}
+      icon={locationIcon}
     >
       <Popup>
         <div>

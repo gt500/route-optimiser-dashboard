@@ -1,13 +1,22 @@
 
 import L from 'leaflet';
 
-// Create depot marker icon
-export const createDepotIcon = (options: { 
-  label?: string; 
-  isStart?: boolean; 
+interface DepotIconOptions {
+  label?: string;
+  isStart?: boolean;
   isEnd?: boolean;
   customSize?: number;
-}) => {
+}
+
+interface LocationIconOptions {
+  label?: string | number;
+  color?: string;
+  customSize?: number;
+  type?: string;
+}
+
+// Create depot marker icon
+export const createDepotIcon = (options: DepotIconOptions) => {
   const { label, isStart = false, isEnd = false, customSize = 34 } = options;
   
   const bgColor = isStart ? '#22c55e' : isEnd ? '#ef4444' : '#6366F1';
@@ -23,17 +32,21 @@ export const createDepotIcon = (options: {
 };
 
 // Create location marker icon
-export const createLocationIcon = (options: { 
-  label?: string | number; 
-  color?: string;
-  customSize?: number;
-}) => {
-  const { label, color = '#6366F1', customSize = 28 } = options;
+export const createLocationIcon = (options: LocationIconOptions) => {
+  const { label, type, color = '#6366F1', customSize = 28 } = options;
+  
+  // Determine color based on location type
+  let iconColor = color;
+  if (type === 'Customer') {
+    iconColor = '#3b82f6'; // Blue for customers
+  } else if (type === 'Storage') {
+    iconColor = '#f59e0b'; // Amber for storage locations
+  }
   
   return `
     <div class="flex items-center justify-center rounded-full bg-white p-1 shadow-md" style="width: ${customSize}px; height: ${customSize}px;">
       <div class="flex items-center justify-center rounded-full text-white text-xs font-bold" 
-           style="width: ${customSize - 6}px; height: ${customSize - 6}px; background-color: ${color};">
+           style="width: ${customSize - 6}px; height: ${customSize - 6}px; background-color: ${iconColor};">
         ${label !== undefined ? label : ''}
       </div>
     </div>

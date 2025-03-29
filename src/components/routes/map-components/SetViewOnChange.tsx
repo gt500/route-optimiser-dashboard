@@ -6,9 +6,10 @@ import L from 'leaflet';
 interface SetViewOnChangeProps {
   center?: [number, number];
   coordinates?: Array<[number, number]>;
+  zoom?: number;
 }
 
-export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = [], center }) => {
+export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = [], center, zoom }) => {
   const map = useMap();
   
   useEffect(() => {
@@ -21,9 +22,9 @@ export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = 
       }
     } else if (center) {
       // If no coordinates but center is provided, use center
-      map.setView(center, map.getZoom());
+      map.setView(center, zoom || map.getZoom());
     }
-  }, [coordinates, center, map]);
+  }, [coordinates, center, map, zoom]);
   
   return null;
 };
