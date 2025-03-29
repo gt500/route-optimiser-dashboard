@@ -25,9 +25,7 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
   return (
     <Marker 
       position={position} 
-      // @ts-ignore - icon prop is valid but TypeScript definitions are incomplete
-      icon={CustomerIcon}
-      // @ts-ignore - eventHandlers prop is valid but TypeScript definitions are incomplete
+      icon={CustomerIcon as any}
       eventHandlers={{
         click: () => {
           if (onLocationClick) {

@@ -23,8 +23,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
   return (
     <Marker 
       position={position} 
-      icon={WarehouseIcon}
-      // @ts-ignore - icon prop is valid but TypeScript definitions are incomplete
+      icon={WarehouseIcon as any}
     >
       <Popup>
         <div>
