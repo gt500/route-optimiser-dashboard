@@ -102,7 +102,7 @@ const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorPro
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-8 gap-1 border-dashed"
+          className="h-8 gap-1 border-dashed bg-black text-white hover:bg-black/90 hover:text-white"
         >
           <Fuel className="h-3.5 w-3.5" />
           R{currentFuelCost.toFixed(2)}/L
