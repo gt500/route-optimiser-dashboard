@@ -82,20 +82,18 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
     }
   };
   
-  // Define the event handlers using the correct format
-  const eventHandlers = {
+  // Define the event handlers for Leaflet marker
+  const eventHandlers = onLocationClick ? {
     click: () => {
-      if (onLocationClick) {
-        onLocationClick(location.id.toString());
-      }
+      onLocationClick(location.id.toString());
     }
-  };
+  } : {};
   
   return (
     <Marker 
       position={position}
-      icon={customerIcon}
-      eventHandlers={eventHandlers}
+      icon={customerIcon as any}
+      eventHandlers={eventHandlers as any}
     >
       <Popup>
         <div className="p-1">

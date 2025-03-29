@@ -34,11 +34,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
   });
   
   return (
-    <Marker 
-      position={position}
-      // Correctly define the icon as a React-Leaflet expects it
-      icon={depotIcon}
-    >
+    <Marker position={position} icon={depotIcon as any}>
       <Popup>
         <div>
           <h3 className="font-medium">{depot.name}</h3>

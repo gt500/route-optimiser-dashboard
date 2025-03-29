@@ -4,10 +4,11 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 interface SetViewOnChangeProps {
-  coordinates: Array<[number, number]>;
+  center?: [number, number];
+  coordinates?: Array<[number, number]>;
 }
 
-export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates }) => {
+export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = [], center }) => {
   const map = useMap();
   
   useEffect(() => {
@@ -18,8 +19,11 @@ export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates })
       } catch (error) {
         console.error("Error fitting map bounds:", error);
       }
+    } else if (center) {
+      // If no coordinates but center is provided, use center
+      map.setView(center, map.getZoom());
     }
-  }, [coordinates, map]);
+  }, [coordinates, center, map]);
   
   return null;
 };

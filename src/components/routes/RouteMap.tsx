@@ -212,30 +212,29 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer 
         style={{ height: '100%', width: '100%' }}
-        // Fix: use 'center' as an initial position for the map and pass it to SetViewOnChange
-        // Remove the props that aren't supported
+        center={mapCenter}
+        zoom={11}
         zoomControl={false}
-        whenReady={(map: any) => {
+        whenReady={(mapInstance: any) => {
           // Set up user interaction tracking
-          map.target.on('zoomstart', () => setIsUserInteracting(true));
-          map.target.on('zoomend', () => {
+          mapInstance.target.on('zoomstart', () => setIsUserInteracting(true));
+          mapInstance.target.on('zoomend', () => {
             setTimeout(() => setIsUserInteracting(false), 200);
           });
           
           // Capture all user interactions to prevent zoom resets
-          map.target.on('dragend', () => map.target._lastInteraction = Date.now());
-          map.target.on('zoomend', () => map.target._lastInteraction = Date.now());
+          mapInstance.target.on('dragend', () => mapInstance.target._lastInteraction = Date.now());
+          mapInstance.target.on('zoomend', () => mapInstance.target._lastInteraction = Date.now());
         }}
         key={mapId}
       >
         <ZoomControl position="topright" />
         <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
-        <SetViewOnChange center={mapCenter} />
+        <SetViewOnChange coordinates={allCoordinates} center={mapCenter} />
         
-        {/* Fix: update TileLayer props */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
         {/* Position attribution at bottom right and only show one instance */}
