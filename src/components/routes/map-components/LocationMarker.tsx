@@ -11,6 +11,7 @@ interface LocationMarkerProps {
   index?: number;
   onClick?: () => void;
   type?: 'customer' | 'storage';
+  address?: string; // Add address back as an optional prop
 }
 
 const LocationMarker: React.FC<LocationMarkerProps> = ({ 
@@ -19,7 +20,8 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   position, 
   index, 
   onClick,
-  type = 'customer'
+  type = 'customer',
+  address
 }) => {
   const eventHandlers = useMemo(
     () => ({
@@ -49,8 +51,9 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   return (
     <Marker 
       position={position}
-      icon={markerIcon}
       eventHandlers={eventHandlers}
+      // Fix: Use icon property correctly
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">
@@ -58,6 +61,11 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
           {index !== undefined && (
             <div className="text-xs bg-primary/10 px-2 py-1 rounded-sm text-primary mt-1 inline-block">
               Stop #{index}
+            </div>
+          )}
+          {address && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {address}
             </div>
           )}
         </div>

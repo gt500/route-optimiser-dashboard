@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -38,7 +37,7 @@ interface RouteMapProps {
   startLocation?: NamedCoords;
   endLocation?: NamedCoords;
   forceRouteUpdate?: boolean;
-  onRouteDataUpdate?: (distance: number, duration: number, coordinates: [number, number][]) => void;
+  onRouteDataUpdate?: (distance: number, duration: number, coordinates?: [number, number][]) => void;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
