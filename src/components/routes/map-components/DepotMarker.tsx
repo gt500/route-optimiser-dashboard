@@ -18,7 +18,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
   return (
     <Marker 
       position={[depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]}
-      icon={homeIcon}
+      icon={homeIcon as any}
     >
       <Popup>
         <div>

@@ -12,8 +12,12 @@ export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates })
   
   useEffect(() => {
     if (coordinates && coordinates.length > 0) {
-      const bounds = L.latLngBounds(coordinates.map(coord => [coord[0], coord[1]]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+      try {
+        const bounds = L.latLngBounds(coordinates.map(coord => [coord[0], coord[1]]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      } catch (error) {
+        console.error("Error fitting map bounds:", error);
+      }
     }
   }, [coordinates, map]);
   

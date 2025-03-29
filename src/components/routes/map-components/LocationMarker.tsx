@@ -19,9 +19,8 @@ interface LocationMarkerProps {
 export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLocationClick }) => {
   return (
     <Marker 
-      key={location.id.toString()}
       position={[location.latitude || location.lat || 0, location.longitude || location.long || 0]}
-      icon={locationIcon}
+      icon={locationIcon as any}
       eventHandlers={{
         click: () => {
           if (onLocationClick) onLocationClick(location.id.toString());

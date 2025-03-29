@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import React, { useState, useRef } from 'react';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -62,6 +62,30 @@ interface RouteMapProps {
   }>;
 }
 
+// MapInitializer component to handle map setup
+const MapInitializer: React.FC<{
+  center: [number, number];
+  allCoordinates: Array<[number, number]>;
+}> = ({ center, allCoordinates }) => {
+  const map = useMap();
+  
+  React.useEffect(() => {
+    map.setView(center, 11);
+    
+    // Add bounds controller if coordinates are available
+    if (allCoordinates.length > 0) {
+      try {
+        const bounds = L.latLngBounds(allCoordinates.map(coord => [coord[0], coord[1]]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      } catch(err) {
+        console.error("Error fitting bounds:", err);
+      }
+    }
+  }, [map, center, allCoordinates]);
+  
+  return null;
+};
+
 const RouteMap: React.FC<RouteMapProps> = ({
   height = '600px',
   width = '100%',
@@ -85,9 +109,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const defaultCenter: [number, number] = [-33.9258, 18.4232]; // Cape Town
   
   // Calculate center based on available data
-  const [mapCenter] = useState<[number, number]>(
-    depot ? [depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]] : defaultCenter
-  );
+  const mapCenter: [number, number] = depot ? 
+    [depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]] : 
+    defaultCenter;
   
   // Collect all coordinates for bounds
   const allCoordinates: Array<[number, number]> = [];
@@ -130,19 +154,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        center={mapCenter}
         zoom={11}
-        scrollWheelZoom
+        scrollWheelZoom={true}
       >
+        <MapInitializer center={mapCenter} allCoordinates={allCoordinates} />
+        
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        
-        {/* Add bounds controller */}
-        {allCoordinates.length > 0 && (
-          <SetViewOnChange coordinates={allCoordinates} />
-        )}
         
         {/* Add routing if a route is selected or explicit routing is requested */}
         {(selectedRoute || (showRouting && routingWaypoints.length >= 2)) && (

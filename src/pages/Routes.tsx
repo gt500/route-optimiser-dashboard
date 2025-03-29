@@ -385,12 +385,12 @@ const RoutesList = () => {
     }
     
     try {
-      const locationIds = route.locations.map(loc => loc.id);
+      const locationIds = route.locations.map(loc => loc.id.toString());
       
       const { data: existingLocations, error: locCheckError } = await supabase
         .from('locations')
         .select('id')
-        .in('id', locationIds);
+        .in('id', locationIds as string[]);
       
       if (locCheckError) {
         console.error('Error checking locations:', locCheckError);
@@ -398,9 +398,9 @@ const RoutesList = () => {
         return;
       }
       
-      const existingLocationIds = new Set(existingLocations?.map(loc => loc.id) || []);
+      const existingLocationIds = new Set((existingLocations || []).map(loc => loc.id.toString()));
       
-      const missingLocations = route.locations.filter(loc => !existingLocationIds.has(loc.id));
+      const missingLocations = route.locations.filter(loc => !existingLocationIds.has(loc.id.toString()));
       
       if (missingLocations.length > 0) {
         console.error('Missing locations:', missingLocations);
@@ -408,13 +408,15 @@ const RoutesList = () => {
         return;
       }
       
+      const routeName = `Route ${new Date().toLocaleDateString()}`;
+      
       const routeData = {
         id: crypto.randomUUID(),
-        name: route.name || `Route ${new Date().toLocaleDateString()}`,
+        name: routeName,
         date: new Date().toISOString(),
-        total_cylinders: route.locations.reduce((sum, loc) => sum + loc.cylinders, 0),
+        total_cylinders: route.locations.reduce((sum, loc) => sum + (loc.emptyCylinders || 0), 0),
         total_distance: route.distance || 0,
-        total_duration: route.duration || 0,
+        total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost
       };
@@ -440,7 +442,7 @@ const RoutesList = () => {
           id: crypto.randomUUID(),
           route_id: routeInsert.id,
           location_id: location.id.toString(),
-          cylinders: location.cylinders,
+          cylinders: location.emptyCylinders || 0,
           sequence: index
         }));
         
