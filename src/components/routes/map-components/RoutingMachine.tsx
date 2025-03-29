@@ -26,31 +26,48 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
 
     // Remove previous routing control if it exists
     if (routingControlRef.current) {
-      map.removeControl(routingControlRef.current);
+      try {
+        map.removeControl(routingControlRef.current);
+      } catch (err) {
+        console.error("Error removing routing control:", err);
+      }
       routingControlRef.current = null;
     }
 
-    const routingControl = L.Routing.control({
-      waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
-      routeWhileDragging: false,
-      showAlternatives: false,
-      addWaypoints: false, // Prevent adding new waypoints by clicking
-      fitSelectedRoutes: fitBounds && !isInitializedRef.current, // Only fit bounds once
-      lineOptions: {
-        styles: [{ color: color, weight: 4, opacity: 0.8 }],
-        extendToWaypoints: true,
-        missingRouteTolerance: 0
-      },
-      createMarker: function() { return null; } // Disable default markers
-    }).addTo(map);
+    try {
+      const routingControl = L.Routing.control({
+        waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
+        routeWhileDragging: false,
+        showAlternatives: false,
+        addWaypoints: false, // Prevent adding new waypoints by clicking
+        fitSelectedRoutes: fitBounds && !isInitializedRef.current, // Only fit bounds once
+        lineOptions: {
+          styles: [{ color: color, weight: 4, opacity: 0.8 }],
+          extendToWaypoints: true,
+          missingRouteTolerance: 0
+        },
+        createMarker: function() { return null; } // Disable default markers
+      }).addTo(map);
 
-    // Set initialization flag to prevent repeated zooming
-    isInitializedRef.current = true;
-    routingControlRef.current = routingControl;
+      // Set initialization flag to prevent repeated zooming
+      isInitializedRef.current = true;
+      routingControlRef.current = routingControl;
+    } catch (err) {
+      console.error("Error creating routing control:", err);
+    }
 
     return () => {
       if (routingControlRef.current) {
-        map.removeControl(routingControlRef.current);
+        try {
+          map.removeControl(routingControlRef.current);
+          
+          // Clean up any remaining routing elements
+          document.querySelectorAll('.leaflet-routing-container').forEach(el => {
+            el.remove();
+          });
+        } catch (err) {
+          console.error("Error cleaning up routing control:", err);
+        }
         routingControlRef.current = null;
       }
     };

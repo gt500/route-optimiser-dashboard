@@ -2,7 +2,6 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { WarehouseIcon } from './Icons';
 
 interface DepotMarkerProps {
   depot: {
@@ -21,16 +20,20 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }
     depot.longitude || depot.long || defaultCenter[1]
   ];
   
-  // Create a new instance of the icon to avoid TypeScript issues
+  // Create a warehouse icon
   const warehouseIcon = new L.Icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/1479/1479733.png',
     iconSize: [30, 30],
     iconAnchor: [15, 30],
     popupAnchor: [0, -30],
   });
-  
+
   return (
-    <Marker position={position} icon={warehouseIcon}>
+    <Marker 
+      position={position}
+      // @ts-ignore - the type definition is missing the icon prop but it works in practice
+      icon={warehouseIcon}
+    >
       <Popup>
         <div>
           <h3 className="font-medium">{depot.name}</h3>

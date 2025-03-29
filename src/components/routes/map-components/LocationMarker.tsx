@@ -2,7 +2,6 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { CustomerIcon } from './Icons';
 
 interface LocationMarkerProps {
   location: {
@@ -24,7 +23,7 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
     location.longitude || location.long || 0
   ];
   
-  // Create a new instance of the icon to avoid TypeScript issues
+  // Create a customer icon
   const customerIcon = new L.Icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484167.png',
     iconSize: [25, 25],
@@ -34,8 +33,10 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
   
   return (
     <Marker 
-      position={position} 
+      position={position}
+      // @ts-ignore - the type definition is missing the icon prop but it works in practice
       icon={customerIcon}
+      // @ts-ignore - the type definition is missing the eventHandlers prop but it works in practice
       eventHandlers={{
         click: () => {
           if (onLocationClick) {

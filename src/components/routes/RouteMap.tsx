@@ -47,7 +47,7 @@ interface RouteMapProps {
     lat?: number;
     long?: number;
     name: string;
-  };
+  } | null;
   showRouting?: boolean;
   startLocation?: {
     name: string;
@@ -108,23 +108,21 @@ const RouteMap: React.FC<RouteMapProps> = ({
   isEditable = false,
   onLocationClick,
   onMapClick,
-  depot = {
-    latitude: -33.9258,
-    longitude: 18.4232,
-    name: 'Cape Town Depot'
-  },
+  depot = null,
   showRouting = false,
   startLocation,
   endLocation,
   waypoints = []
 }) => {
-  // Default center if no locations or depot
-  const defaultCenter: [number, number] = [-33.9258, 18.4232]; // Cape Town
+  // Default center based on South Africa
+  const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
   
   // Calculate center based on available data
   const mapCenter: [number, number] = depot ? 
     [depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]] : 
-    defaultCenter;
+    locations.length > 0 ? 
+      [locations[0].latitude || locations[0].lat || defaultCenter[0], locations[0].longitude || locations[0].long || defaultCenter[1]] :
+      defaultCenter;
   
   // Collect all coordinates for bounds
   const allCoordinates: Array<[number, number]> = [];
@@ -168,8 +166,27 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Add sequence numbers to locations for display order
   const locationsWithSequence = locations.map((loc, index) => ({
     ...loc,
-    sequence: index
+    sequence: loc.sequence !== undefined ? loc.sequence : index
   }));
+
+  // Cleanup effect for when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up Leaflet routing machine instances when component unmounts
+      document.querySelectorAll('.leaflet-routing-container').forEach(el => {
+        el.remove();
+      });
+      
+      // Clean up any leaflet layers that might be lingering
+      const mapContainers = document.querySelectorAll('.leaflet-container');
+      mapContainers.forEach(container => {
+        const leafletId = container.getAttribute('id');
+        if (leafletId && (window as any)._leaflet_map_instances) {
+          delete (window as any)._leaflet_map_instances[leafletId];
+        }
+      });
+    };
+  }, []);
   
   return (
     <div style={{ height, width }}>
@@ -194,7 +211,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           />
         )}
         
-        {/* Add depot marker */}
+        {/* Add depot marker only if depot is provided */}
         {depot && <DepotMarker depot={depot} defaultCenter={defaultCenter} />}
         
         {/* Add location markers with sequence numbers */}
