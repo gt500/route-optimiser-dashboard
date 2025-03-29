@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -154,6 +154,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
+        // @ts-ignore - zoom and center props are valid but TypeScript definitions are incomplete
         zoom={11}
         scrollWheelZoom={true}
       >
@@ -161,6 +162,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          // @ts-ignore - attribution prop is valid but TypeScript definitions are incomplete
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         

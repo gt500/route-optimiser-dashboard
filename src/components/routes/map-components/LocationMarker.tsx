@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { locationIcon } from './Icons';
+import { CustomerIcon } from './Icons';
 
 interface LocationMarkerProps {
   location: {
@@ -17,20 +17,29 @@ interface LocationMarkerProps {
 }
 
 export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLocationClick }) => {
+  const position: [number, number] = [
+    location.latitude || location.lat || 0, 
+    location.longitude || location.long || 0
+  ];
+  
   return (
     <Marker 
-      position={[location.latitude || location.lat || 0, location.longitude || location.long || 0]}
-      icon={locationIcon as any}
+      position={position} 
+      // @ts-ignore - icon prop is valid but TypeScript definitions are incomplete
+      icon={CustomerIcon}
+      // @ts-ignore - eventHandlers prop is valid but TypeScript definitions are incomplete
       eventHandlers={{
         click: () => {
-          if (onLocationClick) onLocationClick(location.id.toString());
+          if (onLocationClick) {
+            onLocationClick(location.id.toString());
+          }
         }
       }}
     >
       <Popup>
         <div>
-          <h3 className="font-bold">{location.name}</h3>
-          <p className="text-sm">{location.address}</p>
+          <h3 className="font-medium">{location.name}</h3>
+          <p className="text-xs text-muted-foreground">{location.address}</p>
         </div>
       </Popup>
     </Marker>

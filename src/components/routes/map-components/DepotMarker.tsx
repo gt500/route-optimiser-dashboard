@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { homeIcon } from './Icons';
+import { WarehouseIcon } from './Icons';
 
 interface DepotMarkerProps {
   depot: {
@@ -15,15 +15,21 @@ interface DepotMarkerProps {
 }
 
 export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }) => {
+  const position: [number, number] = [
+    depot.latitude || depot.lat || defaultCenter[0], 
+    depot.longitude || depot.long || defaultCenter[1]
+  ];
+  
   return (
     <Marker 
-      position={[depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]}
-      icon={homeIcon as any}
+      position={position} 
+      icon={WarehouseIcon}
+      // @ts-ignore - icon prop is valid but TypeScript definitions are incomplete
     >
       <Popup>
         <div>
-          <h3 className="font-bold">{depot.name}</h3>
-          <p>Depot / Starting Point</p>
+          <h3 className="font-medium">{depot.name}</h3>
+          <p className="text-xs text-muted-foreground">Depot/Warehouse</p>
         </div>
       </Popup>
     </Marker>

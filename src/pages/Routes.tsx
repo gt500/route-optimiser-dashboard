@@ -18,6 +18,7 @@ const RoutesList = () => {
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
   const [isLoadConfirmed, setIsLoadConfirmed] = useState(false);
+  const [isSyncingLocations, setSyncingLocations] = useState(true);
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
     { id: 1, name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -59,6 +60,99 @@ const RoutesList = () => {
     estimatedDuration: 0,
     usingRealTimeData: false
   });
+
+  useEffect(() => {
+    const syncLocationsWithDatabase = async () => {
+      setSyncingLocations(true);
+      try {
+        const { data: existingLocations, error: fetchError } = await supabase
+          .from('locations')
+          .select('*');
+          
+        if (fetchError) {
+          console.error('Error fetching locations:', fetchError);
+          toast.error('Failed to sync locations with database');
+          setSyncingLocations(false);
+          return;
+        }
+        
+        const existingLocationMap = new Map();
+        if (existingLocations) {
+          existingLocations.forEach(loc => {
+            existingLocationMap.set(loc.name, loc);
+          });
+        }
+        
+        const locationsToInsert = [];
+        
+        for (const location of availableLocations) {
+          if (!existingLocationMap.has(location.name)) {
+            locationsToInsert.push({
+              id: location.id.toString(),
+              name: location.name,
+              address: location.address,
+              latitude: location.lat,
+              longitude: location.long,
+              open_time: '08:00',
+              close_time: '18:00'
+            });
+          }
+        }
+        
+        if (locationsToInsert.length > 0) {
+          const { error: insertError } = await supabase
+            .from('locations')
+            .insert(locationsToInsert);
+            
+          if (insertError) {
+            console.error('Error inserting locations:', insertError);
+            toast.error(`Failed to add ${locationsToInsert.length} locations to database`);
+          } else {
+            console.log(`Successfully added ${locationsToInsert.length} locations to database`);
+            toast.success(`Synchronized ${locationsToInsert.length} locations with database`);
+          }
+        }
+        
+        if (existingLocations && existingLocations.length > 0) {
+          const mergedLocations = [...availableLocations];
+          
+          existingLocations.forEach(dbLocation => {
+            const existingIndex = mergedLocations.findIndex(loc => 
+              loc.name === dbLocation.name || loc.id.toString() === dbLocation.id
+            );
+            
+            if (existingIndex === -1) {
+              mergedLocations.push({
+                id: dbLocation.id,
+                name: dbLocation.name,
+                address: dbLocation.address,
+                lat: dbLocation.latitude,
+                long: dbLocation.longitude,
+                type: 'Customer',
+                emptyCylinders: 10
+              });
+            } else {
+              mergedLocations[existingIndex] = {
+                ...mergedLocations[existingIndex],
+                id: dbLocation.id,
+                lat: dbLocation.latitude,
+                long: dbLocation.longitude
+              };
+            }
+          });
+          
+          setAvailableLocations(mergedLocations);
+        }
+      } catch (error) {
+        console.error('Error syncing locations:', error);
+        toast.error('Failed to synchronize locations with database');
+      } finally {
+        setSyncingLocations(false);
+      }
+    };
+    
+    syncLocationsWithDatabase();
+  }, []);
 
   useEffect(() => {
     const fetchFuelCost = async () => {
@@ -192,15 +286,32 @@ const RoutesList = () => {
   }) => {
     console.log("Optimizing with params:", params);
     
-    let calculatedDistance = 0;
-    const locations = route.locations;
+    if (route.locations.length <= 2) {
+      toast.info("Need at least 3 locations to optimize route order");
+      return;
+    }
     
-    if (locations.length > 1) {
-      for (let i = 0; i < locations.length - 1; i++) {
-        const lat1 = locations[i].lat || 0;
-        const lon1 = locations[i].long || 0;
-        const lat2 = locations[i + 1].lat || 0;
-        const lon2 = locations[i + 1].long || 0;
+    const startLoc = route.locations[0];
+    const endLoc = route.locations[route.locations.length - 1];
+    let middleLocations = [...route.locations.slice(1, -1)];
+    
+    if (params.optimizeForDistance) {
+      middleLocations = optimizeLocationOrder(startLoc, middleLocations, endLoc);
+    }
+    
+    const optimizedLocations = [
+      startLoc,
+      ...middleLocations,
+      endLoc
+    ];
+    
+    let calculatedDistance = 0;
+    if (optimizedLocations.length > 1) {
+      for (let i = 0; i < optimizedLocations.length - 1; i++) {
+        const lat1 = optimizedLocations[i].lat || 0;
+        const lon1 = optimizedLocations[i].long || 0;
+        const lat2 = optimizedLocations[i + 1].lat || 0;
+        const lon2 = optimizedLocations[i + 1].long || 0;
         
         const R = 6371; // Earth's radius in km
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -242,6 +353,7 @@ const RoutesList = () => {
     
     setRoute(prev => ({
       ...prev,
+      locations: optimizedLocations,
       distance: Math.round(newDistance * 10) / 10,
       estimatedDuration: Math.round(newDuration),
       fuelConsumption: fuelConsumption,
@@ -249,55 +361,62 @@ const RoutesList = () => {
       usingRealTimeData: params.useRealTimeData
     }));
     
-    const saveRouteToDatabase = async () => {
-      if (route.locations.length < 2) return;
+    toast.success(params.optimizeForDistance ? 
+      "Route optimized for shortest distance" : 
+      "Route optimized with selected parameters"
+    );
+  };
+  
+  const optimizeLocationOrder = (
+    startLocation: LocationType,
+    middleLocations: LocationType[],
+    endLocation: LocationType
+  ): LocationType[] => {
+    if (middleLocations.length <= 1) return middleLocations;
+    
+    const optimizedOrder: LocationType[] = [];
+    const unvisited = [...middleLocations];
+    
+    let currentLocation = startLocation;
+    
+    while (unvisited.length > 0) {
+      let closestIndex = -1;
+      let closestDistance = Infinity;
       
-      const routeId = crypto.randomUUID();
-      
-      const routeData = {
-        id: routeId,
-        name: `Route ${new Date().toLocaleDateString()}`,
-        date: new Date().toISOString(),
-        status: 'planned',
-        total_distance: Math.round(newDistance * 10) / 10,
-        total_duration: Math.round(newDuration),
-        total_cylinders: route.cylinders,
-        estimated_cost: Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100
-      };
-      
-      const { data: routeInsert, error: routeError } = await supabase
-        .from('routes')
-        .insert(routeData)
-        .select('id')
-        .single();
-      
-      if (routeError) {
-        console.error('Error saving route:', routeError);
-        return;
-      }
-      
-      if (routeInsert) {
-        const deliveries = route.locations.map((location, index) => ({
-          id: crypto.randomUUID(),
-          route_id: routeInsert.id,
-          location_id: location.id.toString(),
-          cylinders: location.emptyCylinders || 0,
-          sequence: index
-        }));
+      for (let i = 0; i < unvisited.length; i++) {
+        const distance = calculateDistance(
+          currentLocation.lat || 0,
+          currentLocation.long || 0,
+          unvisited[i].lat || 0,
+          unvisited[i].long || 0
+        );
         
-        const { error: deliveryError } = await supabase
-          .from('deliveries')
-          .insert(deliveries);
-        
-        if (deliveryError) {
-          console.error('Error saving deliveries:', deliveryError);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = i;
         }
       }
-    };
+      
+      if (closestIndex !== -1) {
+        const nextLocation = unvisited[closestIndex];
+        optimizedOrder.push(nextLocation);
+        currentLocation = nextLocation;
+        unvisited.splice(closestIndex, 1);
+      }
+    }
     
-    saveRouteToDatabase().catch(console.error);
-    
-    toast.success("Route optimized with selected parameters");
+    return optimizedOrder;
+  };
+  
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   };
 
   const handleCreateNewRoute = () => {
@@ -353,17 +472,42 @@ const RoutesList = () => {
     }
   };
 
-  const handleSaveNewLocation = (location: LocationType) => {
+  const handleSaveNewLocation = async (location: LocationType) => {
+    const newLocationId = crypto.randomUUID();
+    
     const newLocation = {
       ...location,
-      id: availableLocations.length + 1
+      id: newLocationId
     };
     
-    const updatedLocations = [...availableLocations, newLocation];
-    handleUpdateLocations(updatedLocations);
-    
-    toast.success(`New location "${location.name}" added`);
-    setNewLocationDialog(false);
+    try {
+      const { error } = await supabase
+        .from('locations')
+        .insert({
+          id: newLocationId,
+          name: location.name,
+          address: location.address,
+          latitude: location.lat,
+          longitude: location.long,
+          open_time: '08:00',
+          close_time: '18:00'
+        });
+        
+      if (error) {
+        console.error('Error saving location to database:', error);
+        toast.error(`Failed to save "${location.name}" to database`);
+        return;
+      }
+      
+      const updatedLocations = [...availableLocations, newLocation];
+      handleUpdateLocations(updatedLocations);
+      
+      toast.success(`New location "${location.name}" added`);
+      setNewLocationDialog(false);
+    } catch (error) {
+      console.error('Error in handleSaveNewLocation:', error);
+      toast.error('Failed to add new location');
+    }
   };
 
   const handleFuelCostUpdate = (newCost: number) => {
@@ -379,8 +523,8 @@ const RoutesList = () => {
   };
 
   const handleConfirmLoad = async () => {
-    if (!route) {
-      toast.error("No route to confirm");
+    if (route.locations.length < 2) {
+      toast.error("Route must have at least 2 locations");
       return;
     }
     
@@ -389,8 +533,8 @@ const RoutesList = () => {
       
       const { data: existingLocations, error: locCheckError } = await supabase
         .from('locations')
-        .select('id')
-        .in('id', locationIds as string[]);
+        .select('id, name')
+        .in('id', locationIds);
       
       if (locCheckError) {
         console.error('Error checking locations:', locCheckError);
@@ -403,15 +547,36 @@ const RoutesList = () => {
       const missingLocations = route.locations.filter(loc => !existingLocationIds.has(loc.id.toString()));
       
       if (missingLocations.length > 0) {
-        console.error('Missing locations:', missingLocations);
-        toast.error(`Some locations don't exist in the database: ${missingLocations.map(loc => loc.name).join(', ')}`);
-        return;
+        console.log('Missing locations:', missingLocations);
+        
+        const locationsToInsert = missingLocations.map(loc => ({
+          id: loc.id.toString(),
+          name: loc.name,
+          address: loc.address || 'Unknown address',
+          latitude: loc.lat || 0,
+          longitude: loc.long || 0,
+          open_time: '08:00',
+          close_time: '18:00'
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('locations')
+          .insert(locationsToInsert);
+          
+        if (insertError) {
+          console.error('Error inserting missing locations:', insertError);
+          toast.error("Failed to add missing locations to database");
+          return;
+        }
+        
+        toast.success(`Added ${missingLocations.length} missing locations to the database`);
       }
       
       const routeName = `Route ${new Date().toLocaleDateString()}`;
+      const routeId = crypto.randomUUID();
       
       const routeData = {
-        id: crypto.randomUUID(),
+        id: routeId,
         name: routeName,
         date: new Date().toISOString(),
         total_cylinders: route.locations.reduce((sum, loc) => sum + (loc.emptyCylinders || 0), 0),
@@ -423,46 +588,48 @@ const RoutesList = () => {
       
       console.log("Saving route data:", routeData);
       
-      const { data: routeInsert, error: routeError } = await supabase
+      const { error: routeError } = await supabase
         .from('routes')
-        .insert(routeData)
-        .select()
-        .single();
+        .insert(routeData);
       
       if (routeError) {
         console.error('Error saving route:', routeError);
         toast.error("Failed to confirm load: " + routeError.message);
         return;
       }
+
+      console.log("Route inserted successfully with ID:", routeId);
       
-      if (routeInsert) {
-        console.log("Route inserted successfully with ID:", routeInsert.id);
+      const deliveries = route.locations.map((location, index) => ({
+        id: crypto.randomUUID(),
+        route_id: routeId,
+        location_id: location.id.toString(),
+        cylinders: location.emptyCylinders || 0,
+        sequence: index
+      }));
+      
+      console.log("Saving deliveries:", deliveries);
+      
+      const { error: deliveryError } = await supabase
+        .from('deliveries')
+        .insert(deliveries);
+      
+      if (deliveryError) {
+        console.error('Error saving deliveries:', deliveryError);
+        toast.error("Failed to save delivery details: " + deliveryError.message);
         
-        const deliveries = route.locations.map((location, index) => ({
-          id: crypto.randomUUID(),
-          route_id: routeInsert.id,
-          location_id: location.id.toString(),
-          cylinders: location.emptyCylinders || 0,
-          sequence: index
-        }));
-        
-        console.log("Saving deliveries:", deliveries);
-        
-        const { error: deliveryError } = await supabase
-          .from('deliveries')
-          .insert(deliveries);
-        
-        if (deliveryError) {
-          console.error('Error saving deliveries:', deliveryError);
-          toast.error("Failed to save delivery details: " + deliveryError.message);
-          return;
-        }
-        
-        setIsLoadConfirmed(true);
-        toast.success("Load confirmed successfully", {
-          description: `Delivery data for ${new Date().toLocaleDateString()} has been stored.`
-        });
+        await supabase
+          .from('routes')
+          .delete()
+          .eq('id', routeId);
+          
+        return;
       }
+      
+      setIsLoadConfirmed(true);
+      toast.success("Load confirmed successfully", {
+        description: `Delivery data for ${new Date().toLocaleDateString()} has been stored.`
+      });
     } catch (error: any) {
       console.error("Error confirming load:", error);
       toast.error("An error occurred while confirming the load: " + (error.message || "Unknown error"));
@@ -514,6 +681,11 @@ const RoutesList = () => {
         </TabsList>
         
         <TabsContent value="create" className="space-y-4">
+          {isSyncingLocations && (
+            <div className="bg-amber-50 p-3 rounded-md text-amber-800 text-sm flex items-center mb-4">
+              Synchronizing locations with database...
+            </div>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 space-y-4">
               <Card className="shadow-sm hover:shadow-md transition-shadow">
