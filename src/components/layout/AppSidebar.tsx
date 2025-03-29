@@ -61,6 +61,7 @@ const menuItems = [
       {
         title: "Delivery Reports",
         path: "/reports/delivery/daily",
+        isSubmenu: true,
         subItems: [
           { title: "Daily Reports", path: "/reports/delivery/daily" },
           { title: "Weekly Reports", path: "/reports/delivery/weekly" },
@@ -70,6 +71,7 @@ const menuItems = [
       {
         title: "Maintenance Reports",
         path: "/reports/maintenance/schedule",
+        isSubmenu: true,
         subItems: [
           { title: "Maintenance Schedule", path: "/reports/maintenance/schedule" },
         ]
@@ -155,8 +157,8 @@ export function AppSidebar() {
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {item.subItems.map((subItem) => (
-                            <React.Fragment key={subItem.title}>
-                              <SidebarMenuSubItem>
+                            <SidebarMenuSubItem key={subItem.title}>
+                              {subItem.isSubmenu ? (
                                 <Collapsible 
                                   open={openSections[subItem.title] || isActivePath(subItem.path)} 
                                   onOpenChange={() => toggleSection(subItem.title)}
@@ -166,31 +168,38 @@ export function AppSidebar() {
                                       className={`w-full justify-between ${isActivePath(subItem.path) ? 'font-medium text-primary' : ''}`}
                                     >
                                       <span>{subItem.title}</span>
-                                      {subItem.subItems && <ChevronRight className="h-4 w-4 transition-transform duration-200" />}
+                                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
                                     </SidebarMenuSubButton>
                                   </CollapsibleTrigger>
-                                  {subItem.subItems && (
-                                    <CollapsibleContent>
-                                      <SidebarMenuSub>
-                                        {subItem.subItems.map((nestedItem) => (
-                                          <SidebarMenuSubItem key={nestedItem.title}>
-                                            <SidebarMenuSubButton 
-                                              asChild 
-                                              size="sm"
-                                              className={isActivePath(nestedItem.path) ? 'font-medium text-primary' : ''}
-                                            >
-                                              <Link to={nestedItem.path}>
-                                                <span>{nestedItem.title}</span>
-                                              </Link>
-                                            </SidebarMenuSubButton>
-                                          </SidebarMenuSubItem>
-                                        ))}
-                                      </SidebarMenuSub>
-                                    </CollapsibleContent>
-                                  )}
+                                  <CollapsibleContent>
+                                    <SidebarMenuSub>
+                                      {subItem.subItems && subItem.subItems.map((nestedItem) => (
+                                        <SidebarMenuSubItem key={nestedItem.title}>
+                                          <SidebarMenuSubButton 
+                                            asChild 
+                                            size="sm"
+                                            className={isActivePath(nestedItem.path) ? 'font-medium text-primary' : ''}
+                                          >
+                                            <Link to={nestedItem.path}>
+                                              <span>{nestedItem.title}</span>
+                                            </Link>
+                                          </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                      ))}
+                                    </SidebarMenuSub>
+                                  </CollapsibleContent>
                                 </Collapsible>
-                              </SidebarMenuSubItem>
-                            </React.Fragment>
+                              ) : (
+                                <SidebarMenuSubButton 
+                                  asChild
+                                  className={isActivePath(subItem.path) ? 'font-medium text-primary' : ''}
+                                >
+                                  <Link to={subItem.path}>
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              )}
+                            </SidebarMenuSubItem>
                           ))}
                         </SidebarMenuSub>
                       </CollapsibleContent>

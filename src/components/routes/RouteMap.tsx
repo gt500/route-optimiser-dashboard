@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -88,6 +88,50 @@ interface RouteMapProps {
   onLocationSelect?: (location: any) => void;
 }
 
+// Component to initialize routing after the map is loaded
+const RoutingMachine: React.FC<{
+  startLocation?: { coords: [number, number] };
+  endLocation?: { coords: [number, number] };
+  waypoints?: { coords: [number, number] }[];
+  showRouting: boolean;
+}> = ({ startLocation, endLocation, waypoints = [], showRouting }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (showRouting && startLocation && endLocation) {
+      const routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(startLocation.coords[0], startLocation.coords[1]),
+          ...waypoints.map(wp => L.latLng(wp.coords[0], wp.coords[1])),
+          L.latLng(endLocation.coords[0], endLocation.coords[1])
+        ],
+        routeWhileDragging: false,
+        showAlternatives: true,
+        fitSelectedRoutes: true,
+        show: false, // Hide the routing instructions
+        lineOptions: {
+          styles: [{ color: '#6366F1', opacity: 0.8, weight: 6 }]
+        },
+        altLineOptions: {
+          styles: [{ color: '#D1D5DB', opacity: 0.8, weight: 6 }]
+        }
+      }).addTo(map);
+
+      // Hide the routing container
+      const routingContainer = document.querySelector('.leaflet-routing-container');
+      if (routingContainer) {
+        routingContainer.classList.add('hidden');
+      }
+      
+      return () => {
+        map.removeControl(routingControl);
+      };
+    }
+  }, [map, startLocation, endLocation, waypoints, showRouting]);
+  
+  return null;
+};
+
 const RouteMap: React.FC<RouteMapProps> = ({
   startLocation,
   endLocation,
@@ -122,35 +166,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   const center = calculateCenterAndZoom();
 
-  // Initialize routing when the map is loaded
-  const initializeRouting = (map: L.Map) => {
-    if (showRouting && startLocation && endLocation) {
-      const routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(startLocation.coords[0], startLocation.coords[1]),
-          ...waypoints.map(wp => L.latLng(wp.coords[0], wp.coords[1])),
-          L.latLng(endLocation.coords[0], endLocation.coords[1])
-        ],
-        routeWhileDragging: false,
-        showAlternatives: true,
-        fitSelectedRoutes: true,
-        show: false, // Hide the routing instructions
-        lineOptions: {
-          styles: [{ color: '#6366F1', opacity: 0.8, weight: 6 }]
-        },
-        altLineOptions: {
-          styles: [{ color: '#D1D5DB', opacity: 0.8, weight: 6 }]
-        }
-      }).addTo(map);
-
-      // Hide the routing container
-      const routingContainer = document.querySelector('.leaflet-routing-container');
-      if (routingContainer) {
-        routingContainer.classList.add('hidden');
-      }
-    }
-  };
-
   const getMarkerIcon = (type: string) => {
     switch (type) {
       case 'start':
@@ -168,18 +183,26 @@ const RouteMap: React.FC<RouteMapProps> = ({
         center={center}
         zoom={11} 
         style={{ height: '100%', width: '100%' }}
-        whenCreated={initializeRouting}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
+        {showRouting && startLocation && endLocation && (
+          <RoutingMachine 
+            startLocation={startLocation}
+            endLocation={endLocation}
+            waypoints={waypoints}
+            showRouting={showRouting}
+          />
+        )}
+        
         {/* Display markers for all locations */}
         {locations.map((location) => (
           <Marker 
             key={location.id}
-            position={location.coords} 
+            position={location.coords as [number, number]} 
             icon={getMarkerIcon(location.type)}
           >
             <Popup>
