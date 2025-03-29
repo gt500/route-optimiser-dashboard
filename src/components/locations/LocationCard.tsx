@@ -18,7 +18,10 @@ const LocationCard: React.FC<LocationCardProps> = ({ location, onEdit, onDelete 
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg text-white">{location.name}</CardTitle>
-          <Badge variant={location.type === 'Storage' ? "secondary" : "outline"}>
+          <Badge 
+            variant={location.type === 'Storage' ? "secondary" : "outline"} 
+            className="text-white"
+          >
             {location.type || 'Customer'}
           </Badge>
         </div>
