@@ -205,19 +205,9 @@ const Locations = () => {
               <CardTitle>Location Map</CardTitle>
               <CardDescription>Visual overview of all locations</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-[600px]">
               {locations.length > 0 && (
-                <RouteMap 
-                  route={{ 
-                    locations: locations,
-                    distance: 0,
-                    estimatedDuration: 0,
-                    trafficConditions: 'moderate',
-                    usingRealTimeData: false,
-                    fuelConsumption: 0,
-                    fuelCost: 0
-                  }} 
-                />
+                <RouteMap locations={locations} />
               )}
             </CardContent>
           </Card>

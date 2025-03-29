@@ -86,6 +86,7 @@ interface RouteMapProps {
   showRouting?: boolean;
   allowSelection?: boolean;
   onLocationSelect?: (location: any) => void;
+  locations?: any[];
 }
 
 // Component to initialize routing after the map is loaded
@@ -138,7 +139,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   waypoints = [],
   showRouting = false,
   allowSelection = false,
-  onLocationSelect
+  onLocationSelect,
+  locations: customLocations
 }) => {
   const navigate = useNavigate();
   
@@ -177,11 +179,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
   };
 
+  // Determine which locations to display
+  const displayLocations = customLocations || locations;
+
   return (
     <div className="h-full w-full rounded-md overflow-hidden border">
       <MapContainer 
         center={center}
-        zoom={11} 
+        zoom={11}
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
@@ -199,30 +204,36 @@ const RouteMap: React.FC<RouteMapProps> = ({
         )}
         
         {/* Display markers for all locations */}
-        {locations.map((location) => (
-          <Marker 
-            key={location.id}
-            position={location.coords as [number, number]} 
-            icon={getMarkerIcon(location.type)}
-          >
-            <Popup>
-              <div className="p-1">
-                <h3 className="font-semibold">{location.name}</h3>
-                <p className="text-sm text-gray-600">{location.description}</p>
-                <p className="text-xs text-gray-500">{location.address}</p>
-                {allowSelection && (
-                  <Button 
-                    size="sm" 
-                    className="mt-2 w-full" 
-                    onClick={() => onLocationSelect && onLocationSelect(location)}
-                  >
-                    Select
-                  </Button>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {displayLocations && displayLocations.map((location) => {
+          // Convert location to needed format if it's from the Locations page
+          const coords = location.coords || [location.lat, location.long];
+          const locationType = location.type?.toLowerCase() === 'storage' ? 'start' : 'waypoint';
+          
+          return (
+            <Marker 
+              key={location.id}
+              position={coords as [number, number]}
+              icon={getMarkerIcon(location.type || locationType)}
+            >
+              <Popup>
+                <div className="p-1">
+                  <h3 className="font-semibold">{location.name}</h3>
+                  <p className="text-sm text-gray-600">{location.description || location.type}</p>
+                  <p className="text-xs text-gray-500">{location.address}</p>
+                  {allowSelection && (
+                    <Button 
+                      size="sm" 
+                      className="mt-2 w-full" 
+                      onClick={() => onLocationSelect && onLocationSelect(location)}
+                    >
+                      Select
+                    </Button>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

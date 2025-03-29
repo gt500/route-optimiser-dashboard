@@ -424,17 +424,26 @@ const Routes = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <RouteMap 
-                    route={route.locations.length > 0 ? {
-                      locations: route.locations,
-                      distance: route.distance,
-                      estimatedDuration: route.estimatedDuration,
-                      trafficConditions: route.trafficConditions,
-                      usingRealTimeData: route.usingRealTimeData,
-                      fuelConsumption: route.fuelConsumption,
-                      fuelCost: route.fuelCost
-                    } : null} 
-                  />
+                  <div className="h-[400px]">
+                    {route.locations.length > 0 && (
+                      <RouteMap 
+                        locations={route.locations}
+                        showRouting={true}
+                        startLocation={route.locations[0] ? { 
+                          name: route.locations[0].name, 
+                          coords: [route.locations[0].lat, route.locations[0].long] 
+                        } : undefined}
+                        endLocation={route.locations.length > 1 ? { 
+                          name: route.locations[route.locations.length - 1].name, 
+                          coords: [route.locations[route.locations.length - 1].lat, route.locations[route.locations.length - 1].long] 
+                        } : undefined}
+                        waypoints={route.locations.slice(1, -1).map(loc => ({
+                          name: loc.name,
+                          coords: [loc.lat, loc.long]
+                        }))}
+                      />
+                    )}
+                  </div>
                   <RouteDetails 
                     route={route} 
                     onRemoveLocation={removeLocationFromRoute} 
