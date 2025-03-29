@@ -36,3 +36,14 @@ export interface SupabaseLocation {
   open_time?: string;
   close_time?: string;
 }
+
+// Define Leaflet component specific types to help with type checking
+export interface LeafletComponentProps {
+  position: [number, number];
+  children?: React.ReactNode;
+  icon?: L.Icon | L.DivIcon;
+  eventHandlers?: {
+    click?: () => void;
+    [key: string]: (() => void) | undefined;
+  };
+}

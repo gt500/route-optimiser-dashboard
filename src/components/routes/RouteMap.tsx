@@ -148,12 +148,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   return (
     <MapContainer
-      ref={(ref) => {
-        if (ref) handleMapInit(ref);
-      }}
+      ref={handleMapInit}
       center={mapCenter}
       zoom={zoom}
       style={{ height, width: '100%' }}
+      className="leaflet-container"
+      whenReady={() => setMapReady(true)}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

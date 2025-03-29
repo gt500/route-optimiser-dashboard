@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { createLocationIcon } from './Icons';
@@ -21,18 +21,22 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   index,
   onClick
 }) => {
-  // Create a custom icon based on the index
-  const iconHtml = index !== undefined 
-    ? createLocationIcon({ label: index })
-    : createLocationIcon({});
+  // Create a custom icon based on the index using useMemo to avoid unnecessary re-renders
+  const iconHtml = useMemo(() => {
+    return index !== undefined 
+      ? createLocationIcon({ label: index })
+      : createLocationIcon({});
+  }, [index]);
   
-  // Create a Leaflet icon
-  const markerIcon = new L.DivIcon({
-    className: 'custom-div-icon',
-    html: iconHtml,
-    iconSize: [28, 28] as L.PointExpression,
-    iconAnchor: [14, 14] as L.PointExpression
-  });
+  // Create a Leaflet icon using useMemo
+  const markerIcon = useMemo(() => {
+    return new L.DivIcon({
+      className: 'custom-div-icon',
+      html: iconHtml,
+      iconSize: [28, 28] as L.PointExpression,
+      iconAnchor: [14, 14] as L.PointExpression
+    });
+  }, [iconHtml]);
   
   const eventHandlers = onClick ? {
     click: onClick
