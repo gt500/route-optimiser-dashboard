@@ -31,7 +31,7 @@ const Locations: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <LocationHeader onAddNew={handleAddNew} />
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 bg-black p-4 rounded-lg">
         <LocationSearch searchTerm={searchTerm} onChange={setSearchTerm} />
       </div>
 

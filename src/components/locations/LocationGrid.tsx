@@ -13,14 +13,14 @@ interface LocationGridProps {
 const LocationGrid: React.FC<LocationGridProps> = ({ locations, onEdit, onDelete }) => {
   if (locations.length === 0) {
     return (
-      <CardContent className="py-10 text-center text-muted-foreground">
+      <CardContent className="py-10 text-center text-muted-foreground bg-black">
         No locations found. Try adjusting your filters or add a new location.
       </CardContent>
     );
   }
 
   return (
-    <CardContent>
+    <CardContent className="bg-black">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {locations.map((location) => (
           <LocationCard 

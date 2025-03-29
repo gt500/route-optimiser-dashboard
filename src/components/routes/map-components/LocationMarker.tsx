@@ -49,7 +49,6 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker 
       position={position} 
       eventHandlers={eventHandlers}
-      // Use this syntax for the icon prop to fix TypeScript error
       icon={markerIcon}
     >
       <Popup>
