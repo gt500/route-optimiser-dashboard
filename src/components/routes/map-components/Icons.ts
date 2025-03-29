@@ -62,12 +62,7 @@ export const createIcon = (html: string, size: [number, number] = [28, 28]) => {
   });
 };
 
-// Export specific icons for startIcon, endIcon, and locationIcon
-export const startIcon = (options: DepotIconOptions = {}) => 
-  createIcon(createDepotIcon({ ...options, isStart: true }), [34, 34]);
-
-export const endIcon = (options: DepotIconOptions = {}) => 
-  createIcon(createDepotIcon({ ...options, isEnd: true }), [34, 34]);
-
-export const locationIcon = (options: LocationIconOptions = {}) => 
-  createIcon(createLocationIcon(options), [28, 28]);
+// Export specific icons
+export const startIcon = createIcon(createDepotIcon({ isStart: true }), [34, 34]);
+export const endIcon = createIcon(createDepotIcon({ isEnd: true }), [34, 34]);
+export const locationIcon = createIcon(createLocationIcon(), [28, 28]);

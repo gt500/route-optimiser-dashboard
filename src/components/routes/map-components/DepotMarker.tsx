@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
 import { startIcon, endIcon } from './Icons';
 
 interface DepotMarkerProps {
@@ -17,10 +16,9 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   return (
     <Marker 
       position={position} 
-      // @ts-ignore - icon property is supported in Leaflet but not in the TS definitions
       icon={icon}
     >
-      <Popup className="leaflet-popup">
+      <Popup>
         <div className="p-2">
           <div className="font-medium">{name}</div>
           <div className="text-xs text-muted-foreground mt-1">

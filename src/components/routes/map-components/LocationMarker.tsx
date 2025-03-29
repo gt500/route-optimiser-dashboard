@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { locationIcon } from './Icons';
+import L from 'leaflet';
+import { locationIcon, createIcon, createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
   id: string;
@@ -20,7 +21,10 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   index,
   onClick
 }) => {
-  const customIcon = locationIcon;
+  // Create a custom icon based on the index
+  const iconWithIndex = index !== undefined 
+    ? createIcon(createLocationIcon({ label: index }), [28, 28])
+    : locationIcon;
   
   const eventHandlers = onClick ? {
     click: onClick
@@ -30,8 +34,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      // @ts-ignore - icon property is supported in Leaflet but not in the TS definitions
-      icon={customIcon}
+      icon={iconWithIndex}
     >
       <Popup>
         <div className="p-2">
