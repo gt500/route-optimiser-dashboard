@@ -61,6 +61,7 @@ interface RouteMapProps {
     name: string;
     coords: [number, number];
   }>;
+  forceRouteUpdate?: boolean;
 }
 
 // MapInitializer component to handle map setup
@@ -119,7 +120,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   showRouting = false,
   startLocation,
   endLocation,
-  waypoints = []
+  waypoints = [],
+  forceRouteUpdate = false
 }) => {
   // Default center based on South Africa
   const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
@@ -213,7 +215,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         style={{ height: '100%', width: '100%' }}
         zoom={11}
         zoomControl={false}
-        whenReady={(map) => {
+        whenReady={(map: any) => {
           // Set up user interaction tracking
           map.target.on('zoomstart', () => setIsUserInteracting(true));
           map.target.on('zoomend', () => {
@@ -243,6 +245,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             waypoints={routingWaypoints}
             color="#6366F1"
             fitBounds={false} // Prevent RoutingMachine from resetting the view bounds
+            forceUpdate={forceRouteUpdate} // Force route update after load confirmation
           />
         )}
         
@@ -254,6 +257,11 @@ const RouteMap: React.FC<RouteMapProps> = ({
             onLocationClick={onLocationClick}
           />
         ))}
+        
+        {/* Add depot marker if provided */}
+        {depot && (
+          <DepotMarker depot={depot} />
+        )}
       </MapContainer>
     </div>
   );

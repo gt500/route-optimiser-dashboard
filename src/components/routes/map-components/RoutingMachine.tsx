@@ -8,12 +8,14 @@ interface RoutingMachineProps {
   waypoints: Array<[number, number]>;
   color?: string;
   fitBounds?: boolean;
+  forceUpdate?: boolean;
 }
 
 export const RoutingMachine: React.FC<RoutingMachineProps> = ({ 
   waypoints, 
   color = '#6366F1',
-  fitBounds = true
+  fitBounds = true,
+  forceUpdate = false
 }) => {
   const map = useMap();
   const routingControlRef = useRef<L.Routing.Control | null>(null);
@@ -80,6 +82,11 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         })
       }).addTo(map);
 
+      // Force routes to be visible even after load confirmation
+      if (forceUpdate) {
+        isInitializedRef.current = false;
+      }
+
       // Disable the fitSelectedRoutes feature after initial setup
       routingControl.options.fitSelectedRoutes = false;
 
@@ -130,7 +137,7 @@ export const RoutingMachine: React.FC<RoutingMachineProps> = ({
         routingControlRef.current = null;
       }
     };
-  }, [waypoints, map, color, fitBounds]);
+  }, [waypoints, map, color, fitBounds, forceUpdate]); // Added forceUpdate to dependencies
 
   return null;
 };

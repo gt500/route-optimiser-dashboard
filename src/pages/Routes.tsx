@@ -719,6 +719,7 @@ const RoutesList = () => {
                           coords: [loc.lat || 0, loc.long || 0]
                         }))}
                         height="100%"
+                        forceRouteUpdate={isLoadConfirmed}
                       />
                     )}
                   </div>

@@ -12,19 +12,19 @@ interface LocationMarkerProps {
     lat?: number;
     long?: number;
     address?: string;
+    type?: string;
     sequence?: number;
     emptyCylinders?: number;
     fullCylinders?: number;
-    type?: string;
   };
-  onLocationClick?: (locationId: string) => void;
   isSelected?: boolean;
+  onLocationClick?: (locationId: string) => void;
 }
 
-export const LocationMarker: React.FC<LocationMarkerProps> = ({ 
-  location, 
-  onLocationClick,
-  isSelected = false
+export const LocationMarker: React.FC<LocationMarkerProps> = ({
+  location,
+  isSelected = false,
+  onLocationClick
 }) => {
   // Use either latitude/longitude or lat/long
   const lat = location.latitude || location.lat || 0;
@@ -57,9 +57,9 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
     });
   }
   
-  // Get additional display information
+  // Format location details to display in the popup
   const getLocationDetails = () => {
-    const details = [];
+    const details: string[] = [];
     
     if (location.emptyCylinders) {
       details.push(`${location.emptyCylinders} empty cylinders`);
@@ -67,6 +67,10 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
     
     if (location.fullCylinders) {
       details.push(`${location.fullCylinders} full cylinders`);
+    }
+    
+    if (details.length === 0) {
+      return '';
     }
     
     return details.join(', ');
@@ -82,15 +86,20 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
   return (
     <Marker 
       position={position}
-      icon={markerIcon}
+      icon={markerIcon as any}
       eventHandlers={onLocationClick ? { click: handleClick } : {}}
     >
       <Popup>
         <div className="p-1">
-          <h3 className="font-medium text-sm">{location.name}</h3>
-          <p className="text-xs text-gray-600">{location.address}</p>
+          <h3 className="font-medium">{location.name}</h3>
+          {location.address && (
+            <p className="text-sm text-gray-600">{location.address}</p>
+          )}
           {getLocationDetails() && (
-            <p className="text-xs mt-1 text-indigo-600">{getLocationDetails()}</p>
+            <p className="text-sm mt-1">{getLocationDetails()}</p>
+          )}
+          {location.sequence !== undefined && (
+            <div className="text-xs mt-1 text-indigo-600">Stop #{location.sequence + 1}</div>
           )}
         </div>
       </Popup>

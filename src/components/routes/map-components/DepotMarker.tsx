@@ -2,6 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { createLocationIcon } from './Icons';
+import { MarkerProps } from 'react-leaflet';
 
 interface DepotMarkerProps {
   depot: {
@@ -33,7 +34,7 @@ export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot }) => {
   return (
     <Marker 
       position={position}
-      icon={depotIcon}
+      icon={depotIcon as any}
     >
       <Popup>
         <div>
