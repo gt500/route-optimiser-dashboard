@@ -99,7 +99,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">View as {viewMode === 'list' ? 'Dropdown' : 'List'}</Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-popover">
                     <DropdownMenuItem onClick={() => setViewMode('list')}>
                       List View
                     </DropdownMenuItem>
@@ -119,7 +119,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a location" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[200px]">
+                <SelectContent className="max-h-[200px] bg-popover">
                   {filteredLocations.map((location) => (
                     <SelectItem key={location.id.toString()} value={location.id.toString()}>
                       <div className="flex items-center justify-between w-full">
@@ -185,9 +185,9 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
               </RadioGroup>
             )}
             
-            {availableLocations.length === 0 && (
+            {filteredLocations.length === 0 && (
               <div className="text-center py-4 text-gray-400">
-                No more locations available. Add new locations or remove some from the route.
+                No locations found. Try a different search term or add new locations.
               </div>
             )}
           </div>

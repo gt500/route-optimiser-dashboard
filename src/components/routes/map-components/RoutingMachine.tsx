@@ -37,9 +37,23 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
       }
       
       try {
+        // Ensure all waypoints are valid LatLng objects
+        const validWaypoints = waypoints.filter(wp => 
+          wp && wp.lat !== undefined && wp.lng !== undefined && 
+          !isNaN(wp.lat) && !isNaN(wp.lng) && 
+          wp.lat !== 0 && wp.lng !== 0
+        );
+        
+        if (validWaypoints.length < 2) {
+          console.log("Not enough valid waypoints to create route:", validWaypoints);
+          return;
+        }
+        
+        console.log("Creating route with valid waypoints:", validWaypoints);
+        
         // Use the L.Routing global with proper road-following settings
         routingControl = L.Routing.control({
-          waypoints: waypoints,
+          waypoints: validWaypoints,
           router: L.Routing.osrm({
             serviceUrl: 'https://router.project-osrm.org/route/v1',
             profile: 'driving'

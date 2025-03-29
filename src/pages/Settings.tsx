@@ -1,267 +1,523 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { MoonIcon, SunIcon, CheckCircle, UserCircle, BellRing, Settings2, Globe, MailCheck } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-const Settings = () => {
+const SettingsPage = () => {
+  const { theme, setTheme } = useTheme();
+  
+  // User profile settings
+  const [fullName, setFullName] = useState("Daniel Radcliffe");
+  const [email, setEmail] = useState("daniel@example.com");
+  const [phone, setPhone] = useState("+27 72 123 4567");
+  const [company, setCompany] = useState("GAZ2GO");
+  
+  // Notification settings
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true,
+    marketingEmails: false,
+    weeklyReports: true,
+    routeNotifications: true,
+    deliveryUpdates: true
+  });
+  
+  // App settings
+  const [distanceUnit, setDistanceUnit] = useState("km");
+  const [language, setLanguage] = useState("en");
+  const [currency, setCurrency] = useState("ZAR");
+  const [timeFormat, setTimeFormat] = useState("24h");
+  
+  // Advanced settings
+  const [dataSync, setDataSync] = useState(true);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [developerMode, setDeveloperMode] = useState(false);
+  const [automaticUpdates, setAutomaticUpdates] = useState(true);
+  
+  // Handle saving profile changes
+  const handleSaveProfile = async () => {
+    try {
+      // Here you would typically make an API call to update the user profile
+      // For now, we'll just show a success toast
+      toast.success("Profile updated successfully", {
+        description: "Your profile information has been updated."
+      });
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
+  };
+  
+  // Handle saving notification settings
+  const handleSaveNotifications = async () => {
+    try {
+      // Here you would typically make an API call to update notification preferences
+      toast.success("Notification preferences saved", {
+        description: "Your notification preferences have been updated."
+      });
+    } catch (error) {
+      toast.error("Failed to update notification preferences");
+    }
+  };
+  
+  // Handle saving app settings
+  const handleSaveAppSettings = async () => {
+    try {
+      // Here you would typically make an API call to update app settings
+      toast.success("App settings saved", {
+        description: "Your application preferences have been updated."
+      });
+    } catch (error) {
+      toast.error("Failed to update app settings");
+    }
+  };
+  
+  const toggleNotificationSetting = (setting: keyof typeof notificationSettings) => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      [setting]: !prev[setting]
+    }));
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage system preferences and configuration</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">Manage your account settings and preferences.</p>
+        </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="routing">Routing</TabsTrigger>
-          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4 h-11">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="general" className="space-y-4">
-          <Card className="hover:shadow-md transition-shadow duration-300">
+        <TabsContent value="profile" className="space-y-4">
+          <Card>
             <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-              <CardDescription>Update your company details</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <UserCircle className="h-5 w-5" />
+                Personal Information
+              </CardTitle>
+              <CardDescription>
+                Update your personal details and contact information.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input id="companyName" defaultValue="LogisticsPro Ltd." />
+                  <Label htmlFor="full-name">Full Name</Label>
+                  <Input 
+                    id="full-name" 
+                    value={fullName} 
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Contact Email</Label>
-                  <Input id="contactEmail" defaultValue="info@logisticspro.example" />
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Contact Phone</Label>
-                  <Input id="contactPhone" defaultValue="+27 21 555 1234" />
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input 
+                    id="phone" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue="123 Business Park, Cape Town" />
+                  <Label htmlFor="company">Company</Label>
+                  <Input 
+                    id="company" 
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                  />
                 </div>
-              </div>
-              
-              <div className="pt-4 flex justify-end">
-                <Button>Save Changes</Button>
               </div>
             </CardContent>
+            <CardFooter className="justify-end">
+              <Button onClick={handleSaveProfile}>Save Changes</Button>
+            </CardFooter>
           </Card>
           
-          <Card className="hover:shadow-md transition-shadow duration-300">
+          <Card>
             <CardHeader>
-              <CardTitle>Interface Preferences</CardTitle>
-              <CardDescription>Customize your dashboard experience</CardDescription>
+              <CardTitle>Account Information</CardTitle>
+              <CardDescription>
+                View information about your account status and plan.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Dark Mode</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Switch between light and dark themes
-                    </div>
-                  </div>
-                  <Switch />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Account Status</p>
+                  <p className="text-xs text-muted-foreground">Your account is active and in good standing.</p>
                 </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Automatic Refresh</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Automatically refresh data every 5 minutes
-                    </div>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Show Notifications</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Display system notifications in the dashboard
-                    </div>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <div className="pt-4 flex justify-end">
-                  <Button>Save Preferences</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="routing" className="space-y-4">
-          <Card className="hover:shadow-md transition-shadow duration-300">
-            <CardHeader>
-              <CardTitle>Routing Configuration</CardTitle>
-              <CardDescription>Configure route optimization parameters</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fuelPrice">Current Fuel Price (R/L)</Label>
-                  <Input id="fuelPrice" type="number" defaultValue="21.95" step="0.01" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fuelConsumption">Average Fuel Consumption (L/100km)</Label>
-                  <Input id="fuelConsumption" type="number" defaultValue="12" step="0.1" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cylinderWeight">Full Cylinder Weight (kg)</Label>
-                  <Input id="cylinderWeight" type="number" defaultValue="22" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxLoad">Maximum Truck Load (cylinders)</Label>
-                  <Input id="maxLoad" type="number" defaultValue="80" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="routingStrategy">Routing Optimization Strategy</Label>
-                <Select defaultValue="balanced">
-                  <SelectTrigger id="routingStrategy">
-                    <SelectValue placeholder="Select strategy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="distance">Minimize Distance</SelectItem>
-                    <SelectItem value="time">Minimize Time</SelectItem>
-                    <SelectItem value="fuel">Minimize Fuel Consumption</SelectItem>
-                    <SelectItem value="balanced">Balanced Approach</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Badge className="text-xs bg-green-500">Active</Badge>
               </div>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Allow Route Recalculation</Label>
-                  <div className="text-sm text-muted-foreground">
-                    Automatically recalculate routes if conditions change
-                  </div>
+                  <p className="text-sm font-medium">Current Plan</p>
+                  <p className="text-xs text-muted-foreground">Professional plan with premium features.</p>
                 </div>
-                <Switch defaultChecked />
+                <Badge className="text-xs bg-blue-500">Pro</Badge>
               </div>
               
-              <div className="pt-4 flex justify-end">
-                <Button>Update Routing Settings</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="vehicles" className="space-y-4">
-          <Card className="hover:shadow-md transition-shadow duration-300">
-            <CardHeader>
-              <CardTitle>Vehicle Settings</CardTitle>
-              <CardDescription>Configure fleet parameters</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="maintenanceInterval">Maintenance Interval (km)</Label>
-                  <Input id="maintenanceInterval" type="number" defaultValue="5000" />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Account Created</p>
+                  <p className="text-xs text-muted-foreground">Account has been active for 247 days.</p>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="serviceReminder">Service Reminder (days before)</Label>
-                  <Input id="serviceReminder" type="number" defaultValue="7" />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Enable Fleet Tracking</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Track vehicle location in real-time
-                    </div>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Low Fuel Alerts</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Send notifications when fuel level is below 20%
-                    </div>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </div>
-              
-              <div className="pt-4 flex justify-end">
-                <Button>Save Vehicle Settings</Button>
+                <p className="text-xs text-muted-foreground">May 15, 2023</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="notifications" className="space-y-4">
-          <Card className="hover:shadow-md transition-shadow duration-300">
+          <Card>
             <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Configure alerts and notifications</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <BellRing className="h-5 w-5" />
+                Notification Preferences
+              </CardTitle>
+              <CardDescription>
+                Configure how you receive notifications and updates from the system.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Email Notifications</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Send notifications to email
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Notification Methods</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="email-notifications">Email Notifications</Label>
+                      <p className="text-xs text-muted-foreground">Receive updates and alerts via email.</p>
                     </div>
+                    <Switch 
+                      id="email-notifications" 
+                      checked={notificationSettings.emailNotifications}
+                      onCheckedChange={() => toggleNotificationSetting('emailNotifications')}
+                    />
                   </div>
-                  <Switch defaultChecked />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Daily Reports</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Send daily activity summary
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="sms-notifications">SMS Notifications</Label>
+                      <p className="text-xs text-muted-foreground">Get important alerts via SMS.</p>
                     </div>
+                    <Switch 
+                      id="sms-notifications" 
+                      checked={notificationSettings.smsNotifications}
+                      onCheckedChange={() => toggleNotificationSetting('smsNotifications')}
+                    />
                   </div>
-                  <Switch />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Route Completion Alerts</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Notification when a route is completed
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="push-notifications">Push Notifications</Label>
+                      <p className="text-xs text-muted-foreground">Allow browser push notifications.</p>
                     </div>
+                    <Switch 
+                      id="push-notifications" 
+                      checked={notificationSettings.pushNotifications}
+                      onCheckedChange={() => toggleNotificationSetting('pushNotifications')}
+                    />
                   </div>
-                  <Switch defaultChecked />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Maintenance Reminders</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Alert for scheduled vehicle maintenance
-                    </div>
-                  </div>
-                  <Switch defaultChecked />
                 </div>
               </div>
               
-              <div className="pt-4 flex justify-end">
-                <Button>Update Notification Settings</Button>
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Communication Preferences</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="marketing-emails">Marketing Emails</Label>
+                      <p className="text-xs text-muted-foreground">Receive promotional content and offers.</p>
+                    </div>
+                    <Switch 
+                      id="marketing-emails" 
+                      checked={notificationSettings.marketingEmails}
+                      onCheckedChange={() => toggleNotificationSetting('marketingEmails')}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="weekly-reports">Weekly Reports</Label>
+                      <p className="text-xs text-muted-foreground">Get a weekly summary of your activity.</p>
+                    </div>
+                    <Switch 
+                      id="weekly-reports" 
+                      checked={notificationSettings.weeklyReports}
+                      onCheckedChange={() => toggleNotificationSetting('weeklyReports')}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Route & Delivery Notifications</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="route-notifications">Route Notifications</Label>
+                      <p className="text-xs text-muted-foreground">Get notified about route changes and optimizations.</p>
+                    </div>
+                    <Switch 
+                      id="route-notifications" 
+                      checked={notificationSettings.routeNotifications}
+                      onCheckedChange={() => toggleNotificationSetting('routeNotifications')}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="delivery-updates">Delivery Updates</Label>
+                      <p className="text-xs text-muted-foreground">Receive notifications about delivery status changes.</p>
+                    </div>
+                    <Switch 
+                      id="delivery-updates" 
+                      checked={notificationSettings.deliveryUpdates}
+                      onCheckedChange={() => toggleNotificationSetting('deliveryUpdates')}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end">
+              <Button className="flex items-center gap-2" onClick={handleSaveNotifications}>
+                <MailCheck className="h-4 w-4" />
+                Save Notification Preferences
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="appearance" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings2 className="h-5 w-5" />
+                Application Settings
+              </CardTitle>
+              <CardDescription>
+                Customize your application settings and preferences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Theme Settings</h3>
+                <RadioGroup defaultValue={theme} onValueChange={setTheme} className="grid grid-cols-3 gap-4">
+                  <div>
+                    <RadioGroupItem value="light" id="theme-light" className="sr-only" />
+                    <Label
+                      htmlFor="theme-light"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                    >
+                      <SunIcon className="mb-2 h-6 w-6" />
+                      Light
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="dark" id="theme-dark" className="sr-only" />
+                    <Label
+                      htmlFor="theme-dark"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                    >
+                      <MoonIcon className="mb-2 h-6 w-6" />
+                      Dark
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="system" id="theme-system" className="sr-only" />
+                    <Label
+                      htmlFor="theme-system"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                    >
+                      <Settings2 className="mb-2 h-6 w-6" />
+                      System
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Regional Settings</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="distance-unit">Distance Unit</Label>
+                    <Select value={distanceUnit} onValueChange={setDistanceUnit}>
+                      <SelectTrigger id="distance-unit">
+                        <SelectValue placeholder="Select distance unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="km">Kilometers (km)</SelectItem>
+                        <SelectItem value="mi">Miles (mi)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="language">Language</Label>
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger id="language">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="af">Afrikaans</SelectItem>
+                        <SelectItem value="zu">Zulu</SelectItem>
+                        <SelectItem value="xh">Xhosa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select value={currency} onValueChange={setCurrency}>
+                      <SelectTrigger id="currency">
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ZAR">South African Rand (R)</SelectItem>
+                        <SelectItem value="USD">US Dollar ($)</SelectItem>
+                        <SelectItem value="EUR">Euro (€)</SelectItem>
+                        <SelectItem value="GBP">British Pound (£)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="time-format">Time Format</Label>
+                    <Select value={timeFormat} onValueChange={setTimeFormat}>
+                      <SelectTrigger id="time-format">
+                        <SelectValue placeholder="Select time format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
+                        <SelectItem value="24h">24-hour</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end">
+              <Button className="flex items-center gap-2" onClick={handleSaveAppSettings}>
+                <Globe className="h-4 w-4" />
+                Save App Settings
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="advanced" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Settings</CardTitle>
+              <CardDescription>
+                Configure advanced system options and developer features.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="data-sync">Data Synchronization</Label>
+                    <p className="text-xs text-muted-foreground">Keep data synchronized across devices automatically.</p>
+                  </div>
+                  <Switch 
+                    id="data-sync" 
+                    checked={dataSync} 
+                    onCheckedChange={setDataSync}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="offline-mode">Offline Mode</Label>
+                    <p className="text-xs text-muted-foreground">Allow application to work without internet connection.</p>
+                  </div>
+                  <Switch 
+                    id="offline-mode" 
+                    checked={offlineMode} 
+                    onCheckedChange={setOfflineMode}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="developer-mode">Developer Mode</Label>
+                    <p className="text-xs text-muted-foreground">Enable advanced debugging features.</p>
+                  </div>
+                  <Switch 
+                    id="developer-mode" 
+                    checked={developerMode} 
+                    onCheckedChange={setDeveloperMode}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="automatic-updates">Automatic Updates</Label>
+                    <p className="text-xs text-muted-foreground">Keep application up to date automatically.</p>
+                  </div>
+                  <Switch 
+                    id="automatic-updates" 
+                    checked={automaticUpdates} 
+                    onCheckedChange={setAutomaticUpdates}
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end">
+              <Button className="flex items-center gap-2" onClick={handleSaveAppSettings}>
+                <CheckCircle className="h-4 w-4" />
+                Save Preferences
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardDescription>
+                Irreversible and destructive actions for your account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Delete Account</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Once you delete your account, there is no going back. This action cannot be undone.
+                  </p>
+                </div>
+                <Button variant="destructive" onClick={() => toast.error("You don't really want to do that!")}>
+                  Delete Account
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -271,4 +527,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default SettingsPage;
