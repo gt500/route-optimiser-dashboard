@@ -62,7 +62,7 @@ export const createDepotIcon = (options: DepotIconOptions = {}): L.DivIcon => {
   const html = createDepotIconHtml(options);
   const { customSize = 34 } = options;
   
-  return new L.DivIcon({
+  return L.divIcon({
     className: 'custom-div-icon',
     html: html,
     iconSize: [customSize, customSize],
@@ -75,7 +75,7 @@ export const createLocationIcon = (options: LocationIconOptions = {}): L.DivIcon
   const html = createLocationIconHtml(options);
   const { customSize = 28 } = options;
   
-  return new L.DivIcon({
+  return L.divIcon({
     className: 'custom-div-icon',
     html: html,
     iconSize: [customSize, customSize],

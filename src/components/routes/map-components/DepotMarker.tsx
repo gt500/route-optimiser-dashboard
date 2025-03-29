@@ -20,12 +20,12 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   const label = isStart ? 'S' : isEnd ? 'E' : 'D';
   
   // Create a custom icon - directly using the function that returns L.DivIcon
-  const icon = createDepotIcon({ label, isStart, isEnd });
+  const customIcon = createDepotIcon({ label, isStart, isEnd });
 
   return (
     <Marker 
       position={position} 
-      icon={icon}
+      icon={customIcon}
     >
       <Popup>
         <div className="text-sm">

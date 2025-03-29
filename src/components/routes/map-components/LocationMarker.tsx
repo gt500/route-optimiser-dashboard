@@ -2,6 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { createLocationIcon } from './Icons';
+import L from 'leaflet';
 
 export interface LocationMarkerProps {
   id: string | number;
@@ -29,7 +30,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   };
 
   // Create a custom icon - directly using the function that returns L.DivIcon
-  const icon = createLocationIcon({ 
+  const customIcon = createLocationIcon({ 
     label: index !== undefined ? String(index) : '',
     type: 'Customer'
   });
@@ -37,7 +38,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   return (
     <Marker 
       position={position}
-      icon={icon}
+      icon={customIcon}
       eventHandlers={{
         click: handleMarkerClick
       }}
