@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Marker as LeafletMarker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { Marker, Popup } from 'react-leaflet';
 import { createDepotIcon } from './Icons';
 
 interface DepotMarkerProps {
@@ -20,17 +19,11 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   
   const label = isStart ? 'S' : isEnd ? 'E' : 'D';
   
-  // Create a custom icon
-  const customIcon = createDepotIcon({ label, isStart, isEnd });
-  const icon = new L.DivIcon({
-    className: 'custom-div-icon',
-    html: customIcon,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17]
-  });
+  // Create a custom icon - directly using the function that returns L.DivIcon
+  const icon = createDepotIcon({ label, isStart, isEnd });
 
   return (
-    <LeafletMarker 
+    <Marker 
       position={position} 
       icon={icon}
     >
@@ -39,7 +32,7 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
           <strong>{isStart ? 'Start: ' : isEnd ? 'End: ' : ''}{name}</strong>
         </div>
       </Popup>
-    </LeafletMarker>
+    </Marker>
   );
 };
 

@@ -15,8 +15,8 @@ interface LocationIconOptions {
   type?: string;
 }
 
-// Create depot marker icon
-export const createDepotIcon = (options: DepotIconOptions = {}): string => {
+// Create depot marker HTML content
+export const createDepotIconHtml = (options: DepotIconOptions = {}): string => {
   const { label, isStart = false, isEnd = false, customSize = 34 } = options;
   
   const bgColor = isStart ? '#22c55e' : isEnd ? '#ef4444' : '#6366F1';
@@ -31,8 +31,8 @@ export const createDepotIcon = (options: DepotIconOptions = {}): string => {
   `;
 };
 
-// Create location marker icon
-export const createLocationIcon = (options: LocationIconOptions = {}): string => {
+// Create location marker HTML content
+export const createLocationIconHtml = (options: LocationIconOptions = {}): string => {
   const { label, type, color = '#6366F1', customSize = 28 } = options;
   
   // Determine color based on location type
@@ -57,34 +57,33 @@ export const createLocationIcon = (options: LocationIconOptions = {}): string =>
   `;
 };
 
-// Create a Leaflet icon from HTML - updated to return a proper icon
-export const createIcon = (html: string, size: [number, number] = [28, 28]): L.DivIcon => {
+// Create a depot icon
+export const createDepotIcon = (options: DepotIconOptions = {}): L.DivIcon => {
+  const html = createDepotIconHtml(options);
+  const { customSize = 34 } = options;
+  
   return new L.DivIcon({
     className: 'custom-div-icon',
     html: html,
-    iconSize: size,
-    iconAnchor: [size[0] / 2, size[1] / 2]
+    iconSize: [customSize, customSize],
+    iconAnchor: [customSize/2, customSize/2]
+  });
+};
+
+// Create a location icon
+export const createLocationIcon = (options: LocationIconOptions = {}): L.DivIcon => {
+  const html = createLocationIconHtml(options);
+  const { customSize = 28 } = options;
+  
+  return new L.DivIcon({
+    className: 'custom-div-icon',
+    html: html,
+    iconSize: [customSize, customSize],
+    iconAnchor: [customSize/2, customSize/2]
   });
 };
 
 // Export specific Leaflet icons for direct use
-export const startIcon = new L.DivIcon({
-  className: 'custom-div-icon',
-  html: createDepotIcon({ isStart: true }),
-  iconSize: [34, 34],
-  iconAnchor: [17, 17]
-});
-
-export const endIcon = new L.DivIcon({
-  className: 'custom-div-icon',
-  html: createDepotIcon({ isEnd: true }),
-  iconSize: [34, 34],
-  iconAnchor: [17, 17]
-});
-
-export const locationIcon = new L.DivIcon({
-  className: 'custom-div-icon',
-  html: createLocationIcon({}),
-  iconSize: [28, 28],
-  iconAnchor: [14, 14]
-});
+export const startIcon = createDepotIcon({ isStart: true });
+export const endIcon = createDepotIcon({ isEnd: true });
+export const locationIcon = createLocationIcon({});

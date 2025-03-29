@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Marker as LeafletMarker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { Marker, Popup } from 'react-leaflet';
 import { createLocationIcon } from './Icons';
 
 export interface LocationMarkerProps {
@@ -25,25 +24,18 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   // Handle marker click to open popup
   const handleMarkerClick = () => {
     if (popupRef.current) {
-      popupRef.current.openOn(L.DomUtil.get('map') as any);
+      popupRef.current.openOn(document.getElementById('map') as any);
     }
   };
 
-  // Create a custom icon with the index number if provided
-  const customIconHtml = createLocationIcon({ 
+  // Create a custom icon - directly using the function that returns L.DivIcon
+  const icon = createLocationIcon({ 
     label: index !== undefined ? String(index) : '',
     type: 'Customer'
   });
-  
-  const icon = new L.DivIcon({
-    className: 'custom-div-icon',
-    html: customIconHtml,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
-  });
 
   return (
-    <LeafletMarker 
+    <Marker 
       position={position}
       icon={icon}
       eventHandlers={{
@@ -56,7 +48,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
           {address && <div className="mt-1 text-gray-500">{address}</div>}
         </div>
       </Popup>
-    </LeafletMarker>
+    </Marker>
   );
 };
 
