@@ -57,6 +57,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [allWaypoints, setAllWaypoints] = useState<L.LatLng[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(center);
 
   // Calculate center based on all markers if not provided
   const calculateCenter = () => {
@@ -94,7 +95,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
     return [lat, lng] as [number, number];
   };
 
-  const calculatedCenter = calculateCenter();
+  useEffect(() => {
+    setMapCenter(calculateCenter());
+  }, [locations, startLocation, endLocation, waypoints]);
 
   useEffect(() => {
     if (mapRef.current && showRouting) {
@@ -146,7 +149,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   return (
     <MapContainer
       ref={handleMapInit}
-      center={calculatedCenter}
+      center={mapCenter}
       zoom={zoom}
       style={{ height, width: '100%' }}
     >
@@ -163,7 +166,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         />
       )}
 
-      <SetViewOnChange center={calculatedCenter} />
+      <SetViewOnChange center={mapCenter} />
 
       {startLocation && (
         <DepotMarker

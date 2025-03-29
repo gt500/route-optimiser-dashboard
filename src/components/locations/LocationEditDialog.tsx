@@ -67,7 +67,7 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
         close_time: '17:00'
       });
     }
-  }, [location]);
+  }, [location, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -99,9 +99,12 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
       return;
     }
 
+    // Log the form data to verify the coordinates are correct
     console.log('Form data to be saved:', formData);
-    onSave(formData);
-    // Let the parent component close the dialog after successful save
+    
+    // Use a copy to prevent any reference issues
+    const locationToSave = {...formData};
+    onSave(locationToSave);
   };
 
   return (

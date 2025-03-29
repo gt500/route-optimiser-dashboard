@@ -42,7 +42,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      icon={markerIcon}
+      icon={markerIcon as any} // Type cast to any to resolve the type error
     >
       <Popup>
         <div className="p-2">

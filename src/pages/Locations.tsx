@@ -91,6 +91,7 @@ const Locations: React.FC = () => {
           };
         });
         
+        console.log('Fetched locations:', mappedLocations);
         setLocations(mappedLocations);
       }
     } catch (error) {
@@ -102,6 +103,20 @@ const Locations: React.FC = () => {
   };
   
   const handleEdit = (location: LocationInfo) => {
+    console.log('Editing location:', {
+      id: location.id,
+      name: location.name,
+      address: location.address,
+      lat: location.latitude,
+      long: location.longitude,
+      type: location.type || 'Customer',
+      fullCylinders: location.fullCylinders,
+      emptyCylinders: location.emptyCylinders,
+      isWarehouse: location.type === 'Storage',
+      open_time: location.open_time,
+      close_time: location.close_time
+    });
+    
     setEditLocation(location);
     setIsEditDialogOpen(true);
   };
@@ -124,15 +139,18 @@ const Locations: React.FC = () => {
       
       if (location.id) {
         // It's an edit
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('locations')
           .update(locationData)
-          .eq('id', location.id);
+          .eq('id', location.id)
+          .select();
         
         if (error) {
           console.error('Error updating location:', error);
           throw error;
         }
+        
+        console.log('Updated location:', data);
         
         // Update local state
         setLocations(prev => 
@@ -152,17 +170,20 @@ const Locations: React.FC = () => {
         // It's a new location
         const newLocationId = crypto.randomUUID();
         
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('locations')
           .insert({
             ...locationData,
             id: newLocationId
-          });
+          })
+          .select();
         
         if (error) {
           console.error('Error creating location:', error);
           throw error;
         }
+        
+        console.log('Created new location:', data);
         
         // Add to local state
         const newLocation: LocationInfo = {
@@ -182,8 +203,12 @@ const Locations: React.FC = () => {
         toast.success(`Location "${location.name}" created`);
       }
       
-      setIsEditDialogOpen(false);
-      setEditLocation(null);
+      // Close the dialog after a delay to ensure state is updated
+      setTimeout(() => {
+        setIsEditDialogOpen(false);
+        setEditLocation(null);
+      }, 100);
+      
     } catch (error) {
       console.error('Error saving location:', error);
       toast.error('Failed to save location');

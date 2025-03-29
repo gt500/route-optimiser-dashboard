@@ -29,7 +29,7 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   return (
     <Marker 
       position={position}
-      icon={markerIcon}
+      icon={markerIcon as any} // Type cast to any to resolve the type error
     >
       <Popup>
         <div className="p-2">
