@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker as LeafletMarker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { createLocationIcon } from './Icons';
 
@@ -43,7 +43,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
   });
 
   return (
-    <Marker 
+    <LeafletMarker 
       position={position}
       icon={icon}
       eventHandlers={{
@@ -56,7 +56,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
           {address && <div className="mt-1 text-gray-500">{address}</div>}
         </div>
       </Popup>
-    </Marker>
+    </LeafletMarker>
   );
 };
 

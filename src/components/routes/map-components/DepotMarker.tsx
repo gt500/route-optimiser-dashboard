@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker as LeafletMarker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { createDepotIcon } from './Icons';
 
@@ -30,7 +30,7 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   });
 
   return (
-    <Marker 
+    <LeafletMarker 
       position={position} 
       icon={icon}
     >
@@ -39,7 +39,7 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
           <strong>{isStart ? 'Start: ' : isEnd ? 'End: ' : ''}{name}</strong>
         </div>
       </Popup>
-    </Marker>
+    </LeafletMarker>
   );
 };
 
