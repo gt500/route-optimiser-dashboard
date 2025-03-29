@@ -2,6 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { createLocationIcon } from './Icons';
 
 interface DepotMarkerProps {
   depot: {
@@ -10,35 +11,33 @@ interface DepotMarkerProps {
     longitude?: number;
     lat?: number;
     long?: number;
+    address?: string;
+    fullCylinders?: number;
   };
-  defaultCenter: [number, number];
 }
 
-export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot, defaultCenter }) => {
-  // Only render if depot has valid coordinates
-  if (!(depot.latitude || depot.lat) || !(depot.longitude || depot.long)) {
-    return null;
-  }
+export const DepotMarker: React.FC<DepotMarkerProps> = ({ depot }) => {
+  // Use either latitude/longitude or lat/long
+  const lat = depot.latitude || depot.lat || 0;
+  const lng = depot.longitude || depot.long || 0;
+  const position: [number, number] = [lat, lng];
   
-  const position: [number, number] = [
-    depot.latitude || depot.lat || defaultCenter[0], 
-    depot.longitude || depot.long || defaultCenter[1]
-  ];
-  
-  // Create a depot icon
-  const depotIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448609.png',
-    iconSize: [35, 35],
-    iconAnchor: [17, 35],
-    popupAnchor: [0, -35],
+  // Create a custom icon for depots
+  const depotIcon = createLocationIcon({
+    text: 'D',
+    backgroundColor: '#10B981',
+    textColor: 'white',
+    borderColor: '#059669',
+    size: 30
   });
   
   return (
-    <Marker position={position} icon={depotIcon as any}>
+    <Marker position={position}>
       <Popup>
         <div>
           <h3 className="font-medium">{depot.name}</h3>
-          <p className="text-xs font-medium text-emerald-600">Depot/Warehouse</p>
+          {depot.address && <p className="text-sm text-gray-600">{depot.address}</p>}
+          {depot.fullCylinders && <p className="text-sm mt-1">{depot.fullCylinders} full cylinders available</p>}
         </div>
       </Popup>
     </Marker>

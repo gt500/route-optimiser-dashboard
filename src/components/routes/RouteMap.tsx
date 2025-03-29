@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, ZoomControl, AttributionControl } from 'react-leaflet';
+import { MapContainer, TileLayer, ZoomControl, AttributionControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
@@ -106,9 +106,6 @@ const MapInitializer: React.FC<{
   return null;
 };
 
-// Fix useMap import
-import { useMap } from 'react-leaflet';
-
 const RouteMap: React.FC<RouteMapProps> = ({
   height = '600px',
   width = '100%',
@@ -149,10 +146,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const routeWaypoints = selectedRoute ? selectedRoute.points : [];
   
   // Handle routing waypoints
-  const routingWaypoints = showRouting ? [] : routeWaypoints;
+  let routingWaypoints: Array<[number, number]> = routeWaypoints;
 
   // If explicit routing is requested, use provided waypoints
   if (showRouting) {
+    routingWaypoints = [];
+    
     if (startLocation) {
       routingWaypoints.push(startLocation.coords);
     }
@@ -215,16 +214,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
         center={mapCenter}
         zoom={11}
         zoomControl={false}
-        whenReady={(mapInstance: any) => {
+        whenReady={(map) => {
           // Set up user interaction tracking
-          mapInstance.target.on('zoomstart', () => setIsUserInteracting(true));
-          mapInstance.target.on('zoomend', () => {
+          map.target.on('zoomstart', () => setIsUserInteracting(true));
+          map.target.on('zoomend', () => {
             setTimeout(() => setIsUserInteracting(false), 200);
           });
           
           // Capture all user interactions to prevent zoom resets
-          mapInstance.target.on('dragend', () => mapInstance.target._lastInteraction = Date.now());
-          mapInstance.target.on('zoomend', () => mapInstance.target._lastInteraction = Date.now());
+          map.target.on('dragend', () => map.target._lastInteraction = Date.now());
+          map.target.on('zoomend', () => map.target._lastInteraction = Date.now());
         }}
         key={mapId}
       >
@@ -240,8 +239,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {/* Position attribution at bottom right and only show one instance */}
         <AttributionControl position="bottomright" prefix={false} />
         
-        {/* Add routing if a route is selected or explicit routing is requested */}
-        {(selectedRoute || (showRouting && routingWaypoints.length >= 2)) && (
+        {/* Always show routing if waypoints are available */}
+        {routingWaypoints.length >= 2 && (
           <RoutingMachine 
             waypoints={routingWaypoints}
             color="#6366F1"

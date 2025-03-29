@@ -2,7 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { supabase } from '@/integrations/supabase/client';
+import { createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
   location: {
@@ -12,77 +12,68 @@ interface LocationMarkerProps {
     longitude?: number;
     lat?: number;
     long?: number;
-    address: string;
-    sequence?: number; // Added sequence for route order display
+    address?: string;
+    sequence?: number;
+    emptyCylinders?: number;
+    fullCylinders?: number;
+    type?: string;
   };
   onLocationClick?: (locationId: string) => void;
+  isSelected?: boolean;
 }
 
-export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLocationClick }) => {
-  const position: [number, number] = [
-    location.latitude || location.lat || 0, 
-    location.longitude || location.long || 0
-  ];
+export const LocationMarker: React.FC<LocationMarkerProps> = ({ 
+  location, 
+  onLocationClick,
+  isSelected = false
+}) => {
+  // Use either latitude/longitude or lat/long
+  const lat = location.latitude || location.lat || 0;
+  const lng = location.longitude || location.long || 0;
+  const position: [number, number] = [lat, lng];
   
-  // Create a customer icon
-  const customerIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484167.png',
-    iconSize: [25, 25],
-    iconAnchor: [12, 25],
-    popupAnchor: [0, -25],
-  });
-
-  const handleDelete = async () => {
-    try {
-      // First check if the location is used in any deliveries
-      const { data: deliveries, error: deliveryError } = await supabase
-        .from('deliveries')
-        .select('id')
-        .eq('location_id', location.id.toString());
-        
-      if (deliveryError) {
-        console.error('Error checking deliveries:', deliveryError);
-        alert('Could not check if location is used in deliveries');
-        return;
-      }
-      
-      // If location is used in deliveries, delete those records first
-      if (deliveries && deliveries.length > 0) {
-        const { error: deleteDeliveriesError } = await supabase
-          .from('deliveries')
-          .delete()
-          .eq('location_id', location.id.toString());
-          
-        if (deleteDeliveriesError) {
-          console.error('Error deleting delivery records:', deleteDeliveriesError);
-          alert('Could not delete associated delivery records');
-          return;
-        }
-      }
-      
-      // Now delete the location itself
-      const { error: deleteLocationError } = await supabase
-        .from('locations')
-        .delete()
-        .eq('id', location.id.toString());
-        
-      if (deleteLocationError) {
-        console.error('Error deleting location:', deleteLocationError);
-        alert('Could not delete location');
-        return;
-      }
-      
-      alert(`Location "${location.name}" has been deleted`);
-      
-      // Reload the page to refresh the data
-      window.location.reload();
-    } catch (error) {
-      console.error('Error in handleDelete:', error);
-      alert('An error occurred while deleting the location');
+  // Create a custom icon with sequence number if provided
+  let customerIcon;
+  
+  if (location.sequence !== undefined) {
+    customerIcon = createLocationIcon({
+      text: `${location.sequence + 1}`,
+      backgroundColor: isSelected ? '#818cf8' : '#6366F1',
+      textColor: 'white',
+      borderColor: isSelected ? '#4f46e5' : '#4f46e5',
+    });
+  } else if (location.type === 'Storage') {
+    customerIcon = createLocationIcon({
+      text: 'S',
+      backgroundColor: '#10B981',
+      textColor: 'white',
+      borderColor: '#059669',
+    });
+  } else {
+    customerIcon = createLocationIcon({
+      text: 'C',
+      backgroundColor: '#F59E0B',
+      textColor: 'white',
+      borderColor: '#D97706',
+    });
+  }
+  
+  // Get additional display information
+  const getLocationDetails = () => {
+    const details = [];
+    
+    if (location.emptyCylinders) {
+      details.push(`${location.emptyCylinders} empty cylinders`);
     }
+    
+    if (location.fullCylinders) {
+      details.push(`${location.fullCylinders} full cylinders`);
+    }
+    
+    return details.join(', ');
   };
   
-  // Define the event handlers for Leaflet marker
+  // Event handlers with proper type
   const eventHandlers = onLocationClick ? {
     click: () => {
       onLocationClick(location.id.toString());
@@ -91,27 +82,15 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({ location, onLoca
   
   return (
     <Marker 
-      position={position}
-      icon={customerIcon as any}
-      eventHandlers={eventHandlers as any}
+      position={position} 
     >
       <Popup>
         <div className="p-1">
-          <h3 className="font-medium">{location.name}</h3>
-          <p className="text-xs text-muted-foreground">{location.address}</p>
-          {location.sequence !== undefined && (
-            <p className="text-xs font-medium text-blue-600 mt-1">
-              Stop #{location.sequence + 1}
-            </p>
+          <h3 className="font-medium text-sm">{location.name}</h3>
+          <p className="text-xs text-gray-600">{location.address}</p>
+          {getLocationDetails() && (
+            <p className="text-xs mt-1 text-indigo-600">{getLocationDetails()}</p>
           )}
-          <div className="mt-2 flex justify-end">
-            <button 
-              className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-              onClick={handleDelete}
-            >
-              Delete Location
-            </button>
-          </div>
         </div>
       </Popup>
     </Marker>
