@@ -148,7 +148,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       center={calculatedCenter}
       zoom={zoom}
       style={{ height, width: '100%' }}
-      whenCreated={handleMapInit}
+      whenCreated={handleMapInit as any}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

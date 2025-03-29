@@ -133,6 +133,7 @@ const RouteDetails = ({
       onAddNewLocation(numericId);
       setAddLocationOpen(false);
       setSelectedLocationId("");
+      toast.success("Location added to route");
     }
   };
   
@@ -254,35 +255,41 @@ const RouteDetails = ({
         </div>
         
         <div className="space-y-3">
-          {route.locations.map((location, index) => (
-            <div 
-              key={`route-stop-${index}-${location.id}`}
-              className="flex items-center gap-3 bg-background rounded-lg p-3 relative border border-border/80 hover:border-border transition-colors shadow-sm"
-            >
-              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                {index + 1}
+          {route.locations.length > 0 ? (
+            route.locations.map((location, index) => (
+              <div 
+                key={`route-stop-${index}-${location.id}`}
+                className="flex items-center gap-3 bg-background rounded-lg p-3 relative border border-border/80 hover:border-border transition-colors shadow-sm"
+              >
+                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                  {index + 1}
+                </div>
+                <div>
+                  <div className="font-medium">{location.name}</div>
+                  <div className="text-xs text-muted-foreground">{location.address}</div>
+                </div>
+                <div className="ml-auto text-sm font-medium flex items-center gap-2">
+                  <Badge variant={index === 0 ? "secondary" : "outline"} className="gap-1">
+                    {location.emptyCylinders || 0} cylinders
+                  </Badge>
+                  {index > 0 && index < route.locations.length - 1 && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemoveLocation(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div>
-                <div className="font-medium">{location.name}</div>
-                <div className="text-xs text-muted-foreground">{location.address}</div>
-              </div>
-              <div className="ml-auto text-sm font-medium flex items-center gap-2">
-                <Badge variant={index === 0 ? "secondary" : "outline"} className="gap-1">
-                  {location.emptyCylinders || 0} cylinders
-                </Badge>
-                {index > 0 && index < route.locations.length - 1 && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => onRemoveLocation(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No locations added to this route yet. Add stops using the button above or from the location selector.
             </div>
-          ))}
+          )}
         </div>
       </div>
       

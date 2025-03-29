@@ -29,11 +29,12 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
   
   const filteredLocations = availableLocations.filter(loc => 
     loc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    loc.address.toLowerCase().includes(searchTerm.toLowerCase())
+    (loc.address && loc.address.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   const handleAdd = () => {
     if (selectedLocation) {
+      console.log("Adding location with cylinders:", cylinders, selectedLocation);
       onAdd({ ...selectedLocation, cylinders });
       setSelectedLocation(null);
       setCylinders(10);
@@ -58,15 +59,15 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
   
   return (
     <>
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-black">
         <CardHeader>
-          <CardTitle className="text-base">Add Location to Route</CardTitle>
-          <CardDescription>Select a delivery location and specify the number of cylinders</CardDescription>
+          <CardTitle className="text-base text-white">Add Location to Route</CardTitle>
+          <CardDescription className="text-gray-300">Select a delivery location and specify the number of cylinders</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="location">Select Location</Label>
+              <Label htmlFor="location" className="text-white">Select Location</Label>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -173,8 +174,8 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
           
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="cylinders">Number of Cylinders</Label>
-              <div className="text-sm font-medium">{cylinders}</div>
+              <Label htmlFor="cylinders" className="text-white">Number of Cylinders</Label>
+              <div className="text-sm font-medium text-white">{cylinders}</div>
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -195,7 +196,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 +
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Maximum 25 cylinders per location</p>
+            <p className="text-xs text-gray-300">Maximum 25 cylinders per location</p>
           </div>
           
           <div className="pt-2">
