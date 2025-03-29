@@ -2,7 +2,6 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import { createLocationIcon } from './Icons';
-import type { Icon } from 'leaflet';
 import L from 'leaflet';
 
 export interface LocationMarkerProps {
@@ -27,16 +26,21 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
     }
   };
 
-  // Create a custom icon and properly type it as Icon
+  // Create a custom icon with proper typing
   const customIcon = createLocationIcon({ 
     label: index !== undefined ? String(index) : '',
     type: 'Customer'
-  }) as unknown as Icon;
+  });
+
+  // Create the marker element with the properly typed icon
+  const markerElement = React.useMemo(() => {
+    return L.marker(position, { icon: customIcon });
+  }, [position, customIcon]);
 
   return (
     <Marker 
       position={position}
-      icon={customIcon}
+      element={markerElement}
       eventHandlers={{
         click: handleMarkerClick
       }}

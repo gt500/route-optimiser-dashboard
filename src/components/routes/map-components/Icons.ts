@@ -56,7 +56,7 @@ export const createLocationIconHtml = (options: LocationIconOptions = {}): strin
   `;
 };
 
-// Create a depot icon
+// Create a depot icon with proper typing
 export const createDepotIcon = (options: DepotIconOptions = {}): L.DivIcon => {
   const html = createDepotIconHtml(options);
   const { customSize = 34 } = options;
@@ -69,7 +69,7 @@ export const createDepotIcon = (options: DepotIconOptions = {}): L.DivIcon => {
   });
 };
 
-// Create a location icon
+// Create a location icon with proper typing
 export const createLocationIcon = (options: LocationIconOptions = {}): L.DivIcon => {
   const html = createLocationIconHtml(options);
   const { customSize = 28 } = options;
