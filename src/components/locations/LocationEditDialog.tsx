@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 
 export type LocationType = {
-  id: number | string;
+  id: string;
   name: string;
   type: string;
   address: string;
@@ -18,6 +18,8 @@ export type LocationType = {
   fullCylinders?: number;
   emptyCylinders?: number;
   isWarehouse?: boolean;
+  open_time?: string;
+  close_time?: string;
 };
 
 interface LocationEditDialogProps {
@@ -29,7 +31,7 @@ interface LocationEditDialogProps {
 
 const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEditDialogProps) => {
   const [formData, setFormData] = useState<LocationType>({
-    id: 0,
+    id: '',
     name: '',
     type: 'Customer',
     address: '',
@@ -37,7 +39,9 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
     long: 0,
     fullCylinders: 0,
     emptyCylinders: 0,
-    isWarehouse: false
+    isWarehouse: false,
+    open_time: '08:00',
+    close_time: '17:00'
   });
 
   useEffect(() => {
@@ -45,6 +49,21 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
       setFormData({
         ...location,
         isWarehouse: location.type === 'Storage'
+      });
+    } else {
+      // Reset to defaults for new location
+      setFormData({
+        id: '',
+        name: '',
+        type: 'Customer',
+        address: '',
+        lat: 0,
+        long: 0,
+        fullCylinders: 0,
+        emptyCylinders: 0,
+        isWarehouse: false,
+        open_time: '08:00',
+        close_time: '17:00'
       });
     }
   }, [location]);
@@ -158,6 +177,29 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
                   value={formData.long} 
                   onChange={handleNumberChange}
                   placeholder="e.g. 18.4173"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="open_time">Opening Time</Label>
+                <Input 
+                  id="open_time" 
+                  name="open_time" 
+                  value={formData.open_time || '08:00'} 
+                  onChange={handleChange}
+                  placeholder="e.g. 08:00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="close_time">Closing Time</Label>
+                <Input 
+                  id="close_time" 
+                  name="close_time" 
+                  value={formData.close_time || '17:00'} 
+                  onChange={handleChange}
+                  placeholder="e.g. 17:00"
                 />
               </div>
             </div>

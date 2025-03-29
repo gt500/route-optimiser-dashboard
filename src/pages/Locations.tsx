@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
 import RouteMap from '@/components/routes/RouteMap';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export interface LocationInfo {
-  id: string | number;
+  id: string;
   name: string;
   address: string;
   latitude: number;
@@ -24,89 +25,118 @@ export interface LocationInfo {
   close_time?: string;
 }
 
-const demoLocations: LocationInfo[] = [
-  { id: 1, name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', latitude: -33.93631, longitude: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
-  { id: 2, name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', latitude: -33.731659, longitude: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-  { id: 3, name: 'Food Lovers Sunningdale', address: 'Sunningdale, KwaZulu-Natal', latitude: -29.7486, longitude: 31.0462, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
-  { id: 4, name: 'Haasendaal Gables', address: 'Haasendaal, Western Cape', latitude: -33.907776, longitude: 18.698757, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
-  { id: 5, name: 'Pick n Pay TableView', address: 'Table View, Cape Town', latitude: -33.8258, longitude: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
-  { id: 15, name: 'Shell Sea Point', address: 'Sea Point, Cape Town', latitude: -33.4812, longitude: 18.3855, type: 'Storage', fullCylinders: 75, emptyCylinders: 0 },
-];
+interface SupabaseLocation {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  open_time?: string;
+  close_time?: string;
+  type?: string;
+}
 
 const Locations: React.FC = () => {
-  const [locations, setLocations] = useState<LocationInfo[]>(demoLocations);
+  const [locations, setLocations] = useState<LocationInfo[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [editLocation, setEditLocation] = useState<LocationInfo | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [locationToDelete, setLocationToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    const fetchLocations = async () => {
-      setIsSyncing(true);
-      try {
-        const { data, error } = await supabase
-          .from('locations')
-          .select('*');
+    fetchLocations();
+  }, []);
+  
+  const fetchLocations = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*');
 
-        if (error) {
-          console.error('Error fetching locations:', error);
-          toast.error('Failed to fetch locations');
-          return;
-        }
+      if (error) {
+        console.error('Error fetching locations:', error);
+        toast.error('Failed to fetch locations');
+        return;
+      }
 
-        if (data) {
-          const mappedLocations = data.map(item => ({
+      if (data) {
+        const mappedLocations = data.map(item => {
+          // Determine the type based on the location name
+          let locationType = item.type || 'Customer';
+          
+          // Specifically set Epping Depot as Storage
+          if (item.name?.toLowerCase().includes('epping') && item.name?.toLowerCase().includes('depot')) {
+            locationType = 'Storage';
+          } else if (item.name?.toLowerCase().includes('depot') || item.name?.toLowerCase().includes('storage')) {
+            locationType = 'Storage';
+          }
+          
+          return {
             id: item.id,
             name: item.name,
             address: item.address,
             latitude: item.latitude,
             longitude: item.longitude,
-            type: item.type || 'Customer',
-            fullCylinders: item.type === 'Storage' ? 75 : 0,
-            emptyCylinders: item.type === 'Customer' ? 15 : 0,
+            type: locationType,
+            fullCylinders: locationType === 'Storage' ? 75 : 0,
+            emptyCylinders: locationType === 'Customer' ? 15 : 0,
             open_time: item.open_time || '08:00',
             close_time: item.close_time || '17:00'
-          }));
-          
-          setLocations(mappedLocations);
-        }
-      } catch (error) {
-        console.error('Error in fetchLocations:', error);
-        toast.error('Failed to fetch locations');
-      } finally {
-        setIsSyncing(false);
+          };
+        });
+        
+        setLocations(mappedLocations);
       }
-    };
-
-    fetchLocations();
-  }, []);
+    } catch (error) {
+      console.error('Error in fetchLocations:', error);
+      toast.error('Failed to fetch locations');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
   
   const handleEdit = (location: LocationInfo) => {
     setEditLocation(location);
     setIsEditDialogOpen(true);
   };
   
-  const handleSaveLocation = async (location: LocationInfo) => {
+  const handleSaveLocation = async (location: LocationType) => {
     try {
+      const locationData = {
+        name: location.name,
+        address: location.address,
+        latitude: location.lat,
+        longitude: location.long,
+        open_time: location.open_time || '08:00',
+        close_time: location.close_time || '17:00',
+        type: location.type
+      };
+      
       if (location.id) {
         // It's an edit
         const { error } = await supabase
           .from('locations')
-          .update({
-            name: location.name,
-            address: location.address,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            open_time: location.open_time || '08:00',
-            close_time: location.close_time || '17:00'
-          })
+          .update(locationData)
           .eq('id', location.id);
         
         if (error) throw error;
         
+        // Update local state
         setLocations(prev => 
-          prev.map(loc => loc.id === location.id ? location : loc)
+          prev.map(loc => loc.id === location.id ? {
+            ...loc,
+            name: location.name,
+            address: location.address,
+            latitude: location.lat,
+            longitude: location.long,
+            type: location.type,
+            open_time: location.open_time,
+            close_time: location.close_time
+          } : loc)
         );
         toast.success(`Location "${location.name}" updated`);
       } else {
@@ -116,20 +146,24 @@ const Locations: React.FC = () => {
         const { error } = await supabase
           .from('locations')
           .insert({
-            id: newLocationId,
-            name: location.name,
-            address: location.address,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            open_time: location.open_time || '08:00',
-            close_time: location.close_time || '17:00'
+            ...locationData,
+            id: newLocationId
           });
         
         if (error) throw error;
         
-        const newLocation = {
-          ...location,
-          id: newLocationId
+        // Add to local state
+        const newLocation: LocationInfo = {
+          id: newLocationId,
+          name: location.name,
+          address: location.address,
+          latitude: location.lat,
+          longitude: location.long,
+          type: location.type,
+          fullCylinders: location.type === 'Storage' ? 75 : 0,
+          emptyCylinders: location.type === 'Customer' ? 15 : 0,
+          open_time: location.open_time,
+          close_time: location.close_time
         };
         
         setLocations(prev => [...prev, newLocation]);
@@ -144,20 +178,31 @@ const Locations: React.FC = () => {
     }
   };
   
-  const handleDelete = async (id: string | number) => {
+  const openDeleteConfirmation = (id: string) => {
+    setLocationToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDelete = async () => {
+    if (!locationToDelete) return;
+    
     try {
       const { error } = await supabase
         .from('locations')
         .delete()
-        .eq('id', id);
+        .eq('id', locationToDelete);
       
       if (error) throw error;
       
-      setLocations(prev => prev.filter(location => location.id !== id));
-      toast.success('Location deleted');
+      // Remove from local state
+      setLocations(prev => prev.filter(location => location.id !== locationToDelete));
+      toast.success('Location permanently deleted');
     } catch (error) {
       console.error('Error deleting location:', error);
       toast.error('Failed to delete location');
+    } finally {
+      setLocationToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
   
@@ -204,9 +249,9 @@ const Locations: React.FC = () => {
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="all">All Locations</TabsTrigger>
-          <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="storage">Storage</TabsTrigger>
+          <TabsTrigger value="all">All Locations ({locations.length})</TabsTrigger>
+          <TabsTrigger value="customers">Customers ({locations.filter(l => l.type === 'Customer').length})</TabsTrigger>
+          <TabsTrigger value="storage">Storage ({locations.filter(l => l.type === 'Storage').length})</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="space-y-4">
@@ -271,7 +316,7 @@ const Locations: React.FC = () => {
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(location.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => openDeleteConfirmation(location.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -293,7 +338,6 @@ const Locations: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLocations.map((location) => (
-                  // Customer location cards
                   <Card key={location.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{location.name}</CardTitle>
@@ -307,10 +351,14 @@ const Locations: React.FC = () => {
                         <div>
                           <p className="text-sm">Empty cylinders: <span className="font-medium">{location.emptyCylinders}</span></p>
                         </div>
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          View
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openDeleteConfirmation(location.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -329,7 +377,6 @@ const Locations: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLocations.map((location) => (
-                  // Storage location cards
                   <Card key={location.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{location.name}</CardTitle>
@@ -343,10 +390,14 @@ const Locations: React.FC = () => {
                         <div>
                           <p className="text-sm">Full cylinders: <span className="font-medium">{location.fullCylinders}</span></p>
                         </div>
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          View
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openDeleteConfirmation(location.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -360,9 +411,37 @@ const Locations: React.FC = () => {
       <LocationEditDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        location={editLocation}
+        location={editLocation ? {
+          id: editLocation.id,
+          name: editLocation.name,
+          address: editLocation.address,
+          lat: editLocation.latitude,
+          long: editLocation.longitude,
+          type: editLocation.type || 'Customer',
+          fullCylinders: editLocation.fullCylinders,
+          emptyCylinders: editLocation.emptyCylinders,
+          isWarehouse: editLocation.type === 'Storage'
+        } : null}
         onSave={handleSaveLocation}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this location? 
+              This action cannot be undone and the location will be removed from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

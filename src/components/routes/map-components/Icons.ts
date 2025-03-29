@@ -61,3 +61,13 @@ export const createIcon = (html: string, size: [number, number] = [28, 28]) => {
     iconAnchor: [size[0]/2, size[1]/2]
   });
 };
+
+// Export specific icons for startIcon, endIcon, and locationIcon
+export const startIcon = (options: DepotIconOptions = {}) => 
+  createIcon(createDepotIcon({ ...options, isStart: true }), [34, 34]);
+
+export const endIcon = (options: DepotIconOptions = {}) => 
+  createIcon(createDepotIcon({ ...options, isEnd: true }), [34, 34]);
+
+export const locationIcon = (options: LocationIconOptions = {}) => 
+  createIcon(createLocationIcon(options), [28, 28]);

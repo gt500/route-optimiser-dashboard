@@ -9,7 +9,7 @@ interface SetViewOnChangeProps {
   zoom?: number;
 }
 
-const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = [], center, zoom }) => {
+export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = [], center, zoom }) => {
   const map = useMap();
   
   useEffect(() => {
@@ -29,4 +29,5 @@ const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = [], cen
   return null;
 };
 
+// Add this default export to maintain backward compatibility
 export default SetViewOnChange;
