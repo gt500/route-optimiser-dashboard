@@ -700,7 +700,7 @@ const RoutesList = () => {
     }));
   }, [route.locations]);
 
-  const handleRouteDataUpdate = (distance: number, duration: number, coordinates: [number, number][]) => {
+  const handleRouteDataUpdate = (distance: number, duration: number, coordinates?: [number, number][]) => {
     setRoute(prev => {
       const consumption = distance * 0.12;
       const cost = consumption * fuelCostPerLiter;

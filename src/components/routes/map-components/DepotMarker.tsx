@@ -20,7 +20,7 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   
   // Create a Leaflet icon using useMemo to avoid unnecessary re-renders
   const markerIcon = useMemo(() => {
-    return new L.DivIcon({
+    return L.divIcon({
       className: 'custom-div-icon',
       html: iconHtml as string,
       iconSize: [28, 28],

@@ -8,40 +8,43 @@ interface LocationMarkerProps {
   id: string;
   name: string;
   position: [number, number];
-  address?: string;
   index?: number;
   onClick?: () => void;
+  type?: 'customer' | 'storage';
 }
 
-const LocationMarker: React.FC<LocationMarkerProps> = ({
-  id,
-  name,
-  position,
-  address,
-  index,
-  onClick
+const LocationMarker: React.FC<LocationMarkerProps> = ({ 
+  id, 
+  name, 
+  position, 
+  index, 
+  onClick,
+  type = 'customer'
 }) => {
-  // Create a custom icon based on the index using useMemo to avoid unnecessary re-renders
-  const iconHtml = useMemo(() => {
-    return index !== undefined 
-      ? createLocationIcon({ label: index })
-      : createLocationIcon({});
-  }, [index]);
-  
-  // Create a Leaflet icon using useMemo
+  const eventHandlers = useMemo(
+    () => ({
+      click: () => {
+        if (onClick) onClick();
+      },
+    }),
+    [onClick]
+  );
+
+  const iconType = type === 'storage' ? 'storage' : 'customer';
+  const iconHtml = createIcon(createLocationIcon({ 
+    type: iconType, 
+    label: index !== undefined ? String(index + 1) : undefined 
+  }), [24, 24]);
+
+  // Create a Leaflet icon
   const markerIcon = useMemo(() => {
-    return new L.DivIcon({
+    return L.divIcon({
       className: 'custom-div-icon',
-      html: iconHtml,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
+      html: iconHtml as string,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
     });
   }, [iconHtml]);
-  
-  // Use proper event handlers format for react-leaflet
-  const eventHandlers = onClick ? {
-    click: onClick
-  } : undefined;
 
   return (
     <Marker 
@@ -55,11 +58,6 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
           {index !== undefined && (
             <div className="text-xs bg-primary/10 px-2 py-1 rounded-sm text-primary mt-1 inline-block">
               Stop #{index}
-            </div>
-          )}
-          {address && (
-            <div className="text-xs text-muted-foreground mt-1">
-              {address}
             </div>
           )}
         </div>
