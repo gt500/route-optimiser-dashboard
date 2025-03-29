@@ -71,9 +71,13 @@ const Routes = () => {
         if (error.code !== 'PGRST116') {
           console.error('Error fetching fuel cost:', error);
         }
+        
+        const newRecordId = crypto.randomUUID();
+        
         const { error: insertError } = await supabase
           .from('cost_factors')
           .insert({ 
+            id: newRecordId,
             name: 'fuel_cost_per_liter', 
             value: 22, 
             description: 'Cost per liter of fuel in Rand' 
@@ -247,7 +251,10 @@ const Routes = () => {
     const saveRouteToDatabase = async () => {
       if (route.locations.length < 2) return;
       
+      const routeId = crypto.randomUUID();
+      
       const routeData = {
+        id: routeId,
         name: `Route ${new Date().toLocaleDateString()}`,
         date: new Date().toISOString(),
         status: 'planned',
@@ -270,6 +277,7 @@ const Routes = () => {
       
       if (routeInsert) {
         const deliveries = route.locations.map((location, index) => ({
+          id: crypto.randomUUID(),
           route_id: routeInsert.id,
           location_id: location.id.toString(),
           cylinders: location.emptyCylinders || 0,

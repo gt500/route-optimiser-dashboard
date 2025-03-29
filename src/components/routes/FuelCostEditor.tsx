@@ -47,17 +47,39 @@ const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorPro
       return;
     }
     
-    // Save to database
+    // First check if the record exists
+    const { data: existingRecord, error: fetchError } = await supabase
+      .from('cost_factors')
+      .select('id')
+      .eq('name', 'fuel_cost_per_liter')
+      .single();
+    
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking for existing record:', fetchError);
+      toast.error('Failed to save fuel cost');
+      return;
+    }
+    
+    // If record exists, update it with the id, otherwise insert with a generated id
+    const recordToUpsert = existingRecord 
+      ? { 
+          id: existingRecord.id,
+          name: 'fuel_cost_per_liter', 
+          value: numericCost, 
+          description: 'Cost per liter of fuel in Rand',
+          updated_at: new Date().toISOString()
+        }
+      : {
+          id: crypto.randomUUID(), // Generate a unique ID
+          name: 'fuel_cost_per_liter', 
+          value: numericCost, 
+          description: 'Cost per liter of fuel in Rand',
+          updated_at: new Date().toISOString()
+        };
+    
     const { error } = await supabase
       .from('cost_factors')
-      .upsert({ 
-        name: 'fuel_cost_per_liter', 
-        value: numericCost, 
-        description: 'Cost per liter of fuel in Rand',
-        updated_at: new Date().toISOString()
-      }, { 
-        onConflict: 'name' 
-      });
+      .upsert(recordToUpsert, { onConflict: 'id' });
     
     if (error) {
       console.error('Error saving fuel cost:', error);
