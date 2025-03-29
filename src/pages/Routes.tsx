@@ -398,6 +398,8 @@ const Routes = () => {
         estimated_cost: route.fuelCost
       };
       
+      console.log("Saving route data:", routeData);
+      
       const { data: routeInsert, error: routeError } = await supabase
         .from('routes')
         .insert(routeData)
@@ -406,11 +408,13 @@ const Routes = () => {
       
       if (routeError) {
         console.error('Error saving route:', routeError);
-        toast.error("Failed to confirm load");
+        toast.error("Failed to confirm load: " + routeError.message);
         return;
       }
       
       if (routeInsert) {
+        console.log("Route inserted successfully with ID:", routeInsert.id);
+        
         const deliveries = route.locations.map((location, index) => ({
           id: crypto.randomUUID(),
           route_id: routeInsert.id,
@@ -419,24 +423,26 @@ const Routes = () => {
           sequence: index
         }));
         
+        console.log("Saving deliveries:", deliveries);
+        
         const { error: deliveryError } = await supabase
           .from('deliveries')
           .insert(deliveries);
         
         if (deliveryError) {
           console.error('Error saving deliveries:', deliveryError);
-          toast.error("Failed to save delivery details");
+          toast.error("Failed to save delivery details: " + deliveryError.message);
           return;
         }
+        
+        setIsLoadConfirmed(true);
+        toast.success("Load confirmed successfully", {
+          description: `Delivery data for ${new Date().toLocaleDateString()} has been stored.`
+        });
       }
-      
-      setIsLoadConfirmed(true);
-      toast.success("Load confirmed successfully", {
-        description: `Delivery data for ${new Date().toLocaleDateString()} has been stored.`
-      });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error confirming load:", error);
-      toast.error("An error occurred while confirming the load");
+      toast.error("An error occurred while confirming the load: " + (error.message || "Unknown error"));
     }
   };
 

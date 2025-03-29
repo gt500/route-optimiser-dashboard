@@ -196,9 +196,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        whenCreated={(map) => {
-          mapRef.current = map;
-          map.setView(mapCenter, 11);
+        whenReady={(map) => {
+          mapRef.current = map.target;
+          map.target.setView(mapCenter, 11);
         }}
         scrollWheelZoom
       >
@@ -221,7 +221,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {depot && (
           <Marker 
             position={[depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]}
-            icon={homeIcon as any}
+            icon={homeIcon as unknown as L.Icon}
           >
             <Popup>
               <div>
@@ -237,7 +237,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           <Marker 
             key={location.id.toString()}
             position={[location.latitude || location.lat || 0, location.longitude || location.long || 0]}
-            icon={locationIcon as any}
+            icon={locationIcon as unknown as L.Icon}
             eventHandlers={{
               click: () => {
                 if (onLocationClick) onLocationClick(location.id.toString());
