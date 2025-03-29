@@ -66,7 +66,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
           routeWhileDragging: false,
           addWaypoints: false,
           draggableWaypoints: false,
-          fitSelectedRoutes: false,
+          fitSelectedRoutes: true, // Changed to true to fit the map to the route
           showAlternatives: false,
           show: false // Hide the instruction panel
         }).addTo(map);

@@ -1,8 +1,8 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { createIcon, createLocationIcon } from './Icons';
+import { createDepotIcon } from './Icons';
 
 interface DepotMarkerProps {
   name: string;
@@ -12,30 +12,27 @@ interface DepotMarkerProps {
 }
 
 const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEnd }) => {
-  const iconType = isEnd ? 'end' : 'depot';
-  const iconHtml = createIcon(createLocationIcon({ 
-    type: iconType, 
-    label: isEnd ? 'E' : 'S'
-  }), [28, 28]);
+  // Skip rendering if position contains NaN or zeros
+  if (position.some(coord => isNaN(coord) || coord === 0)) {
+    console.warn(`Skipping depot marker for ${name} due to invalid coordinates:`, position);
+    return null;
+  }
   
-  // Create a Leaflet icon using useMemo to avoid unnecessary re-renders
-  const markerIcon = useMemo(() => {
-    return L.divIcon({
-      className: 'custom-div-icon',
-      html: iconHtml as string,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
-  }, [iconHtml]);
+  const label = isStart ? 'S' : isEnd ? 'E' : 'D';
   
+  // Create a custom icon
+  const icon = L.divIcon({
+    className: 'custom-div-icon',
+    html: createDepotIcon({ label, isStart, isEnd }),
+    iconSize: [34, 34],
+    iconAnchor: [17, 17]
+  });
+
   return (
-    <Marker position={position} icon={markerIcon}>
+    <Marker position={position}>
       <Popup>
-        <div className="p-2">
-          <div className="font-medium">{name}</div>
-          <div className={`text-xs ${isStart ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} px-2 py-1 rounded-sm mt-1 inline-block`}>
-            {isStart ? 'Starting Point' : 'End Point'}
-          </div>
+        <div className="text-sm">
+          <strong>{isStart ? 'Start: ' : isEnd ? 'End: ' : ''}{name}</strong>
         </div>
       </Popup>
     </Marker>

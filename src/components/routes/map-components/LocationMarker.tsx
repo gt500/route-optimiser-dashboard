@@ -1,60 +1,60 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { createIcon, createLocationIcon } from './Icons';
+import { createLocationIcon } from './Icons';
 
-interface LocationMarkerProps {
-  id: string;
+export interface LocationMarkerProps {
+  id: string | number;
   name: string;
   position: [number, number];
   address?: string;
-  onClick?: () => void;
+  index?: number; // Make index optional in the props
 }
 
-const LocationMarker: React.FC<LocationMarkerProps> = ({ 
-  id, 
-  name, 
-  position, 
-  address, 
-  onClick 
-}) => {
-  // Create an HTML icon for the location marker
-  const iconHtml = useMemo(() => {
-    return createIcon(
-      createLocationIcon({
-        type: 'location',
-      }), 
-      [28, 28]
-    );
-  }, []);
+const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, address, index }) => {
+  // Only create ref for popup if we're actually showing one
+  const popupRef = React.useRef<L.Popup>(null);
   
-  // Create a Leaflet icon
-  const markerIcon = useMemo(() => {
+  // Handle marker click to open popup
+  const handleMarkerClick = () => {
+    if (popupRef.current) {
+      popupRef.current.openOn(L.DomUtil.get('map') as any);
+    }
+  };
+
+  // Create a custom icon with the index number if provided
+  const getCustomIcon = () => {
+    const html = createLocationIcon({ 
+      label: index !== undefined ? index : '',
+      type: 'Customer'
+    });
+    
     return L.divIcon({
       className: 'custom-div-icon',
-      html: iconHtml as string,
+      html: html,
       iconSize: [28, 28],
       iconAnchor: [14, 14]
     });
-  }, [iconHtml]);
-  
-  const eventHandlers = useMemo(() => ({
-    click: () => {
-      if (onClick) onClick();
-    }
-  }), [onClick]);
+  };
+
+  // Skip rendering if position contains NaN or zeros
+  if (position.some(coord => isNaN(coord) || coord === 0)) {
+    console.warn(`Skipping marker for ${name} due to invalid coordinates:`, position);
+    return null;
+  }
 
   return (
     <Marker 
-      position={position} 
-      eventHandlers={eventHandlers}
-      icon={markerIcon}
+      position={position}
+      eventHandlers={{
+        click: handleMarkerClick
+      }}
     >
-      <Popup>
-        <div className="p-2">
-          <div className="font-medium">{name}</div>
-          {address && <div className="text-xs text-muted-foreground">{address}</div>}
+      <Popup ref={popupRef}>
+        <div className="text-sm">
+          <strong>{name}</strong>
+          {address && <div className="mt-1 text-gray-500">{address}</div>}
         </div>
       </Popup>
     </Marker>
