@@ -292,6 +292,10 @@ const RoutesList = () => {
       
       return newRouteState;
     });
+    
+    setAvailableLocations(prev => 
+      prev.filter(loc => loc.id !== location.id)
+    );
   };
 
   const removeLocationFromRoute = (index: number) => {
@@ -506,7 +510,7 @@ const RoutesList = () => {
     
     if (location) {
       console.log("Found location to add:", location);
-      addLocationToRoute({...location, cylinders: 10});
+      addLocationToRoute({...location, cylinders: location.emptyCylinders || 10});
       toast.success(`Added ${location.name} to route`);
     } else {
       console.error("Could not find location with ID:", locationId);
@@ -760,24 +764,25 @@ const RoutesList = () => {
                     {route.locations.length > 0 && (
                       <RouteMap 
                         locations={transformedLocations}
-                        showRouting={true}
+                        showRouting={route.locations.length >= 2}
                         startLocation={route.locations[0] ? { 
                           name: route.locations[0].name, 
                           coords: [route.locations[0].lat || 0, route.locations[0].long || 0] 
                         } : undefined}
-                        endLocation={route.locations.length > 1 ? { 
+                        endLocation={route.locations.length > 1 && endLocation ? { 
                           name: route.locations[route.locations.length - 1].name, 
                           coords: [
                             route.locations[route.locations.length - 1].lat || 0, 
                             route.locations[route.locations.length - 1].long || 0
                           ] 
                         } : undefined}
-                        waypoints={route.locations.slice(1, -1).map(loc => ({
+                        waypoints={route.locations.slice(1, endLocation ? -1 : undefined).map(loc => ({
                           name: loc.name,
                           coords: [loc.lat || 0, loc.long || 0]
                         }))}
                         height="100%"
                         forceRouteUpdate={isLoadConfirmed}
+                        onRouteDataUpdate={handleRouteDataUpdate}
                       />
                     )}
                   </div>
@@ -797,6 +802,7 @@ const RoutesList = () => {
                     onRemoveLocation={removeLocationFromRoute} 
                     onAddNewLocation={handleAddNewLocationFromPopover}
                     onFuelCostUpdate={handleFuelCostUpdate}
+                    onRouteDataUpdate={handleRouteDataUpdate}
                   />
                   
                   <div className="flex justify-end">

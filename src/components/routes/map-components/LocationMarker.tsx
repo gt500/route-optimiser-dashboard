@@ -46,7 +46,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     <Marker 
       position={position}
       eventHandlers={eventHandlers}
-      icon={markerIcon as any}
+      icon={markerIcon}
     >
       <Popup>
         <div className="p-2">

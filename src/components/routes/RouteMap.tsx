@@ -149,16 +149,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
   return (
     <MapContainer
       ref={handleMapInit as any}
-      center={mapCenter as any}
       zoom={zoom}
       style={{ height, width: '100%' }}
       className="leaflet-container"
-      whenCreated={setMapReady as any}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+
+      <SetViewOnChange center={mapCenter} />
 
       {mapReady && showRouting && allWaypoints.length >= 2 && (
         <RoutingMachine
@@ -167,8 +166,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
           onRouteFound={handleRouteFound}
         />
       )}
-
-      <SetViewOnChange center={mapCenter} />
 
       {startLocation && (
         <DepotMarker
