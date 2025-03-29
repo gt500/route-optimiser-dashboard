@@ -105,7 +105,7 @@ const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
 interface RouteMapProps {
   route: {
     locations: {
-      id: number;
+      id: number | string;
       name: string;
       lat?: number;
       long?: number;
@@ -113,11 +113,11 @@ interface RouteMapProps {
       emptyCylinders?: number;
     }[];
     distance: number;
-    estimatedDuration: number;
-    trafficConditions: 'light' | 'moderate' | 'heavy';
-    usingRealTimeData: boolean;
-    fuelConsumption: number;
-    fuelCost: number;
+    estimatedDuration?: number;
+    trafficConditions?: 'light' | 'moderate' | 'heavy';
+    usingRealTimeData?: boolean;
+    fuelConsumption?: number;
+    fuelCost?: number;
   } | null;
 }
 
@@ -151,9 +151,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ route }) => {
   }
   
   // Use the first location as center if available, otherwise use Cape Town
-  const center: [number, number] = validLocations.length > 0 
-    ? [validLocations[0].lat || -33.9249, validLocations[0].long || 18.4241] 
-    : [-33.9249, 18.4241]; // Cape Town coordinates
+  const defaultCenter: [number, number] = [-33.9249, 18.4241]; // Cape Town coordinates
   
   // Create waypoints for routing
   const waypoints = validLocations.map(
@@ -163,7 +161,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ route }) => {
   return (
     <div className="h-[400px] w-full rounded-md overflow-hidden border">
       <MapContainer 
-        center={center}
+        defaultCenter={defaultCenter}
         zoom={10} 
         style={{ height: "100%", width: "100%" }}
       >
@@ -174,7 +172,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ route }) => {
         
         {validLocations.map((location, index) => (
           <Marker 
-            key={location.id} 
+            key={location.id.toString()} 
             position={[location.lat || 0, location.long || 0]}
             icon={
               index === 0 || index === validLocations.length - 1
@@ -182,7 +180,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ route }) => {
                 : (index < 6 ? priorityIcons[index - 1] : priorityIcons[4])
             }
           >
-            <Tooltip permanent={false} offset={[0, -10]}>
+            <Tooltip>
               {location.name}
             </Tooltip>
             <Popup>

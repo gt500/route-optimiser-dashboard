@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
@@ -57,6 +56,7 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    // Allow negative numbers for coordinates
     const numValue = parseFloat(value);
     setFormData({ ...formData, [name]: isNaN(numValue) ? 0 : numValue });
   };
@@ -70,19 +70,11 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
     });
   };
 
-  const handleCheckboxChange = (checked: boolean) => {
-    setFormData({ 
-      ...formData, 
-      isWarehouse: checked,
-      type: checked ? 'Storage' : 'Customer'
-    });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
-    if (!formData.name || !formData.address || !formData.lat || !formData.long) {
+    if (!formData.name || !formData.address) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -149,6 +141,8 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
                 <Input 
                   id="lat" 
                   name="lat" 
+                  type="number"
+                  step="any"
                   value={formData.lat} 
                   onChange={handleNumberChange}
                   placeholder="e.g. -33.9248"
@@ -159,6 +153,8 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
                 <Input 
                   id="long" 
                   name="long" 
+                  type="number"
+                  step="any"
                   value={formData.long} 
                   onChange={handleNumberChange}
                   placeholder="e.g. 18.4173"

@@ -15,7 +15,7 @@ import RouteMap from '@/components/routes/RouteMap';
 const locationData = [
   { id: 1, name: 'Afrox Epping Depot', type: 'Storage', address: 'Epping, Cape Town, South Africa', lat: -33.93631, long: 18.52759, fullCylinders: 120, emptyCylinders: 35 },
   { id: 2, name: 'Birkenhead Shopping Centre', type: 'Customer', address: 'Birkenhead, Western Cape, South Africa', lat: -33.731659, long: 18.443239, fullCylinders: 0, emptyCylinders: 18 },
-  { id: 3, name: 'Food Lovers Sunningdale', type: 'Customer', address: 'Sunningdale, Durban, South Africa', lat: 29.7486, long: 31.0462, fullCylinders: 0, emptyCylinders: 22 },
+  { id: 3, name: 'Food Lovers Sunningdale', type: 'Customer', address: 'Sunningdale, Durban, South Africa', lat: -29.7486, long: 31.0462, fullCylinders: 0, emptyCylinders: 22 },
   { id: 4, name: 'Haasendaal Gables', type: 'Customer', address: 'Haasendaal, Western Cape, South Africa', lat: -33.907776, long: 18.698757, fullCylinders: 0, emptyCylinders: 15 },
   { id: 5, name: 'Pick n Pay TableView', type: 'Customer', address: 'Table View, Cape Town, South Africa', lat: -33.8258, long: 18.4881, fullCylinders: 0, emptyCylinders: 30 },
   { id: 6, name: 'SUPERSPAR Parklands', type: 'Customer', address: 'Parklands, Cape Town, South Africa', lat: -33.815781, long: 18.495968, fullCylinders: 0, emptyCylinders: 25 },
@@ -38,6 +38,12 @@ const locationData = [
   { id: 23, name: 'Shell Constantia', type: 'Customer', address: 'Constantia, Cape Town, South Africa', lat: -33.979988, long: 18.453421, fullCylinders: 0, emptyCylinders: 18 },
   { id: 24, name: 'Storage Facility B', type: 'Storage', address: 'Epping Industrial, Cape Town, South Africa', lat: -33.93522, long: 18.53011, fullCylinders: 85, emptyCylinders: 15 },
 ];
+
+const correctedLocationData = locationData.map(loc => 
+  loc.id === 3 
+    ? {...loc, lat: -29.7486, long: 31.0462} 
+    : loc
+);
 
 const LocationTable = ({ locations, onEdit, onDelete }) => {
   return (
@@ -99,7 +105,7 @@ const LocationTable = ({ locations, onEdit, onDelete }) => {
 };
 
 const Locations = () => {
-  const [locations, setLocations] = useState(locationData);
+  const [locations, setLocations] = useState(correctedLocationData);
   const [editLocation, setEditLocation] = useState<LocationType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -203,8 +209,13 @@ const Locations = () => {
               {locations.length > 0 && (
                 <RouteMap 
                   route={{ 
-                    locations: locations, 
-                    distance: 0 
+                    locations: locations,
+                    distance: 0,
+                    estimatedDuration: 0,
+                    trafficConditions: 'moderate',
+                    usingRealTimeData: false,
+                    fuelConsumption: 0,
+                    fuelCost: 0
                   }} 
                 />
               )}
