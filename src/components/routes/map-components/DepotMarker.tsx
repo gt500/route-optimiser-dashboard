@@ -22,13 +22,14 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   // Create a custom icon with proper typing
   const customIcon = createDepotIcon({ label, isStart, isEnd });
   
-  // Cast to any to bypass TypeScript checking on the icon prop
-  // This is necessary because of type mismatches between react-leaflet and leaflet
+  // Cast the marker properties to match Leaflet's expected types
+  const markerProps = {
+    position,
+    icon: customIcon
+  } as unknown as L.MarkerOptions;
+  
   return (
-    <Marker 
-      position={position} 
-      icon={customIcon as any}
-    >
+    <Marker {...markerProps}>
       <Popup>
         <div className="text-sm">
           <strong>{isStart ? 'Start: ' : isEnd ? 'End: ' : ''}{name}</strong>

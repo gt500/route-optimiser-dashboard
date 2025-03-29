@@ -32,17 +32,17 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
     type: 'Customer'
   });
 
-  // Define event handlers with proper typing
-  const eventHandlers = {
-    click: handleMarkerClick
-  } as L.LeafletEventHandlerFnMap;
+  // Cast the marker properties to match Leaflet's expected types
+  const markerProps = {
+    position,
+    icon: customIcon,
+    eventHandlers: {
+      click: handleMarkerClick
+    }
+  } as unknown as L.MarkerOptions;
 
   return (
-    <Marker 
-      position={position}
-      icon={customIcon as any}
-      eventHandlers={eventHandlers}
-    >
+    <Marker {...markerProps}>
       <Popup ref={popupRef}>
         <div className="text-sm">
           <strong>{name}</strong>

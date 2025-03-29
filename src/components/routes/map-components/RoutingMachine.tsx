@@ -29,7 +29,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
     
     console.log("Creating route with waypoints:", waypoints);
     
-    let routingControl: any = null;
+    let routingControl: L.Routing.Control | null = null;
     
     const createRoute = () => {
       if (routingControl) {
@@ -51,31 +51,28 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         console.log("Creating route with valid waypoints:", validWaypoints);
         
-        // Use the L.Routing global with proper road-following settings
         routingControl = L.Routing.control({
           waypoints: validWaypoints,
           router: L.Routing.osrm({
-            serviceUrl: 'https://router.project-osrm.org/route/v1',
-            profile: 'driving'
+            serviceUrl: 'https://router.project-osrm.org/route/v1'
           }),
           lineOptions: {
             styles: [{ color: '#6366F1', weight: 4, opacity: 0.7 }],
             extendToWaypoints: true,
             missingRouteTolerance: 0
           },
-          routeWhileDragging: false,
           addWaypoints: false,
           draggableWaypoints: false,
           fitSelectedRoutes: true,
           showAlternatives: false,
-          show: false // Hide the instruction panel
+          show: false
         }).addTo(map);
         
         // Hide the routing control UI but show the route path
         routingControl.hide();
         
         // Extract route information when a route is found
-        routingControl.on('routesfound', (e: any) => {
+        routingControl.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
           const routes = e.routes;
           if (routes && routes.length > 0) {
             const route = routes[0];
@@ -85,10 +82,10 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
             console.log(`Route found: ${totalDistance.toFixed(2)} km, ${totalTime.toFixed(0)} minutes`);
             
             // Extract the coordinates from the route
-            const coordinates: [number, number][] = route.coordinates.map((coord: any) => [
+            const coordinates = route.coordinates.map((coord) => [
               coord.lat,
               coord.lng
-            ]);
+            ] as [number, number]);
             
             if (onRouteFound) {
               onRouteFound({
