@@ -1,20 +1,15 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import { createIcon, createLocationIcon } from './Icons';
+import { locationIcon } from './Icons';
 
 interface LocationMarkerProps {
-  id: string | number;
+  id: string;
   name: string;
   position: [number, number];
   address?: string;
-  type?: string;
-  cylinders?: number | string;
-  fullCylinders?: number;
-  emptyCylinders?: number;
   index?: number;
-  onClick?: (id: string | number) => void;
+  onClick?: () => void;
 }
 
 const LocationMarker: React.FC<LocationMarkerProps> = ({
@@ -22,57 +17,34 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   name,
   position,
   address,
-  type,
-  cylinders,
-  fullCylinders,
-  emptyCylinders,
   index,
   onClick
 }) => {
-  if (!position || position.some(isNaN)) {
-    console.error("Invalid position for LocationMarker:", position);
-    return null;
-  }
-
-  // Handle click event if provided
-  const handleClick = () => {
-    if (onClick) onClick(id);
-  };
-
-  // Create marker icon based on location type and index
-  let iconHtml;
-  if (index !== undefined) {
-    iconHtml = createLocationIcon({
-      label: `${index}`,
-      type: type || 'Customer'
-    });
-  } else {
-    iconHtml = createLocationIcon({
-      type: type || 'Customer'
-    });
-  }
-
-  const locationIcon = createIcon(iconHtml, [30, 30]);
+  const customIcon = locationIcon;
+  
+  const eventHandlers = onClick ? {
+    click: onClick
+  } : {};
 
   return (
-    <Marker
+    <Marker 
       position={position}
-      eventHandlers={onClick ? { click: handleClick } : {}}
-      icon={locationIcon}
+      eventHandlers={eventHandlers}
+      // @ts-ignore - icon property is supported in Leaflet but not in the TS definitions
+      icon={customIcon}
     >
-      <Popup>
-        <div>
-          <div className="font-semibold">{name}</div>
-          {address && <div className="text-sm text-gray-600">{address}</div>}
-          {type && <div className="text-sm text-gray-600">Type: {type}</div>}
-          {cylinders !== undefined && (
-            <div className="text-sm text-gray-600">Cylinders: {cylinders}</div>
+      <Popup className="leaflet-popup">
+        <div className="p-2">
+          <div className="font-medium">{name}</div>
+          {index !== undefined && (
+            <div className="text-xs bg-primary/10 px-2 py-1 rounded-sm text-primary-foreground/90 mt-1 inline-block">
+              Stop #{index}
+            </div>
           )}
-          {fullCylinders !== undefined && (
-            <div className="text-sm text-green-600">Full cylinders: {fullCylinders}</div>
-          )}
-          {emptyCylinders !== undefined && (
-            <div className="text-sm text-red-600">Empty cylinders: {emptyCylinders}</div>
+          {address && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {address}
+            </div>
           )}
         </div>
       </Popup>

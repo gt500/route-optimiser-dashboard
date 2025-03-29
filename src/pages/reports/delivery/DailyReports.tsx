@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Download, FileSpreadsheet, RefreshCw, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import RouteMap from '@/components/routes/RouteMap';
 
 interface DeliveryData {
   id: string;
@@ -24,6 +25,8 @@ interface DeliveryData {
   kms: number;
   fuelCost: number;
   date: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface RouteDelivery {
@@ -38,6 +41,8 @@ interface RouteDelivery {
     locationName: string;
     cylinders: number;
     sequence: number;
+    latitude?: number;
+    longitude?: number;
   }[];
 }
 
@@ -46,6 +51,8 @@ const DailyReports = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
 
   useEffect(() => {
     fetchDeliveryData();
@@ -75,13 +82,18 @@ const DailyReports = () => {
         .eq('date', formattedDateStr)
         .order('created_at', { ascending: false });
       
-      if (routesError) throw routesError;
+      if (routesError) {
+        console.error('Error fetching routes:', routesError);
+        throw routesError;
+      }
       
       if (!routesData || routesData.length === 0) {
         setDeliveries([]);
         setIsLoading(false);
         return;
       }
+      
+      console.log('Found routes:', routesData.length);
       
       // Collect all route IDs
       const routeIds = routesData.map(route => route.id);
@@ -92,7 +104,18 @@ const DailyReports = () => {
         .select('id, route_id, location_id, cylinders, sequence')
         .in('route_id', routeIds);
       
-      if (deliveriesError) throw deliveriesError;
+      if (deliveriesError) {
+        console.error('Error fetching deliveries:', deliveriesError);
+        throw deliveriesError;
+      }
+      
+      console.log('Found deliveries:', deliveriesData?.length || 0);
+      
+      if (!deliveriesData || deliveriesData.length === 0) {
+        setDeliveries([]);
+        setIsLoading(false);
+        return;
+      }
       
       // Get all location IDs to fetch location details
       const locationIds = deliveriesData.map(delivery => delivery.location_id);
@@ -103,10 +126,15 @@ const DailyReports = () => {
         .select('id, name, address, latitude, longitude')
         .in('id', locationIds);
       
-      if (locationsError) throw locationsError;
+      if (locationsError) {
+        console.error('Error fetching locations:', locationsError);
+        throw locationsError;
+      }
+      
+      console.log('Found locations:', locationsData?.length || 0);
       
       // Create a map of locations for easy lookup
-      const locationsMap = (locationsData || []).reduce((acc, location) => {
+      const locationsMap = (locationsData || []).reduce((acc: Record<string, any>, location) => {
         acc[location.id] = location;
         return acc;
       }, {});
@@ -115,12 +143,17 @@ const DailyReports = () => {
       const routeDeliveries: RouteDelivery[] = routesData.map(route => {
         const routeDeliveries = deliveriesData
           .filter(delivery => delivery.route_id === route.id)
-          .map(delivery => ({
-            id: delivery.id,
-            locationName: locationsMap[delivery.location_id]?.name || 'Unknown Location',
-            cylinders: delivery.cylinders,
-            sequence: delivery.sequence
-          }))
+          .map(delivery => {
+            const location = locationsMap[delivery.location_id];
+            return {
+              id: delivery.id,
+              locationName: location?.name || 'Unknown Location',
+              cylinders: delivery.cylinders,
+              sequence: delivery.sequence,
+              latitude: location?.latitude,
+              longitude: location?.longitude
+            };
+          })
           .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
           
         return {
@@ -150,7 +183,9 @@ const DailyReports = () => {
             cylinders: delivery.cylinders,
             kms: parseFloat(kmsPerDelivery.toFixed(1)),
             fuelCost: parseFloat(costPerDelivery.toFixed(2)),
-            date: formattedDateStr
+            date: formattedDateStr,
+            latitude: delivery.latitude,
+            longitude: delivery.longitude
           });
         });
       });
@@ -191,6 +226,19 @@ const DailyReports = () => {
     }
   };
 
+  const toggleViewMode = () => {
+    setViewMode(viewMode === 'table' ? 'map' : 'table');
+  };
+
+  // Prepare map data
+  const mapLocations = filteredDeliveries.map(delivery => ({
+    id: delivery.id,
+    name: delivery.siteName,
+    latitude: delivery.latitude,
+    longitude: delivery.longitude,
+    address: `${delivery.cylinders} cylinders`
+  })).filter(loc => loc.latitude && loc.longitude);
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="daily" onValueChange={handleTabChange}>
@@ -225,21 +273,26 @@ const DailyReports = () => {
                   </>
                 )}
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>
-                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export to Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Download className="mr-2 h-4 w-4" /> Download PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={toggleViewMode}>
+                  <MapPin className="mr-2 h-4 w-4" /> {viewMode === 'table' ? 'View Map' : 'View Table'}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex-1">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>
+                      <FileSpreadsheet className="mr-2 h-4 w-4" /> Export to Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Download className="mr-2 h-4 w-4" /> Download PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -250,32 +303,42 @@ const DailyReports = () => {
           </CardHeader>
           <CardContent>
             {filteredDeliveries.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Site Name</TableHead>
-                    <TableHead>Cylinders</TableHead>
-                    <TableHead>Distance (km)</TableHead>
-                    <TableHead>Fuel Cost</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDeliveries.map((delivery) => (
-                    <TableRow key={delivery.id}>
-                      <TableCell>{delivery.siteName}</TableCell>
-                      <TableCell>{delivery.cylinders}</TableCell>
-                      <TableCell>{delivery.kms.toFixed(1)}</TableCell>
-                      <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
+              viewMode === 'table' ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Site Name</TableHead>
+                      <TableHead>Cylinders</TableHead>
+                      <TableHead>Distance (km)</TableHead>
+                      <TableHead>Fuel Cost</TableHead>
                     </TableRow>
-                  ))}
-                  <TableRow className="font-bold">
-                    <TableCell>TOTALS</TableCell>
-                    <TableCell>{totalCylinders}</TableCell>
-                    <TableCell>{totalKms.toFixed(1)}</TableCell>
-                    <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDeliveries.map((delivery) => (
+                      <TableRow key={delivery.id}>
+                        <TableCell>{delivery.siteName}</TableCell>
+                        <TableCell>{delivery.cylinders}</TableCell>
+                        <TableCell>{delivery.kms.toFixed(1)}</TableCell>
+                        <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-bold">
+                      <TableCell>TOTALS</TableCell>
+                      <TableCell>{totalCylinders}</TableCell>
+                      <TableCell>{totalKms.toFixed(1)}</TableCell>
+                      <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="h-[400px]">
+                  <RouteMap
+                    locations={mapLocations}
+                    height="100%"
+                    zoom={9}
+                  />
+                </div>
+              )
             ) : (
               <div className="flex items-center justify-center h-64">
                 <p className="text-muted-foreground">

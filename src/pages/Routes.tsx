@@ -13,6 +13,13 @@ import RouteDetails from '@/components/routes/RouteDetails';
 import OptimizationParameters from '@/components/routes/OptimizationParameters';
 import { supabase } from '@/integrations/supabase/client';
 
+const routeOptimizationDefaultParams = {
+  prioritizeFuel: true, // Default to prioritize fuel efficiency
+  avoidTraffic: true,
+  useRealTimeData: false,
+  optimizeForDistance: false
+};
+
 const RoutesList = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [newLocationDialog, setNewLocationDialog] = useState(false);
@@ -251,11 +258,17 @@ const RoutesList = () => {
         newLocations.push(locationWithCylinders);
       }
       
-      return {
+      const newRouteState = {
         ...prev,
         cylinders: prev.cylinders + location.cylinders,
         locations: newLocations
       };
+      
+      if (newLocations.length > 2) {
+        setTimeout(() => handleOptimize(routeOptimizationDefaultParams), 100);
+      }
+      
+      return newRouteState;
     });
   };
 
@@ -278,16 +291,11 @@ const RoutesList = () => {
     toast.success("Location removed from route");
   };
 
-  const handleOptimize = (params: { 
-    prioritizeFuel: boolean; 
-    avoidTraffic: boolean;
-    useRealTimeData: boolean;
-    optimizeForDistance: boolean;
-  }) => {
+  const handleOptimize = (params = routeOptimizationDefaultParams) => {
     console.log("Optimizing with params:", params);
     
     if (route.locations.length <= 2) {
-      toast.info("Need at least 3 locations to optimize route order");
+      toast.info("Need at least 3 locations to optimize route");
       return;
     }
     
@@ -363,7 +371,9 @@ const RoutesList = () => {
     
     toast.success(params.optimizeForDistance ? 
       "Route optimized for shortest distance" : 
-      "Route optimized with selected parameters"
+      (params.prioritizeFuel ? 
+        "Route optimized for best fuel efficiency" : 
+        "Route optimized with selected parameters")
     );
   };
   
@@ -653,6 +663,22 @@ const RoutesList = () => {
       address: loc.address || '',
     }));
   }, [route.locations]);
+
+  const handleRouteDataUpdate = (distance: number, duration: number, coordinates: [number, number][]) => {
+    setRoute(prev => {
+      const consumption = distance * 0.12;
+      const cost = consumption * fuelCostPerLiter;
+      
+      return {
+        ...prev,
+        distance,
+        estimatedDuration: duration,
+        fuelConsumption: consumption,
+        fuelCost: cost,
+        // Keep other properties the same
+      };
+    });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">

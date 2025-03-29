@@ -4,7 +4,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import { SetViewOnChange } from './map-components/SetViewOnChange';
+import SetViewOnChange from './map-components/SetViewOnChange';
 import LocationMarker from './map-components/LocationMarker';
 import DepotMarker from './map-components/DepotMarker';
 import RoutingMachine from './map-components/RoutingMachine';
@@ -38,6 +38,7 @@ interface RouteMapProps {
   startLocation?: NamedCoords;
   endLocation?: NamedCoords;
   forceRouteUpdate?: boolean;
+  onRouteDataUpdate?: (distance: number, duration: number, coordinates: [number, number][]) => void;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -51,10 +52,11 @@ const RouteMap: React.FC<RouteMapProps> = ({
   startLocation,
   endLocation,
   forceRouteUpdate = false,
+  onRouteDataUpdate,
 }) => {
-  const routingMachineRef = useRef<any>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [allWaypoints, setAllWaypoints] = useState<L.LatLng[]>([]);
 
   // Calculate center based on all markers if not provided
   const calculateCenter = () => {
@@ -108,33 +110,37 @@ const RouteMap: React.FC<RouteMapProps> = ({
   useEffect(() => {
     if (!mapReady || !showRouting || !mapRef.current) return;
 
-    const allWaypoints: L.LatLng[] = [];
+    const routeWaypoints: L.LatLng[] = [];
 
     // Add start location
     if (startLocation) {
-      allWaypoints.push(L.latLng(startLocation.coords[0], startLocation.coords[1]));
+      routeWaypoints.push(L.latLng(startLocation.coords[0], startLocation.coords[1]));
     }
 
     // Add intermediate waypoints
     if (waypoints && waypoints.length > 0) {
       waypoints.forEach((wp) => {
-        allWaypoints.push(L.latLng(wp.coords[0], wp.coords[1]));
+        routeWaypoints.push(L.latLng(wp.coords[0], wp.coords[1]));
       });
     }
 
     // Add end location
     if (endLocation) {
-      allWaypoints.push(L.latLng(endLocation.coords[0], endLocation.coords[1]));
+      routeWaypoints.push(L.latLng(endLocation.coords[0], endLocation.coords[1]));
     }
 
-    // Update routing if we have at least 2 waypoints
-    if (allWaypoints.length >= 2 && routingMachineRef.current) {
-      routingMachineRef.current.setWaypoints(allWaypoints);
-    }
+    // Update waypoints state
+    setAllWaypoints(routeWaypoints);
   }, [startLocation, endLocation, waypoints, mapReady, showRouting, forceRouteUpdate]);
 
   const handleMapInit = (mapInstance: L.Map) => {
     mapRef.current = mapInstance;
+  };
+
+  const handleRouteFound = (route: { distance: number; duration: number; coordinates: [number, number][] }) => {
+    if (onRouteDataUpdate) {
+      onRouteDataUpdate(route.distance, route.duration, route.coordinates);
+    }
   };
 
   return (
@@ -151,8 +157,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
       {mapReady && showRouting && (
         <RoutingMachine
-          waypoints={allWaypoints || []}
+          waypoints={allWaypoints}
           forceRouteUpdate={forceRouteUpdate}
+          onRouteFound={handleRouteFound}
         />
       )}
 
