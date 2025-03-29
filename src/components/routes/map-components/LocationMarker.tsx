@@ -2,7 +2,7 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { createIcon, createLocationIcon } from './Icons';
+import { createLocationIcon } from './Icons';
 
 interface LocationMarkerProps {
   id: string;

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker, Popup, MarkerProps } from 'react-leaflet';
+import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { createIcon, createLocationIcon } from './Icons';
 
@@ -13,7 +13,7 @@ interface DepotMarkerProps {
 
 const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEnd }) => {
   const iconType = isEnd ? 'end' : 'depot';
-  const icon = createIcon(createLocationIcon({ 
+  const iconHtml = createIcon(createLocationIcon({ 
     type: iconType, 
     label: isEnd ? 'E' : 'S'
   }), [28, 28]);
@@ -21,12 +21,11 @@ const DepotMarker: React.FC<DepotMarkerProps> = ({ name, position, isStart, isEn
   // Create a Leaflet icon
   const markerIcon = new L.DivIcon({
     className: 'custom-div-icon',
-    html: icon as string,
+    html: iconHtml as string,
     iconSize: [28, 28] as L.PointExpression,
     iconAnchor: [14, 14] as L.PointExpression
   });
   
-  // Use the correct props for the Marker component
   return (
     <Marker 
       position={position}
