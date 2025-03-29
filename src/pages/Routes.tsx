@@ -13,7 +13,7 @@ import RouteDetails from '@/components/routes/RouteDetails';
 import OptimizationParameters from '@/components/routes/OptimizationParameters';
 import { supabase } from '@/integrations/supabase/client';
 
-const Routes = () => {
+const RoutesList = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
@@ -378,23 +378,44 @@ const Routes = () => {
     });
   };
 
-  const confirmLoad = async () => {
-    if (route.locations.length < 2) {
-      toast.error("Cannot confirm load with insufficient stops");
+  const handleConfirmLoad = async () => {
+    if (!route) {
+      toast.error("No route to confirm");
       return;
     }
-
+    
     try {
-      const routeId = crypto.randomUUID();
+      const locationIds = route.locations.map(loc => loc.id);
+      
+      const { data: existingLocations, error: locCheckError } = await supabase
+        .from('locations')
+        .select('id')
+        .in('id', locationIds);
+      
+      if (locCheckError) {
+        console.error('Error checking locations:', locCheckError);
+        toast.error("Failed to verify locations");
+        return;
+      }
+      
+      const existingLocationIds = new Set(existingLocations?.map(loc => loc.id) || []);
+      
+      const missingLocations = route.locations.filter(loc => !existingLocationIds.has(loc.id));
+      
+      if (missingLocations.length > 0) {
+        console.error('Missing locations:', missingLocations);
+        toast.error(`Some locations don't exist in the database: ${missingLocations.map(loc => loc.name).join(', ')}`);
+        return;
+      }
       
       const routeData = {
-        id: routeId,
-        name: `Route ${new Date().toLocaleDateString()}`,
+        id: crypto.randomUUID(),
+        name: route.name || `Route ${new Date().toLocaleDateString()}`,
         date: new Date().toISOString(),
-        status: 'confirmed',
-        total_distance: route.distance,
-        total_duration: route.estimatedDuration,
-        total_cylinders: route.cylinders,
+        total_cylinders: route.locations.reduce((sum, loc) => sum + loc.cylinders, 0),
+        total_distance: route.distance || 0,
+        total_duration: route.duration || 0,
+        status: 'scheduled',
         estimated_cost: route.fuelCost
       };
       
@@ -403,7 +424,7 @@ const Routes = () => {
       const { data: routeInsert, error: routeError } = await supabase
         .from('routes')
         .insert(routeData)
-        .select('id')
+        .select()
         .single();
       
       if (routeError) {
@@ -419,7 +440,7 @@ const Routes = () => {
           id: crypto.randomUUID(),
           route_id: routeInsert.id,
           location_id: location.id.toString(),
-          cylinders: location.emptyCylinders || 0,
+          cylinders: location.cylinders,
           sequence: index
         }));
         
@@ -536,7 +557,7 @@ const Routes = () => {
                   
                   <div className="flex justify-end">
                     <Button 
-                      onClick={confirmLoad} 
+                      onClick={handleConfirmLoad} 
                       className="bg-green-500 hover:bg-green-600" 
                       disabled={isLoadConfirmed || route.locations.length < 2}
                     >
@@ -634,4 +655,4 @@ const Routes = () => {
   );
 };
 
-export default Routes;
+export default RoutesList;

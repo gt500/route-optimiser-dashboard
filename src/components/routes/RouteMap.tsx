@@ -1,10 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useState } from 'react';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
-import { Truck, Home, MapPin } from 'lucide-react';
+
+// Import refactored components
+import { SetViewOnChange } from './map-components/SetViewOnChange';
+import { RoutingMachine } from './map-components/RoutingMachine';
+import { LocationMarker } from './map-components/LocationMarker';
+import { DepotMarker } from './map-components/DepotMarker';
 
 // Fix Leaflet icon issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -13,74 +18,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
-
-// Custom icons
-const truckIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3774/3774278.png',
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
-  popupAnchor: [0, -35],
-});
-
-const homeIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/25/25694.png',
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
-});
-
-const locationIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1483/1483336.png',
-  iconSize: [25, 25],
-  iconAnchor: [12, 25],
-  popupAnchor: [0, -25],
-});
-
-// Map bounds control component
-const SetViewOnChange = ({ coordinates }: { coordinates: Array<[number, number]> }) => {
-  const mapRef = React.useRef<L.Map | null>(null);
-  
-  React.useEffect(() => {
-    if (!mapRef.current) return;
-    
-    if (coordinates && coordinates.length > 0) {
-      const bounds = L.latLngBounds(coordinates.map(coord => [coord[0], coord[1]]));
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }, [coordinates]);
-  
-  return null;
-};
-
-// Routing control component
-const RoutingMachine = ({ waypoints }: { waypoints: Array<[number, number]> }) => {
-  const mapRef = React.useRef<L.Map | null>(null);
-
-  React.useEffect(() => {
-    if (!mapRef.current || !waypoints || waypoints.length < 2) return;
-
-    const routingControl = L.Routing.control({
-      waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
-      routeWhileDragging: false,
-      showAlternatives: false,
-      fitSelectedRoutes: true,
-      lineOptions: {
-        styles: [{ color: '#6366F1', weight: 4 }],
-        extendToWaypoints: true,
-        missingRouteTolerance: 0
-      },
-      createMarker: function() { return null; } // Disable default markers
-    }).addTo(mapRef.current);
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.removeControl(routingControl);
-      }
-    };
-  }, [waypoints]);
-
-  return null;
-};
 
 interface RouteMapProps {
   height?: string;
@@ -148,7 +85,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const defaultCenter: [number, number] = [-33.9258, 18.4232]; // Cape Town
   
   // Calculate center based on available data
-  const [mapCenter, setMapCenter] = useState<[number, number]>(
+  const [mapCenter] = useState<[number, number]>(
     depot ? [depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]] : defaultCenter
   );
   
@@ -188,18 +125,13 @@ const RouteMap: React.FC<RouteMapProps> = ({
       routingWaypoints.push(endLocation.coords);
     }
   }
-
-  // Use ref for map instance
-  const mapRef = React.useRef<L.Map | null>(null);
   
   return (
     <div style={{ height, width }}>
       <MapContainer
         style={{ height: '100%', width: '100%' }}
-        whenReady={(map) => {
-          mapRef.current = map.target;
-          map.target.setView(mapCenter, 11);
-        }}
+        center={mapCenter}
+        zoom={11}
         scrollWheelZoom
       >
         <TileLayer
@@ -218,39 +150,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
         )}
         
         {/* Add depot marker */}
-        {depot && (
-          <Marker 
-            position={[depot.latitude || depot.lat || defaultCenter[0], depot.longitude || depot.long || defaultCenter[1]]}
-            icon={homeIcon as unknown as L.Icon}
-          >
-            <Popup>
-              <div>
-                <h3 className="font-bold">{depot.name}</h3>
-                <p>Depot / Starting Point</p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
+        {depot && <DepotMarker depot={depot} defaultCenter={defaultCenter} />}
         
         {/* Add location markers */}
         {locations.map(location => (
-          <Marker 
+          <LocationMarker 
             key={location.id.toString()}
-            position={[location.latitude || location.lat || 0, location.longitude || location.long || 0]}
-            icon={locationIcon as unknown as L.Icon}
-            eventHandlers={{
-              click: () => {
-                if (onLocationClick) onLocationClick(location.id.toString());
-              }
-            }}
-          >
-            <Popup>
-              <div>
-                <h3 className="font-bold">{location.name}</h3>
-                <p className="text-sm">{location.address}</p>
-              </div>
-            </Popup>
-          </Marker>
+            location={location}
+            onLocationClick={onLocationClick}
+          />
         ))}
       </MapContainer>
     </div>
