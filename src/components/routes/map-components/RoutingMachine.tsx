@@ -37,7 +37,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
       }
       
       try {
-        // @ts-ignore - L.Routing is not in the types
+        // Use the L.Routing global
         routingControl = L.Routing.control({
           waypoints: waypoints,
           lineOptions: {

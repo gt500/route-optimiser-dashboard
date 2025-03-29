@@ -41,7 +41,7 @@ const RouteEndpoints = ({
         <div className="space-y-2">
           <Label htmlFor="start-location" className="text-white">Start Location</Label>
           <Select
-            value={startLocation?.id.toString() || ""}
+            value={startLocation?.id?.toString() || ""}
             onValueChange={onStartLocationChange}
           >
             <SelectTrigger id="start-location" className="w-full">
@@ -49,7 +49,7 @@ const RouteEndpoints = ({
             </SelectTrigger>
             <SelectContent className="bg-popover">
               {warehouses.map((location) => (
-                <SelectItem key={location.id.toString()} value={location.id.toString()}>
+                <SelectItem key={`start-${location.id.toString()}`} value={location.id.toString()}>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     <span>{location.name}</span>
@@ -64,7 +64,7 @@ const RouteEndpoints = ({
         <div className="space-y-2">
           <Label htmlFor="end-location" className="text-white">End Location</Label>
           <Select
-            value={endLocation?.id.toString() || ""}
+            value={endLocation?.id?.toString() || ""}
             onValueChange={onEndLocationChange}
           >
             <SelectTrigger id="end-location" className="w-full">
@@ -72,7 +72,7 @@ const RouteEndpoints = ({
             </SelectTrigger>
             <SelectContent className="bg-popover">
               {allLocations.map((location) => (
-                <SelectItem key={location.id.toString()} value={location.id.toString()}>
+                <SelectItem key={`end-${location.id.toString()}`} value={location.id.toString()}>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     <span>{location.name}</span>

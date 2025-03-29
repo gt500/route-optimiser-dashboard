@@ -28,29 +28,29 @@ const RoutesList = () => {
   const [isSyncingLocations, setSyncingLocations] = useState(true);
   
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>([
-    { id: 1, name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
-    { id: 2, name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', lat: -33.731659, long: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-    { id: 3, name: 'Food Lovers Sunningdale', address: 'Sunningdale, KwaZulu-Natal', lat: -29.7486, long: 31.0462, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
-    { id: 4, name: 'Haasendaal Gables', address: 'Haasendaal, Western Cape', lat: -33.907776, long: 18.698757, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
-    { id: 5, name: 'Pick n Pay TableView', address: 'Table View, Cape Town', lat: -33.8258, long: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
-    { id: 6, name: 'SUPERSPAR Parklands', address: 'Parklands, Cape Town', lat: -33.815781, long: 18.495968, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
-    { id: 7, name: 'West Coast Village', address: 'West Coast, Cape Town', lat: -33.803329, long: 18.485944, type: 'Customer', fullCylinders: 0, emptyCylinders: 16 },
-    { id: 8, name: 'KWIKSPAR Paarl', address: 'Paarl, Western Cape', lat: -33.708061, long: 18.962563, type: 'Customer', fullCylinders: 0, emptyCylinders: 10 },
-    { id: 9, name: 'SUPERSPAR Plattekloof', address: 'Plattekloof, Cape Town', lat: -33.873642, long: 18.578856, type: 'Customer', fullCylinders: 0, emptyCylinders: 14 },
-    { id: 10, name: 'OK Foods Strand', address: 'Strand, Western Cape', lat: -34.12169719, long: 18.836937, type: 'Customer', fullCylinders: 0, emptyCylinders: 9 },
-    { id: 11, name: 'OK Urban Sonstraal', address: 'Sonstraal, Western Cape', lat: -33.511, long: 18.3945, type: 'Customer', fullCylinders: 0, emptyCylinders: 11 },
-    { id: 12, name: 'Clara Anna', address: 'Clara Anna, Western Cape', lat: -33.818184, long: 18.632576, type: 'Customer', fullCylinders: 0, emptyCylinders: 7 },
-    { id: 13, name: 'Laborie', address: 'Laborie, Western Cape', lat: -33.764587, long: 18.960768, type: 'Customer', fullCylinders: 0, emptyCylinders: 13 },
-    { id: 14, name: 'Burgundy Square', address: 'Burgundy, Cape Town', lat: -33.841858, long: 18.545229, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-    { id: 15, name: 'Shell Sea Point', address: 'Sea Point, Cape Town', lat: -33.4812, long: 18.3855, type: 'Storage', fullCylinders: 75, emptyCylinders: 0 },
-    { id: 16, name: 'Shell Hugo Street', address: 'Hugo Street, Cape Town', lat: -33.900848, long: 18.564976, type: 'Storage', fullCylinders: 80, emptyCylinders: 0 },
-    { id: 17, name: 'Shell Meadowridge', address: 'Meadowridge, Cape Town', lat: -34.038963, long: 18.455086, type: 'Storage', fullCylinders: 65, emptyCylinders: 0 },
-    { id: 18, name: 'Simonsrust Shopping Centre', address: 'Simonsrust, Western Cape', lat: -33.926464, long: 18.877136, type: 'Customer', fullCylinders: 0, emptyCylinders: 19 },
-    { id: 19, name: 'Shell Stellenbosch Square', address: 'Stellenbosch, Western Cape', lat: -33.976185, long: 18.843523, type: 'Storage', fullCylinders: 70, emptyCylinders: 0 },
-    { id: 20, name: 'Willowridge Shopping Centre', address: 'Willowridge, Western Cape', lat: -33.871166, long: 18.63283, type: 'Customer', fullCylinders: 0, emptyCylinders: 17 },
-    { id: 21, name: 'Zevenwacht', address: 'Zevenwacht, Western Cape', lat: -33.949867, long: 18.696407, type: 'Customer', fullCylinders: 0, emptyCylinders: 21 },
-    { id: 22, name: 'Killarney Shell', address: 'Killarney, Cape Town', lat: -33.854279, long: 18.516291, type: 'Storage', fullCylinders: 85, emptyCylinders: 0 },
-    { id: 23, name: 'Shell Constantia', address: 'Constantia, Cape Town', lat: -33.979988, long: 18.453421, type: 'Storage', fullCylinders: 90, emptyCylinders: 0 },
+    { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
+    { id: "2", name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', lat: -33.731659, long: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
+    { id: "3", name: 'Food Lovers Sunningdale', address: 'Sunningdale, KwaZulu-Natal', lat: -29.7486, long: 31.0462, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
+    { id: "4", name: 'Haasendaal Gables', address: 'Haasendaal, Western Cape', lat: -33.907776, long: 18.698757, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
+    { id: "5", name: 'Pick n Pay TableView', address: 'Table View, Cape Town', lat: -33.8258, long: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
+    { id: "6", name: 'SUPERSPAR Parklands', address: 'Parklands, Cape Town', lat: -33.815781, long: 18.495968, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
+    { id: "7", name: 'West Coast Village', address: 'West Coast, Cape Town', lat: -33.803329, long: 18.485944, type: 'Customer', fullCylinders: 0, emptyCylinders: 16 },
+    { id: "8", name: 'KWIKSPAR Paarl', address: 'Paarl, Western Cape', lat: -33.708061, long: 18.962563, type: 'Customer', fullCylinders: 0, emptyCylinders: 10 },
+    { id: "9", name: 'SUPERSPAR Plattekloof', address: 'Plattekloof, Cape Town', lat: -33.873642, long: 18.578856, type: 'Customer', fullCylinders: 0, emptyCylinders: 14 },
+    { id: "10", name: 'OK Foods Strand', address: 'Strand, Western Cape', lat: -34.12169719, long: 18.836937, type: 'Customer', fullCylinders: 0, emptyCylinders: 9 },
+    { id: "11", name: 'OK Urban Sonstraal', address: 'Sonstraal, Western Cape', lat: -33.511, long: 18.3945, type: 'Customer', fullCylinders: 0, emptyCylinders: 11 },
+    { id: "12", name: 'Clara Anna', address: 'Clara Anna, Western Cape', lat: -33.818184, long: 18.632576, type: 'Customer', fullCylinders: 0, emptyCylinders: 7 },
+    { id: "13", name: 'Laborie', address: 'Laborie, Western Cape', lat: -33.764587, long: 18.960768, type: 'Customer', fullCylinders: 0, emptyCylinders: 13 },
+    { id: "14", name: 'Burgundy Square', address: 'Burgundy, Cape Town', lat: -33.841858, long: 18.545229, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
+    { id: "15", name: 'Shell Sea Point', address: 'Sea Point, Cape Town', lat: -33.4812, long: 18.3855, type: 'Storage', fullCylinders: 75, emptyCylinders: 0 },
+    { id: "16", name: 'Shell Hugo Street', address: 'Hugo Street, Cape Town', lat: -33.900848, long: 18.564976, type: 'Storage', fullCylinders: 80, emptyCylinders: 0 },
+    { id: "17", name: 'Shell Meadowridge', address: 'Meadowridge, Cape Town', lat: -34.038963, long: 18.455086, type: 'Storage', fullCylinders: 65, emptyCylinders: 0 },
+    { id: "18", name: 'Simonsrust Shopping Centre', address: 'Simonsrust, Western Cape', lat: -33.926464, long: 18.877136, type: 'Customer', fullCylinders: 0, emptyCylinders: 19 },
+    { id: "19", name: 'Shell Stellenbosch Square', address: 'Stellenbosch, Western Cape', lat: -33.976185, long: 18.843523, type: 'Storage', fullCylinders: 70, emptyCylinders: 0 },
+    { id: "20", name: 'Willowridge Shopping Centre', address: 'Willowridge, Western Cape', lat: -33.871166, long: 18.63283, type: 'Customer', fullCylinders: 0, emptyCylinders: 17 },
+    { id: "21", name: 'Zevenwacht', address: 'Zevenwacht, Western Cape', lat: -33.949867, long: 18.696407, type: 'Customer', fullCylinders: 0, emptyCylinders: 21 },
+    { id: "22", name: 'Killarney Shell', address: 'Killarney, Cape Town', lat: -33.854279, long: 18.516291, type: 'Storage', fullCylinders: 85, emptyCylinders: 0 },
+    { id: "23", name: 'Shell Constantia', address: 'Constantia, Cape Town', lat: -33.979988, long: 18.453421, type: 'Storage', fullCylinders: 90, emptyCylinders: 0 },
   ]);
   
   const [startLocation, setStartLocation] = useState<LocationType | null>(null);
@@ -201,21 +201,29 @@ const RoutesList = () => {
 
   useEffect(() => {
     if (startLocation) {
+      console.log("Start location set:", startLocation);
       setRoute(prev => {
         const existingMiddleLocations = prev.locations.filter(loc => 
           loc.id !== startLocation.id && 
-          loc.id !== endLocation?.id &&
-          (loc.id !== prev.locations[0]?.id) && 
-          (loc.id !== prev.locations[prev.locations.length - 1]?.id)
+          (endLocation ? loc.id !== endLocation.id : true) &&
+          (prev.locations[0] ? loc.id !== prev.locations[0].id : true) && 
+          (prev.locations.length > 1 ? loc.id !== prev.locations[prev.locations.length - 1].id : true)
         );
+        
+        const newLocations = [
+          startLocation,
+          ...existingMiddleLocations
+        ];
+        
+        if (endLocation) {
+          newLocations.push(endLocation);
+        }
+        
+        console.log("Updated route locations:", newLocations);
         
         return {
           ...prev,
-          locations: [
-            startLocation,
-            ...existingMiddleLocations,
-            ...(endLocation ? [endLocation] : [])
-          ]
+          locations: newLocations
         };
       });
     }
@@ -224,26 +232,38 @@ const RoutesList = () => {
   useEffect(() => {
     setRoute(prev => {
       const routeLocationIds = prev.locations.map(loc => loc.id);
+      const filteredAvailableLocations = availableLocations.filter(loc => 
+        !routeLocationIds.includes(loc.id)
+      );
+      
+      console.log("Filtered available locations:", filteredAvailableLocations.length);
+      
       return {
         ...prev,
-        availableLocations: availableLocations.filter(loc => 
-          !routeLocationIds.includes(loc.id)
-        )
+        availableLocations: filteredAvailableLocations
       };
     });
   }, [availableLocations, route.locations]);
 
   const handleStartLocationChange = (locationId: string) => {
-    const location = availableLocations.find(loc => loc.id.toString() === locationId);
-    setStartLocation(location || null);
+    console.log("Start location selected:", locationId);
+    const location = availableLocations.find(loc => loc.id === locationId);
+    if (location) {
+      console.log("Found start location:", location);
+      setStartLocation(location);
+    } else {
+      console.error("Could not find location with ID:", locationId);
+    }
   };
 
   const handleEndLocationChange = (locationId: string) => {
-    const location = availableLocations.find(loc => loc.id.toString() === locationId);
+    console.log("End location selected:", locationId);
+    const location = availableLocations.find(loc => loc.id === locationId);
     setEndLocation(location || null);
   };
 
   const addLocationToRoute = (location: LocationType & { cylinders: number }) => {
+    console.log("Adding location to route:", location);
     const locationWithCylinders = {
       ...location,
       emptyCylinders: location.cylinders,
@@ -257,6 +277,8 @@ const RoutesList = () => {
       } else {
         newLocations.push(locationWithCylinders);
       }
+      
+      console.log("Updated route locations after add:", newLocations);
       
       const newRouteState = {
         ...prev,
@@ -273,12 +295,15 @@ const RoutesList = () => {
   };
 
   const removeLocationFromRoute = (index: number) => {
+    console.log("Removing location at index:", index);
     if (index === 0 || (endLocation && index === route.locations.length - 1)) return;
     
     setRoute(prev => {
       const newLocations = [...prev.locations];
       const removedLocation = newLocations[index];
       newLocations.splice(index, 1);
+      
+      console.log("Updated route locations after remove:", newLocations);
       
       return {
         ...prev,
@@ -474,11 +499,18 @@ const RoutesList = () => {
     setNewLocationDialog(true);
   };
 
-  const handleAddNewLocationFromPopover = (locationId: number) => {
-    const location = availableLocations.find(loc => loc.id === locationId);
+  const handleAddNewLocationFromPopover = (locationId: string | number) => {
+    console.log("Adding location from popover with ID:", locationId);
+    const stringLocationId = String(locationId);
+    const location = availableLocations.find(loc => loc.id === stringLocationId);
+    
     if (location) {
+      console.log("Found location to add:", location);
       addLocationToRoute({...location, cylinders: 10});
       toast.success(`Added ${location.name} to route`);
+    } else {
+      console.error("Could not find location with ID:", locationId);
+      toast.error("Could not find the selected location");
     }
   };
 
@@ -692,7 +724,7 @@ const RoutesList = () => {
             <MapPin className="h-4 w-4" />
             New Location
           </Button>
-          <Button className="gap-2" onClick={handleCreateNewRoute}>
+          <Button className="gap-1" onClick={handleCreateNewRoute}>
             <Plus className="h-4 w-4" />
             New Route
           </Button>
@@ -748,6 +780,17 @@ const RoutesList = () => {
                         forceRouteUpdate={isLoadConfirmed}
                       />
                     )}
+                  </div>
+                  <div className="bg-primary-foreground p-4">
+                    <pre className="text-xs text-primary overflow-auto max-h-32">
+                      Debug route state: {JSON.stringify({
+                        locationCount: route.locations.length,
+                        startLocationId: startLocation?.id,
+                        endLocationId: endLocation?.id,
+                        firstStopName: route.locations[0]?.name,
+                        availableLocationsCount: route.availableLocations.length
+                      }, null, 2)}
+                    </pre>
                   </div>
                   <RouteDetails 
                     route={route} 

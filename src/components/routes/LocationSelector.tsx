@@ -45,16 +45,19 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
   };
 
   const handleEditClick = (location: LocationType) => {
+    console.log("Edit location clicked:", location);
     setEditLocation(location);
     setIsEditDialogOpen(true);
   };
 
   const handleSaveLocation = (updatedLocation: LocationType) => {
+    console.log("Saving location:", updatedLocation);
     const updatedLocations = availableLocations.map(loc => 
       loc.id === updatedLocation.id ? updatedLocation : loc
     );
     onUpdateLocations(updatedLocations);
     toast.success(`Location "${updatedLocation.name}" updated successfully`);
+    setIsEditDialogOpen(false); // Close dialog after saving
   };
   
   // Debug logging
@@ -119,15 +122,15 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 <SelectContent className="max-h-[200px]">
                   {filteredLocations.map((location) => (
                     <SelectItem key={location.id.toString()} value={location.id.toString()}>
-                      <div className="flex items-center justify-between w-full gap-2">
-                        <div>
+                      <div className="flex items-center justify-between w-full">
+                        <div className="pr-2">
                           <div className="font-medium">{location.name}</div>
                           <div className="text-xs text-muted-foreground">{location.address}</div>
                         </div>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          className="h-7 w-7 ml-auto" 
+                          className="h-7 w-7 ml-2" 
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
@@ -180,6 +183,12 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                   ))}
                 </div>
               </RadioGroup>
+            )}
+            
+            {availableLocations.length === 0 && (
+              <div className="text-center py-4 text-gray-400">
+                No more locations available. Add new locations or remove some from the route.
+              </div>
             )}
           </div>
           

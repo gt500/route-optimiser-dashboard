@@ -101,6 +101,7 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
 
     console.log('Form data to be saved:', formData);
     onSave(formData);
+    // Let the parent component close the dialog after successful save
   };
 
   return (

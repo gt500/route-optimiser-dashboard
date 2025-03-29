@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +25,7 @@ interface RouteDetailsProps {
     usingRealTimeData?: boolean;
   };
   onRemoveLocation: (index: number) => void;
-  onAddNewLocation: (locationId: number) => void;
+  onAddNewLocation: (locationId: number | string) => void;
   onFuelCostUpdate?: (newFuelCost: number) => void;
   onRouteDataUpdate?: (distance: number, duration: number) => void;
 }
@@ -133,10 +132,8 @@ const RouteDetails = ({
   
   const handleAddLocation = () => {
     if (selectedLocationId) {
-      // Convert string ID to number as the interface expects a number
-      const numericId = parseInt(selectedLocationId, 10);
-      console.log("Adding location with ID:", numericId);
-      onAddNewLocation(numericId);
+      console.log("Adding location with ID:", selectedLocationId);
+      onAddNewLocation(selectedLocationId);
       setAddLocationOpen(false);
       setSelectedLocationId("");
       toast.success("Location added to route");
@@ -266,7 +263,7 @@ const RouteDetails = ({
           {route.locations && route.locations.length > 0 ? (
             route.locations.map((location, index) => (
               <div 
-                key={`route-stop-${index}-${location.id}`}
+                key={`route-stop-${location.id}-${index}`}
                 className="flex items-center gap-3 bg-background rounded-lg p-3 relative border border-border/80 hover:border-border transition-colors shadow-sm"
               >
                 <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
