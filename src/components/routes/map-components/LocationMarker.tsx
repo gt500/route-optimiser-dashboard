@@ -33,7 +33,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
       // @ts-ignore - icon property is supported in Leaflet but not in the TS definitions
       icon={customIcon}
     >
-      <Popup className="leaflet-popup">
+      <Popup>
         <div className="p-2">
           <div className="font-medium">{name}</div>
           {index !== undefined && (

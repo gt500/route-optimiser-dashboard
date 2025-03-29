@@ -104,7 +104,7 @@ const Locations: React.FC = () => {
     setIsEditDialogOpen(true);
   };
   
-  const handleSaveLocation = async (location: LocationType) => {
+  const handleSaveLocation = async (location: any) => {
     try {
       const locationData = {
         name: location.name,
@@ -335,7 +335,7 @@ const Locations: React.FC = () => {
               <CardTitle>Customer Locations</CardTitle>
               <CardDescription>All customer delivery locations</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="bg-black p-4 rounded-md">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLocations.map((location) => (
                   <Card key={location.id} className="hover:shadow-md transition-shadow">
