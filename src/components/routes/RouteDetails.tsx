@@ -1,135 +1,117 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  MapPin, 
+  Gas, 
+  Clock, 
+  DollarSign, 
+  Route, 
+  Truck, 
+  X,
+  ArrowUpDown,
+  ExternalLink
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { FuelCostEditor } from '@/components/routes/FuelCostEditor';
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import { Clock, Navigation, Car, DollarSign, Package, Trash2, ArrowUpDown, Map } from "lucide-react";
-import { useEffect, useState } from "react";
-import { calculateDistance } from '@/utils/routeUtils';
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import RouteMetricsCard from './metrics/RouteMetricsCard';
+import { toast } from 'sonner';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
+import RouteMap from './RouteMap';
 
 interface RouteDetailsProps {
   route: {
     distance: number;
     fuelConsumption: number;
     fuelCost: number;
-    maintenanceCost?: number;
-    totalCost?: number;
     cylinders: number;
     locations: LocationType[];
-    availableLocations: LocationType[];
     estimatedDuration?: number;
     trafficConditions?: 'light' | 'moderate' | 'heavy';
     usingRealTimeData?: boolean;
   };
   onRemoveLocation: (index: number) => void;
-  onAddNewLocation: (locationId: number | string) => void;
-  onFuelCostUpdate?: (newFuelCost: number) => void;
+  onAddNewLocation?: (locationId: string | number) => void;
+  onFuelCostUpdate?: (newCost: number) => void;
   onRouteDataUpdate?: (distance: number, duration: number) => void;
   onOptimize?: () => void;
   onSave?: () => void;
   isLoadConfirmed?: boolean;
-  vehicleConfig: VehicleConfigProps;
+  vehicleConfig?: VehicleConfigProps;
 }
 
-interface LocationCost {
-  location: LocationType;
-  distanceFromPrev: number;
-  fuelCost: number;
-  maintenanceCost: number;
-  estimatedTimeMin?: number;
-}
-
-const defaultVehicleConfig: VehicleConfigProps = {
-  baseConsumption: 12,
-  fuelPrice: 21.95,
-  maintenanceCostPerKm: 0.50
-};
-
-const RouteDetails: React.FC<RouteDetailsProps> = ({ 
-  route, 
-  onRemoveLocation, 
-  onAddNewLocation, 
+const RouteDetails: React.FC<RouteDetailsProps> = ({
+  route,
+  onRemoveLocation,
+  onAddNewLocation,
   onFuelCostUpdate,
   onRouteDataUpdate,
   onOptimize,
   onSave,
   isLoadConfirmed = false,
-  vehicleConfig = defaultVehicleConfig
+  vehicleConfig
 }) => {
-  const [locationCosts, setLocationCosts] = useState<LocationCost[]>([]);
-  const [totalCost, setTotalCost] = useState(0);
-  const [totalDistance, setTotalDistance] = useState(0);
-  const [totalEstimatedTime, setTotalEstimatedTime] = useState(0);
-  const [totalCylinders, setTotalCylinders] = useState(0);
-  const [totalExchangedCylinders, setTotalExchangedCylinders] = useState(0);
-  const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
-  const [showDetailedView, setShowDetailedView] = useState(false);
-  
-  const AVG_SPEED = 40;
-  
+  const [totalDistance, setTotalDistance] = useState<number>(route.distance || 0);
+  const [totalEstimatedTime, setTotalEstimatedTime] = useState<number>(route.estimatedDuration || 0);
+  const [fuelCost, setFuelCost] = useState<number>((vehicleConfig?.fuelPrice || 21.95));
+  const [fullRouteDialogOpen, setFullRouteDialogOpen] = useState(false);
+  const [draggablePosition, setDraggablePosition] = useState({ x: 0, y: 0 });
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  const startDrag = (e: React.MouseEvent<HTMLDivElement>) => {
+    const startX = e.clientX - draggablePosition.x;
+    const startY = e.clientY - draggablePosition.y;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const newX = moveEvent.clientX - startX;
+      const newY = moveEvent.clientY - startY;
+      setDraggablePosition({ x: newX, y: newY });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
   useEffect(() => {
-    const config = vehicleConfig || defaultVehicleConfig;
-    
-    const costs: LocationCost[] = [];
-    let totalDist = 0;
-    let totalCost = 0;
-    let totalTime = 0;
-    let totalCyls = 0;
-    let totalExchanged = 0;
+    setTotalDistance(route.distance || 0);
+    setTotalEstimatedTime(route.estimatedDuration || 0);
+  }, [route.distance, route.estimatedDuration]);
 
-    route.locations.forEach((location, index) => {
-      totalCyls += location.emptyCylinders || 0;
-      totalExchanged += location.fullCylinders || 0;
-      
-      if (index > 0) {
-        const prevLocation = route.locations[index - 1];
-        const distance = calculateDistance(
-          prevLocation.lat || 0,
-          prevLocation.long || 0,
-          location.lat || 0,
-          location.long || 0
-        );
+  useEffect(() => {
+    if (vehicleConfig) {
+      setFuelCost(vehicleConfig.fuelPrice);
+    }
+  }, [vehicleConfig]);
 
-        const fuelCost = (distance * config.baseConsumption / 100) * config.fuelPrice;
-        const maintenanceCost = distance * config.maintenanceCostPerKm;
-        const estimatedTimeMin = Math.round((distance / AVG_SPEED) * 60);
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
 
-        totalDist += distance;
-        totalCost += fuelCost + maintenanceCost;
-        totalTime += estimatedTimeMin;
-
-        costs.push({
-          location,
-          distanceFromPrev: distance,
-          fuelCost,
-          maintenanceCost,
-          estimatedTimeMin
-        });
-      } else {
-        costs.push({
-          location,
-          distanceFromPrev: 0,
-          fuelCost: 0,
-          maintenanceCost: 0,
-          estimatedTimeMin: 0
-        });
-      }
-    });
-
-    setLocationCosts(costs);
-    setTotalCost(totalCost);
-    setTotalDistance(totalDist);
-    setTotalEstimatedTime(totalTime);
-    setTotalCylinders(totalCyls);
-    setTotalExchangedCylinders(totalExchanged);
-  }, [route.locations, vehicleConfig]);
+  const handleFuelCostUpdate = (newCost: number) => {
+    setFuelCost(newCost);
+    if (onFuelCostUpdate) {
+      onFuelCostUpdate(newCost);
+    }
+  };
 
   const handleMoveUp = (index: number) => {
     if (index <= 1) return; // Cannot move up depot or first location
@@ -171,333 +153,292 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     }
   };
 
-  const formatTime = (minutes: number) => {
-    return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-  };
+  // Create waypoints for full route map display
+  const transformedLocations = route.locations.map(loc => ({
+    id: loc.id.toString(),
+    name: loc.name,
+    latitude: loc.lat,
+    longitude: loc.long,
+    address: loc.address || '',
+  }));
+
+  const waypoints = route.locations.slice(1, -1).map((loc, index) => ({
+    name: loc.name,
+    coords: [loc.lat || 0, loc.long || 0] as [number, number]
+  }));
+
+  const startLocation = route.locations.length > 0 ? {
+    name: route.locations[0].name,
+    coords: [route.locations[0].lat || 0, route.locations[0].long || 0] as [number, number]
+  } : undefined;
+
+  const endLocation = route.locations.length > 1 ? {
+    name: route.locations[route.locations.length - 1].name,
+    coords: [
+      route.locations[route.locations.length - 1].lat || 0,
+      route.locations[route.locations.length - 1].long || 0
+    ] as [number, number]
+  } : undefined;
 
   return (
-    <>
-      <Card className="w-full">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle>Route Details</CardTitle>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowDetailedView(true)}
-          >
-            <Map className="h-4 w-4 mr-2" />
-            View Full Route
-          </Button>
-        </CardHeader>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center">
+          <h3 className="font-semibold text-lg mr-2">Route Details</h3>
+          {route.usingRealTimeData && (
+            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Real-time data</span>
+          )}
+        </div>
         
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <RouteMetricsCard 
-              title="Distance" 
-              value={`${totalDistance.toFixed(1)} km`}
-              icon={<Navigation className="h-4 w-4" />}
-              bgColor="bg-green-600"
-              tooltip="Total route distance in kilometers"
-            />
-            
-            <RouteMetricsCard 
-              title="Journey Time" 
-              value={formatTime(totalEstimatedTime)}
-              icon={<Clock className="h-4 w-4" />}
-              bgColor="bg-blue-600"
-              tooltip="Estimated total journey time"
-            />
-            
-            <RouteMetricsCard 
-              title="Total Cost" 
-              value={`R${totalCost.toFixed(2)}`}
-              icon={<DollarSign className="h-4 w-4" />}
-              bgColor="bg-orange-600"
-              tooltip="Combined fuel and maintenance costs"
-            />
-            
-            <RouteMetricsCard 
-              title="Cylinders" 
-              value={totalCylinders.toString()}
-              icon={<Package className="h-4 w-4" />}
-              bgColor="bg-purple-600"
-              subtitle={totalCylinders > 80 ? "Over capacity!" : undefined}
-              tooltip="Total number of cylinders in this route"
+        <div className="flex items-center gap-2">
+          <Dialog open={fullRouteDialogOpen} onOpenChange={setFullRouteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Route className="h-4 w-4" />
+                View Full Route
+              </Button>
+            </DialogTrigger>
+            <DialogContent
+              className="sm:max-w-[900px] max-h-[80vh] overflow-auto"
+              isDraggable={true}
+            >
+              <div 
+                className="cursor-move py-2"
+                onMouseDown={startDrag}
+                style={{
+                  touchAction: 'none'
+                }}
+              >
+                <DialogHeader>
+                  <DialogTitle>Full Route Summary</DialogTitle>
+                  <DialogDescription>
+                    Complete route path with all stops and delivery details
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+              
+              <div className="h-[400px] mb-4 relative">
+                <RouteMap
+                  height="100%"
+                  locations={transformedLocations}
+                  showRouting={route.locations.length >= 2}
+                  startLocation={startLocation}
+                  endLocation={endLocation}
+                  waypoints={waypoints}
+                  trafficConditions={route.trafficConditions}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center text-muted-foreground mb-1">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      <span className="text-xs font-medium">Total Distance</span>
+                    </div>
+                    <div className="text-lg font-semibold">{totalDistance.toFixed(1)} km</div>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center text-muted-foreground mb-1">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span className="text-xs font-medium">Estimated Time</span>
+                    </div>
+                    <div className="text-lg font-semibold">{formatTime(totalEstimatedTime)}</div>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center text-muted-foreground mb-1">
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      <span className="text-xs font-medium">Fuel Cost</span>
+                    </div>
+                    <div className="text-lg font-semibold">R {route.fuelCost.toFixed(2)}</div>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center text-muted-foreground mb-1">
+                      <Truck className="h-4 w-4 mr-1" />
+                      <span className="text-xs font-medium">Cylinders</span>
+                    </div>
+                    <div className="text-lg font-semibold">{route.cylinders}</div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-medium mb-2">Route Stops</h3>
+                  <div className="space-y-2">
+                    {route.locations.map((location, index) => (
+                      <Card key={`${location.id}-${index}`} className="border border-muted">
+                        <CardContent className="p-3 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{location.name}</p>
+                              <p className="text-xs text-muted-foreground">{location.address}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <DialogClose asChild>
+                  <Button variant="outline">Close</Button>
+                </DialogClose>
+                {onOptimize && (
+                  <Button onClick={() => {
+                    onOptimize();
+                    toast.success("Route optimized");
+                  }}>
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Optimize Route
+                  </Button>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {onOptimize && (
+            <Button 
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => {
+                onOptimize();
+                toast.success("Route optimized");
+              }}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              Optimize
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="bg-white border p-2 rounded-md">
+          <div className="flex items-center text-gray-500 mb-1">
+            <MapPin className="h-4 w-4 mr-1" />
+            <span className="text-xs font-medium">Distance</span>
+          </div>
+          <div className="text-lg font-semibold">{totalDistance.toFixed(1)} km</div>
+        </div>
+        <div className="bg-white border p-2 rounded-md">
+          <div className="flex items-center text-gray-500 mb-1">
+            <Clock className="h-4 w-4 mr-1" />
+            <span className="text-xs font-medium">Time</span>
+          </div>
+          <div className="text-lg font-semibold">{formatTime(totalEstimatedTime)}</div>
+        </div>
+        <div className="bg-white border p-2 rounded-md">
+          <div className="flex items-center text-gray-500 mb-1">
+            <Gas className="h-4 w-4 mr-1" />
+            <span className="text-xs font-medium">Fuel</span>
+          </div>
+          <div className="flex items-center">
+            <div className="text-lg font-semibold mr-2">R {route.fuelCost.toFixed(2)}</div>
+            <FuelCostEditor 
+              currentCost={fuelCost}
+              onUpdate={handleFuelCostUpdate}
             />
           </div>
-          
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-2 relative">
-              <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200 dark:bg-gray-700 z-0"></div>
-              
-              {locationCosts.map((item, index) => (
-                <Card key={`${item.location.id}-${index}`} className="p-4 relative z-10">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                      {index + 1}
-                    </div>
-                    
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{item.location.name}</h4>
-                          <p className="text-xs text-muted-foreground">{item.location.address}</p>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {item.location.emptyCylinders && item.location.emptyCylinders > 0 && (
-                              <Badge variant="outline" className="text-sm bg-blue-50 dark:bg-blue-900/20">
-                                <Package className="h-3 w-3 mr-1" />
-                                Cylinders: {item.location.emptyCylinders}
-                              </Badge>
-                            )}
-                            {item.location.fullCylinders && item.location.fullCylinders > 0 && (
-                              <Badge variant="outline" className="text-sm bg-green-50 dark:bg-green-900/20">
-                                <Package className="h-3 w-3 mr-1" />
-                                Storage: {item.location.fullCylinders}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {index > 0 && (
-                          <div className="text-right text-xs">
-                            <div className="flex items-center justify-end gap-1 text-muted-foreground mb-1">
-                              <Navigation className="h-3 w-3" />
-                              <span>{item.distanceFromPrev.toFixed(1)} km</span>
-                            </div>
-                            <div className="flex items-center justify-end gap-1 text-muted-foreground mb-1">
-                              <Clock className="h-3 w-3" />
-                              <span>{item.estimatedTimeMin} min</span>
-                            </div>
-                            <div className="flex items-center justify-end gap-1 text-muted-foreground">
-                              <DollarSign className="h-3 w-3" />
-                              <span>R{(item.fuelCost + item.maintenanceCost).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        )}
+        </div>
+        <div className="bg-white border p-2 rounded-md">
+          <div className="flex items-center text-gray-500 mb-1">
+            <Truck className="h-4 w-4 mr-1" />
+            <span className="text-xs font-medium">Cylinders</span>
+          </div>
+          <div className="text-lg font-semibold">{route.cylinders}</div>
+        </div>
+      </div>
+      
+      <div className="space-y-2 mt-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-base">Route Stops</h3>
+          {onSave && (
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={onSave}
+              disabled={isLoadConfirmed}
+              className="gap-1"
+            >
+              <DollarSign className="h-4 w-4" />
+              {isLoadConfirmed ? "Saved" : "Save Route"}
+            </Button>
+          )}
+        </div>
+        
+        {route.locations.length === 0 ? (
+          <div className="p-4 border border-dashed rounded-md flex items-center justify-center text-gray-400">
+            No stops added yet.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {route.locations.map((location, index) => (
+              <Card key={`${location.id}-${index}`} className="border border-gray-200">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex items-center">
+                    {index === 0 || index === route.locations.length - 1 ? (
+                      <div className={`flex items-center justify-center h-6 w-6 rounded-full ${index === 0 ? 'bg-green-500' : 'bg-red-500'} text-white text-xs font-bold mr-2`}>
+                        {index === 0 ? 'S' : 'E'}
                       </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-600 text-white text-xs font-bold mr-2">
+                        {index}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">{location.name}</p>
+                      <p className="text-xs text-gray-500">{location.address}</p>
                     </div>
                   </div>
                   
-                  {index !== 0 && (
-                    <div className="flex justify-end mt-2 gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => handleMoveUp(index)}
-                        disabled={index <= 1}
-                      >
-                        <ArrowUpDown className="h-4 w-4 rotate-180" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => handleMoveDown(index)}
-                        disabled={index >= route.locations.length - 2}
-                      >
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20" 
-                        onClick={() => onRemoveLocation(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
-
-          {totalCylinders > 80 && (
-            <div className="bg-red-500 text-white p-2 text-center rounded">
-              Warning: Load Exceeded - Maximum 80 cylinders allowed
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <Dialog open={showDetailedView} onOpenChange={setShowDetailedView}>
-        <DialogContent 
-          className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
-          isDraggable={true}
-          style={{ 
-            zIndex: 9999, 
-            position: "relative" 
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Complete Route Details</DialogTitle>
-            <DialogDescription>
-              Full breakdown of your delivery route with {locationCosts.length} stops
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex-grow overflow-y-auto py-4">
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <h3 className="font-medium">Route Summary</h3>
-                  <div className="bg-muted p-3 rounded-md">
-                    <div className="grid grid-cols-2 gap-y-2">
-                      <div className="flex items-center gap-2">
-                        <Navigation className="h-4 w-4 text-primary" />
-                        <span>Total Distance</span>
-                      </div>
-                      <div className="text-right font-medium">{totalDistance.toFixed(1)} km</div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span>Estimated Time</span>
-                      </div>
-                      <div className="text-right font-medium">
-                        {Math.floor(totalEstimatedTime / 60)}h {totalEstimatedTime % 60}m
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Car className="h-4 w-4 text-primary" />
-                        <span>Fuel Consumption</span>
-                      </div>
-                      <div className="text-right font-medium">
-                        {((totalDistance * vehicleConfig.baseConsumption) / 100).toFixed(1)} L
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-primary" />
-                        <span>Total Cost</span>
-                      </div>
-                      <div className="text-right font-medium">R{totalCost.toFixed(2)}</div>
-                    </div>
+                  <div className="flex items-center space-x-1">
+                    {index !== 0 && index !== route.locations.length - 1 && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleMoveUp(index)}
+                          disabled={index <= 1}
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleMoveDown(index)}
+                          disabled={index >= route.locations.length - 2}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => onRemoveLocation(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="font-medium">Delivery Summary</h3>
-                  <div className="bg-muted p-3 rounded-md">
-                    <div className="grid grid-cols-2 gap-y-2">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-primary" />
-                        <span>Total Cylinders</span>
-                      </div>
-                      <div className="text-right font-medium">{totalCylinders}</div>
-                      
-                      <div className="flex items-center gap-2">
-                        <ArrowUpDown className="h-4 w-4 text-primary" />
-                        <span>Exchanged Cylinders</span>
-                      </div>
-                      <div className="text-right font-medium">{totalExchangedCylinders}</div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Map className="h-4 w-4 text-primary" />
-                        <span>Stops</span>
-                      </div>
-                      <div className="text-right font-medium">{locationCosts.length}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-2">
-                <h3 className="font-medium">Stop-by-Stop Details</h3>
-                
-                <Accordion type="single" collapsible className="w-full">
-                  {locationCosts.map((item, index) => (
-                    <AccordionItem key={`detailed-${item.location.id}-${index}`} value={`stop-${index}`}>
-                      <AccordionTrigger className="hover:bg-muted/50 px-3 rounded-md">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
-                            {index + 1}
-                          </div>
-                          <span className="font-medium">{item.location.name}</span>
-                          {index > 0 && (
-                            <span className="text-xs text-muted-foreground ml-2">
-                              ({item.distanceFromPrev.toFixed(1)} km)
-                            </span>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-3">
-                        <div className="grid md:grid-cols-2 gap-4 py-2">
-                          <div className="space-y-2">
-                            <div>
-                              <h4 className="text-sm font-medium">Address</h4>
-                              <p className="text-sm text-muted-foreground">{item.location.address || "No address available"}</p>
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-medium">Coordinates</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {item.location.lat}, {item.location.long}
-                              </p>
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-medium">Type</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {item.location.type || "Not specified"}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            {index > 0 && (
-                              <>
-                                <div>
-                                  <h4 className="text-sm font-medium">Distance from Previous</h4>
-                                  <p className="text-sm text-muted-foreground">{item.distanceFromPrev.toFixed(1)} km</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium">Estimated Travel Time</h4>
-                                  <p className="text-sm text-muted-foreground">{item.estimatedTimeMin} minutes</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium">Cost to This Stop</h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    R{(item.fuelCost + item.maintenanceCost).toFixed(2)}
-                                    <span className="text-xs ml-1">
-                                      (Fuel: R{item.fuelCost.toFixed(2)}, Maintenance: R{item.maintenanceCost.toFixed(2)})
-                                    </span>
-                                  </p>
-                                </div>
-                              </>
-                            )}
-                            <div>
-                              <h4 className="text-sm font-medium">Cylinder Quantities</h4>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                {item.location.type === 'Customer' && item.location.emptyCylinders && item.location.emptyCylinders > 0 && (
-                                  <Badge variant="outline" className="text-sm bg-blue-50 dark:bg-blue-900/20">
-                                    <Package className="h-3 w-3 mr-1" />
-                                    Cylinders: {item.location.emptyCylinders}
-                                  </Badge>
-                                )}
-                                {item.location.type === 'Storage' && item.location.fullCylinders && item.location.fullCylinders > 0 && (
-                                  <Badge variant="outline" className="text-sm bg-green-50 dark:bg-green-900/20">
-                                    <Package className="h-3 w-3 mr-1" />
-                                    Storage: {item.location.fullCylinders}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-            </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          
-          <div className="mt-4 flex justify-end">
-            <Button onClick={() => setShowDetailedView(false)}>Close</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        )}
+      </div>
+    </div>
   );
 };
 
