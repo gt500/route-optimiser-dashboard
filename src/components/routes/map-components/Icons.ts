@@ -88,7 +88,7 @@ export const startIcon = createDepotIcon({ isStart: true });
 export const endIcon = createDepotIcon({ isEnd: true });
 export const locationIcon = createLocationIcon({});
 
-// Add the missing markerIcons export
+// Export the markerIcons object that LocationMarker.tsx is trying to import
 export const markerIcons = {
   default: createLocationIcon({}),
   customer: createLocationIcon({ type: 'Customer' }),
