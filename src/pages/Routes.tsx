@@ -96,6 +96,12 @@ const RoutesList = () => {
     const updatedLocations = [...availableLocations, newLocation];
     setAvailableLocations(updatedLocations);
     handleUpdateLocations(updatedLocations);
+    toast.success(`Added new location: ${location.name}`);
+  };
+  
+  // Create a wrapper for optimize function
+  const handleOptimizeRoute = () => {
+    handleOptimize(routeOptimizationDefaultParams);
   };
 
   return (
@@ -145,7 +151,7 @@ const RoutesList = () => {
             onEndLocationChange={handleEndLocationChange}
             onAddLocationToRoute={addLocationToRoute}
             onUpdateLocations={handleUpdateLocations}
-            onOptimize={handleOptimize}
+            onOptimize={handleOptimizeRoute}
             onRemoveLocation={removeLocationFromRoute}
             onAddNewLocation={handleAddNewLocationFromPopover}
             onFuelCostUpdate={handleFuelCostUpdate}

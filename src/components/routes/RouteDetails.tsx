@@ -192,8 +192,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200 dark:bg-gray-700 z-0"></div>
               )}
               
-              {route.locations.map((location, index) => (
-                <Card key={`${location.id}-${index}`} className="p-4 relative z-10">
+              {locationCosts.map((locationCost, index) => (
+                <Card key={`${locationCost.location.id}-${index}`} className="p-4 relative z-10">
                   <div className="flex items-start gap-3">
                     {/* Stop marker with number */}
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
@@ -203,37 +203,37 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                     <div className="flex-grow">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-semibold">{location.name}</h4>
-                          <p className="text-xs text-muted-foreground">{location.address}</p>
+                          <h4 className="font-semibold">{locationCost.location.name}</h4>
+                          <p className="text-xs text-muted-foreground">{locationCost.location.address}</p>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {location.type === 'Customer' && location.emptyCylinders && location.emptyCylinders > 0 && (
+                            {locationCost.location.type === 'Customer' && locationCost.location.emptyCylinders && locationCost.location.emptyCylinders > 0 && (
                               <Badge variant="outline" className="text-sm bg-blue-50 dark:bg-blue-900/20">
                                 <Package className="h-3 w-3 mr-1" />
-                                Cylinders: {location.emptyCylinders}
+                                Cylinders: {locationCost.location.emptyCylinders}
                               </Badge>
                             )}
-                            {location.type === 'Storage' && location.fullCylinders && location.fullCylinders > 0 && (
+                            {locationCost.location.type === 'Storage' && locationCost.location.fullCylinders && locationCost.location.fullCylinders > 0 && (
                               <Badge variant="outline" className="text-sm bg-green-50 dark:bg-green-900/20">
                                 <Package className="h-3 w-3 mr-1" />
-                                Storage: {location.fullCylinders}
+                                Storage: {locationCost.location.fullCylinders}
                               </Badge>
                             )}
                           </div>
                         </div>
                         
-                        {index > 0 && locationCosts[index] && (
+                        {index > 0 && (
                           <div className="text-right text-xs">
                             <div className="flex items-center justify-end gap-1 text-muted-foreground mb-1">
                               <Navigation className="h-3 w-3" />
-                              <span>{locationCosts[index].distanceFromPrev.toFixed(1)} km</span>
+                              <span>{locationCost.distanceFromPrev.toFixed(1)} km</span>
                             </div>
                             <div className="flex items-center justify-end gap-1 text-muted-foreground mb-1">
                               <Clock className="h-3 w-3" />
-                              <span>{locationCosts[index].estimatedTimeMin} min</span>
+                              <span>{locationCost.estimatedTimeMin} min</span>
                             </div>
                             <div className="flex items-center justify-end gap-1 text-muted-foreground">
                               <DollarSign className="h-3 w-3" />
-                              <span>R{(locationCosts[index].fuelCost + locationCosts[index].maintenanceCost).toFixed(2)}</span>
+                              <span>R{(locationCost.fuelCost + locationCost.maintenanceCost).toFixed(2)}</span>
                             </div>
                           </div>
                         )}
@@ -352,17 +352,17 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 <h3 className="font-medium">Stop-by-Stop Details</h3>
                 
                 <Accordion type="single" collapsible className="w-full">
-                  {route.locations.map((location, index) => (
-                    <AccordionItem key={`detailed-${location.id}-${index}`} value={`stop-${index}`}>
+                  {locationCosts.map((locationCost, index) => (
+                    <AccordionItem key={`detailed-${locationCost.location.id}-${index}`} value={`stop-${index}`}>
                       <AccordionTrigger className="hover:bg-muted/50 px-3 rounded-md">
                         <div className="flex items-center gap-3">
                           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
                             {index + 1}
                           </div>
-                          <span className="font-medium">{location.name}</span>
-                          {index > 0 && locationCosts[index] && (
+                          <span className="font-medium">{locationCost.location.name}</span>
+                          {index > 0 && (
                             <span className="text-xs text-muted-foreground ml-2">
-                              ({locationCosts[index].distanceFromPrev.toFixed(1)} km)
+                              ({locationCost.distanceFromPrev.toFixed(1)} km)
                             </span>
                           )}
                         </div>
@@ -372,39 +372,39 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                           <div className="space-y-2">
                             <div>
                               <h4 className="text-sm font-medium">Address</h4>
-                              <p className="text-sm text-muted-foreground">{location.address || "No address available"}</p>
+                              <p className="text-sm text-muted-foreground">{locationCost.location.address || "No address available"}</p>
                             </div>
                             <div>
                               <h4 className="text-sm font-medium">Coordinates</h4>
                               <p className="text-sm text-muted-foreground">
-                                {location.lat}, {location.long}
+                                {locationCost.location.lat}, {locationCost.location.long}
                               </p>
                             </div>
                             <div>
                               <h4 className="text-sm font-medium">Type</h4>
                               <p className="text-sm text-muted-foreground">
-                                {location.type || "Not specified"}
+                                {locationCost.location.type || "Not specified"}
                               </p>
                             </div>
                           </div>
                           
                           <div className="space-y-2">
-                            {index > 0 && locationCosts[index] && (
+                            {index > 0 && (
                               <>
                                 <div>
                                   <h4 className="text-sm font-medium">Distance from Previous</h4>
-                                  <p className="text-sm text-muted-foreground">{locationCosts[index].distanceFromPrev.toFixed(1)} km</p>
+                                  <p className="text-sm text-muted-foreground">{locationCost.distanceFromPrev.toFixed(1)} km</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium">Estimated Travel Time</h4>
-                                  <p className="text-sm text-muted-foreground">{locationCosts[index].estimatedTimeMin} minutes</p>
+                                  <p className="text-sm text-muted-foreground">{locationCost.estimatedTimeMin} minutes</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium">Cost to This Stop</h4>
                                   <p className="text-sm text-muted-foreground">
-                                    R{(locationCosts[index].fuelCost + locationCosts[index].maintenanceCost).toFixed(2)}
+                                    R{(locationCost.fuelCost + locationCost.maintenanceCost).toFixed(2)}
                                     <span className="text-xs ml-1">
-                                      (Fuel: R{locationCosts[index].fuelCost.toFixed(2)}, Maintenance: R{locationCosts[index].maintenanceCost.toFixed(2)})
+                                      (Fuel: R{locationCost.fuelCost.toFixed(2)}, Maintenance: R{locationCost.maintenanceCost.toFixed(2)})
                                     </span>
                                   </p>
                                 </div>
@@ -413,16 +413,16 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                             <div>
                               <h4 className="text-sm font-medium">Cylinder Quantities</h4>
                               <div className="flex flex-wrap gap-2 mt-1">
-                                {location.type === 'Customer' && location.emptyCylinders && location.emptyCylinders > 0 && (
+                                {locationCost.location.type === 'Customer' && locationCost.location.emptyCylinders && locationCost.location.emptyCylinders > 0 && (
                                   <Badge variant="outline" className="text-sm bg-blue-50 dark:bg-blue-900/20">
                                     <Package className="h-3 w-3 mr-1" />
-                                    Cylinders: {location.emptyCylinders}
+                                    Cylinders: {locationCost.location.emptyCylinders}
                                   </Badge>
                                 )}
-                                {location.type === 'Storage' && location.fullCylinders && location.fullCylinders > 0 && (
+                                {locationCost.location.type === 'Storage' && locationCost.location.fullCylinders && locationCost.location.fullCylinders > 0 && (
                                   <Badge variant="outline" className="text-sm bg-green-50 dark:bg-green-900/20">
                                     <Package className="h-3 w-3 mr-1" />
-                                    Storage: {location.fullCylinders}
+                                    Storage: {locationCost.location.fullCylinders}
                                   </Badge>
                                 )}
                               </div>
