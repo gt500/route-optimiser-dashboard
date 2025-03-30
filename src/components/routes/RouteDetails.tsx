@@ -114,7 +114,7 @@ const RouteDetails = ({
   const handleAddLocation = () => {
     if (selectedLocationId) {
       console.log("Adding location with ID:", selectedLocationId);
-      onAddNewLocation(selectedLocationId.toString());
+      onAddNewLocation(selectedLocationId);
       setAddLocationOpen(false);
       setSelectedLocationId("");
       toast.success("Location added to route");
