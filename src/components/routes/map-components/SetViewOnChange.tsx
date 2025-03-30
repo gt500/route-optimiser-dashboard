@@ -28,10 +28,10 @@ export const SetViewOnChange: React.FC<SetViewOnChangeProps> = ({ coordinates = 
         if (validCoordinates.length > 0) {
           const bounds = L.latLngBounds(validCoordinates.map(coord => [coord[0], coord[1]]));
           
-          // Add a small padding to avoid edge issues
+          // Add a larger padding to ensure visibility of all markers
           map.fitBounds(bounds, { 
-            padding: [50, 50],
-            maxZoom: 12 // Limit maximum zoom to prevent infinite tiles
+            padding: [70, 70],
+            maxZoom: 11 // Lower maximum zoom to show more context
           });
         } else if (center) {
           // Fall back to center if no valid coordinates
