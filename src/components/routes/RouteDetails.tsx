@@ -1,19 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { LocationType } from '../locations/LocationEditDialog';
-import RouteMetricsGrid from './metrics/RouteMetricsGrid';
-import RouteStopsList from './stops/RouteStopsList';
-import RouteActions from './RouteActions';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Clock, Navigation, Car, DollarSign, Package, Trash2, ArrowUpDown, Map } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocationType } from '@/components/locations/LocationEditDialog';
+import { Clock, Navigation, Car, DollarSign, Package, Trash2, ArrowUpDown, Map } from "lucide-react";
+import { useEffect, useState } from "react";
 import { calculateDistance } from '@/utils/routeUtils';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RouteDetailsProps {
   route: {
@@ -54,52 +51,37 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   onSave,
   isLoadConfirmed = false
 }) => {
-  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
-  const [routeDistance, setRouteDistance] = useState(route.distance);
-  const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
-  const [showDetailedView, setShowDetailedView] = useState(false);
   const [locationCosts, setLocationCosts] = useState<LocationCost[]>([]);
+  const [totalCost, setTotalCost] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
+  const [totalEstimatedTime, setTotalEstimatedTime] = useState(0);
+  const [totalCylinders, setTotalCylinders] = useState(0);
+  const [totalExchangedCylinders, setTotalExchangedCylinders] = useState(0);
+  const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
+  const [showDetailedView, setShowDetailedView] = useState(false);
   
-  const maintenanceCostPerKm = 0.35; // R0.35 per km for maintenance
+  // Fixed values for the vehicle configuration
+  const vehicleConfig = {
+    baseConsumption: 12, // L/100km
+    fuelPrice: 22, // R per liter
+    maintenanceCostPerKm: 0.35 // R per km
+  };
+  
+  // Average driving speed in km/h for time estimation
+  const AVG_SPEED = 40;
   
   useEffect(() => {
-    if (route.distance > 0) {
-      setRouteDistance(route.distance);
-    }
-    if (route.estimatedDuration && route.estimatedDuration > 0) {
-      setRouteDuration(route.estimatedDuration);
-    }
-  }, [route.distance, route.estimatedDuration]);
-  
-  useEffect(() => {
-    const fetchFuelCost = async () => {
-      const { data, error } = await supabase
-        .from('cost_factors')
-        .select('value')
-        .eq('name', 'fuel_cost_per_liter')
-        .single();
-      
-      if (error) {
-        console.error('Error fetching fuel cost:', error);
-        return;
-      }
-      
-      if (data) {
-        setFuelCostPerLiter(data.value);
-        if (onFuelCostUpdate) {
-          onFuelCostUpdate(data.value);
-        }
-      }
-    };
-    
-    fetchFuelCost();
-  }, [onFuelCostUpdate]);
-
-  useEffect(() => {
-    // Calculate costs for each location in the route
     const costs: LocationCost[] = [];
-    
+    let totalDist = 0;
+    let totalCost = 0;
+    let totalTime = 0;
+    let totalCyls = 0;
+    let totalExchanged = 0;
+
     route.locations.forEach((location, index) => {
+      totalCyls += location.emptyCylinders || 0;
+      totalExchanged += location.fullCylinders || 0;
+      
       if (index > 0) {
         const prevLocation = route.locations[index - 1];
         const distance = calculateDistance(
@@ -109,10 +91,14 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           location.long || 0
         );
 
-        const fuelCost = (distance * 0.12) * fuelCostPerLiter;
-        const maintenanceCost = distance * maintenanceCostPerKm;
-        // Calculate estimated time in minutes based on average speed of 40km/h
-        const estimatedTimeMin = Math.round((distance / 40) * 60);
+        const fuelCost = (distance * vehicleConfig.baseConsumption / 100) * vehicleConfig.fuelPrice;
+        const maintenanceCost = distance * vehicleConfig.maintenanceCostPerKm;
+        // Calculate estimated time in minutes
+        const estimatedTimeMin = Math.round((distance / AVG_SPEED) * 60);
+
+        totalDist += distance;
+        totalCost += fuelCost + maintenanceCost;
+        totalTime += estimatedTimeMin;
 
         costs.push({
           location,
@@ -131,69 +117,47 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         });
       }
     });
-    
-    setLocationCosts(costs);
-  }, [route.locations, fuelCostPerLiter]);
 
-  const handleFuelCostChange = (newCost: number) => {
-    setFuelCostPerLiter(newCost);
-    if (onFuelCostUpdate) {
-      onFuelCostUpdate(newCost);
-    }
+    setLocationCosts(costs);
+    setTotalCost(totalCost);
+    setTotalDistance(totalDist);
+    setTotalEstimatedTime(totalTime);
+    setTotalCylinders(totalCyls);
+    setTotalExchangedCylinders(totalExchanged);
+  }, [route.locations]);
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 1) return; // Cannot move up the first stop (depot) or second stop
+    // Implement reordering logic here if needed
   };
-  
-  const calculateFuelConsumption = () => {
-    return routeDistance * 0.12; // 12L per 100km
+
+  const handleMoveDown = (index: number) => {
+    if (index >= route.locations.length - 2 || index === 0) return; // Cannot move down the last stop or depot
+    // Implement reordering logic here if needed
   };
-  
-  const calculateFuelCost = () => {
-    const consumption = calculateFuelConsumption();
-    return consumption * fuelCostPerLiter;
-  };
-  
-  const displayDistance = routeDistance > 0 ? routeDistance : route.distance;
-  const displayDuration = routeDuration > 0 ? routeDuration : (route.estimatedDuration || Math.round(displayDistance * 1.5));
-  const displayConsumption = calculateFuelConsumption() || route.fuelConsumption;
-  const displayFuelCost = calculateFuelCost() || route.fuelCost;
   
   return (
-    <div className="space-y-4">
-      <RouteMetricsGrid
-        distance={displayDistance}
-        duration={displayDuration}
-        fuelConsumption={displayConsumption}
-        fuelCost={displayFuelCost}
-        cylinders={route.cylinders}
-        fuelCostPerLiter={fuelCostPerLiter}
-        trafficConditions={route.trafficConditions}
-        usingRealTimeData={route.usingRealTimeData}
-        onFuelCostChange={handleFuelCostChange}
-      />
-
+    <>
       <Card className="w-full">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Route Stops</h3>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowDetailedView(true)}
-              disabled={route.locations.length < 2}
-            >
-              <Map className="h-4 w-4 mr-2" />
-              View Full Route
-            </Button>
-          </div>
-          
-          <ScrollArea className="h-[350px] pr-4">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle>Route Details</CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowDetailedView(true)}
+          >
+            <Map className="h-4 w-4 mr-2" />
+            View Full Route
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2 relative">
               {/* Draw vertical route line connecting stops */}
-              {route.locations.length > 1 && (
-                <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200 dark:bg-gray-700 z-0"></div>
-              )}
+              <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200 dark:bg-gray-700 z-0"></div>
               
-              {locationCosts.map((locationCost, index) => (
-                <Card key={`${locationCost.location.id}-${index}`} className="p-4 relative z-10">
+              {locationCosts.map((item, index) => (
+                <Card key={`${item.location.id}-${index}`} className="p-4 relative z-10">
                   <div className="flex items-start gap-3">
                     {/* Stop marker with number */}
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
@@ -203,19 +167,19 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                     <div className="flex-grow">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-semibold">{locationCost.location.name}</h4>
-                          <p className="text-xs text-muted-foreground">{locationCost.location.address}</p>
+                          <h4 className="font-semibold">{item.location.name}</h4>
+                          <p className="text-xs text-muted-foreground">{item.location.address}</p>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {locationCost.location.type === 'Customer' && locationCost.location.emptyCylinders && locationCost.location.emptyCylinders > 0 && (
+                            {item.location.emptyCylinders && item.location.emptyCylinders > 0 && (
                               <Badge variant="outline" className="text-sm bg-blue-50 dark:bg-blue-900/20">
                                 <Package className="h-3 w-3 mr-1" />
-                                Cylinders: {locationCost.location.emptyCylinders}
+                                Cylinders: {item.location.emptyCylinders}
                               </Badge>
                             )}
-                            {locationCost.location.type === 'Storage' && locationCost.location.fullCylinders && locationCost.location.fullCylinders > 0 && (
+                            {item.location.fullCylinders && item.location.fullCylinders > 0 && (
                               <Badge variant="outline" className="text-sm bg-green-50 dark:bg-green-900/20">
                                 <Package className="h-3 w-3 mr-1" />
-                                Storage: {locationCost.location.fullCylinders}
+                                Storage: {item.location.fullCylinders}
                               </Badge>
                             )}
                           </div>
@@ -225,15 +189,15 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                           <div className="text-right text-xs">
                             <div className="flex items-center justify-end gap-1 text-muted-foreground mb-1">
                               <Navigation className="h-3 w-3" />
-                              <span>{locationCost.distanceFromPrev.toFixed(1)} km</span>
+                              <span>{item.distanceFromPrev.toFixed(1)} km</span>
                             </div>
                             <div className="flex items-center justify-end gap-1 text-muted-foreground mb-1">
                               <Clock className="h-3 w-3" />
-                              <span>{locationCost.estimatedTimeMin} min</span>
+                              <span>{item.estimatedTimeMin} min</span>
                             </div>
                             <div className="flex items-center justify-end gap-1 text-muted-foreground">
                               <DollarSign className="h-3 w-3" />
-                              <span>R{(locationCost.fuelCost + locationCost.maintenanceCost).toFixed(2)}</span>
+                              <span>R{(item.fuelCost + item.maintenanceCost).toFixed(2)}</span>
                             </div>
                           </div>
                         )}
@@ -244,6 +208,24 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                   {/* Actions for each stop - only show for non-depot locations */}
                   {index !== 0 && (
                     <div className="flex justify-end mt-2 gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index <= 1}
+                      >
+                        <ArrowUpDown className="h-4 w-4 rotate-180" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index >= route.locations.length - 2}
+                      >
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -258,15 +240,35 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               ))}
             </div>
           </ScrollArea>
+
+          <div className="space-y-4 mt-6 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Navigation className="h-4 w-4" />
+                <span>Total: {totalDistance.toFixed(1)} km</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                <span>Cost: R{totalCost.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>Time: {Math.floor(totalEstimatedTime / 60)}h {totalEstimatedTime % 60}m</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                <span>Cylinders: {totalCylinders}</span>
+              </div>
+            </div>
+            
+            {totalCylinders > 80 && (
+              <div className="bg-red-500 text-white p-2 text-center rounded">
+                Warning: Load Exceeded - Maximum 80 cylinders allowed
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
-      
-      <RouteActions
-        usingRealTimeData={route.usingRealTimeData}
-        onOptimize={onOptimize}
-        onSave={onSave}
-        disabled={isLoadConfirmed || route.locations.length < 2}
-      />
       
       {/* Detailed Route View Dialog */}
       <Dialog open={showDetailedView} onOpenChange={setShowDetailedView}>
@@ -274,7 +276,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           <DialogHeader>
             <DialogTitle>Complete Route Details</DialogTitle>
             <DialogDescription>
-              Full breakdown of your delivery route with {route.locations.length} stops
+              Full breakdown of your delivery route with {locationCosts.length} stops
             </DialogDescription>
           </DialogHeader>
           
@@ -289,14 +291,14 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                         <Navigation className="h-4 w-4 text-primary" />
                         <span>Total Distance</span>
                       </div>
-                      <div className="text-right font-medium">{displayDistance.toFixed(1)} km</div>
+                      <div className="text-right font-medium">{totalDistance.toFixed(1)} km</div>
                       
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-primary" />
                         <span>Estimated Time</span>
                       </div>
                       <div className="text-right font-medium">
-                        {Math.floor(displayDuration / 60)}h {displayDuration % 60}m
+                        {Math.floor(totalEstimatedTime / 60)}h {totalEstimatedTime % 60}m
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -304,14 +306,14 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                         <span>Fuel Consumption</span>
                       </div>
                       <div className="text-right font-medium">
-                        {displayConsumption.toFixed(1)} L
+                        {((totalDistance * vehicleConfig.baseConsumption) / 100).toFixed(1)} L
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-primary" />
                         <span>Total Cost</span>
                       </div>
-                      <div className="text-right font-medium">R{displayFuelCost.toFixed(2)}</div>
+                      <div className="text-right font-medium">R{totalCost.toFixed(2)}</div>
                     </div>
                   </div>
                 </div>
@@ -324,23 +326,19 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                         <Package className="h-4 w-4 text-primary" />
                         <span>Total Cylinders</span>
                       </div>
-                      <div className="text-right font-medium">{route.cylinders}</div>
+                      <div className="text-right font-medium">{totalCylinders}</div>
+                      
+                      <div className="flex items-center gap-2">
+                        <ArrowUpDown className="h-4 w-4 text-primary" />
+                        <span>Exchanged Cylinders</span>
+                      </div>
+                      <div className="text-right font-medium">{totalExchangedCylinders}</div>
                       
                       <div className="flex items-center gap-2">
                         <Map className="h-4 w-4 text-primary" />
                         <span>Stops</span>
                       </div>
-                      <div className="text-right font-medium">{route.locations.length}</div>
-                      
-                      {route.trafficConditions && (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Car className="h-4 w-4 text-primary" />
-                            <span>Traffic</span>
-                          </div>
-                          <div className="text-right font-medium capitalize">{route.trafficConditions}</div>
-                        </>
-                      )}
+                      <div className="text-right font-medium">{locationCosts.length}</div>
                     </div>
                   </div>
                 </div>
@@ -352,17 +350,17 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 <h3 className="font-medium">Stop-by-Stop Details</h3>
                 
                 <Accordion type="single" collapsible className="w-full">
-                  {locationCosts.map((locationCost, index) => (
-                    <AccordionItem key={`detailed-${locationCost.location.id}-${index}`} value={`stop-${index}`}>
+                  {locationCosts.map((item, index) => (
+                    <AccordionItem key={`detailed-${item.location.id}-${index}`} value={`stop-${index}`}>
                       <AccordionTrigger className="hover:bg-muted/50 px-3 rounded-md">
                         <div className="flex items-center gap-3">
                           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
                             {index + 1}
                           </div>
-                          <span className="font-medium">{locationCost.location.name}</span>
+                          <span className="font-medium">{item.location.name}</span>
                           {index > 0 && (
                             <span className="text-xs text-muted-foreground ml-2">
-                              ({locationCost.distanceFromPrev.toFixed(1)} km)
+                              ({item.distanceFromPrev.toFixed(1)} km)
                             </span>
                           )}
                         </div>
@@ -372,18 +370,18 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                           <div className="space-y-2">
                             <div>
                               <h4 className="text-sm font-medium">Address</h4>
-                              <p className="text-sm text-muted-foreground">{locationCost.location.address || "No address available"}</p>
+                              <p className="text-sm text-muted-foreground">{item.location.address || "No address available"}</p>
                             </div>
                             <div>
                               <h4 className="text-sm font-medium">Coordinates</h4>
                               <p className="text-sm text-muted-foreground">
-                                {locationCost.location.lat}, {locationCost.location.long}
+                                {item.location.lat}, {item.location.long}
                               </p>
                             </div>
                             <div>
                               <h4 className="text-sm font-medium">Type</h4>
                               <p className="text-sm text-muted-foreground">
-                                {locationCost.location.type || "Not specified"}
+                                {item.location.type || "Not specified"}
                               </p>
                             </div>
                           </div>
@@ -393,18 +391,18 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                               <>
                                 <div>
                                   <h4 className="text-sm font-medium">Distance from Previous</h4>
-                                  <p className="text-sm text-muted-foreground">{locationCost.distanceFromPrev.toFixed(1)} km</p>
+                                  <p className="text-sm text-muted-foreground">{item.distanceFromPrev.toFixed(1)} km</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium">Estimated Travel Time</h4>
-                                  <p className="text-sm text-muted-foreground">{locationCost.estimatedTimeMin} minutes</p>
+                                  <p className="text-sm text-muted-foreground">{item.estimatedTimeMin} minutes</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium">Cost to This Stop</h4>
                                   <p className="text-sm text-muted-foreground">
-                                    R{(locationCost.fuelCost + locationCost.maintenanceCost).toFixed(2)}
+                                    R{(item.fuelCost + item.maintenanceCost).toFixed(2)}
                                     <span className="text-xs ml-1">
-                                      (Fuel: R{locationCost.fuelCost.toFixed(2)}, Maintenance: R{locationCost.maintenanceCost.toFixed(2)})
+                                      (Fuel: R{item.fuelCost.toFixed(2)}, Maintenance: R{item.maintenanceCost.toFixed(2)})
                                     </span>
                                   </p>
                                 </div>
@@ -413,16 +411,16 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                             <div>
                               <h4 className="text-sm font-medium">Cylinder Quantities</h4>
                               <div className="flex flex-wrap gap-2 mt-1">
-                                {locationCost.location.type === 'Customer' && locationCost.location.emptyCylinders && locationCost.location.emptyCylinders > 0 && (
+                                {item.location.type === 'Customer' && item.location.emptyCylinders && item.location.emptyCylinders > 0 && (
                                   <Badge variant="outline" className="text-sm bg-blue-50 dark:bg-blue-900/20">
                                     <Package className="h-3 w-3 mr-1" />
-                                    Cylinders: {locationCost.location.emptyCylinders}
+                                    Cylinders: {item.location.emptyCylinders}
                                   </Badge>
                                 )}
-                                {locationCost.location.type === 'Storage' && locationCost.location.fullCylinders && locationCost.location.fullCylinders > 0 && (
+                                {item.location.type === 'Storage' && item.location.fullCylinders && item.location.fullCylinders > 0 && (
                                   <Badge variant="outline" className="text-sm bg-green-50 dark:bg-green-900/20">
                                     <Package className="h-3 w-3 mr-1" />
-                                    Storage: {locationCost.location.fullCylinders}
+                                    Storage: {item.location.fullCylinders}
                                   </Badge>
                                 )}
                               </div>
@@ -442,7 +440,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 
