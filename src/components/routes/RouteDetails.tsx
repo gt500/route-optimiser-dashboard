@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationType } from '@/components/locations/LocationEditDialog';
@@ -291,6 +292,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       <Dialog open={showDetailedView} onOpenChange={setShowDetailedView}>
         <DialogContent 
           className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+          isDraggable={true}
           style={{ 
             zIndex: 9999, 
             position: "relative" 
