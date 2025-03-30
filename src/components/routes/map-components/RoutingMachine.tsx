@@ -12,12 +12,17 @@ interface RoutingMachineProps {
     duration: number; 
     coordinates: [number, number][]; 
   }) => void;
+  routeOptions?: {
+    avoidTraffic?: boolean;
+    alternateRoutes?: boolean;
+  };
 }
 
 const RoutingMachine: React.FC<RoutingMachineProps> = ({ 
   waypoints = [], 
   forceRouteUpdate, 
-  onRouteFound 
+  onRouteFound,
+  routeOptions = { avoidTraffic: true, alternateRoutes: false }
 }) => {
   const map = useMap();
   
@@ -62,22 +67,37 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         console.log("Creating route with valid waypoints:", validWaypoints);
         
-        routingControl = L.Routing.control({
-          waypoints: validWaypoints,
+        // Configure options with real-time traffic preferences
+        const routerOptions: L.Routing.RoutingControlOptions = {
           router: L.Routing.osrm({
-            serviceUrl: 'https://router.project-osrm.org/route/v1'
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: 'driving', // Use driving profile for road-based routing
+            useHints: false, // Disable hints for more accurate real-time routing
+            suppressDemoServerWarning: true,
+            urlParameters: {
+              // Optimize for traffic avoidance if enabled
+              alternatives: routeOptions.alternateRoutes ? 'true' : 'false',
+              steps: 'true',
+              geometries: 'geojson',
+              overview: 'full',
+              annotations: 'true'
+            }
           }),
+          waypoints: validWaypoints,
           lineOptions: {
             styles: [{ color: '#6366F1', weight: 4, opacity: 0.7 }],
             extendToWaypoints: true,
             missingRouteTolerance: 0
           },
+          routeWhileDragging: false,
           addWaypoints: false,
           draggableWaypoints: false,
           fitSelectedRoutes: true,
-          showAlternatives: false,
+          showAlternatives: routeOptions.alternateRoutes,
           show: false
-        }).addTo(map);
+        };
+        
+        routingControl = L.Routing.control(routerOptions).addTo(map);
         
         // Hide the routing control UI but show the route path
         routingControl.hide();
@@ -119,7 +139,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         map.removeControl(routingControl);
       }
     };
-  }, [map, waypoints, forceRouteUpdate, onRouteFound]);
+  }, [map, waypoints, forceRouteUpdate, onRouteFound, routeOptions]);
   
   return null;
 };

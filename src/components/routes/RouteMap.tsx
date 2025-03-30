@@ -38,6 +38,8 @@ interface RouteMapProps {
   startLocation?: NamedCoords;
   endLocation?: NamedCoords;
   forceRouteUpdate?: boolean;
+  trafficConditions?: 'light' | 'moderate' | 'heavy';
+  showAlternateRoutes?: boolean;
   onRouteDataUpdate?: (distance: number, duration: number, coordinates?: [number, number][]) => void;
 }
 
@@ -52,6 +54,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   startLocation,
   endLocation,
   forceRouteUpdate = false,
+  trafficConditions = 'moderate',
+  showAlternateRoutes = false,
   onRouteDataUpdate,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
@@ -184,6 +188,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
     return coords;
   }, [startLocation, endLocation, waypoints, locations]);
 
+  // Map traffic conditions to routing options
+  const getTrafficAvoidanceOption = () => {
+    switch (trafficConditions) {
+      case 'light': return false; // No need to avoid traffic
+      case 'heavy': return true;  // Always avoid traffic
+      default: return true;       // Moderate - safer to avoid
+    }
+  };
+
   return (
     <MapContainer
       ref={handleMapInit}
@@ -205,6 +218,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
           waypoints={allWaypoints}
           forceRouteUpdate={forceRouteUpdate}
           onRouteFound={handleRouteFound}
+          routeOptions={{
+            avoidTraffic: getTrafficAvoidanceOption(),
+            alternateRoutes: showAlternateRoutes
+          }}
         />
       )}
 
@@ -231,6 +248,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           name={wp.name}
           position={wp.coords}
           index={index + 1}
+          stopNumber={index + 1} // Sequential stop number for delivery order
         />
       ))}
 
@@ -243,6 +261,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             name={loc.name}
             position={[loc.latitude, loc.longitude]}
             address={loc.address}
+            stopNumber={index + 1} // Sequential stop number for delivery order
           />
         );
       })}

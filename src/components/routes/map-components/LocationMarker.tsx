@@ -10,9 +10,17 @@ export interface LocationMarkerProps {
   position: [number, number];
   address?: string;
   index?: number;
+  stopNumber?: number;
 }
 
-const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, address, index }) => {
+const LocationMarker: React.FC<LocationMarkerProps> = ({ 
+  id, 
+  name, 
+  position, 
+  address, 
+  index,
+  stopNumber 
+}) => {
   const popupRef = React.useRef<L.Popup>(null);
   
   // Enhanced validation for position coordinates
@@ -27,9 +35,12 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
     }
   };
 
+  // Use stopNumber if provided, otherwise fall back to index
+  const displayNumber = stopNumber !== undefined ? stopNumber : (index !== undefined ? index : undefined);
+  
   // Create a custom icon with proper typing
   const customIcon = createLocationIcon({ 
-    label: index !== undefined ? String(index) : '',
+    label: displayNumber !== undefined ? String(displayNumber) : '',
     type: 'Customer'
   });
 
@@ -47,6 +58,9 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ id, name, position, add
       <Popup ref={popupRef}>
         <div className="text-sm">
           <strong>{name}</strong>
+          {displayNumber !== undefined && (
+            <div className="mt-1 font-semibold text-blue-600">Stop #{displayNumber}</div>
+          )}
           {address && <div className="mt-1 text-gray-500">{address}</div>}
         </div>
       </Popup>

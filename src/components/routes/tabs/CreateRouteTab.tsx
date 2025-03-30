@@ -101,12 +101,14 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                         route.locations[route.locations.length - 1].long || 0
                       ] 
                     } : undefined}
-                    waypoints={route.locations.slice(1, endLocation ? -1 : undefined).map(loc => ({
+                    waypoints={route.locations.slice(1, endLocation ? -1 : undefined).map((loc, index) => ({
                       name: loc.name,
                       coords: [loc.lat || 0, loc.long || 0]
                     }))}
                     height="100%"
                     forceRouteUpdate={isLoadConfirmed}
+                    trafficConditions={route.trafficConditions || 'moderate'}
+                    showAlternateRoutes={route.usingRealTimeData}
                     onRouteDataUpdate={onRouteDataUpdate}
                   />
                 )}
