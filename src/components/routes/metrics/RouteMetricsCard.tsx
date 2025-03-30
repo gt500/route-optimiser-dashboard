@@ -8,6 +8,8 @@ import { Info } from 'lucide-react';
 interface RouteMetricsCardProps {
   title: string;
   value: string | ReactNode;
+  icon?: React.ReactNode;
+  color?: string;
   bgColor?: string;
   subtitle?: string | ReactNode;
   tooltip?: string;
@@ -15,15 +17,21 @@ interface RouteMetricsCardProps {
 
 const RouteMetricsCard = ({ 
   title, 
-  value, 
-  bgColor = 'bg-black', 
+  value,
+  icon,
+  color = 'bg-black',
+  bgColor,
   subtitle, 
   tooltip 
 }: RouteMetricsCardProps) => {
+  // Use bgColor if provided, otherwise use color
+  const backgroundColorClass = bgColor || color;
+  
   return (
-    <Card className={`shadow-sm hover:shadow-md transition-shadow ${bgColor}`}>
+    <Card className={`shadow-sm hover:shadow-md transition-shadow ${backgroundColorClass}`}>
       <CardContent className="p-4">
         <h3 className="text-sm flex items-center gap-2 font-medium mb-2 text-white">
+          {icon && <span className="flex items-center">{icon}</span>}
           <span>{title}</span>
           {tooltip && (
             <HoverCard>

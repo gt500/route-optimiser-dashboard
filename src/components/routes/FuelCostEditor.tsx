@@ -9,17 +9,24 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FuelCostEditorProps {
-  currentFuelCost: number;
-  onFuelCostChange: (newCost: number) => void;
+  currentFuelCost?: number;
+  fuelCostPerLiter: number;
+  fuelConsumption?: number;
+  onChange?: (newCost: number) => void;
 }
 
-const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorProps) => {
+const FuelCostEditor = ({ 
+  currentFuelCost,
+  fuelCostPerLiter,
+  fuelConsumption,
+  onChange 
+}: FuelCostEditorProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [fuelCost, setFuelCost] = useState(currentFuelCost.toString());
+  const [fuelCost, setFuelCost] = useState(fuelCostPerLiter.toString());
   
   useEffect(() => {
-    setFuelCost(currentFuelCost.toString());
-  }, [currentFuelCost]);
+    setFuelCost(fuelCostPerLiter.toString());
+  }, [fuelCostPerLiter]);
   
   const fetchCurrentFuelCost = async () => {
     const { data, error } = await supabase
@@ -35,7 +42,9 @@ const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorPro
     
     if (data) {
       setFuelCost(data.value.toString());
-      onFuelCostChange(data.value);
+      if (onChange) {
+        onChange(data.value);
+      }
     }
   };
   
@@ -87,7 +96,9 @@ const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorPro
       return;
     }
     
-    onFuelCostChange(numericCost);
+    if (onChange) {
+      onChange(numericCost);
+    }
     toast.success('Fuel cost updated successfully');
     setIsOpen(false);
   };
@@ -95,6 +106,8 @@ const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorPro
   useEffect(() => {
     fetchCurrentFuelCost();
   }, []);
+  
+  const displayCost = currentFuelCost || fuelCostPerLiter;
   
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -105,7 +118,7 @@ const FuelCostEditor = ({ currentFuelCost, onFuelCostChange }: FuelCostEditorPro
           className="h-8 gap-1 border-dashed bg-black text-white hover:bg-black/90 hover:text-white"
         >
           <Fuel className="h-3.5 w-3.5" />
-          R{currentFuelCost.toFixed(2)}/L
+          R{displayCost.toFixed(2)}/L
           <PencilIcon className="h-3 w-3 ml-1" />
         </Button>
       </PopoverTrigger>

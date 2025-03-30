@@ -87,7 +87,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         title="Total Distance"
         value={formatDistance(distance)}
         icon={<MapPin className="h-5 w-5" />}
-        color="blue"
+        color="bg-blue-600"
         subtitle={usingRealTimeData ? "Based on real-time data" : "Based on map calculation"}
         tooltip="Total distance of the optimized route"
       />
@@ -95,7 +95,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         title="Estimated Time"
         value={formatTime(duration)}
         icon={<Clock className="h-5 w-5" />}
-        color="amber"
+        color="bg-amber-600"
         subtitle={getTrafficStatus()}
         tooltip="Estimated driving time with current traffic conditions"
       />
@@ -103,7 +103,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         title="Total Cylinders"
         value={cylinders.toString()}
         icon={<TruckIcon className="h-5 w-5" />}
-        color="indigo"
+        color="bg-indigo-600"
         subtitle={`${Math.round(cylinders * 1.2)} kg estimated weight`}
         tooltip="Total number of cylinders to be delivered"
       />
@@ -111,12 +111,13 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         title="Fuel Cost"
         value={`R ${fuelCost.toFixed(2)}`}
         icon={<Fuel className="h-5 w-5" />}
-        color="green"
+        color="bg-green-600"
         subtitle={
           <FuelCostEditor 
             fuelConsumption={fuelConsumption} 
             fuelCostPerLiter={fuelCostPerLiter}
             onChange={onFuelCostChange}
+            currentFuelCost={fuelCostPerLiter}
           />
         }
         tooltip="Estimated fuel cost based on current prices"
