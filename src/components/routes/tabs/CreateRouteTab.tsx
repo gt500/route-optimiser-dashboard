@@ -9,7 +9,6 @@ import LocationSelector from '../LocationSelector';
 import OptimizationParameters from '../OptimizationParameters';
 import RouteMap from '../RouteMap';
 import RouteDetails from '../RouteDetails';
-import RouteStopsList from '../stops/RouteStopsList';
 
 interface CreateRouteTabProps {
   route: {
@@ -112,12 +111,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                   />
                 )}
               </div>
-              <RouteStopsList
-                locations={route.locations}
-                availableLocations={filteredAvailableLocations}
-                onRemoveLocation={onRemoveLocation}
-                onAddNewLocation={onAddNewLocation}
-              />
+              
               <RouteDetails 
                 route={route} 
                 onRemoveLocation={onRemoveLocation} 
