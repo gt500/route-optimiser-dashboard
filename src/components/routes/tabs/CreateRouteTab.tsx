@@ -3,12 +3,13 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, MapPin, Clock, Fuel, DollarSign, Truck } from 'lucide-react';
 import RouteEndpoints from '../RouteEndpoints';
 import LocationSelector from '../LocationSelector';
 import OptimizationParameters from '../OptimizationParameters';
 import RouteMap from '../RouteMap';
 import RouteDetails from '../RouteDetails';
+import RouteMetricsCard from '../metrics/RouteMetricsCard';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 
 interface CreateRouteTabProps {
@@ -76,6 +77,13 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
     onOptimize({});
   };
 
+  // Format the estimated duration
+  const formatTime = (minutes: number = 0) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
+
   return (
     <div className="space-y-4">
       {isSyncingLocations && (
@@ -83,6 +91,47 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
           Synchronizing locations with database...
         </div>
       )}
+
+      {/* Route Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <RouteMetricsCard
+          title="Total Distance"
+          value={`${route.distance.toFixed(1)} km`}
+          icon={<MapPin className="h-4 w-4" />}
+          color="bg-gradient-to-br from-blue-500 to-blue-600"
+          ringColor="ring-blue-400/30"
+          tooltip="Total distance of the planned route"
+        />
+        
+        <RouteMetricsCard
+          title="Estimated Time"
+          value={formatTime(route.estimatedDuration)}
+          icon={<Clock className="h-4 w-4" />}
+          color="bg-gradient-to-br from-purple-500 to-purple-600"
+          ringColor="ring-purple-400/30"
+          tooltip="Estimated driving time for the entire route"
+        />
+        
+        <RouteMetricsCard
+          title="Fuel Cost"
+          value={`R ${route.fuelCost.toFixed(2)}`}
+          icon={<DollarSign className="h-4 w-4" />}
+          color="bg-gradient-to-br from-green-500 to-green-600"
+          ringColor="ring-green-400/30"
+          subtitle={`${route.fuelConsumption.toFixed(1)} L @ R${vehicleConfig.fuelPrice}/L`}
+          tooltip="Total fuel cost based on current fuel price"
+        />
+        
+        <RouteMetricsCard
+          title="Cylinders"
+          value={route.cylinders}
+          icon={<Truck className="h-4 w-4" />}
+          color="bg-gradient-to-br from-orange-500 to-orange-600"
+          ringColor="ring-orange-400/30"
+          tooltip="Total cylinders to be delivered or picked up"
+        />
+      </div>
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <Card className="shadow-sm hover:shadow-md transition-shadow">

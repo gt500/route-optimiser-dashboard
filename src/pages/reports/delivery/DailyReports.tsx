@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, RefreshCw, MapPin } from 'lucide-react';
+import { Download, FileSpreadsheet, RefreshCw, MapPin, Clock, Fuel, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import RouteMap from '@/components/routes/RouteMap';
+import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 
 interface DeliveryData {
   id: string;
@@ -63,7 +63,6 @@ const DailyReports = () => {
     delivery => delivery.date === formattedDate
   );
 
-  // Calculate totals
   const totalCylinders = filteredDeliveries.reduce((sum, delivery) => sum + delivery.cylinders, 0);
   const totalKms = filteredDeliveries.reduce((sum, delivery) => sum + delivery.kms, 0);
   const totalFuelCost = filteredDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
@@ -75,7 +74,6 @@ const DailyReports = () => {
     const formattedDateStr = format(date, 'yyyy-MM-dd');
     
     try {
-      // Fetch routes for the selected date
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status')
@@ -93,12 +91,8 @@ const DailyReports = () => {
         return;
       }
       
-      console.log('Found routes:', routesData.length);
-      
-      // Collect all route IDs
       const routeIds = routesData.map(route => route.id);
       
-      // Fetch all related deliveries
       const { data: deliveriesData, error: deliveriesError } = await supabase
         .from('deliveries')
         .select('id, route_id, location_id, cylinders, sequence')
@@ -109,18 +103,8 @@ const DailyReports = () => {
         throw deliveriesError;
       }
       
-      console.log('Found deliveries:', deliveriesData?.length || 0);
-      
-      if (!deliveriesData || deliveriesData.length === 0) {
-        setDeliveries([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Get all location IDs to fetch location details
       const locationIds = deliveriesData.map(delivery => delivery.location_id);
       
-      // Fetch location details
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select('id, name, address, latitude, longitude')
@@ -131,15 +115,11 @@ const DailyReports = () => {
         throw locationsError;
       }
       
-      console.log('Found locations:', locationsData?.length || 0);
-      
-      // Create a map of locations for easy lookup
       const locationsMap = (locationsData || []).reduce((acc: Record<string, any>, location) => {
         acc[location.id] = location;
         return acc;
       }, {});
       
-      // Create a structured representation of routes with their deliveries
       const routeDeliveries: RouteDelivery[] = routesData.map(route => {
         const routeDeliveries = deliveriesData
           .filter(delivery => delivery.route_id === route.id)
@@ -167,11 +147,9 @@ const DailyReports = () => {
         };
       });
       
-      // Transform the data into the format needed for the table
       const transformedData: DeliveryData[] = [];
       
       routeDeliveries.forEach(route => {
-        // Calculate km per delivery by dividing total distance by number of deliveries
         const deliveriesCount = route.deliveries.length;
         const kmsPerDelivery = deliveriesCount > 0 ? route.totalDistance / deliveriesCount : 0;
         const costPerDelivery = deliveriesCount > 0 ? route.estimatedCost / deliveriesCount : 0;
@@ -230,7 +208,6 @@ const DailyReports = () => {
     setViewMode(viewMode === 'table' ? 'map' : 'table');
   };
 
-  // Prepare map data
   const mapLocations = filteredDeliveries.map(delivery => ({
     id: delivery.id,
     name: delivery.siteName,
@@ -248,6 +225,46 @@ const DailyReports = () => {
           <TabsTrigger value="monthly">Monthly</TabsTrigger>
         </TabsList>
       </Tabs>
+      
+      {filteredDeliveries.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <RouteMetricsCard
+            title="Total Cylinders"
+            value={totalCylinders}
+            icon={<Truck className="h-4 w-4" />}
+            color="bg-gradient-to-br from-orange-500 to-orange-600"
+            ringColor="ring-orange-400/30"
+            tooltip="Total cylinders delivered or picked up on this date"
+          />
+          
+          <RouteMetricsCard
+            title="Total Distance"
+            value={`${totalKms.toFixed(1)} km`}
+            icon={<MapPin className="h-4 w-4" />}
+            color="bg-gradient-to-br from-blue-500 to-blue-600"
+            ringColor="ring-blue-400/30"
+            tooltip="Total distance covered by all deliveries"
+          />
+          
+          <RouteMetricsCard
+            title="Delivery Locations"
+            value={filteredDeliveries.length}
+            icon={<MapPin className="h-4 w-4" />}
+            color="bg-gradient-to-br from-purple-500 to-purple-600"
+            ringColor="ring-purple-400/30"
+            tooltip="Number of delivery locations visited"
+          />
+          
+          <RouteMetricsCard
+            title="Fuel Cost"
+            value={`R${totalFuelCost.toFixed(2)}`}
+            icon={<Fuel className="h-4 w-4" />}
+            color="bg-gradient-to-br from-green-500 to-green-600"
+            ringColor="ring-green-400/30"
+            tooltip="Total fuel cost for all deliveries"
+          />
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="col-span-1">
