@@ -28,6 +28,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
+import RouteMetricsCard from './metrics/RouteMetricsCard';
 
 interface RouteDetailsProps {
   route: {
@@ -230,6 +231,35 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 
   const stopMetrics = calculateStopMetrics();
   const totalStops = route.locations.length > 2 ? route.locations.length - 2 : 0; // Exclude start/end if same
+
+  const getTrafficStatus = (): JSX.Element => {
+    switch(route.trafficConditions) {
+      case 'light':
+        return (
+          <div className="flex items-center gap-1 text-green-500">
+            <Clock className="h-4 w-4" /> Light traffic
+          </div>
+        );
+      case 'moderate':
+        return (
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Clock className="h-4 w-4" /> Moderate traffic
+          </div>
+        );
+      case 'heavy':
+        return (
+          <div className="flex items-center gap-1 text-red-500">
+            <Clock className="h-4 w-4" /> Heavy traffic
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Clock className="h-4 w-4" /> Moderate traffic
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -473,41 +503,46 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div className="bg-white border p-2 rounded-md">
-          <div className="flex items-center text-gray-500 mb-1">
-            <MapPin className="h-4 w-4 mr-1" />
-            <span className="text-xs font-medium">Distance</span>
-          </div>
-          <div className="text-lg font-semibold">{totalDistance.toFixed(1)} km</div>
-        </div>
-        <div className="bg-white border p-2 rounded-md">
-          <div className="flex items-center text-gray-500 mb-1">
-            <Clock className="h-4 w-4 mr-1" />
-            <span className="text-xs font-medium">Time</span>
-          </div>
-          <div className="text-lg font-semibold">{formatTime(totalEstimatedTime)}</div>
-        </div>
-        <div className="bg-white border p-2 rounded-md">
-          <div className="flex items-center text-gray-500 mb-1">
-            <Fuel className="h-4 w-4 mr-1" />
-            <span className="text-xs font-medium">Fuel</span>
-          </div>
-          <div className="flex items-center">
-            <div className="text-lg font-semibold mr-2">R {route.fuelCost.toFixed(2)}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <RouteMetricsCard 
+          title="Total Distance"
+          value={`${totalDistance.toFixed(1)} km`}
+          icon={<MapPin className="h-5 w-5" />}
+          color="bg-blue-600"
+          subtitle={route.usingRealTimeData ? "Based on real-time data" : "Based on map calculation"}
+          tooltip="Total distance of the optimized route"
+        />
+        <RouteMetricsCard 
+          title="Estimated Time"
+          value={formatTime(totalEstimatedTime)}
+          icon={<Clock className="h-5 w-5" />}
+          color="bg-amber-600"
+          subtitle={getTrafficStatus()}
+          tooltip="Estimated driving time with current traffic conditions"
+        />
+        <RouteMetricsCard 
+          title="Fuel Cost"
+          value={`R ${route.fuelCost.toFixed(2)}`}
+          icon={<Fuel className="h-5 w-5" />}
+          color="bg-green-600"
+          subtitle={
             <FuelCostEditor 
+              fuelConsumption={route.fuelConsumption} 
+              fuelCostPerLiter={fuelCost}
+              onChange={handleFuelCostUpdate}
               currentCost={fuelCost}
-              onUpdate={handleFuelCostUpdate}
             />
-          </div>
-        </div>
-        <div className="bg-white border p-2 rounded-md">
-          <div className="flex items-center text-gray-500 mb-1">
-            <Truck className="h-4 w-4 mr-1" />
-            <span className="text-xs font-medium">Cylinders</span>
-          </div>
-          <div className="text-lg font-semibold">{route.cylinders}</div>
-        </div>
+          }
+          tooltip="Estimated fuel cost based on current prices"
+        />
+        <RouteMetricsCard 
+          title="Total Cylinders"
+          value={route.cylinders.toString()}
+          icon={<Truck className="h-5 w-5" />}
+          color="bg-indigo-600"
+          subtitle={`${Math.round(route.cylinders * 1.2)} kg estimated weight`}
+          tooltip="Total number of cylinders to be delivered"
+        />
       </div>
       
       <div className="space-y-2 mt-4">

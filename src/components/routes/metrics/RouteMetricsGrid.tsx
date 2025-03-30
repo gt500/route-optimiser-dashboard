@@ -100,14 +100,6 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         tooltip="Estimated driving time with current traffic conditions"
       />
       <RouteMetricsCard 
-        title="Total Cylinders"
-        value={cylinders.toString()}
-        icon={<TruckIcon className="h-5 w-5" />}
-        color="bg-indigo-600"
-        subtitle={`${Math.round(cylinders * 1.2)} kg estimated weight`}
-        tooltip="Total number of cylinders to be delivered"
-      />
-      <RouteMetricsCard 
         title="Fuel Cost"
         value={`R ${fuelCost.toFixed(2)}`}
         icon={<Fuel className="h-5 w-5" />}
@@ -121,6 +113,14 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
           />
         }
         tooltip="Estimated fuel cost based on current prices"
+      />
+      <RouteMetricsCard 
+        title="Total Cylinders"
+        value={cylinders.toString()}
+        icon={<TruckIcon className="h-5 w-5" />}
+        color="bg-indigo-600"
+        subtitle={`${Math.round(cylinders * 1.2)} kg estimated weight`}
+        tooltip="Total number of cylinders to be delivered"
       />
     </div>
   );
