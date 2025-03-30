@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,8 +67,11 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
 
   useEffect(() => {
     console.log("LocationSelector - Available locations:", availableLocations);
-    console.log("LocationSelector - Selected location:", selectedLocation);
-  }, [availableLocations, selectedLocation]);
+    if (availableLocations.length > 0 && !selectedLocation) {
+      // Pre-select first location if none selected
+      setSelectedLocation(availableLocations[0]);
+    }
+  }, [availableLocations]);
 
   const handleLocationSelect = (value: string) => {
     console.log("Location selected with ID:", value);
@@ -122,28 +126,32 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                   <SelectValue placeholder="Select a location" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] bg-popover">
-                  {filteredLocations.map((location) => (
-                    <SelectItem key={location.id.toString()} value={location.id.toString()}>
-                      <div className="flex items-center justify-between w-full">
-                        <div className="pr-2">
-                          <div className="font-medium">{location.name}</div>
-                          <div className="text-xs text-muted-foreground">{location.address}</div>
+                  {filteredLocations.length > 0 ? (
+                    filteredLocations.map((location) => (
+                      <SelectItem key={location.id.toString()} value={location.id.toString()}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="pr-2">
+                            <div className="font-medium">{location.name}</div>
+                            <div className="text-xs text-muted-foreground">{location.address}</div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-7 w-7 ml-2" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleEditClick(location);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-7 w-7 ml-2" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleEditClick(location);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No locations available</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             ) : (
@@ -156,33 +164,39 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 }}
               >
                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                  {filteredLocations.map((location) => (
-                    <div 
-                      key={location.id.toString()}
-                      className="flex items-center space-x-2 border rounded-md p-3 bg-secondary/20 hover:bg-secondary/40 transition-colors"
-                    >
-                      <RadioGroupItem 
-                        value={location.id.toString()} 
-                        id={`location-${location.id}`} 
-                        className="cursor-pointer"
-                      />
-                      <Label htmlFor={`location-${location.id}`} className="flex-1 cursor-pointer">
-                        <div className="font-medium text-white">{location.name}</div>
-                        <div className="text-xs text-gray-300">{location.address}</div>
-                      </Label>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-7 w-7" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditClick(location);
-                        }}
+                  {filteredLocations.length > 0 ? (
+                    filteredLocations.map((location) => (
+                      <div 
+                        key={location.id.toString()}
+                        className="flex items-center space-x-2 border rounded-md p-3 bg-secondary/20 hover:bg-secondary/40 transition-colors"
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                        <RadioGroupItem 
+                          value={location.id.toString()} 
+                          id={`location-${location.id}`} 
+                          className="cursor-pointer"
+                        />
+                        <Label htmlFor={`location-${location.id}`} className="flex-1 cursor-pointer">
+                          <div className="font-medium text-white">{location.name}</div>
+                          <div className="text-xs text-gray-300">{location.address}</div>
+                        </Label>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-7 w-7" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(location);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-gray-400">
+                      No locations found. Try a different search term.
                     </div>
-                  ))}
+                  )}
                 </div>
               </RadioGroup>
             )}
@@ -222,7 +236,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
           </div>
           
           <div className="pt-2">
-            <Button onClick={handleAdd} className="w-full gap-2" disabled={!selectedLocation}>
+            <Button onClick={handleAdd} className="w-full gap-2" disabled={!selectedLocation || filteredLocations.length === 0}>
               <Plus className="h-4 w-4" />
               Add to Route
             </Button>

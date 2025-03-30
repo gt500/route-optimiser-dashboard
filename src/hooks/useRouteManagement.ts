@@ -243,6 +243,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       const newLocations = [...prev.locations];
       
       if (endLocation && newLocations.length > 1) {
+        // Insert before end location
         newLocations.splice(newLocations.length - 1, 0, locationWithCylinders);
       } else {
         newLocations.push(locationWithCylinders);
@@ -256,16 +257,18 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         locations: newLocations
       };
       
-      if (newLocations.length > 2) {
-        setTimeout(() => handleOptimize(routeOptimizationDefaultParams), 100);
-      }
-      
       return newRouteState;
     });
     
+    // Remove from available locations
     setAvailableLocations(prev => 
       prev.filter(loc => loc.id.toString() !== location.id.toString())
     );
+    
+    // Optimize after slight delay if more than 2 locations
+    if (route.locations.length >= 2) {
+      setTimeout(() => handleOptimize(routeOptimizationDefaultParams), 100);
+    }
   };
 
   const removeLocationFromRoute = (index: number) => {
@@ -279,11 +282,13 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       
       console.log("Updated route locations after remove:", newLocations);
       
+      // Add back to available locations
+      setAvailableLocations(prevAvailable => [...prevAvailable, removedLocation]);
+      
       return {
         ...prev,
         cylinders: prev.cylinders - (removedLocation.emptyCylinders || 0),
-        locations: newLocations,
-        availableLocations: [...prev.availableLocations, removedLocation]
+        locations: newLocations
       };
     });
     

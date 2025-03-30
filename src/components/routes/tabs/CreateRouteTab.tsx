@@ -112,6 +112,9 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                 onAddNewLocation={onAddNewLocation}
                 onFuelCostUpdate={onFuelCostUpdate}
                 onRouteDataUpdate={onRouteDataUpdate}
+                onOptimize={onOptimize}
+                onSave={onConfirmLoad}
+                isLoadConfirmed={isLoadConfirmed}
               />
               
               <div className="flex justify-end">
