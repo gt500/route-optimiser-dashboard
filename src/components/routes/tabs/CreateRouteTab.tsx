@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LocationType } from '@/components/locations/LocationEditDialog';
@@ -43,6 +44,7 @@ interface CreateRouteTabProps {
   vehicleConfig: VehicleConfigProps;
 }
 
+// Default vehicle configuration as a fallback
 const defaultVehicleConfig: VehicleConfigProps = {
   baseConsumption: 12,
   fuelPrice: 21.95,
@@ -70,10 +72,12 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onConfirmLoad,
   vehicleConfig = defaultVehicleConfig
 }) => {
+  // Create a wrapper function for onOptimize that matches the expected signature
   const handleOptimize = () => {
     onOptimize({});
   };
 
+  // Format the estimated duration
   const formatTime = (minutes: number = 0) => {
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
@@ -128,41 +132,11 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
         />
       </div>
       
-      {/* Map Section - Between metrics and controls */}
-      <div className="w-full h-[400px] mb-6 rounded-lg overflow-hidden shadow-lg">
-        {route.locations.length > 0 && (
-          <RouteMap 
-            locations={transformedLocations}
-            showRouting={route.locations.length >= 2}
-            startLocation={route.locations[0] ? { 
-              name: route.locations[0].name, 
-              coords: [route.locations[0].lat || 0, route.locations[0].long || 0] 
-            } : undefined}
-            endLocation={route.locations.length > 1 && endLocation ? { 
-              name: route.locations[route.locations.length - 1].name, 
-              coords: [
-                route.locations[route.locations.length - 1].lat || 0, 
-                route.locations[route.locations.length - 1].long || 0
-              ] 
-            } : undefined}
-            waypoints={route.locations.slice(1, endLocation ? -1 : undefined).map((loc, index) => ({
-              name: loc.name,
-              coords: [loc.lat || 0, loc.long || 0]
-            }))}
-            height="100%"
-            forceRouteUpdate={isLoadConfirmed}
-            trafficConditions={route.trafficConditions || 'moderate'}
-            showAlternateRoutes={route.usingRealTimeData}
-            onRouteDataUpdate={onRouteDataUpdate}
-          />
-        )}
-      </div>
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle>Route Controls</CardTitle>
+              <CardTitle>Route Preview</CardTitle>
               <CardDescription>
                 {route.usingRealTimeData 
                   ? `Optimized with real-time traffic data (${route.trafficConditions} traffic)`
@@ -170,6 +144,35 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="h-[500px]">
+                {route.locations.length > 0 && (
+                  <RouteMap 
+                    locations={transformedLocations}
+                    showRouting={route.locations.length >= 2}
+                    startLocation={route.locations[0] ? { 
+                      name: route.locations[0].name, 
+                      coords: [route.locations[0].lat || 0, route.locations[0].long || 0] 
+                    } : undefined}
+                    endLocation={route.locations.length > 1 && endLocation ? { 
+                      name: route.locations[route.locations.length - 1].name, 
+                      coords: [
+                        route.locations[route.locations.length - 1].lat || 0, 
+                        route.locations[route.locations.length - 1].long || 0
+                      ] 
+                    } : undefined}
+                    waypoints={route.locations.slice(1, endLocation ? -1 : undefined).map((loc, index) => ({
+                      name: loc.name,
+                      coords: [loc.lat || 0, loc.long || 0]
+                    }))}
+                    height="100%"
+                    forceRouteUpdate={isLoadConfirmed}
+                    trafficConditions={route.trafficConditions || 'moderate'}
+                    showAlternateRoutes={route.usingRealTimeData}
+                    onRouteDataUpdate={onRouteDataUpdate}
+                  />
+                )}
+              </div>
+              
               <RouteDetails 
                 route={route} 
                 onRemoveLocation={onRemoveLocation} 

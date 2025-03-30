@@ -124,25 +124,4 @@
       stroke-dashoffset: 1000;
     }
   }
-  
-  /* New styles for map-based layouts */
-  .map-background {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-  }
-  
-  .map-overlay {
-    position: relative;
-    z-index: 10;
-    pointer-events: auto;
-  }
-  
-  .glass-panel {
-    @apply bg-white/90 backdrop-blur-md rounded-lg border border-white/20 shadow-lg;
-  }
-  
-  .glass-panel-dark {
-    @apply bg-gray-900/90 backdrop-blur-md rounded-lg border border-gray-700/30 shadow-lg;
-  }
 }

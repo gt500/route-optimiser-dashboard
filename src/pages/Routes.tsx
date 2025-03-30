@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +12,7 @@ import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManage
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
 
+// Initial location data - in a real app, this would come from an API or database
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
   { id: "2", name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', lat: -33.731659, long: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
@@ -99,13 +101,14 @@ const RoutesList = () => {
     toast.success(`Added new location: ${location.name}`);
   };
   
+  // Create a wrapper for optimize function
   const handleOptimizeRoute = () => {
     handleOptimize(routeOptimizationDefaultParams);
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img 
             src="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png" 
