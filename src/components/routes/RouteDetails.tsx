@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronDown, 
@@ -27,6 +28,7 @@ import {
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import RouteMetricsCard from './metrics/RouteMetricsCard';
 
@@ -280,7 +282,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </Button>
             </DialogTrigger>
             <DialogContent
-              className="sm:max-w-[900px] max-h-[80vh] overflow-auto p-0"
+              className="sm:max-w-[900px] max-h-[80vh] overflow-auto p-0 z-50"
               style={{
                 transform: `translate(${draggablePosition.x}px, ${draggablePosition.y}px)`,
                 maxWidth: '80vw',
@@ -288,7 +290,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 position: 'fixed',
                 top: '10vh',
                 left: '10vw',
-                zIndex: 50,
+                zIndex: 50, 
                 boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)'
               }}
             >
