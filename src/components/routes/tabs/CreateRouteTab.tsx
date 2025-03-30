@@ -61,6 +61,11 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onRouteDataUpdate,
   onConfirmLoad
 }) => {
+  // Create a wrapper function for onOptimize that matches the expected signature
+  const handleOptimize = () => {
+    onOptimize({});
+  };
+
   return (
     <div className="space-y-4">
       {isSyncingLocations && (
@@ -112,7 +117,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                 onAddNewLocation={onAddNewLocation}
                 onFuelCostUpdate={onFuelCostUpdate}
                 onRouteDataUpdate={onRouteDataUpdate}
-                onOptimize={onOptimize}
+                onOptimize={handleOptimize}
                 onSave={onConfirmLoad}
                 isLoadConfirmed={isLoadConfirmed}
               />
