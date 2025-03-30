@@ -292,9 +292,15 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </CardContent>
       </Card>
       
-      {/* Detailed Route View Dialog */}
+      {/* Detailed Route View Dialog - Updated to ensure it appears on top of map layers */}
       <Dialog open={showDetailedView} onOpenChange={setShowDetailedView}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent 
+          className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+          style={{ 
+            zIndex: 9999, 
+            position: "relative" 
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Complete Route Details</DialogTitle>
             <DialogDescription>
