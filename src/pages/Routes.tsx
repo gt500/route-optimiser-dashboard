@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +9,7 @@ import ActiveRoutesTab from '@/components/routes/tabs/ActiveRoutesTab';
 import RouteHistoryTab from '@/components/routes/tabs/RouteHistoryTab';
 import useRouteManagement from '@/hooks/useRouteManagement';
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
+import { toast } from 'sonner';
 
 // Initial location data - in a real app, this would come from an API or database
 const initialLocations: LocationType[] = [

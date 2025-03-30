@@ -97,7 +97,7 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
         </div>
       </div>
       
-      <ScrollArea className="h-[350px] pr-2">
+      <ScrollArea className="h-[500px] pr-2">
         <div className="space-y-2 relative">
           {/* Draw vertical route line connecting stops */}
           {locations.length > 1 && (
