@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronDown, 
@@ -154,7 +153,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     }
   };
 
-  // Create waypoints for full route map display
   const transformedLocations = route.locations.map(loc => ({
     id: loc.id.toString(),
     name: loc.name,
@@ -181,7 +179,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     ] as [number, number]
   } : undefined;
 
-  // Calculate costs and metrics per stop
   const calculateStopMetrics = () => {
     if (route.locations.length <= 1) return [];
     
@@ -190,13 +187,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     let fuelCostRunningTotal = 0;
     let cylindersRunningTotal = 0;
     
-    // Distance between stops - in a real app this would come from actual route segments
     const distancePerStop = totalDistance / (route.locations.length - 1);
     const timePerStop = totalEstimatedTime / (route.locations.length - 1);
     const fuelCostPerStop = route.fuelCost / (route.locations.length - 1);
     
     return route.locations.map((location, index) => {
-      // For the first stop (starting point)
       if (index === 0) {
         return {
           location,
@@ -204,18 +199,19 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           timeSoFar: 0,
           fuelCostSoFar: 0,
           cylindersSoFar: 0,
-          cylindersAtLocation: location.fullCylinders || 0,
+          cylindersAtLocation: location.type === 'Storage' ? location.fullCylinders || 0 : location.emptyCylinders || 0,
           type: location.type || 'Customer'
         };
       }
       
-      // Calculate metrics for this stop
       distanceRunningTotal += distancePerStop;
       timeRunningTotal += timePerStop;
       fuelCostRunningTotal += fuelCostPerStop;
       
-      // Get cylinders at this location
-      const cylindersAtLocation = location.emptyCylinders || 0;
+      const cylindersAtLocation = location.type === 'Storage' 
+        ? location.fullCylinders || 0 
+        : location.emptyCylinders || 0;
+        
       cylindersRunningTotal += cylindersAtLocation;
       
       return {
@@ -232,7 +228,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   };
 
   const stopMetrics = calculateStopMetrics();
-  const totalStops = route.locations.length > 2 ? route.locations.length - 2 : 0; // Exclude start/end if same
+  const totalStops = route.locations.length > 2 ? route.locations.length - 2 : 0;
 
   const getTrafficStatus = (): JSX.Element => {
     switch(route.trafficConditions) {
@@ -440,7 +436,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                                     <h5 className="text-xs font-medium text-muted-foreground">Cylinder Quantities</h5>
                                     <p className="text-sm font-medium">
                                       {stop.type === 'Storage' ? 
-                                        `Storage: ${stop.location.fullCylinders || 0}` : 
+                                        `Storage: ${stop.cylindersAtLocation}` : 
                                         `Pickup: ${stop.cylindersAtLocation}`}
                                     </p>
                                   </div>
@@ -455,7 +451,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                                     <h5 className="text-xs font-medium text-muted-foreground">Cylinder Quantities</h5>
                                     <p className="text-sm font-medium">
                                       {stop.type === 'Storage' ? 
-                                        `Storage: ${stop.location.fullCylinders || 0}` : 
+                                        `Storage: ${stop.cylindersAtLocation}` : 
                                         `Pickup: ${stop.cylindersAtLocation}`}
                                     </p>
                                   </div>
@@ -585,7 +581,18 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                     )}
                     <div>
                       <p className="font-medium text-sm">{location.name}</p>
-                      <p className="text-xs text-gray-500">{location.address}</p>
+                      <div className="flex items-center">
+                        <p className="text-xs text-gray-500 mr-2">{location.address}</p>
+                        {location.type === 'Storage' ? (
+                          <p className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                            Storage: {location.fullCylinders || 0}
+                          </p>
+                        ) : (
+                          <p className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Cylinders: {location.emptyCylinders || 0}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
