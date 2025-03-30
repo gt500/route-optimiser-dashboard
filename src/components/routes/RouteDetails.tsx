@@ -114,41 +114,31 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   };
 
   const handleMoveUp = (index: number) => {
-    if (index <= 1) return; // Cannot move up depot or first location
-    
-    // Create new array with swapped locations
+    if (index <= 1) return;
+
     const updatedLocations = [...route.locations];
     [updatedLocations[index], updatedLocations[index - 1]] = [updatedLocations[index - 1], updatedLocations[index]];
     
-    // Inform parent component of change
     if (onRouteDataUpdate) {
-      // Trigger route data recalculation with the new order
       onRouteDataUpdate(totalDistance, totalEstimatedTime);
     }
     
-    // Update route with new location order (this should be handled by the parent)
     if (route.locations !== updatedLocations) {
-      // Replace the route.locations with updatedLocations
       Object.assign(route, { locations: updatedLocations });
     }
   };
 
   const handleMoveDown = (index: number) => {
-    if (index >= route.locations.length - 2 || index === 0) return; // Cannot move down depot or last location
-    
-    // Create new array with swapped locations
+    if (index >= route.locations.length - 2 || index === 0) return;
+
     const updatedLocations = [...route.locations];
     [updatedLocations[index], updatedLocations[index + 1]] = [updatedLocations[index + 1], updatedLocations[index]];
-    
-    // Inform parent component of change
+
     if (onRouteDataUpdate) {
-      // Trigger route data recalculation with the new order
       onRouteDataUpdate(totalDistance, totalEstimatedTime);
     }
-    
-    // Update route with new location order (this should be handled by the parent)
+
     if (route.locations !== updatedLocations) {
-      // Replace the route.locations with updatedLocations
       Object.assign(route, { locations: updatedLocations });
     }
   };
@@ -192,6 +182,10 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     const fuelCostPerStop = route.fuelCost / (route.locations.length - 1);
     
     return route.locations.map((location, index) => {
+      const cylindersAtLocation = location.type === 'Storage' 
+        ? location.fullCylinders || 0 
+        : location.emptyCylinders || 0;
+        
       if (index === 0) {
         return {
           location,
@@ -199,7 +193,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           timeSoFar: 0,
           fuelCostSoFar: 0,
           cylindersSoFar: 0,
-          cylindersAtLocation: location.type === 'Storage' ? location.fullCylinders || 0 : location.emptyCylinders || 0,
+          cylindersAtLocation,
           type: location.type || 'Customer'
         };
       }
@@ -207,11 +201,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       distanceRunningTotal += distancePerStop;
       timeRunningTotal += timePerStop;
       fuelCostRunningTotal += fuelCostPerStop;
-      
-      const cylindersAtLocation = location.type === 'Storage' 
-        ? location.fullCylinders || 0 
-        : location.emptyCylinders || 0;
-        
       cylindersRunningTotal += cylindersAtLocation;
       
       return {
@@ -566,73 +555,79 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           </div>
         ) : (
           <div className="space-y-2">
-            {route.locations.map((location, index) => (
-              <Card key={`${location.id}-${index}`} className="border border-gray-200">
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center">
-                    {index === 0 || index === route.locations.length - 1 ? (
-                      <div className={`flex items-center justify-center h-6 w-6 rounded-full ${index === 0 ? 'bg-green-500' : 'bg-red-500'} text-white text-xs font-bold mr-2`}>
-                        {index === 0 ? 'S' : 'E'}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-600 text-white text-xs font-bold mr-2">
-                        {index}
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-medium text-sm">{location.name}</p>
-                      <div className="flex items-center">
-                        <p className="text-xs text-gray-500 mr-2">{location.address}</p>
-                        {location.type === 'Storage' ? (
-                          <p className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                            Storage: {location.fullCylinders || 0}
-                          </p>
-                        ) : (
-                          <p className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                            Cylinders: {location.emptyCylinders || 0}
-                          </p>
-                        )}
+            {route.locations.map((location, index) => {
+              const cylinders = location.type === 'Storage' 
+                ? location.fullCylinders || 0 
+                : location.emptyCylinders || 0;
+                
+              return (
+                <Card key={`${location.id}-${index}`} className="border border-gray-200">
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      {index === 0 || index === route.locations.length - 1 ? (
+                        <div className={`flex items-center justify-center h-6 w-6 rounded-full ${index === 0 ? 'bg-green-500' : 'bg-red-500'} text-white text-xs font-bold mr-2`}>
+                          {index === 0 ? 'S' : 'E'}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-600 text-white text-xs font-bold mr-2">
+                          {index}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{location.name}</p>
+                        <div className="flex items-center">
+                          <p className="text-xs text-gray-500 mr-2">{location.address}</p>
+                          {location.type === 'Storage' ? (
+                            <p className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                              Storage: {cylinders}
+                            </p>
+                          ) : (
+                            <p className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                              Cylinders: {cylinders}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1">
-                    {index !== 0 && index !== route.locations.length - 1 && (
-                      <>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleMoveUp(index)}
-                          disabled={index <= 1}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleMoveDown(index)}
-                          disabled={index >= route.locations.length - 2}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => onRemoveLocation(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    
+                    <div className="flex items-center space-x-1">
+                      {index !== 0 && index !== route.locations.length - 1 && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleMoveUp(index)}
+                            disabled={index <= 1}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleMoveDown(index)}
+                            disabled={index >= route.locations.length - 2}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => onRemoveLocation(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
