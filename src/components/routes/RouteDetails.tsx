@@ -11,6 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import RouteMetricsCard from './metrics/RouteMetricsCard';
 
 interface RouteDetailsProps {
   route: {
@@ -135,6 +136,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     if (index >= route.locations.length - 2 || index === 0) return; // Cannot move down the last stop or depot
     // Implement reordering logic here if needed
   };
+
+  // Format time display for metrics card
+  const formatTime = (minutes: number) => {
+    return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  };
   
   return (
     <>
@@ -150,7 +156,44 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             View Full Route
           </Button>
         </CardHeader>
+        
         <CardContent className="space-y-4">
+          {/* Metrics cards at the top */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <RouteMetricsCard 
+              title="Distance" 
+              value={`${totalDistance.toFixed(1)} km`}
+              icon={<Navigation className="h-4 w-4" />}
+              bgColor="bg-green-600"
+              tooltip="Total route distance in kilometers"
+            />
+            
+            <RouteMetricsCard 
+              title="Journey Time" 
+              value={formatTime(totalEstimatedTime)}
+              icon={<Clock className="h-4 w-4" />}
+              bgColor="bg-blue-600"
+              tooltip="Estimated total journey time"
+            />
+            
+            <RouteMetricsCard 
+              title="Total Cost" 
+              value={`R${totalCost.toFixed(2)}`}
+              icon={<DollarSign className="h-4 w-4" />}
+              bgColor="bg-orange-600"
+              tooltip="Combined fuel and maintenance costs"
+            />
+            
+            <RouteMetricsCard 
+              title="Cylinders" 
+              value={totalCylinders.toString()}
+              icon={<Package className="h-4 w-4" />}
+              bgColor="bg-purple-600"
+              subtitle={totalCylinders > 80 ? "Over capacity!" : undefined}
+              tooltip="Total number of cylinders in this route"
+            />
+          </div>
+          
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2 relative">
               {/* Draw vertical route line connecting stops */}
@@ -241,32 +284,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             </div>
           </ScrollArea>
 
-          <div className="space-y-4 mt-6 pt-4 border-t">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Navigation className="h-4 w-4" />
-                <span>Total: {totalDistance.toFixed(1)} km</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                <span>Cost: R{totalCost.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>Time: {Math.floor(totalEstimatedTime / 60)}h {totalEstimatedTime % 60}m</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                <span>Cylinders: {totalCylinders}</span>
-              </div>
+          {totalCylinders > 80 && (
+            <div className="bg-red-500 text-white p-2 text-center rounded">
+              Warning: Load Exceeded - Maximum 80 cylinders allowed
             </div>
-            
-            {totalCylinders > 80 && (
-              <div className="bg-red-500 text-white p-2 text-center rounded">
-                Warning: Load Exceeded - Maximum 80 cylinders allowed
-              </div>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
       
