@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronDown, 
@@ -29,7 +28,6 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
-import RouteMap from './RouteMap';
 
 interface RouteDetailsProps {
   route: {
@@ -345,19 +343,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                         <div className="text-lg font-semibold">{route.trafficConditions || 'moderate'}</div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="h-[300px] mb-4 relative border rounded-md overflow-hidden">
-                    <RouteMap
-                      height="100%"
-                      locations={transformedLocations}
-                      showRouting={route.locations.length >= 2}
-                      startLocation={startLocation}
-                      endLocation={endLocation}
-                      waypoints={waypoints}
-                      trafficConditions={route.trafficConditions}
-                      zoom={10}
-                    />
                   </div>
 
                   <div>
