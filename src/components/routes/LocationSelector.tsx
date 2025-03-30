@@ -38,12 +38,12 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
       const locationWithStringId = {
         ...selectedLocation,
         id: selectedLocation.id.toString(),
-        cylinders
+        cylinders,
+        emptyCylinders: selectedLocation.emptyCylinders || cylinders
       };
       onAdd(locationWithStringId);
-      setSelectedLocation(null);
-      setCylinders(10);
       toast.success(`Added ${selectedLocation.name} to route`);
+      // Don't reset selectedLocation here to allow for adding multiple locations quickly
     } else {
       toast.error("Please select a location");
     }

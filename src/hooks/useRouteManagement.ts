@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -236,7 +235,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     const locationWithCylinders = {
       ...location,
       id: location.id.toString(),
-      emptyCylinders: location.cylinders,
+      emptyCylinders: location.emptyCylinders || location.cylinders,
     };
     
     setRoute(prev => {
@@ -253,7 +252,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       
       const newRouteState = {
         ...prev,
-        cylinders: prev.cylinders + location.cylinders,
+        cylinders: prev.cylinders + (location.cylinders || 0),
         locations: newLocations
       };
       
@@ -264,11 +263,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     setAvailableLocations(prev => 
       prev.filter(loc => loc.id.toString() !== location.id.toString())
     );
-    
-    // Optimize after slight delay if more than 2 locations
-    if (route.locations.length >= 2) {
-      setTimeout(() => handleOptimize(routeOptimizationDefaultParams), 100);
-    }
   };
 
   const removeLocationFromRoute = (index: number) => {
