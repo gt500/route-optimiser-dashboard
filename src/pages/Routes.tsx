@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,7 +8,7 @@ import LocationEditDialog from '@/components/locations/LocationEditDialog';
 import CreateRouteTab from '@/components/routes/tabs/CreateRouteTab';
 import ActiveRoutesTab from '@/components/routes/tabs/ActiveRoutesTab';
 import RouteHistoryTab from '@/components/routes/tabs/RouteHistoryTab';
-import useRouteManagement from '@/hooks/useRouteManagement';
+import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
 
@@ -49,6 +50,7 @@ const RoutesList = () => {
     endLocation,
     isLoadConfirmed,
     isSyncingLocations,
+    vehicleConfig,
     handleStartLocationChange,
     handleEndLocationChange,
     addLocationToRoute,
@@ -157,6 +159,7 @@ const RoutesList = () => {
             onFuelCostUpdate={handleFuelCostUpdate}
             onRouteDataUpdate={handleRouteDataUpdate}
             onConfirmLoad={handleConfirmLoad}
+            vehicleConfig={vehicleConfig || defaultVehicleConfig}
           />
         </TabsContent>
         

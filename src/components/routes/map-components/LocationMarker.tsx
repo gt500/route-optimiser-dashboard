@@ -38,12 +38,15 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     ? createNumberedMarker(stopNumber) 
     : markerIcons.default;
 
-  // Use type assertion to handle the icon prop which is not properly typed in @types/react-leaflet
+  // The key is to use the icon prop with the appropriate type cast
+  // The Marker component from react-leaflet does accept an icon prop, but the types are incorrect
+  const markerProps: any = {
+    position,
+    icon: markerIcon
+  };
+
   return (
-    <Marker 
-      position={position}
-      icon={markerIcon as any}
-    >
+    <Marker {...markerProps}>
       <Popup>
         <div className="p-1">
           <h3 className="font-medium text-sm">{name}</h3>
