@@ -1,67 +1,53 @@
 
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { createLocationIcon } from './Icons';
 import L from 'leaflet';
+import { markerIcons } from './Icons';
 
-export interface LocationMarkerProps {
-  id: string | number;
+interface LocationMarkerProps {
+  id: string;
   name: string;
   position: [number, number];
   address?: string;
   index?: number;
-  stopNumber?: number;
+  stopNumber?: number; // The stop number in the route order
 }
 
-const LocationMarker: React.FC<LocationMarkerProps> = ({ 
+// Create a custom marker with stop number
+const createNumberedMarker = (number: number) => {
+  const icon = L.divIcon({
+    className: 'custom-numbered-marker',
+    html: `<div class="flex items-center justify-center bg-indigo-600 text-white font-bold rounded-full border-2 border-white h-6 w-6 shadow-md">${number}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
+  });
+  return icon;
+};
+
+const LocationMarker: React.FC<LocationMarkerProps> = ({
   id, 
   name, 
   position, 
-  address, 
-  index,
-  stopNumber 
+  address,
+  index = 0,
+  stopNumber
 }) => {
-  const popupRef = React.useRef<L.Popup>(null);
-  
-  // Enhanced validation for position coordinates
-  if (!position || position.length !== 2 || position.some(coord => isNaN(coord) || coord === 0)) {
-    console.warn(`Skipping marker for ${name} due to invalid coordinates:`, position);
-    return null;
-  }
-  
-  const handleMarkerClick = () => {
-    if (popupRef.current) {
-      popupRef.current.openOn(document.getElementById('map') as any);
-    }
-  };
-
-  // Use stopNumber if provided, otherwise fall back to index
-  const displayNumber = stopNumber !== undefined ? stopNumber : (index !== undefined ? index : undefined);
-  
-  // Create a custom icon with proper typing
-  const customIcon = createLocationIcon({ 
-    label: displayNumber !== undefined ? String(displayNumber) : '',
-    type: 'Customer'
-  });
-
-  // Cast the marker properties to match Leaflet's expected types
-  const markerProps = {
-    position,
-    icon: customIcon,
-    eventHandlers: {
-      click: handleMarkerClick
-    }
-  } as unknown as L.MarkerOptions;
+  // Use numbered marker if stopNumber is provided
+  const markerIcon = stopNumber 
+    ? createNumberedMarker(stopNumber) 
+    : markerIcons.default;
 
   return (
-    <Marker {...markerProps}>
-      <Popup ref={popupRef}>
-        <div className="text-sm">
-          <strong>{name}</strong>
-          {displayNumber !== undefined && (
-            <div className="mt-1 font-semibold text-blue-600">Stop #{displayNumber}</div>
-          )}
-          {address && <div className="mt-1 text-gray-500">{address}</div>}
+    <Marker 
+      position={position} 
+      icon={markerIcon}
+    >
+      <Popup>
+        <div className="p-1">
+          <h3 className="font-medium text-sm">{name}</h3>
+          {stopNumber && <p className="text-xs text-gray-600">Stop #{stopNumber}</p>}
+          {address && <p className="text-xs text-gray-600">{address}</p>}
         </div>
       </Popup>
     </Marker>

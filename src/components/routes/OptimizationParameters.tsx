@@ -17,7 +17,7 @@ interface OptimizationParametersProps {
 }
 
 const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => {
-  const [prioritizeFuel, setPrioritizeFuel] = useState(false);
+  const [prioritizeFuel, setPrioritizeFuel] = useState(true); // Default to true now
   const [avoidTraffic, setAvoidTraffic] = useState(true);
   const [useRealTimeData, setUseRealTimeData] = useState(true);
   const [optimizeForDistance, setOptimizeForDistance] = useState(true);
@@ -105,7 +105,9 @@ const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => 
               toast.success(
                 useRealTimeData 
                   ? "Route optimized with real-time traffic data" 
-                  : "Route optimization settings updated"
+                  : (prioritizeFuel 
+                    ? "Route optimized for maximum fuel efficiency" 
+                    : "Route optimization settings updated")
               );
             }} 
             className="w-full gap-2"

@@ -16,12 +16,44 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 };
 
 /**
- * Optimize the order of locations based on the nearest neighbor algorithm
+ * Calculate a weight factor based on location characteristics for optimizations
+ */
+const calculateLocationFactor = (location: LocationType, prioritizeFuel: boolean): number => {
+  // Adjust this weight calculation based on what makes a location more or less expensive to visit
+  // For example, if the location has a lot of cylinders, it might be more important to visit
+  let factor = 1.0;
+  
+  // If location has empty cylinders, prioritize it
+  if (location.emptyCylinders && location.emptyCylinders > 0) {
+    // The more cylinders, the more important the stop
+    factor -= (location.emptyCylinders / 50) * 0.2; // Up to 20% reduction for locations with more cylinders
+  }
+  
+  // If fuel efficiency is prioritized, add additional factors
+  if (prioritizeFuel) {
+    // For example, altitude, road type, etc. could affect fuel consumption
+    // Here using a simple approximation - locations with higher latitude may involve more hills
+    const latitudeFactor = Math.abs(location.lat || 0) / 90; // Normalize to 0-1
+    factor += latitudeFactor * 0.1; // Up to 10% increase for hilly areas
+  }
+  
+  return Math.max(0.5, Math.min(factor, 1.5)); // Constrain factor between 0.5 and 1.5
+};
+
+/**
+ * Optimize the order of locations based on a modified nearest neighbor algorithm
+ * that considers fuel efficiency and load factors
  */
 export const optimizeLocationOrder = (
   startLocation: LocationType,
   middleLocations: LocationType[],
-  endLocation: LocationType
+  endLocation: LocationType,
+  params: OptimizationParams = {
+    prioritizeFuel: true,
+    avoidTraffic: true,
+    useRealTimeData: false,
+    optimizeForDistance: true
+  }
 ): LocationType[] => {
   if (middleLocations.length <= 1) return middleLocations;
   
@@ -30,11 +62,13 @@ export const optimizeLocationOrder = (
   
   let currentLocation = startLocation;
   
+  // Continue until all locations are visited
   while (unvisited.length > 0) {
     let closestIndex = -1;
-    let closestDistance = Infinity;
+    let closestScore = Infinity;
     
     for (let i = 0; i < unvisited.length; i++) {
+      // Calculate raw distance
       const distance = calculateDistance(
         currentLocation.lat || 0,
         currentLocation.long || 0,
@@ -42,8 +76,16 @@ export const optimizeLocationOrder = (
         unvisited[i].long || 0
       );
       
-      if (distance < closestDistance) {
-        closestDistance = distance;
+      // Apply modifiers based on optimization parameters
+      const locationFactor = calculateLocationFactor(unvisited[i], params.prioritizeFuel);
+      const trafficFactor = params.avoidTraffic ? 0.8 : 1.0;
+      const fuelFactor = params.prioritizeFuel ? 0.7 : 1.0;
+      
+      // Calculate weighted score (lower is better)
+      const score = distance * locationFactor * trafficFactor * fuelFactor;
+      
+      if (score < closestScore) {
+        closestScore = score;
         closestIndex = i;
       }
     }

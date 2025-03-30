@@ -31,7 +31,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     usingRealTimeData: false
   });
   
-  // Synchronize locations with the database
   useEffect(() => {
     const syncLocationsWithDatabase = async () => {
       setSyncingLocations(true);
@@ -125,7 +124,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     syncLocationsWithDatabase();
   }, []);
 
-  // Fetch fuel cost
   useEffect(() => {
     const fetchFuelCost = async () => {
       const { data, error } = await supabase
@@ -164,7 +162,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     fetchFuelCost();
   }, []);
 
-  // Update route when start/end locations change
   useEffect(() => {
     if (startLocation) {
       console.log("Start location set:", startLocation);
@@ -195,7 +192,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     }
   }, [startLocation, endLocation]);
   
-  // Update available locations when route changes
   useEffect(() => {
     setRoute(prev => {
       const routeLocationIds = prev.locations.map(loc => loc.id);
@@ -242,7 +238,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       const newLocations = [...prev.locations];
       
       if (endLocation && newLocations.length > 1) {
-        // Insert before end location
         newLocations.splice(newLocations.length - 1, 0, locationWithCylinders);
       } else {
         newLocations.push(locationWithCylinders);
@@ -259,7 +254,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       return newRouteState;
     });
     
-    // Remove from available locations
     setAvailableLocations(prev => 
       prev.filter(loc => loc.id.toString() !== location.id.toString())
     );
@@ -276,7 +270,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       
       console.log("Updated route locations after remove:", newLocations);
       
-      // Add back to available locations
       setAvailableLocations(prevAvailable => [...prevAvailable, removedLocation]);
       
       return {
@@ -301,9 +294,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     const endLoc = route.locations[route.locations.length - 1];
     let middleLocations = [...route.locations.slice(1, -1)];
     
-    if (params.optimizeForDistance) {
-      middleLocations = optimizeLocationOrder(startLoc, middleLocations, endLoc);
-    }
+    middleLocations = optimizeLocationOrder(startLoc, middleLocations, endLoc, params);
     
     const optimizedLocations = [
       startLoc,
@@ -324,10 +315,10 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       usingRealTimeData: params.useRealTimeData
     }));
     
-    toast.success(params.optimizeForDistance ? 
-      "Route optimized for shortest distance" : 
-      (params.prioritizeFuel ? 
-        "Route optimized for best fuel efficiency" : 
+    toast.success(params.prioritizeFuel ? 
+      "Route optimized for best fuel efficiency" : 
+      (params.optimizeForDistance ? 
+        "Route optimized for shortest distance" : 
         "Route optimized with selected parameters")
     );
   };
