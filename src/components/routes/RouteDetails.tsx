@@ -34,7 +34,7 @@ interface RouteDetailsProps {
   onOptimize?: () => void;
   onSave?: () => void;
   isLoadConfirmed?: boolean;
-  vehicleConfig?: VehicleConfigProps;
+  vehicleConfig: VehicleConfigProps;
 }
 
 interface LocationCost {
@@ -45,6 +45,12 @@ interface LocationCost {
   estimatedTimeMin?: number;
 }
 
+const defaultVehicleConfig: VehicleConfigProps = {
+  baseConsumption: 12,
+  fuelPrice: 21.95,
+  maintenanceCostPerKm: 0.50
+};
+
 const RouteDetails: React.FC<RouteDetailsProps> = ({ 
   route, 
   onRemoveLocation, 
@@ -54,7 +60,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   onOptimize,
   onSave,
   isLoadConfirmed = false,
-  vehicleConfig
+  vehicleConfig = defaultVehicleConfig
 }) => {
   const [locationCosts, setLocationCosts] = useState<LocationCost[]>([]);
   const [totalCost, setTotalCost] = useState(0);
@@ -65,10 +71,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(null);
   const [showDetailedView, setShowDetailedView] = useState(false);
   
-  // Fixed values for the vehicle configuration
   const AVG_SPEED = 40;
   
   useEffect(() => {
+    const config = vehicleConfig || defaultVehicleConfig;
+    
     const costs: LocationCost[] = [];
     let totalDist = 0;
     let totalCost = 0;
@@ -89,9 +96,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           location.long || 0
         );
 
-        const fuelCost = (distance * vehicleConfig.baseConsumption / 100) * vehicleConfig.fuelPrice;
-        const maintenanceCost = distance * vehicleConfig.maintenanceCostPerKm;
-        // Calculate estimated time in minutes
+        const fuelCost = (distance * config.baseConsumption / 100) * config.fuelPrice;
+        const maintenanceCost = distance * config.maintenanceCostPerKm;
         const estimatedTimeMin = Math.round((distance / AVG_SPEED) * 60);
 
         totalDist += distance;
@@ -122,23 +128,20 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     setTotalEstimatedTime(totalTime);
     setTotalCylinders(totalCyls);
     setTotalExchangedCylinders(totalExchanged);
-  }, [route.locations]);
+  }, [route.locations, vehicleConfig]);
 
   const handleMoveUp = (index: number) => {
-    if (index <= 1) return; // Cannot move up the first stop (depot) or second stop
-    // Implement reordering logic here if needed
+    if (index <= 1) return;
   };
 
   const handleMoveDown = (index: number) => {
-    if (index >= route.locations.length - 2 || index === 0) return; // Cannot move down the last stop or depot
-    // Implement reordering logic here if needed
+    if (index >= route.locations.length - 2 || index === 0) return;
   };
 
-  // Format time display for metrics card
   const formatTime = (minutes: number) => {
     return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
   };
-  
+
   return (
     <>
       <Card className="w-full">
@@ -155,7 +158,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {/* Metrics cards at the top */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <RouteMetricsCard 
               title="Distance" 
@@ -193,13 +195,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2 relative">
-              {/* Draw vertical route line connecting stops */}
               <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200 dark:bg-gray-700 z-0"></div>
               
               {locationCosts.map((item, index) => (
                 <Card key={`${item.location.id}-${index}`} className="p-4 relative z-10">
                   <div className="flex items-start gap-3">
-                    {/* Stop marker with number */}
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
                       {index + 1}
                     </div>
@@ -245,7 +245,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                     </div>
                   </div>
                   
-                  {/* Actions for each stop - only show for non-depot locations */}
                   {index !== 0 && (
                     <div className="flex justify-end mt-2 gap-2">
                       <Button 
@@ -289,7 +288,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </CardContent>
       </Card>
       
-      {/* Detailed Route View Dialog - Updated to ensure it appears on top of map layers */}
       <Dialog open={showDetailedView} onOpenChange={setShowDetailedView}>
         <DialogContent 
           className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"

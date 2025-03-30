@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, MarkerProps } from 'react-leaflet';
 import L from 'leaflet';
 import { markerIcons } from './Icons';
 
@@ -38,10 +38,11 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     ? createNumberedMarker(stopNumber) 
     : markerIcons.default;
 
+  // Use type assertion to handle the icon prop which is not properly typed in @types/react-leaflet
   return (
     <Marker 
       position={position}
-      icon={markerIcon}
+      icon={markerIcon as any}
     >
       <Popup>
         <div className="p-1">

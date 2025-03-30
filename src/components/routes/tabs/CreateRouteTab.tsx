@@ -9,6 +9,7 @@ import LocationSelector from '../LocationSelector';
 import OptimizationParameters from '../OptimizationParameters';
 import RouteMap from '../RouteMap';
 import RouteDetails from '../RouteDetails';
+import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 
 interface CreateRouteTabProps {
   route: {
@@ -39,7 +40,15 @@ interface CreateRouteTabProps {
   onFuelCostUpdate: (newCost: number) => void;
   onRouteDataUpdate: (distance: number, duration: number) => void;
   onConfirmLoad: () => void;
+  vehicleConfig: VehicleConfigProps;
 }
+
+// Default vehicle configuration as a fallback
+const defaultVehicleConfig: VehicleConfigProps = {
+  baseConsumption: 12,
+  fuelPrice: 21.95,
+  maintenanceCostPerKm: 0.50
+};
 
 const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   route,
@@ -59,7 +68,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onAddNewLocation,
   onFuelCostUpdate,
   onRouteDataUpdate,
-  onConfirmLoad
+  onConfirmLoad,
+  vehicleConfig = defaultVehicleConfig
 }) => {
   // Create a wrapper function for onOptimize that matches the expected signature
   const handleOptimize = () => {
@@ -123,6 +133,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                 onOptimize={handleOptimize}
                 onSave={onConfirmLoad}
                 isLoadConfirmed={isLoadConfirmed}
+                vehicleConfig={vehicleConfig}
               />
               
               <div className="flex justify-end">
