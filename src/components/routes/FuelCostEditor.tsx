@@ -9,24 +9,32 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FuelCostEditorProps {
-  currentFuelCost?: number;
-  fuelCostPerLiter: number;
+  currentCost?: number;
+  fuelCostPerLiter?: number;  // Make this optional
   fuelConsumption?: number;
   onChange?: (newCost: number) => void;
+  onUpdate?: (newCost: number) => void;  // Add alternative prop name
 }
 
 const FuelCostEditor = ({ 
-  currentFuelCost,
-  fuelCostPerLiter,
+  currentCost,
+  fuelCostPerLiter = 21.95,  // Provide default value
   fuelConsumption,
-  onChange 
+  onChange,
+  onUpdate  // Support both onChange and onUpdate
 }: FuelCostEditorProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [fuelCost, setFuelCost] = useState(fuelCostPerLiter.toString());
+  const [fuelCost, setFuelCost] = useState(
+    (currentCost || fuelCostPerLiter).toString()
+  );
   
   useEffect(() => {
-    setFuelCost(fuelCostPerLiter.toString());
-  }, [fuelCostPerLiter]);
+    if (currentCost !== undefined) {
+      setFuelCost(currentCost.toString());
+    } else if (fuelCostPerLiter !== undefined) {
+      setFuelCost(fuelCostPerLiter.toString());
+    }
+  }, [currentCost, fuelCostPerLiter]);
   
   const fetchCurrentFuelCost = async () => {
     const { data, error } = await supabase
@@ -44,6 +52,9 @@ const FuelCostEditor = ({
       setFuelCost(data.value.toString());
       if (onChange) {
         onChange(data.value);
+      }
+      if (onUpdate) {
+        onUpdate(data.value);
       }
     }
   };
@@ -99,6 +110,9 @@ const FuelCostEditor = ({
     if (onChange) {
       onChange(numericCost);
     }
+    if (onUpdate) {
+      onUpdate(numericCost);
+    }
     toast.success('Fuel cost updated successfully');
     setIsOpen(false);
   };
@@ -107,7 +121,7 @@ const FuelCostEditor = ({
     fetchCurrentFuelCost();
   }, []);
   
-  const displayCost = currentFuelCost || fuelCostPerLiter;
+  const displayCost = currentCost || fuelCostPerLiter;
   
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

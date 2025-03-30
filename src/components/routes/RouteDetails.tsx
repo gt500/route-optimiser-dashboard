@@ -4,7 +4,7 @@ import {
   ChevronDown, 
   ChevronUp, 
   MapPin, 
-  Gas, 
+  Fuel, // Changed from Gas to Fuel (which exists in lucide-react)
   Clock, 
   DollarSign, 
   Route, 
@@ -16,7 +16,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { FuelCostEditor } from '@/components/routes/FuelCostEditor';
+import FuelCostEditor from '@/components/routes/FuelCostEditor'; // Fixed import statement
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
 import { 
@@ -336,7 +336,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </div>
         <div className="bg-white border p-2 rounded-md">
           <div className="flex items-center text-gray-500 mb-1">
-            <Gas className="h-4 w-4 mr-1" />
+            <Fuel className="h-4 w-4 mr-1" />
             <span className="text-xs font-medium">Fuel</span>
           </div>
           <div className="flex items-center">
