@@ -10,7 +10,6 @@ import RouteHistoryTab from '@/components/routes/tabs/RouteHistoryTab';
 import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
-import RouteMap from '@/components/routes/RouteMap';
 
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -106,81 +105,69 @@ const RoutesList = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {!route.locations.length && (
-        <div className="fixed inset-0 z-0">
-          <RouteMap 
-            center={[-33.918861, 18.423300]}
-            zoom={10}
-            height="100%"
+      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
+        <div className="flex items-center gap-4">
+          <img 
+            src="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png" 
+            alt="GAZ2GO" 
+            className="h-12 w-auto" 
           />
-        </div>
-      )}
-
-      <div className="relative z-10">
-        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm p-4 rounded-lg shadow-sm">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png" 
-              alt="GAZ2GO" 
-              className="h-12 w-auto" 
-            />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Route Optimiser</h1>
-              <p className="text-muted-foreground">Create and manage delivery routes in South Africa</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2" onClick={addNewLocation}>
-              <MapPin className="h-4 w-4" />
-              New Location
-            </Button>
-            <Button className="gap-1" onClick={handleCreateNewRoute}>
-              <Plus className="h-4 w-4" />
-              New Route
-            </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Route Optimiser</h1>
+            <p className="text-muted-foreground">Create and manage delivery routes in South Africa</p>
           </div>
         </div>
-
-        <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="space-y-4 mt-4">
-          <TabsList className="grid w-full grid-cols-3 h-11 bg-white/80 backdrop-blur-sm">
-            <TabsTrigger value="create">Create Route</TabsTrigger>
-            <TabsTrigger value="active">Active Routes</TabsTrigger>
-            <TabsTrigger value="history">Route History</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="create" className="space-y-4">
-            <CreateRouteTab
-              route={route}
-              isSyncingLocations={isSyncingLocations}
-              isLoadConfirmed={isLoadConfirmed}
-              availableLocations={availableLocations}
-              startLocation={startLocation}
-              endLocation={endLocation}
-              filteredAvailableLocations={filteredAvailableLocations}
-              transformedLocations={transformedLocations}
-              onStartLocationChange={handleStartLocationChange}
-              onEndLocationChange={handleEndLocationChange}
-              onAddLocationToRoute={addLocationToRoute}
-              onUpdateLocations={handleUpdateLocations}
-              onOptimize={handleOptimizeRoute}
-              onRemoveLocation={removeLocationFromRoute}
-              onAddNewLocation={handleAddNewLocationFromPopover}
-              onFuelCostUpdate={handleFuelCostUpdate}
-              onRouteDataUpdate={handleRouteDataUpdate}
-              onConfirmLoad={handleConfirmLoad}
-              vehicleConfig={vehicleConfig || defaultVehicleConfig}
-            />
-          </TabsContent>
-          
-          <TabsContent value="active">
-            <ActiveRoutesTab onCreateRoute={() => setActiveTab('create')} />
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <RouteHistoryTab onCreateRoute={() => setActiveTab('create')} />
-          </TabsContent>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-2" onClick={addNewLocation}>
+            <MapPin className="h-4 w-4" />
+            New Location
+          </Button>
+          <Button className="gap-1" onClick={handleCreateNewRoute}>
+            <Plus className="h-4 w-4" />
+            New Route
+          </Button>
+        </div>
       </div>
+
+      <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 h-11">
+          <TabsTrigger value="create">Create Route</TabsTrigger>
+          <TabsTrigger value="active">Active Routes</TabsTrigger>
+          <TabsTrigger value="history">Route History</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="create" className="space-y-4">
+          <CreateRouteTab
+            route={route}
+            isSyncingLocations={isSyncingLocations}
+            isLoadConfirmed={isLoadConfirmed}
+            availableLocations={availableLocations}
+            startLocation={startLocation}
+            endLocation={endLocation}
+            filteredAvailableLocations={filteredAvailableLocations}
+            transformedLocations={transformedLocations}
+            onStartLocationChange={handleStartLocationChange}
+            onEndLocationChange={handleEndLocationChange}
+            onAddLocationToRoute={addLocationToRoute}
+            onUpdateLocations={handleUpdateLocations}
+            onOptimize={handleOptimizeRoute}
+            onRemoveLocation={removeLocationFromRoute}
+            onAddNewLocation={handleAddNewLocationFromPopover}
+            onFuelCostUpdate={handleFuelCostUpdate}
+            onRouteDataUpdate={handleRouteDataUpdate}
+            onConfirmLoad={handleConfirmLoad}
+            vehicleConfig={vehicleConfig || defaultVehicleConfig}
+          />
+        </TabsContent>
+        
+        <TabsContent value="active">
+          <ActiveRoutesTab onCreateRoute={() => setActiveTab('create')} />
+        </TabsContent>
+        
+        <TabsContent value="history">
+          <RouteHistoryTab onCreateRoute={() => setActiveTab('create')} />
+        </TabsContent>
+      </Tabs>
 
       <LocationEditDialog 
         open={newLocationDialog}
