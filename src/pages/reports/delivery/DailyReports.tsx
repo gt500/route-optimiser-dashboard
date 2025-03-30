@@ -217,110 +217,122 @@ const DailyReports = () => {
   })).filter(loc => loc.latitude && loc.longitude);
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="daily" onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="daily">Daily</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      
-      {filteredDeliveries.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <RouteMetricsCard
-            title="Total Cylinders"
-            value={totalCylinders}
-            icon={<Truck className="h-4 w-4" />}
-            color="bg-gradient-to-br from-orange-500 to-orange-600"
-            ringColor="ring-orange-400/30"
-            tooltip="Total cylinders delivered or picked up on this date"
-          />
-          
-          <RouteMetricsCard
-            title="Total Distance"
-            value={`${totalKms.toFixed(1)} km`}
-            icon={<MapPin className="h-4 w-4" />}
-            color="bg-gradient-to-br from-blue-500 to-blue-600"
-            ringColor="ring-blue-400/30"
-            tooltip="Total distance covered by all deliveries"
-          />
-          
-          <RouteMetricsCard
-            title="Delivery Locations"
-            value={filteredDeliveries.length}
-            icon={<MapPin className="h-4 w-4" />}
-            color="bg-gradient-to-br from-purple-500 to-purple-600"
-            ringColor="ring-purple-400/30"
-            tooltip="Number of delivery locations visited"
-          />
-          
-          <RouteMetricsCard
-            title="Fuel Cost"
-            value={`R${totalFuelCost.toFixed(2)}`}
-            icon={<Fuel className="h-4 w-4" />}
-            color="bg-gradient-to-br from-green-500 to-green-600"
-            ringColor="ring-green-400/30"
-            tooltip="Total fuel cost for all deliveries"
+    <div className="space-y-4 relative">
+      {/* Background Map Layer */}
+      {mapLocations.length > 0 && (
+        <div className="fixed inset-0 z-0">
+          <RouteMap
+            locations={mapLocations}
+            height="100%"
+            zoom={9}
           />
         </div>
       )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Select Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-            />
-            <div className="mt-4 flex flex-col gap-2">
-              <Button onClick={handleRefresh} className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Loading
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" /> Refresh Data
-                  </>
-                )}
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={toggleViewMode}>
-                  <MapPin className="mr-2 h-4 w-4" /> {viewMode === 'table' ? 'View Map' : 'View Table'}
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex-1">
-                      <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem>
-                      <FileSpreadsheet className="mr-2 h-4 w-4" /> Export to Excel
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Download className="mr-2 h-4 w-4" /> Download PDF
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader>
-            <CardTitle>Daily Deliveries: {formattedDate}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredDeliveries.length > 0 ? (
-              viewMode === 'table' ? (
+      {/* Content Layer */}
+      <div className="relative z-10">
+        <Tabs defaultValue="daily" onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="daily">Daily</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        {filteredDeliveries.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <RouteMetricsCard
+              title="Total Cylinders"
+              value={totalCylinders}
+              icon={<Truck className="h-4 w-4" />}
+              color="bg-gradient-to-br from-orange-500 to-orange-600"
+              ringColor="ring-orange-400/30"
+              tooltip="Total cylinders delivered or picked up on this date"
+            />
+            
+            <RouteMetricsCard
+              title="Total Distance"
+              value={`${totalKms.toFixed(1)} km`}
+              icon={<MapPin className="h-4 w-4" />}
+              color="bg-gradient-to-br from-blue-500 to-blue-600"
+              ringColor="ring-blue-400/30"
+              tooltip="Total distance covered by all deliveries"
+            />
+            
+            <RouteMetricsCard
+              title="Delivery Locations"
+              value={filteredDeliveries.length}
+              icon={<MapPin className="h-4 w-4" />}
+              color="bg-gradient-to-br from-purple-500 to-purple-600"
+              ringColor="ring-purple-400/30"
+              tooltip="Number of delivery locations visited"
+            />
+            
+            <RouteMetricsCard
+              title="Fuel Cost"
+              value={`R${totalFuelCost.toFixed(2)}`}
+              icon={<Fuel className="h-4 w-4" />}
+              color="bg-gradient-to-br from-green-500 to-green-600"
+              ringColor="ring-green-400/30"
+              tooltip="Total fuel cost for all deliveries"
+            />
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="col-span-1 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Select Date</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border"
+              />
+              <div className="mt-4 flex flex-col gap-2">
+                <Button onClick={handleRefresh} className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Loading
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" /> Refresh Data
+                    </>
+                  )}
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1">
+                    <MapPin className="mr-2 h-4 w-4" /> View Data
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Export to Excel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Download className="mr-2 h-4 w-4" /> Download PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 md:col-span-2 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Daily Deliveries: {formattedDate}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredDeliveries.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -348,25 +360,17 @@ const DailyReports = () => {
                   </TableBody>
                 </Table>
               ) : (
-                <div className="h-[400px]">
-                  <RouteMap
-                    locations={mapLocations}
-                    height="100%"
-                    zoom={9}
-                  />
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-muted-foreground">
+                    {isLoading 
+                      ? "Loading delivery data..." 
+                      : "No deliveries found for this date."}
+                  </p>
                 </div>
-              )
-            ) : (
-              <div className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">
-                  {isLoading 
-                    ? "Loading delivery data..." 
-                    : "No deliveries found for this date."}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

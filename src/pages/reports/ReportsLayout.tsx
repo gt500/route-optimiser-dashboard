@@ -21,15 +21,15 @@ const ReportsLayout = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{getReportTitle()}</h1>
-        <p className="text-muted-foreground">View and generate detailed reports</p>
-      </div>
-      
-      <Card className="p-6">
+    <div className="space-y-6 animate-fade-in relative">
+      <div className="relative z-10">
+        <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg mb-4">
+          <h1 className="text-2xl font-bold tracking-tight">{getReportTitle()}</h1>
+          <p className="text-muted-foreground">View and generate detailed reports</p>
+        </div>
+        
         <Outlet />
-      </Card>
+      </div>
     </div>
   );
 };
