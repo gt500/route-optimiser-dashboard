@@ -50,6 +50,8 @@ const FuelCostEditor = ({
     
     if (data) {
       setFuelCost(data.value.toString());
+      
+      // Ensure both callbacks are called if they exist
       if (onChange) {
         onChange(data.value);
       }
@@ -107,14 +109,19 @@ const FuelCostEditor = ({
       return;
     }
     
+    // Make sure to update UI and calculations by calling both callbacks
     if (onChange) {
       onChange(numericCost);
     }
     if (onUpdate) {
       onUpdate(numericCost);
     }
+    
     toast.success('Fuel cost updated successfully');
     setIsOpen(false);
+    
+    // This ensures the calculation is updated immediately in parent components
+    console.log('Updated fuel cost to:', numericCost);
   };
   
   useEffect(() => {

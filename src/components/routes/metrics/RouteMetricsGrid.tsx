@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import RouteMetricsCard from './RouteMetricsCard';
 import FuelCostEditor from '../FuelCostEditor';
 import { CircleX, CircleCheck, Clock, Fuel, ChevronsDown, ChevronsUp, MapPin, TruckIcon } from 'lucide-react';
@@ -27,6 +27,29 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   usingRealTimeData = false,
   onFuelCostChange
 }) => {
+  const [localFuelCost, setLocalFuelCost] = useState(fuelCost);
+  const [localFuelCostPerLiter, setLocalFuelCostPerLiter] = useState(fuelCostPerLiter);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalFuelCost(fuelCost);
+    setLocalFuelCostPerLiter(fuelCostPerLiter);
+  }, [fuelCost, fuelCostPerLiter]);
+  
+  // Handle fuel cost changes
+  const handleFuelCostChange = (newCostPerLiter: number) => {
+    setLocalFuelCostPerLiter(newCostPerLiter);
+    
+    // Calculate the new total fuel cost based on consumption and new price
+    const newTotalFuelCost = fuelConsumption * newCostPerLiter;
+    setLocalFuelCost(newTotalFuelCost);
+    
+    // Pass the updated cost to the parent component
+    if (onFuelCostChange) {
+      onFuelCostChange(newCostPerLiter);
+    }
+  };
+  
   const formatDistance = (km: number): string => {
     if (km < 1) return `${Math.round(km * 1000)} m`;
     return `${km.toFixed(1)} km`;
@@ -101,16 +124,21 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
       />
       <RouteMetricsCard 
         title="Fuel Cost"
-        value={`R ${fuelCost.toFixed(2)}`}
+        value={`R ${localFuelCost.toFixed(2)}`}
         icon={<Fuel className="h-5 w-5" />}
         color="bg-green-600"
         subtitle={
-          <FuelCostEditor 
-            fuelConsumption={fuelConsumption} 
-            fuelCostPerLiter={fuelCostPerLiter}
-            onChange={onFuelCostChange}
-            currentCost={fuelCostPerLiter}
-          />
+          <>
+            <div className="mb-1 text-sm">
+              {fuelConsumption.toFixed(1)}L @ R{localFuelCostPerLiter.toFixed(2)}/L
+            </div>
+            <FuelCostEditor 
+              fuelConsumption={fuelConsumption} 
+              fuelCostPerLiter={localFuelCostPerLiter}
+              onChange={handleFuelCostChange}
+              currentCost={localFuelCostPerLiter}
+            />
+          </>
         }
         tooltip="Estimated fuel cost based on current prices"
       />

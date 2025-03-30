@@ -110,10 +110,12 @@ export interface OptimizationParams {
 
 /**
  * Calculate route metrics based on locations and optimization parameters
+ * with support for custom fuel cost
  */
 export const calculateRouteMetrics = (
   locations: LocationType[],
-  params: OptimizationParams
+  params: OptimizationParams,
+  fuelCostPerLiter: number = 21.95 // Add fuel cost parameter with default value
 ) => {
   let calculatedDistance = 0;
   
@@ -147,11 +149,14 @@ export const calculateRouteMetrics = (
   }
   
   const fuelConsumption = Math.round(newDistance * 0.12 * fuelMultiplier * 100) / 100;
+  // Use the provided fuel cost parameter to calculate the total cost
+  const fuelCost = Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100;
   
   return {
     distance: Math.round(newDistance * 10) / 10,
     duration: Math.round(newDuration),
     fuelConsumption,
+    fuelCost, // Now calculated with the provided fuel cost
     trafficConditions,
     usingRealTimeData: params.useRealTimeData
   };

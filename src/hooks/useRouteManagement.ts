@@ -254,6 +254,11 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     setVehicleConfig(prev => {
       const updatedConfig = { ...prev, ...config };
       updateVehicleConfigInDatabase(updatedConfig);
+      
+      if (route.locations.length > 1 && config.fuelPrice !== undefined) {
+        updateRouteCosts(route.distance, config.fuelPrice);
+      }
+      
       return updatedConfig;
     });
   };
@@ -316,11 +321,14 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     }
   };
 
-  const updateRouteCosts = (distance: number) => {
+  const updateRouteCosts = (distance: number, fuelPrice?: number) => {
+    const priceToUse = fuelPrice !== undefined ? fuelPrice : vehicleConfig.fuelPrice;
     const fuelConsumption = (distance * vehicleConfig.baseConsumption) / 100;
-    const fuelCost = fuelConsumption * vehicleConfig.fuelPrice;
+    const fuelCost = fuelConsumption * priceToUse;
     const maintenanceCost = distance * vehicleConfig.maintenanceCostPerKm;
     const totalCost = fuelCost + maintenanceCost;
+    
+    console.log(`Updating route costs with: distance=${distance}, fuelPrice=${priceToUse}, consumption=${fuelConsumption}, cost=${fuelCost}`);
     
     setRoute(prev => ({
       ...prev,
@@ -425,7 +433,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       endLoc
     ];
     
-    const metrics = calculateRouteMetrics(optimizedLocations, params);
+    const metrics = calculateRouteMetrics(optimizedLocations, params, vehicleConfig.fuelPrice);
     
     setRoute(prev => ({
       ...prev,
@@ -433,7 +441,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       distance: metrics.distance,
       estimatedDuration: metrics.duration,
       fuelConsumption: metrics.fuelConsumption,
-      fuelCost: Math.round(metrics.fuelConsumption * vehicleConfig.fuelPrice * 100) / 100,
+      fuelCost: metrics.fuelCost,
       trafficConditions: metrics.trafficConditions,
       usingRealTimeData: params.useRealTimeData
     }));
@@ -467,13 +475,23 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   };
 
   const handleFuelCostUpdate = (newCost: number) => {
+    console.log("Fuel cost updated to:", newCost);
+    
     updateVehicleConfig({ fuelPrice: newCost });
+    
+    if (route.locations.length > 1) {
+      updateRouteCosts(route.distance, newCost);
+    }
+    
+    toast.success(`Fuel cost updated to R${newCost.toFixed(2)}/L`);
   };
 
   const handleRouteDataUpdate = (distance: number, duration: number) => {
     setRoute(prev => {
       const consumption = distance * 0.12;
       const cost = consumption * vehicleConfig.fuelPrice;
+      
+      console.log(`Route data updated: distance=${distance}, duration=${duration}, consumption=${consumption}, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
       
       return {
         ...prev,
