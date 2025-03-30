@@ -132,11 +132,43 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   }, [route.locations, vehicleConfig]);
 
   const handleMoveUp = (index: number) => {
-    if (index <= 1) return;
+    if (index <= 1) return; // Cannot move up depot or first location
+    
+    // Create new array with swapped locations
+    const updatedLocations = [...route.locations];
+    [updatedLocations[index], updatedLocations[index - 1]] = [updatedLocations[index - 1], updatedLocations[index]];
+    
+    // Inform parent component of change
+    if (onRouteDataUpdate) {
+      // Trigger route data recalculation with the new order
+      onRouteDataUpdate(totalDistance, totalEstimatedTime);
+    }
+    
+    // Update route with new location order (this should be handled by the parent)
+    if (route.locations !== updatedLocations) {
+      // Replace the route.locations with updatedLocations
+      Object.assign(route, { locations: updatedLocations });
+    }
   };
 
   const handleMoveDown = (index: number) => {
-    if (index >= route.locations.length - 2 || index === 0) return;
+    if (index >= route.locations.length - 2 || index === 0) return; // Cannot move down depot or last location
+    
+    // Create new array with swapped locations
+    const updatedLocations = [...route.locations];
+    [updatedLocations[index], updatedLocations[index + 1]] = [updatedLocations[index + 1], updatedLocations[index]];
+    
+    // Inform parent component of change
+    if (onRouteDataUpdate) {
+      // Trigger route data recalculation with the new order
+      onRouteDataUpdate(totalDistance, totalEstimatedTime);
+    }
+    
+    // Update route with new location order (this should be handled by the parent)
+    if (route.locations !== updatedLocations) {
+      // Replace the route.locations with updatedLocations
+      Object.assign(route, { locations: updatedLocations });
+    }
   };
 
   const formatTime = (minutes: number) => {
