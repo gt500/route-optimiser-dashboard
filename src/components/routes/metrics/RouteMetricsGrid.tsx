@@ -117,7 +117,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
             fuelConsumption={fuelConsumption} 
             fuelCostPerLiter={fuelCostPerLiter}
             onChange={onFuelCostChange}
-            currentFuelCost={fuelCostPerLiter}
+            currentCost={fuelCostPerLiter}
           />
         }
         tooltip="Estimated fuel cost based on current prices"

@@ -4,7 +4,7 @@ import {
   ChevronDown, 
   ChevronUp, 
   MapPin, 
-  Fuel, // Changed from Gas to Fuel (which exists in lucide-react)
+  Fuel,
   Clock, 
   DollarSign, 
   Route, 
@@ -16,7 +16,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import FuelCostEditor from '@/components/routes/FuelCostEditor'; // Fixed import statement
+import FuelCostEditor from '@/components/routes/FuelCostEditor';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
 import { 
@@ -180,6 +180,55 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     ] as [number, number]
   } : undefined;
 
+  // Calculate costs and metrics per stop
+  const calculateStopMetrics = () => {
+    if (route.locations.length <= 1) return [];
+    
+    let distanceRunningTotal = 0;
+    let timeRunningTotal = 0;
+    let fuelCostRunningTotal = 0;
+    let cylindersRunningTotal = 0;
+    
+    return route.locations.map((location, index) => {
+      // For the first location (starting point), we don't have metrics yet
+      if (index === 0) {
+        return {
+          location,
+          distanceSoFar: 0,
+          timeSoFar: 0,
+          fuelCostSoFar: 0,
+          cylindersSoFar: 0
+        };
+      }
+      
+      // Simple estimation - divide total metrics by number of stops
+      // This would be replaced by actual segment data in a real implementation
+      const distanceIncrement = route.distance / (route.locations.length - 1);
+      const timeIncrement = (route.estimatedDuration || 0) / (route.locations.length - 1);
+      const fuelCostIncrement = route.fuelCost / (route.locations.length - 1);
+      
+      // Assume each location contributes equally to total cylinders
+      // In a real app this would come from the location's actual cylinder count
+      const cylindersAtLocation = location.emptyCylinders || 0;
+      
+      distanceRunningTotal += distanceIncrement;
+      timeRunningTotal += timeIncrement;
+      fuelCostRunningTotal += fuelCostIncrement;
+      cylindersRunningTotal += cylindersAtLocation;
+      
+      return {
+        location,
+        distanceSoFar: distanceRunningTotal,
+        timeSoFar: timeRunningTotal,
+        fuelCostSoFar: fuelCostRunningTotal,
+        cylindersSoFar: cylindersRunningTotal,
+        cylindersAtLocation
+      };
+    });
+  };
+
+  const stopMetrics = calculateStopMetrics();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -199,11 +248,16 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </Button>
             </DialogTrigger>
             <DialogContent
-              className="sm:max-w-[900px] max-h-[80vh] overflow-auto"
+              className="sm:max-w-[900px] max-h-[80vh] overflow-auto p-0"
               isDraggable={true}
+              style={{
+                transform: `translate(${draggablePosition.x}px, ${draggablePosition.y}px)`,
+                maxWidth: '80vw',
+                width: '900px'
+              }}
             >
               <div 
-                className="cursor-move py-2"
+                className="cursor-move py-2 px-6 bg-gray-50 border-b"
                 onMouseDown={startDrag}
                 style={{
                   touchAction: 'none'
@@ -217,87 +271,116 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 </DialogHeader>
               </div>
               
-              <div className="h-[400px] mb-4 relative">
-                <RouteMap
-                  height="100%"
-                  locations={transformedLocations}
-                  showRouting={route.locations.length >= 2}
-                  startLocation={startLocation}
-                  endLocation={endLocation}
-                  waypoints={waypoints}
-                  trafficConditions={route.trafficConditions}
-                />
-              </div>
+              <div className="p-6 space-y-4 overflow-auto max-h-[calc(80vh-100px)]">
+                <div className="h-[400px] mb-4 relative">
+                  <RouteMap
+                    height="100%"
+                    locations={transformedLocations}
+                    showRouting={route.locations.length >= 2}
+                    startLocation={startLocation}
+                    endLocation={endLocation}
+                    waypoints={waypoints}
+                    trafficConditions={route.trafficConditions}
+                  />
+                </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-muted/50 p-3 rounded-md">
-                    <div className="flex items-center text-muted-foreground mb-1">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">Total Distance</span>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">Total Distance</span>
+                      </div>
+                      <div className="text-lg font-semibold">{totalDistance.toFixed(1)} km</div>
                     </div>
-                    <div className="text-lg font-semibold">{totalDistance.toFixed(1)} km</div>
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">Estimated Time</span>
+                      </div>
+                      <div className="text-lg font-semibold">{formatTime(totalEstimatedTime)}</div>
+                    </div>
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <DollarSign className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">Fuel Cost</span>
+                      </div>
+                      <div className="text-lg font-semibold">R {route.fuelCost.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <Truck className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">Cylinders</span>
+                      </div>
+                      <div className="text-lg font-semibold">{route.cylinders}</div>
+                    </div>
                   </div>
-                  <div className="bg-muted/50 p-3 rounded-md">
-                    <div className="flex items-center text-muted-foreground mb-1">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">Estimated Time</span>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-medium mb-2">Route Stops with Metrics</h3>
+                    <div className="space-y-2">
+                      {stopMetrics.map((stop, index) => (
+                        <Card key={`${stop.location.id}-${index}`} className="border border-muted">
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className={`flex items-center justify-center h-6 w-6 rounded-full ${
+                                  index === 0 ? 'bg-green-500' : 
+                                  index === route.locations.length - 1 ? 'bg-red-500' : 'bg-indigo-600'
+                                } text-white text-xs font-bold mr-2`}>
+                                  {index === 0 ? 'S' : index === route.locations.length - 1 ? 'E' : index}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm">{stop.location.name}</p>
+                                  <p className="text-xs text-muted-foreground">{stop.location.address}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {index > 0 && (
+                              <div className="grid grid-cols-4 gap-2 mt-2 text-xs bg-gray-50 p-2 rounded">
+                                <div>
+                                  <span className="text-muted-foreground">Distance:</span>
+                                  <p className="font-medium">{stop.distanceSoFar.toFixed(1)} km</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Time:</span>
+                                  <p className="font-medium">{formatTime(stop.timeSoFar)}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Fuel cost:</span>
+                                  <p className="font-medium">R {stop.fuelCostSoFar.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Cylinders:</span>
+                                  <p className="font-medium">{stop.cylindersAtLocation || 0}</p>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                    <div className="text-lg font-semibold">{formatTime(totalEstimatedTime)}</div>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-md">
-                    <div className="flex items-center text-muted-foreground mb-1">
-                      <DollarSign className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">Fuel Cost</span>
-                    </div>
-                    <div className="text-lg font-semibold">R {route.fuelCost.toFixed(2)}</div>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-md">
-                    <div className="flex items-center text-muted-foreground mb-1">
-                      <Truck className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">Cylinders</span>
-                    </div>
-                    <div className="text-lg font-semibold">{route.cylinders}</div>
                   </div>
                 </div>
 
-                <Separator />
-
-                <div>
-                  <h3 className="font-medium mb-2">Route Stops</h3>
-                  <div className="space-y-2">
-                    {route.locations.map((location, index) => (
-                      <Card key={`${location.id}-${index}`} className="border border-muted">
-                        <CardContent className="p-3 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{location.name}</p>
-                              <p className="text-xs text-muted-foreground">{location.address}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                <div className="flex justify-end gap-2">
+                  <DialogClose asChild>
+                    <Button variant="outline">Close</Button>
+                  </DialogClose>
+                  {onOptimize && (
+                    <Button onClick={() => {
+                      onOptimize();
+                      toast.success("Route optimized");
+                      setFullRouteDialogOpen(false);
+                    }}>
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                      Optimize Route
+                    </Button>
+                  )}
                 </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-4">
-                <DialogClose asChild>
-                  <Button variant="outline">Close</Button>
-                </DialogClose>
-                {onOptimize && (
-                  <Button onClick={() => {
-                    onOptimize();
-                    toast.success("Route optimized");
-                  }}>
-                    <ArrowUpDown className="h-4 w-4 mr-2" />
-                    Optimize Route
-                  </Button>
-                )}
               </div>
             </DialogContent>
           </Dialog>
