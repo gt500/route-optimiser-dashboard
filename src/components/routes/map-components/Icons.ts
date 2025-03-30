@@ -1,3 +1,4 @@
+
 import L from 'leaflet';
 
 interface DepotIconOptions {
@@ -86,3 +87,12 @@ export const createLocationIcon = (options: LocationIconOptions = {}): L.DivIcon
 export const startIcon = createDepotIcon({ isStart: true });
 export const endIcon = createDepotIcon({ isEnd: true });
 export const locationIcon = createLocationIcon({});
+
+// Add the missing markerIcons export
+export const markerIcons = {
+  default: createLocationIcon({}),
+  customer: createLocationIcon({ type: 'Customer' }),
+  storage: createLocationIcon({ type: 'Storage' }),
+  start: createDepotIcon({ isStart: true }),
+  end: createDepotIcon({ isEnd: true })
+};

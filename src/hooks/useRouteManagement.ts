@@ -11,11 +11,23 @@ export const routeOptimizationDefaultParams: OptimizationParams = {
   optimizeForDistance: false
 };
 
+export interface VehicleConfigProps {
+  baseConsumption: number; // L/100km
+  fuelPrice: number; // R per liter
+  maintenanceCostPerKm: number; // R per km
+}
+
+export const defaultVehicleConfig: VehicleConfigProps = {
+  baseConsumption: 12,
+  fuelPrice: 21.95,
+  maintenanceCostPerKm: 0.50
+};
+
 export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>(initialLocations);
   const [startLocation, setStartLocation] = useState<LocationType | null>(null);
   const [endLocation, setEndLocation] = useState<LocationType | null>(null);
-  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22);
+  const [vehicleConfig, setVehicleConfig] = useState<VehicleConfigProps>(defaultVehicleConfig);
   const [isLoadConfirmed, setIsLoadConfirmed] = useState(false);
   const [isSyncingLocations, setSyncingLocations] = useState(true);
   
@@ -23,6 +35,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     distance: 0,
     fuelConsumption: 0,
     fuelCost: 0,
+    maintenanceCost: 0,
+    totalCost: 0,
     cylinders: 0,
     locations: [] as LocationType[],
     availableLocations: [] as LocationType[],
@@ -30,7 +44,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     estimatedDuration: 0,
     usingRealTimeData: false
   });
-  
+
   useEffect(() => {
     const syncLocationsWithDatabase = async () => {
       setSyncingLocations(true);
@@ -128,7 +142,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     const fetchFuelCost = async () => {
       const { data, error } = await supabase
         .from('cost_factors')
-        .select('value')
+        .select('value, id')
         .eq('name', 'fuel_cost_per_liter')
         .single();
       
@@ -144,7 +158,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
           .insert({ 
             id: newRecordId,
             name: 'fuel_cost_per_liter', 
-            value: 22, 
+            value: 21.95, 
             description: 'Cost per liter of fuel in Rand' 
           });
           
@@ -155,11 +169,39 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       }
       
       if (data) {
-        setFuelCostPerLiter(data.value);
+        setVehicleConfig(prev => ({
+          ...prev,
+          fuelPrice: data.value
+        }));
+      }
+    };
+
+    const fetchVehicleConfig = async () => {
+      try {
+        const { data: consumptionData } = await supabase
+          .from('cost_factors')
+          .select('value, id')
+          .eq('name', 'base_fuel_consumption')
+          .single();
+
+        const { data: maintenanceData } = await supabase
+          .from('cost_factors')
+          .select('value, id')
+          .eq('name', 'maintenance_cost_per_km')
+          .single();
+
+        setVehicleConfig(prev => ({
+          ...prev,
+          baseConsumption: consumptionData?.value ?? prev.baseConsumption,
+          maintenanceCostPerKm: maintenanceData?.value ?? prev.maintenanceCostPerKm
+        }));
+      } catch (err) {
+        console.error("Error fetching vehicle config:", err);
       }
     };
     
     fetchFuelCost();
+    fetchVehicleConfig();
   }, []);
 
   useEffect(() => {
@@ -207,6 +249,87 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       };
     });
   }, [availableLocations, route.locations]);
+
+  const updateVehicleConfig = (config: Partial<VehicleConfigProps>) => {
+    setVehicleConfig(prev => {
+      const updatedConfig = { ...prev, ...config };
+      updateVehicleConfigInDatabase(updatedConfig);
+      return updatedConfig;
+    });
+  };
+
+  const updateVehicleConfigInDatabase = async (config: VehicleConfigProps) => {
+    try {
+      const { data: existingRecords, error: fetchError } = await supabase
+        .from('cost_factors')
+        .select('id, name')
+        .in('name', ['fuel_cost_per_liter', 'base_fuel_consumption', 'maintenance_cost_per_km']);
+      
+      if (fetchError) {
+        console.error('Error fetching cost factors:', fetchError);
+        return;
+      }
+      
+      const recordMap = new Map();
+      existingRecords?.forEach(record => {
+        recordMap.set(record.name, record.id);
+      });
+      
+      const fuelCostId = recordMap.get('fuel_cost_per_liter') || crypto.randomUUID();
+      const { error: fuelError } = await supabase
+        .from('cost_factors')
+        .upsert({ 
+          id: fuelCostId,
+          name: 'fuel_cost_per_liter', 
+          value: config.fuelPrice, 
+          description: 'Cost per liter of fuel in Rand' 
+        });
+        
+      if (fuelError) console.error('Error updating fuel cost:', fuelError);
+      
+      const consumptionId = recordMap.get('base_fuel_consumption') || crypto.randomUUID();
+      const { error: consumptionError } = await supabase
+        .from('cost_factors')
+        .upsert({ 
+          id: consumptionId,
+          name: 'base_fuel_consumption', 
+          value: config.baseConsumption, 
+          description: 'Base fuel consumption in L/100km' 
+        });
+        
+      if (consumptionError) console.error('Error updating fuel consumption:', consumptionError);
+      
+      const maintenanceId = recordMap.get('maintenance_cost_per_km') || crypto.randomUUID();
+      const { error: maintenanceError } = await supabase
+        .from('cost_factors')
+        .upsert({ 
+          id: maintenanceId,
+          name: 'maintenance_cost_per_km', 
+          value: config.maintenanceCostPerKm, 
+          description: 'Vehicle maintenance cost per kilometer' 
+        });
+        
+      if (maintenanceError) console.error('Error updating maintenance cost:', maintenanceError);
+      
+    } catch (error) {
+      console.error('Error updating vehicle configuration:', error);
+    }
+  };
+
+  const updateRouteCosts = (distance: number) => {
+    const fuelConsumption = (distance * vehicleConfig.baseConsumption) / 100;
+    const fuelCost = fuelConsumption * vehicleConfig.fuelPrice;
+    const maintenanceCost = distance * vehicleConfig.maintenanceCostPerKm;
+    const totalCost = fuelCost + maintenanceCost;
+    
+    setRoute(prev => ({
+      ...prev,
+      fuelConsumption,
+      fuelCost,
+      maintenanceCost,
+      totalCost
+    }));
+  };
 
   const handleStartLocationChange = (locationId: string) => {
     console.log("Start location selected:", locationId);
@@ -310,7 +433,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       distance: metrics.distance,
       estimatedDuration: metrics.duration,
       fuelConsumption: metrics.fuelConsumption,
-      fuelCost: Math.round(metrics.fuelConsumption * fuelCostPerLiter * 100) / 100,
+      fuelCost: Math.round(metrics.fuelConsumption * vehicleConfig.fuelPrice * 100) / 100,
       trafficConditions: metrics.trafficConditions,
       usingRealTimeData: params.useRealTimeData
     }));
@@ -331,6 +454,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       distance: 0,
       fuelConsumption: 0,
       fuelCost: 0,
+      maintenanceCost: 0,
+      totalCost: 0,
       cylinders: 0,
       locations: [],
       availableLocations: availableLocations,
@@ -342,21 +467,13 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   };
 
   const handleFuelCostUpdate = (newCost: number) => {
-    setFuelCostPerLiter(newCost);
-    
-    setRoute(prev => {
-      const consumption = prev.fuelConsumption || prev.distance * 0.12;
-      return {
-        ...prev,
-        fuelCost: Math.round(consumption * newCost * 100) / 100
-      };
-    });
+    updateVehicleConfig({ fuelPrice: newCost });
   };
 
   const handleRouteDataUpdate = (distance: number, duration: number) => {
     setRoute(prev => {
       const consumption = distance * 0.12;
-      const cost = consumption * fuelCostPerLiter;
+      const cost = consumption * vehicleConfig.fuelPrice;
       
       return {
         ...prev,
@@ -526,7 +643,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     availableLocations,
     startLocation, 
     endLocation,
-    fuelCostPerLiter,
+    vehicleConfig,
     isLoadConfirmed,
     isSyncingLocations,
     setStartLocation,
@@ -543,7 +660,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     handleConfirmLoad,
     handleUpdateLocations,
     setIsLoadConfirmed,
-    setAvailableLocations
+    setAvailableLocations,
+    updateVehicleConfig
   };
 };
 

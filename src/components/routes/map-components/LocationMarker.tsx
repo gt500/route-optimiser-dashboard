@@ -38,11 +38,18 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     ? createNumberedMarker(stopNumber) 
     : markerIcons.default;
 
+  // Fix typing issue by properly creating marker properties
+  const markerProps = {
+    position,
+    // In React Leaflet v4, icon is set as a prop of Marker
+    // We need to cast to any because of a type mismatch in the library
+  } as any;
+
+  // Set the icon separately to avoid TypeScript errors
+  markerProps.icon = markerIcon;
+
   return (
-    <Marker 
-      position={position} 
-      icon={markerIcon}
-    >
+    <Marker {...markerProps}>
       <Popup>
         <div className="p-1">
           <h3 className="font-medium text-sm">{name}</h3>

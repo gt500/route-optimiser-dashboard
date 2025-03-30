@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationType } from '@/components/locations/LocationEditDialog';
@@ -12,12 +11,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import RouteMetricsCard from './metrics/RouteMetricsCard';
+import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 
 interface RouteDetailsProps {
   route: {
     distance: number;
     fuelConsumption: number;
     fuelCost: number;
+    maintenanceCost?: number;
+    totalCost?: number;
     cylinders: number;
     locations: LocationType[];
     availableLocations: LocationType[];
@@ -32,6 +34,7 @@ interface RouteDetailsProps {
   onOptimize?: () => void;
   onSave?: () => void;
   isLoadConfirmed?: boolean;
+  vehicleConfig?: VehicleConfigProps;
 }
 
 interface LocationCost {
@@ -50,7 +53,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   onRouteDataUpdate,
   onOptimize,
   onSave,
-  isLoadConfirmed = false
+  isLoadConfirmed = false,
+  vehicleConfig
 }) => {
   const [locationCosts, setLocationCosts] = useState<LocationCost[]>([]);
   const [totalCost, setTotalCost] = useState(0);
@@ -62,13 +66,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const [showDetailedView, setShowDetailedView] = useState(false);
   
   // Fixed values for the vehicle configuration
-  const vehicleConfig = {
-    baseConsumption: 12, // L/100km
-    fuelPrice: 22, // R per liter
-    maintenanceCostPerKm: 0.35 // R per km
-  };
-  
-  // Average driving speed in km/h for time estimation
   const AVG_SPEED = 40;
   
   useEffect(() => {
