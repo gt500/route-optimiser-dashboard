@@ -1,10 +1,8 @@
 
 import React from 'react';
 import RouteMetricsCard from './RouteMetricsCard';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Clock, Fuel } from 'lucide-react';
 import FuelCostEditor from '../FuelCostEditor';
+import { CircleX, CircleCheck, Clock, Fuel, ChevronsDown, ChevronsUp, MapPin, TruckIcon } from 'lucide-react';
 
 interface RouteMetricsGridProps {
   distance: number;
@@ -15,74 +13,113 @@ interface RouteMetricsGridProps {
   fuelCostPerLiter: number;
   trafficConditions?: 'light' | 'moderate' | 'heavy';
   usingRealTimeData?: boolean;
-  onFuelCostChange: (newCost: number) => void;
+  onFuelCostChange?: (newCost: number) => void;
 }
 
-const RouteMetricsGrid = ({
+const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   distance,
   duration,
   fuelConsumption,
   fuelCost,
   cylinders,
   fuelCostPerLiter,
-  trafficConditions,
-  usingRealTimeData,
+  trafficConditions = 'moderate',
+  usingRealTimeData = false,
   onFuelCostChange
-}: RouteMetricsGridProps) => {
-  const getTrafficBadgeVariant = (condition?: 'light' | 'moderate' | 'heavy') => {
-    switch (condition) {
-      case 'light': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'moderate': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'heavy': return 'bg-red-50 text-red-700 border-red-200';
-      default: return 'bg-blue-50 text-blue-700 border-blue-200';
+}) => {
+  const formatDistance = (km: number): string => {
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toFixed(1)} km`;
+  };
+  
+  const formatTime = (minutes: number): string => {
+    if (minutes < 60) return `${Math.round(minutes)} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
+  
+  const getTrafficIcon = () => {
+    switch(trafficConditions) {
+      case 'light':
+        return <CircleCheck className="h-4 w-4 text-green-500" />;
+      case 'moderate':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'heavy':
+        return <CircleX className="h-4 w-4 text-red-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-yellow-500" />;
     }
   };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <RouteMetricsCard
-        title="Total Distance"
-        value={`${distance.toFixed(1)} km`}
-        tooltip={usingRealTimeData 
-          ? 'Distance calculated using real-time traffic data for the fastest route.' 
-          : 'Total distance calculated based on the optimized route between all stops.'}
-        subtitle={
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span className="text-gray-300">Estimated travel time: {duration} min</span>
-            {trafficConditions && (
-              <Badge variant="outline" className={getTrafficBadgeVariant(trafficConditions)}>
-                {trafficConditions} traffic
-              </Badge>
-            )}
-          </span>
-        }
-      />
-      
-      <RouteMetricsCard
-        title="Fuel Consumption"
-        value={`${fuelConsumption.toFixed(1)} L`}
-        subtitle="Based on average consumption of 12L/100km"
-      />
-      
-      <RouteMetricsCard
-        title={
-          <div className="flex items-center justify-between w-full">
-            <span>Fuel Cost</span>
-            <FuelCostEditor 
-              currentFuelCost={fuelCostPerLiter} 
-              onFuelCostChange={onFuelCostChange} 
-            />
+  
+  const getTrafficStatus = (): JSX.Element => {
+    switch(trafficConditions) {
+      case 'light':
+        return (
+          <div className="flex items-center gap-1 text-green-500">
+            <ChevronsDown className="h-4 w-4" /> Light traffic
           </div>
-        }
-        value={`R ${fuelCost.toFixed(2)}`}
-        subtitle={`At current price of R${fuelCostPerLiter.toFixed(2)}/L`}
+        );
+      case 'moderate':
+        return (
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Clock className="h-4 w-4" /> Moderate traffic
+          </div>
+        );
+      case 'heavy':
+        return (
+          <div className="flex items-center gap-1 text-red-500">
+            <ChevronsUp className="h-4 w-4" /> Heavy traffic
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Clock className="h-4 w-4" /> Moderate traffic
+          </div>
+        );
+    }
+  };
+  
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <RouteMetricsCard 
+        title="Total Distance"
+        value={formatDistance(distance)}
+        icon={<MapPin className="h-5 w-5" />}
+        color="blue"
+        subtitle={usingRealTimeData ? "Based on real-time data" : "Based on map calculation"}
+        tooltip="Total distance of the optimized route"
       />
-      
-      <RouteMetricsCard
-        title="Load"
-        value={`${cylinders}/80 cylinders`}
-        subtitle={<Progress value={(cylinders/80)*100} className="h-2 mt-2" />}
+      <RouteMetricsCard 
+        title="Estimated Time"
+        value={formatTime(duration)}
+        icon={<Clock className="h-5 w-5" />}
+        color="amber"
+        subtitle={getTrafficStatus()}
+        tooltip="Estimated driving time with current traffic conditions"
+      />
+      <RouteMetricsCard 
+        title="Total Cylinders"
+        value={cylinders.toString()}
+        icon={<TruckIcon className="h-5 w-5" />}
+        color="indigo"
+        subtitle={`${Math.round(cylinders * 1.2)} kg estimated weight`}
+        tooltip="Total number of cylinders to be delivered"
+      />
+      <RouteMetricsCard 
+        title="Fuel Cost"
+        value={`R ${fuelCost.toFixed(2)}`}
+        icon={<Fuel className="h-5 w-5" />}
+        color="green"
+        subtitle={
+          <FuelCostEditor 
+            fuelConsumption={fuelConsumption} 
+            fuelCostPerLiter={fuelCostPerLiter}
+            onChange={onFuelCostChange}
+          />
+        }
+        tooltip="Estimated fuel cost based on current prices"
       />
     </div>
   );

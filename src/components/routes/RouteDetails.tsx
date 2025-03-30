@@ -22,15 +22,21 @@ interface RouteDetailsProps {
   onAddNewLocation: (locationId: number | string) => void;
   onFuelCostUpdate?: (newFuelCost: number) => void;
   onRouteDataUpdate?: (distance: number, duration: number) => void;
+  onOptimize?: () => void;
+  onSave?: () => void;
+  isLoadConfirmed?: boolean;
 }
 
-const RouteDetails = ({ 
+const RouteDetails: React.FC<RouteDetailsProps> = ({ 
   route, 
   onRemoveLocation, 
   onAddNewLocation, 
   onFuelCostUpdate,
-  onRouteDataUpdate 
-}: RouteDetailsProps) => {
+  onRouteDataUpdate,
+  onOptimize,
+  onSave,
+  isLoadConfirmed = false
+}) => {
   const [fuelCostPerLiter, setFuelCostPerLiter] = useState(22); // Default value
   const [routeDistance, setRouteDistance] = useState(route.distance);
   const [routeDuration, setRouteDuration] = useState(route.estimatedDuration || 0);
@@ -112,6 +118,9 @@ const RouteDetails = ({
       
       <RouteActions
         usingRealTimeData={route.usingRealTimeData}
+        onOptimize={onOptimize}
+        onSave={onSave}
+        disabled={isLoadConfirmed || route.locations.length < 2}
       />
     </div>
   );

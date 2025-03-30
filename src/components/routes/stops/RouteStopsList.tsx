@@ -71,7 +71,7 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Select a location" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       {availableLocations && availableLocations.length > 0 ? (
                         availableLocations.map((loc) => (
                           <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
@@ -97,7 +97,7 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
         </div>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
         {locations && locations.length > 0 ? (
           locations.map((location, index) => (
             <div 
@@ -107,22 +107,20 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
                 {index + 1}
               </div>
-              <div>
-                <div className="font-medium">{location.name}</div>
-                <div className="text-xs text-muted-foreground">{location.address}</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{location.name}</div>
+                <div className="text-xs text-muted-foreground truncate">{location.address}</div>
               </div>
-              <div className="ml-auto text-sm font-medium flex items-center gap-2">
+              <div className="flex-shrink-0 text-sm font-medium flex items-center gap-2">
                 <Badge variant={index === 0 ? "secondary" : "outline"} className="gap-1">
                   {location.emptyCylinders || 0} cylinders
                 </Badge>
-                {index > 0 && index < locations.length - 1 && (
+                {index > 0 && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      onRemoveLocation(index);
-                    }}
+                    onClick={() => onRemoveLocation(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
