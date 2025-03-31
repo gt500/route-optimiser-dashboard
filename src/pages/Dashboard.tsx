@@ -57,7 +57,7 @@ const Dashboard = () => {
     { name: 'Sun', deliveries: 8 },
   ]);
 
-  const COLORS = ['#0088FE', '#D3D3D3'];
+  const COLORS = ['#0088FE', '#8B5CF6'];
 
   useEffect(() => {
     const fetchDashboardData = async () => {
