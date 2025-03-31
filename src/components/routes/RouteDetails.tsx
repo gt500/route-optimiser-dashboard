@@ -273,7 +273,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </Button>
             </DialogTrigger>
             <DialogContent
-              className="sm:max-w-[900px] max-h-[80vh] overflow-auto p-0 z-50"
+              className="sm:max-w-[900px] max-h-[80vh] overflow-auto p-0 fixed z-50 bg-background"
               style={{
                 transform: `translate(${draggablePosition.x}px, ${draggablePosition.y}px)`,
                 maxWidth: '80vw',
@@ -281,7 +281,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 position: 'fixed',
                 top: '10vh',
                 left: '10vw',
-                zIndex: 50, 
                 boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)'
               }}
             >
@@ -298,11 +297,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                     Full breakdown of your delivery route with {totalStops} stops
                   </DialogDescription>
                 </DialogHeader>
-                <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </DialogClose>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFullRouteDialogOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
               
               <div className="p-6 space-y-6 overflow-auto max-h-[calc(80vh-100px)]">
@@ -461,9 +458,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <DialogClose asChild>
-                    <Button variant="outline">Close</Button>
-                  </DialogClose>
+                  <Button variant="outline" onClick={() => setFullRouteDialogOpen(false)}>
+                    Close
+                  </Button>
                   {onOptimize && (
                     <Button onClick={() => {
                       onOptimize();
