@@ -7,11 +7,13 @@ import { LocationType } from '../locations/LocationEditDialog';
 import { MapPin } from 'lucide-react';
 
 interface RouteEndpointsProps {
-  availableLocations: LocationType[];
   startLocation: LocationType | null;
   endLocation: LocationType | null;
+  availableLocations: LocationType[];
   onStartLocationChange: (locationId: string) => void;
   onEndLocationChange: (locationId: string) => void;
+  isLoadingLocations?: boolean;
+  isDisabled?: boolean;
 }
 
 const RouteEndpoints = ({
@@ -20,6 +22,8 @@ const RouteEndpoints = ({
   endLocation,
   onStartLocationChange,
   onEndLocationChange,
+  isLoadingLocations = false,
+  isDisabled = false,
 }: RouteEndpointsProps) => {
   // Identify storage/warehouses (Afrox depot, Shell stations)
   const warehouses = availableLocations.filter(loc => 
@@ -43,6 +47,7 @@ const RouteEndpoints = ({
           <Select
             value={startLocation?.id?.toString() || ""}
             onValueChange={onStartLocationChange}
+            disabled={isDisabled || isLoadingLocations}
           >
             <SelectTrigger id="start-location" className="w-full">
               <SelectValue placeholder="Select start location" />
@@ -66,6 +71,7 @@ const RouteEndpoints = ({
           <Select
             value={endLocation?.id?.toString() || ""}
             onValueChange={onEndLocationChange}
+            disabled={isDisabled || isLoadingLocations}
           >
             <SelectTrigger id="end-location" className="w-full">
               <SelectValue placeholder="Select end location" />

@@ -14,12 +14,19 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 
 interface LocationSelectorProps {
-  onAdd: (location: LocationType & { cylinders: number }) => void;
+  locations?: LocationType[];
   availableLocations: LocationType[];
-  onUpdateLocations: (locations: LocationType[]) => void;
+  onSelectLocation: (location: LocationType & { cylinders: number }) => void;
+  disabled?: boolean;
+  onUpdateLocations?: (locations: LocationType[]) => void;
 }
 
-const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: LocationSelectorProps) => {
+const LocationSelector = ({ 
+  onSelectLocation, 
+  availableLocations, 
+  disabled = false,
+  onUpdateLocations = () => {}
+}: LocationSelectorProps) => {
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null);
   const [cylinders, setCylinders] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,7 +48,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
         cylinders,
         emptyCylinders: selectedLocation.emptyCylinders || cylinders
       };
-      onAdd(locationWithStringId);
+      onSelectLocation(locationWithStringId);
       toast.success(`Added ${selectedLocation.name} to route`);
       // Don't reset selectedLocation here to allow for adding multiple locations quickly
     } else {
@@ -99,11 +106,12 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                     className="pl-8 h-9 w-[200px]"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    disabled={disabled}
                   />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">View as {viewMode === 'list' ? 'Dropdown' : 'List'}</Button>
+                    <Button variant="outline" size="sm" disabled={disabled}>View as {viewMode === 'list' ? 'Dropdown' : 'List'}</Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover">
                     <DropdownMenuItem onClick={() => setViewMode('list')}>
@@ -121,6 +129,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
               <Select
                 value={selectedLocation ? selectedLocation.id.toString() : ''}
                 onValueChange={handleLocationSelect}
+                disabled={disabled}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a location" />
@@ -143,6 +152,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                               e.preventDefault();
                               handleEditClick(location);
                             }}
+                            disabled={disabled}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -162,6 +172,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                   const location = availableLocations.find(l => l.id.toString() === value);
                   setSelectedLocation(location || null);
                 }}
+                disabled={disabled}
               >
                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                   {filteredLocations.length > 0 ? (
@@ -187,6 +198,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                             e.stopPropagation();
                             handleEditClick(location);
                           }}
+                          disabled={disabled}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -218,7 +230,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 variant="outline" 
                 size="sm" 
                 onClick={() => setCylinders(Math.max(1, cylinders - 1))}
-                disabled={cylinders <= 1}
+                disabled={cylinders <= 1 || disabled}
               >
                 -
               </Button>
@@ -227,7 +239,7 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
                 variant="outline" 
                 size="sm" 
                 onClick={() => setCylinders(Math.min(25, cylinders + 1))}
-                disabled={cylinders >= 25}
+                disabled={cylinders >= 25 || disabled}
               >
                 +
               </Button>
@@ -236,7 +248,11 @@ const LocationSelector = ({ onAdd, availableLocations, onUpdateLocations }: Loca
           </div>
           
           <div className="pt-2">
-            <Button onClick={handleAdd} className="w-full gap-2" disabled={!selectedLocation || filteredLocations.length === 0}>
+            <Button 
+              onClick={handleAdd} 
+              className="w-full gap-2" 
+              disabled={!selectedLocation || filteredLocations.length === 0 || disabled}
+            >
               <Plus className="h-4 w-4" />
               Add to Route
             </Button>

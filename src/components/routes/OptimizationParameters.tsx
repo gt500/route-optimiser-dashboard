@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
 
 interface OptimizationParametersProps {
-  onOptimize: (params: { 
+  onOptimize?: (params: { 
     prioritizeFuel: boolean; 
     avoidTraffic: boolean;
     useRealTimeData: boolean;
@@ -16,7 +16,7 @@ interface OptimizationParametersProps {
   }) => void;
 }
 
-const OptimizationParameters = ({ onOptimize }: OptimizationParametersProps) => {
+const OptimizationParameters = ({ onOptimize = () => {} }: OptimizationParametersProps) => {
   const [prioritizeFuel, setPrioritizeFuel] = useState(true); // Default to true now
   const [avoidTraffic, setAvoidTraffic] = useState(true);
   const [useRealTimeData, setUseRealTimeData] = useState(true);

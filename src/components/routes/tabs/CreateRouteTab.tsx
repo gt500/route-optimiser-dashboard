@@ -86,7 +86,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
               <RouteEndpoints
                 startLocation={startLocation}
                 endLocation={endLocation}
-                locations={availableLocations}
+                availableLocations={availableLocations}
                 onStartLocationChange={onStartLocationChange}
                 onEndLocationChange={onEndLocationChange}
                 isLoadingLocations={isSyncingLocations}
@@ -98,12 +98,13 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             </div>
             <Separator className="my-4" />
             <LocationSelector
-              locations={filteredAvailableLocations}
+              availableLocations={filteredAvailableLocations}
               onSelectLocation={onAddLocationToRoute}
               disabled={!startLocation || isLoadConfirmed}
+              onUpdateLocations={onUpdateLocations}
             />
             <Separator className="my-4" />
-            <OptimizationParameters />
+            <OptimizationParameters onOptimize={onOptimize} />
           </CardContent>
         </Card>
       </div>
