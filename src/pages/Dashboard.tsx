@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,7 @@ const Dashboard = () => {
         const lastWeekFormatted = lastWeek.toISOString();
         const todayFormatted = today.toISOString();
 
+        // Query to get all routes from the last week
         const { data: recentRoutesData, error: routesError } = await supabase
           .from('routes')
           .select('*')
@@ -81,8 +83,10 @@ const Dashboard = () => {
         }
 
         if (recentRoutesData) {
+          // Update total routes count with actual value from database
           setTotalRoutes(recentRoutesData.length);
 
+          // Get all deliveries for these routes to count unique locations
           const { data: deliveryData, error: deliveryError } = await supabase
             .from('deliveries')
             .select('location_id, route_id')
@@ -91,35 +95,42 @@ const Dashboard = () => {
           if (deliveryError) {
             console.error('Error fetching deliveries:', deliveryError);
           } else if (deliveryData) {
+            // Count unique locations actually delivered to
             const uniqueLocations = new Set(deliveryData.map(d => d.location_id));
             setTotalLocations(uniqueLocations.size);
           }
           
+          // Calculate time saved based on route optimization
+          // Standard route time would be 25% longer than optimized routes
           const standardRouteTime = 95;
           const totalTimeSaved = recentRoutesData.reduce((total, route) => {
-            const standardTime = route.total_duration * 1.25;
+            const standardTime = route.total_duration * 1.25; // Standard route time is 25% longer
             return total + (standardTime - route.total_duration);
           }, 0);
           
+          // Calculate average time saved per route
           const avgTimePerRoute = recentRoutesData.length > 0 ? 
             totalTimeSaved / recentRoutesData.length : 0;
           
           setAvgTimeSaved(Math.round(avgTimePerRoute));
           
+          // Calculate fuel savings based on route cost difference
           const fuelCostPerLiter = 21.95;
           const totalFuelSaved = recentRoutesData.reduce((total, route) => {
-            const standardFuelCost = route.estimated_cost * 1.15;
+            const standardFuelCost = route.estimated_cost * 1.15; // Standard routes cost 15% more
             return total + (standardFuelCost - route.estimated_cost);
           }, 0);
           
           setFuelSavings(Math.round(totalFuelSaved));
           
+          // Generate optimization metrics for chart
           setOptimizationData([
             { name: 'Routes Optimized', value: recentRoutesData.length },
             { name: 'Standard Routes', value: Math.round(recentRoutesData.length * 0.32) },
           ]);
         }
 
+        // Query to get upcoming scheduled deliveries
         const { data: upcomingData, error: upcomingError } = await supabase
           .from('routes')
           .select('*')
@@ -146,6 +157,7 @@ const Dashboard = () => {
           setUpcomingDeliveries(upcomingWithDetails);
         }
 
+        // Query to get completed routes
         const { data: completedData, error: completedError } = await supabase
           .from('routes')
           .select('*')
@@ -161,6 +173,7 @@ const Dashboard = () => {
           setRecentRoutes(recentRoutesData?.slice(0, 3) || []);
         }
 
+        // Generate data for weekly chart based on actual routes
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const weeklyData = daysOfWeek.map(day => ({ name: day, deliveries: 0 }));
         
