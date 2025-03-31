@@ -1,15 +1,15 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LocationType } from '@/components/locations/LocationEditDialog';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, MapPin, Clock, Fuel, DollarSign, Truck } from 'lucide-react';
-import RouteEndpoints from '../RouteEndpoints';
-import LocationSelector from '../LocationSelector';
-import OptimizationParameters from '../OptimizationParameters';
-import RouteMap from '../RouteMap';
-import RouteDetails from '../RouteDetails';
-import RouteMetricsCard from '../metrics/RouteMetricsCard';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import RouteMap from "@/components/routes/RouteMap";
+import LocationSelector from "@/components/routes/LocationSelector";
+import RouteEndpoints from "@/components/routes/RouteEndpoints";
+import OptimizationParameters from "@/components/routes/OptimizationParameters";
+import RouteStopsList from "@/components/routes/stops/RouteStopsList";
+import RouteDetails from "@/components/routes/RouteDetails";
+import { LocationType } from "@/components/locations/LocationEditDialog";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 
 interface CreateRouteTabProps {
@@ -19,7 +19,6 @@ interface CreateRouteTabProps {
     fuelCost: number;
     cylinders: number;
     locations: LocationType[];
-    availableLocations: LocationType[];
     estimatedDuration?: number;
     trafficConditions?: 'light' | 'moderate' | 'heavy';
     usingRealTimeData?: boolean;
@@ -30,12 +29,12 @@ interface CreateRouteTabProps {
   startLocation: LocationType | null;
   endLocation: LocationType | null;
   filteredAvailableLocations: LocationType[];
-  transformedLocations: any[];
+  transformedLocations: { id: string; name: string; latitude: number; longitude: number; address: string; }[];
   onStartLocationChange: (locationId: string) => void;
   onEndLocationChange: (locationId: string) => void;
   onAddLocationToRoute: (location: LocationType & { cylinders: number }) => void;
-  onUpdateLocations: (updatedLocations: LocationType[]) => void;
-  onOptimize: (params: any) => void;
+  onUpdateLocations: (locations: LocationType[]) => void;
+  onOptimize: () => void;
   onRemoveLocation: (index: number) => void;
   onAddNewLocation: (locationId: string | number) => void;
   onFuelCostUpdate: (newCost: number) => void;
@@ -43,13 +42,6 @@ interface CreateRouteTabProps {
   onConfirmLoad: () => void;
   vehicleConfig: VehicleConfigProps;
 }
-
-// Default vehicle configuration as a fallback
-const defaultVehicleConfig: VehicleConfigProps = {
-  baseConsumption: 12,
-  fuelPrice: 21.95,
-  maintenanceCostPerKm: 0.50
-};
 
 const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   route,
@@ -70,156 +62,74 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onFuelCostUpdate,
   onRouteDataUpdate,
   onConfirmLoad,
-  vehicleConfig = defaultVehicleConfig
+  vehicleConfig
 }) => {
-  // Create a wrapper function for onOptimize that matches the expected signature
-  const handleOptimize = () => {
-    onOptimize({});
-  };
-
-  // Format the estimated duration
-  const formatTime = (minutes: number = 0) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}m`;
-  };
-
   return (
-    <div className="space-y-4">
-      {isSyncingLocations && (
-        <div className="bg-amber-50 p-3 rounded-md text-amber-800 text-sm flex items-center mb-4">
-          Synchronizing locations with database...
-        </div>
-      )}
-
-      {/* Route Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <RouteMetricsCard
-          title="Total Distance"
-          value={`${route.distance.toFixed(1)} km`}
-          icon={<MapPin className="h-4 w-4" />}
-          color="bg-gradient-to-br from-blue-500 to-blue-600"
-          ringColor="ring-blue-400/30"
-          tooltip="Total distance of the planned route"
-        />
-        
-        <RouteMetricsCard
-          title="Estimated Time"
-          value={formatTime(route.estimatedDuration)}
-          icon={<Clock className="h-4 w-4" />}
-          color="bg-gradient-to-br from-purple-500 to-purple-600"
-          ringColor="ring-purple-400/30"
-          tooltip="Estimated driving time for the entire route"
-        />
-        
-        <RouteMetricsCard
-          title="Fuel Cost"
-          value={`R ${route.fuelCost.toFixed(2)}`}
-          icon={<DollarSign className="h-4 w-4" />}
-          color="bg-gradient-to-br from-green-500 to-green-600"
-          ringColor="ring-green-400/30"
-          subtitle={`${route.fuelConsumption.toFixed(1)} L @ R${vehicleConfig.fuelPrice}/L`}
-          tooltip="Total fuel cost based on current fuel price"
-        />
-        
-        <RouteMetricsCard
-          title="Cylinders"
-          value={route.cylinders}
-          icon={<Truck className="h-4 w-4" />}
-          color="bg-gradient-to-br from-orange-500 to-orange-600"
-          ringColor="ring-orange-400/30"
-          tooltip="Total cylinders to be delivered or picked up"
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
-          <Card className="shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle>Route Preview</CardTitle>
-              <CardDescription>
-                {route.usingRealTimeData 
-                  ? `Optimized with real-time traffic data (${route.trafficConditions} traffic)`
-                  : 'Optimized delivery path with cost calculations'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="h-[500px]">
-                {route.locations.length > 0 && (
-                  <RouteMap 
-                    locations={transformedLocations}
-                    showRouting={route.locations.length >= 2}
-                    startLocation={route.locations[0] ? { 
-                      name: route.locations[0].name, 
-                      coords: [route.locations[0].lat || 0, route.locations[0].long || 0] 
-                    } : undefined}
-                    endLocation={route.locations.length > 1 && endLocation ? { 
-                      name: route.locations[route.locations.length - 1].name, 
-                      coords: [
-                        route.locations[route.locations.length - 1].lat || 0, 
-                        route.locations[route.locations.length - 1].long || 0
-                      ] 
-                    } : undefined}
-                    waypoints={route.locations.slice(1, endLocation ? -1 : undefined).map((loc, index) => ({
-                      name: loc.name,
-                      coords: [loc.lat || 0, loc.long || 0]
-                    }))}
-                    height="100%"
-                    forceRouteUpdate={isLoadConfirmed}
-                    trafficConditions={route.trafficConditions || 'moderate'}
-                    showAlternateRoutes={route.usingRealTimeData}
-                    onRouteDataUpdate={onRouteDataUpdate}
-                  />
-                )}
-              </div>
-              
-              <RouteDetails 
-                route={route} 
-                onRemoveLocation={onRemoveLocation} 
-                onAddNewLocation={onAddNewLocation}
-                onFuelCostUpdate={onFuelCostUpdate}
-                onRouteDataUpdate={onRouteDataUpdate}
-                onOptimize={handleOptimize}
-                onSave={onConfirmLoad}
-                isLoadConfirmed={isLoadConfirmed}
-                vehicleConfig={vehicleConfig}
-              />
-              
-              <div className="flex justify-end">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="col-span-1 lg:col-span-2">
+        <Card className="h-full">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg">Route Map</h3>
+              {transformedLocations.length > 0 && (
                 <Button 
-                  onClick={onConfirmLoad} 
-                  className="bg-green-500 hover:bg-green-600" 
-                  disabled={isLoadConfirmed || route.locations.length < 2}
+                  variant="default" 
+                  onClick={onOptimize}
+                  className="gap-2"
+                  disabled={route.locations.length < 3}
                 >
-                  <CheckCircle2 className="mr-2 h-4 w-4" /> 
-                  {isLoadConfirmed ? 'Load Confirmed' : 'Confirm Load'}
+                  Optimize Route
                 </Button>
-              </div>
-              
-              {isLoadConfirmed && (
-                <div className="mt-2 p-2 bg-green-100 text-green-800 rounded-md flex items-center">
-                  <CheckCircle2 className="mr-2 h-5 w-5" /> 
-                  Load confirmed and saved for this date
-                </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-        
+            </div>
+            <div>
+              <RouteEndpoints
+                startLocation={startLocation}
+                endLocation={endLocation}
+                locations={availableLocations}
+                onStartLocationChange={onStartLocationChange}
+                onEndLocationChange={onEndLocationChange}
+                isLoadingLocations={isSyncingLocations}
+                isDisabled={isLoadConfirmed}
+              />
+            </div>
+            <div className="h-[400px] mt-4 relative">
+              <RouteMap locations={transformedLocations} height="100%" />
+            </div>
+            <Separator className="my-4" />
+            <LocationSelector
+              locations={filteredAvailableLocations}
+              onSelectLocation={onAddLocationToRoute}
+              disabled={!startLocation || isLoadConfirmed}
+            />
+            <Separator className="my-4" />
+            <OptimizationParameters />
+          </CardContent>
+        </Card>
+      </div>
+      <div className="col-span-1">
         <div className="space-y-4">
-          <RouteEndpoints
-            availableLocations={availableLocations}
-            startLocation={startLocation}
-            endLocation={endLocation}
-            onStartLocationChange={onStartLocationChange}
-            onEndLocationChange={onEndLocationChange}
+          <RouteStopsList 
+            locations={route.locations} 
+            availableLocations={filteredAvailableLocations} 
+            onRemoveLocation={onRemoveLocation}
+            onAddNewLocation={onAddNewLocation}
+            routeMetrics={route.locations.length > 0 ? {
+              distance: route.distance,
+              duration: route.estimatedDuration || 0,
+              fuelCost: route.fuelCost
+            } : undefined}
           />
-          <LocationSelector 
-            onAdd={onAddLocationToRoute} 
-            availableLocations={filteredAvailableLocations}
-            onUpdateLocations={onUpdateLocations}
+          <RouteDetails
+            route={route}
+            onRemoveLocation={onRemoveLocation}
+            onFuelCostUpdate={onFuelCostUpdate}
+            onRouteDataUpdate={onRouteDataUpdate}
+            onOptimize={onOptimize}
+            onSave={onConfirmLoad}
+            isLoadConfirmed={isLoadConfirmed}
+            vehicleConfig={vehicleConfig}
           />
-          <OptimizationParameters onOptimize={onOptimize} />
         </div>
       </div>
     </div>
