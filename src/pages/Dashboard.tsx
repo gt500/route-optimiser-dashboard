@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,8 +68,8 @@ const Dashboard = () => {
 
         const lastWeekFormatted = lastWeek.toISOString();
         const todayFormatted = today.toISOString();
+        const todayDateString = today.toISOString().split('T')[0];
 
-        // Query to get all routes from the last week
         const { data: recentRoutesData, error: routesError } = await supabase
           .from('routes')
           .select('*')
@@ -83,10 +82,8 @@ const Dashboard = () => {
         }
 
         if (recentRoutesData) {
-          // Update total routes count with actual value from database
           setTotalRoutes(recentRoutesData.length);
 
-          // Get all deliveries for these routes to count unique locations
           const { data: deliveryData, error: deliveryError } = await supabase
             .from('deliveries')
             .select('location_id, route_id')
@@ -95,52 +92,45 @@ const Dashboard = () => {
           if (deliveryError) {
             console.error('Error fetching deliveries:', deliveryError);
           } else if (deliveryData) {
-            // Count unique locations actually delivered to
             const uniqueLocations = new Set(deliveryData.map(d => d.location_id));
             setTotalLocations(uniqueLocations.size);
           }
           
-          // Calculate time saved based on route optimization
-          // Standard route time would be 25% longer than optimized routes
           const standardRouteTime = 95;
           const totalTimeSaved = recentRoutesData.reduce((total, route) => {
-            const standardTime = route.total_duration * 1.25; // Standard route time is 25% longer
+            const standardTime = route.total_duration * 1.25;
             return total + (standardTime - route.total_duration);
           }, 0);
           
-          // Calculate average time saved per route
           const avgTimePerRoute = recentRoutesData.length > 0 ? 
             totalTimeSaved / recentRoutesData.length : 0;
           
           setAvgTimeSaved(Math.round(avgTimePerRoute));
           
-          // Calculate fuel savings based on route cost difference
           const fuelCostPerLiter = 21.95;
           const totalFuelSaved = recentRoutesData.reduce((total, route) => {
-            const standardFuelCost = route.estimated_cost * 1.15; // Standard routes cost 15% more
+            const standardFuelCost = route.estimated_cost * 1.15;
             return total + (standardFuelCost - route.estimated_cost);
           }, 0);
           
           setFuelSavings(Math.round(totalFuelSaved));
           
-          // Generate optimization metrics for chart
           setOptimizationData([
             { name: 'Routes Optimized', value: recentRoutesData.length },
             { name: 'Standard Routes', value: Math.round(recentRoutesData.length * 0.32) },
           ]);
         }
 
-        // Query to get upcoming scheduled deliveries
         const { data: upcomingData, error: upcomingError } = await supabase
           .from('routes')
           .select('*')
           .eq('status', 'scheduled')
-          .order('date', { ascending: true })
-          .limit(3);
+          .ilike('date', `${todayDateString}%`)
+          .order('date', { ascending: true });
           
         if (upcomingError) {
           console.error('Error fetching upcoming deliveries:', upcomingError);
-        } else if (upcomingData) {
+        } else if (upcomingData && upcomingData.length > 0) {
           const upcomingWithDetails = await Promise.all(upcomingData.map(async (route) => {
             const { data: deliveries } = await supabase
               .from('deliveries')
@@ -155,25 +145,27 @@ const Dashboard = () => {
           }));
           
           setUpcomingDeliveries(upcomingWithDetails);
+        } else {
+          console.log('No upcoming deliveries found for today');
+          setUpcomingDeliveries([]);
         }
 
-        // Query to get completed routes
         const { data: completedData, error: completedError } = await supabase
           .from('routes')
           .select('*')
-          .eq('status', 'completed')
+          .in('status', ['completed', 'in_progress'])
           .order('date', { ascending: false })
           .limit(3);
           
         if (completedError) {
           console.error('Error fetching completed routes:', completedError);
-        } else if (completedData) {
+        } else if (completedData && completedData.length > 0) {
           setRecentRoutes(completedData);
         } else {
+          console.log('No recent routes found with confirmed loads');
           setRecentRoutes(recentRoutesData?.slice(0, 3) || []);
         }
 
-        // Generate data for weekly chart based on actual routes
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const weeklyData = daysOfWeek.map(day => ({ name: day, deliveries: 0 }));
         
@@ -355,8 +347,8 @@ const Dashboard = () => {
                     <Truck className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium">Cape Town Central Route</div>
-                    <div className="text-sm text-gray-400">7 locations • 48 cylinders</div>
+                    <div className="font-medium">No deliveries scheduled for today</div>
+                    <div className="text-sm text-gray-400">Schedule deliveries in the Routes section</div>
                   </div>
                   <Button size="sm" variant="ghost">
                     <ArrowRight className="h-4 w-4" />
@@ -397,11 +389,11 @@ const Dashboard = () => {
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium">Cape Town Area #1</div>
-                    <div className="text-sm text-gray-400">28 km • 1 day ago</div>
+                    <div className="font-medium">No recent routes</div>
+                    <div className="text-sm text-gray-400">Complete routes to see them here</div>
                   </div>
                   <div className="text-xs font-medium bg-gray-700 text-white py-1 px-2 rounded-full">
-                    R345.00
+                    R0.00
                   </div>
                 </div>
               )}
