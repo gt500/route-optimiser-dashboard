@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 
 interface LocationSelectorProps {
-  locations?: LocationType[];
   availableLocations: LocationType[];
   onSelectLocation: (location: LocationType & { cylinders: number }) => void;
   disabled?: boolean;
@@ -46,7 +45,7 @@ const LocationSelector = ({
         ...selectedLocation,
         id: selectedLocation.id.toString(),
         cylinders,
-        emptyCylinders: selectedLocation.emptyCylinders || cylinders
+        emptyCylinders: cylinders
       };
       onSelectLocation(locationWithStringId);
       toast.success(`Added ${selectedLocation.name} to route`);

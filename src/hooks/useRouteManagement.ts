@@ -362,7 +362,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     const locationWithCylinders = {
       ...location,
       id: location.id.toString(),
-      emptyCylinders: location.emptyCylinders || location.cylinders,
+      emptyCylinders: location.cylinders,
+      cylinders: location.cylinders
     };
     
     setRoute(prev => {
@@ -378,7 +379,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       
       const newRouteState = {
         ...prev,
-        cylinders: prev.cylinders + (location.cylinders || 0),
+        cylinders: prev.cylinders + locationWithCylinders.cylinders,
         locations: newLocations
       };
       

@@ -162,9 +162,10 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
           {locations && locations.length > 0 ? (
             locations.map((location, index) => {
               const metrics = stopMetrics[index];
+              // Make sure we're using cylinders consistently - either from cylinders property or emptyCylinders based on location type
               const cylinders = location.type === 'Storage' 
                 ? location.fullCylinders || 0 
-                : location.emptyCylinders || 0;
+                : (location.cylinders || location.emptyCylinders || 0);
               
               return (
                 <div 
@@ -180,16 +181,16 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
                     
                     {/* Cylinder/Storage info badge */}
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {location.type === 'Customer' && location.emptyCylinders && location.emptyCylinders > 0 && (
+                      {location.type === 'Customer' && cylinders > 0 && (
                         <Badge variant="outline" className="text-xs">
                           <Package className="h-3 w-3 mr-1" />
-                          Pickup: {location.emptyCylinders} cylinders
+                          Pickup: {cylinders} cylinders
                         </Badge>
                       )}
-                      {location.type === 'Storage' && location.fullCylinders && location.fullCylinders > 0 && (
+                      {location.type === 'Storage' && cylinders > 0 && (
                         <Badge variant="secondary" className="text-xs">
                           <Package className="h-3 w-3 mr-1" />
-                          Storage: {location.fullCylinders}
+                          Storage: {cylinders}
                         </Badge>
                       )}
                     </div>
