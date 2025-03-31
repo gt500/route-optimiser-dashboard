@@ -175,7 +175,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     let distanceRunningTotal = 0;
     let timeRunningTotal = 0;
     let fuelCostRunningTotal = 0;
-    let cylindersRunningTotal = 0;
     
     const distancePerStop = totalDistance / (route.locations.length - 1);
     const timePerStop = totalEstimatedTime / (route.locations.length - 1);
@@ -185,7 +184,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       const cylindersAtLocation = location.type === 'Storage' 
         ? location.fullCylinders || 0 
         : location.emptyCylinders || 0;
-        
+      
       if (index === 0) {
         return {
           location,
@@ -201,14 +200,12 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       distanceRunningTotal += distancePerStop;
       timeRunningTotal += timePerStop;
       fuelCostRunningTotal += fuelCostPerStop;
-      cylindersRunningTotal += cylindersAtLocation;
       
       return {
         location,
         distanceSoFar: distanceRunningTotal,
         timeSoFar: timeRunningTotal,
         fuelCostSoFar: fuelCostRunningTotal,
-        cylindersSoFar: cylindersRunningTotal,
         cylindersAtLocation,
         type: location.type || 'Customer',
         distanceFromPrevious: distancePerStop
@@ -218,6 +215,10 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 
   const stopMetrics = calculateStopMetrics();
   const totalStops = route.locations.length > 2 ? route.locations.length - 2 : 0;
+  
+  const totalPickupCylinders = route.locations.reduce((total, location) => {
+    return total + (location.type === 'Customer' ? (location.emptyCylinders || 0) : 0);
+  }, 0);
 
   const getTrafficStatus = (): JSX.Element => {
     switch(route.trafficConditions) {
@@ -343,7 +344,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                           <Truck className="h-4 w-4 mr-1" />
                           <span className="text-xs font-medium">Total Cylinders</span>
                         </div>
-                        <div className="text-lg font-semibold">{route.cylinders}</div>
+                        <div className="text-lg font-semibold">{totalPickupCylinders}</div>
                       </div>
                       <div className="bg-muted/50 p-3 rounded-md">
                         <div className="flex items-center text-muted-foreground mb-1">
@@ -524,10 +525,10 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         />
         <RouteMetricsCard 
           title="Total Cylinders"
-          value={route.cylinders.toString()}
+          value={totalPickupCylinders.toString()}
           icon={<Truck className="h-5 w-5" />}
           color="bg-indigo-600"
-          subtitle={`${Math.round(route.cylinders * 1.2)} kg estimated weight`}
+          subtitle={`${Math.round(totalPickupCylinders * 1.2)} kg estimated weight`}
           tooltip="Total number of cylinders to be delivered"
         />
       </div>
@@ -583,7 +584,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
                             </p>
                           ) : (
                             <p className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                              Cylinders: {cylinders}
+                              Pickup: {cylinders}
                             </p>
                           )}
                         </div>
