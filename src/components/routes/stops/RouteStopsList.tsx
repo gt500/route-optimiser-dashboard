@@ -165,7 +165,7 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
               // Make sure we're using cylinders consistently - either from cylinders property or emptyCylinders based on location type
               const cylinders = location.type === 'Storage' 
                 ? location.fullCylinders || 0 
-                : (location.cylinders || location.emptyCylinders || 0);
+                : (location.emptyCylinders || 0);
               
               return (
                 <div 

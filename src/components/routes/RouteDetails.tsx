@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronDown, 
@@ -70,6 +69,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const [fullRouteDialogOpen, setFullRouteDialogOpen] = useState(false);
   const [draggablePosition, setDraggablePosition] = useState({ x: 0, y: 0 });
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  const WEIGHT_PER_CYLINDER = 22;
 
   const startDrag = (e: React.MouseEvent<HTMLDivElement>) => {
     const startX = e.clientX - draggablePosition.x;
@@ -170,7 +171,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     ] as [number, number]
   } : undefined;
 
-  // Calculate accurate cylinder counts
   const calculateStopMetrics = () => {
     if (route.locations.length <= 1) return [];
     
@@ -185,7 +185,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     return route.locations.map((location, index) => {
       const cylindersAtLocation = location.type === 'Storage' 
         ? location.fullCylinders || 0 
-        : (location.cylinders || location.emptyCylinders || 0);
+        : (location.emptyCylinders || 0);
       
       if (index === 0) {
         return {
@@ -218,10 +218,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const stopMetrics = calculateStopMetrics();
   const totalStops = route.locations.length > 2 ? route.locations.length - 2 : 0;
   
-  // Calculate total cylinders more accurately including the cylinders property
   const totalPickupCylinders = route.locations.reduce((total, location) => {
     if (location.type === 'Customer') {
-      return total + (location.cylinders || location.emptyCylinders || 0);
+      return total + (location.emptyCylinders || 0);
     }
     return total;
   }, 0);
@@ -534,7 +533,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           value={totalPickupCylinders.toString()}
           icon={<Truck className="h-5 w-5" />}
           color="bg-indigo-600"
-          subtitle={`${Math.round(totalPickupCylinders * 1.2)} kg estimated weight`}
+          subtitle={`${totalPickupCylinders * WEIGHT_PER_CYLINDER} kg estimated weight`}
           tooltip="Total number of cylinders to be delivered"
         />
       </div>
@@ -563,10 +562,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         ) : (
           <div className="space-y-2">
             {route.locations.map((location, index) => {
-              // Make sure we're using cylinders consistently - either from cylinders property or emptyCylinders
               const cylinders = location.type === 'Storage' 
                 ? location.fullCylinders || 0 
-                : (location.cylinders || location.emptyCylinders || 0);
+                : (location.emptyCylinders || 0);
                 
               return (
                 <Card key={`${location.id}-${index}`} className="border border-gray-200">
