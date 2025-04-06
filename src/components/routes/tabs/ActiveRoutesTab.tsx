@@ -38,7 +38,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     if (status === 'scheduled') {
       return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Scheduled</Badge>;
     } else if (status === 'in_progress') {
-      return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">In Progress</Badge>;
+      return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">In Progress</Badge>;
     }
     return <Badge variant="outline">{status}</Badge>;
   };
@@ -168,7 +168,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="h-8 px-2 text-green-600"
+                      className="h-8 px-2 bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
                       onClick={() => markRouteAsComplete(route.id)}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
