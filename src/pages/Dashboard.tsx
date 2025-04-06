@@ -125,7 +125,7 @@ const Dashboard = () => {
           .from('routes')
           .select('*')
           .eq('status', 'scheduled')
-          .ilike('date', `${todayDateString}%`)
+          .filter('date', 'like', `${todayDateString}%`)
           .order('date', { ascending: true });
           
         if (upcomingError) {

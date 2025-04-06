@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -74,10 +75,12 @@ const DailyReports = () => {
     const formattedDateStr = format(date, 'yyyy-MM-dd');
     
     try {
+      // Fix: Convert the date string format for correct SQL comparison
+      // Use ::date to cast timestamp to date for proper comparison
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status')
-        .eq('date', formattedDateStr)
+        .filter('date', 'like', `${formattedDateStr}%`)
         .order('created_at', { ascending: false });
       
       if (routesError) {
