@@ -43,25 +43,6 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     return <Badge variant="outline">{status}</Badge>;
   };
 
-  const markRouteAsComplete = async (routeId: string) => {
-    try {
-      const { error } = await supabase
-        .from('routes')
-        .update({ status: 'completed' })
-        .eq('id', routeId);
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast.success('Route marked as completed');
-      loadRoutes(); // Reload the routes to update the UI
-    } catch (error) {
-      console.error('Error completing route:', error);
-      toast.error('Failed to complete route');
-    }
-  };
-
   const startRoute = async (routeId: string) => {
     try {
       const { error } = await supabase
@@ -79,6 +60,25 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     } catch (error) {
       console.error('Error starting route:', error);
       toast.error('Failed to start route');
+    }
+  };
+
+  const markRouteAsComplete = async (routeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('routes')
+        .update({ status: 'completed' })
+        .eq('id', routeId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Route marked as completed');
+      loadRoutes(); // Reload the routes to update the UI
+    } catch (error) {
+      console.error('Error completing route:', error);
+      toast.error('Failed to complete route');
     }
   };
 
@@ -134,6 +134,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
               <TableHead>Date</TableHead>
               <TableHead>Cylinders</TableHead>
               <TableHead>Distance</TableHead>
+              <TableHead>Cost</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -150,6 +151,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
                 </TableCell>
                 <TableCell>{route.total_cylinders}</TableCell>
                 <TableCell>{route.total_distance?.toFixed(1)} km</TableCell>
+                <TableCell>R {route.estimated_cost?.toFixed(2)}</TableCell>
                 <TableCell>{getStatusBadge(route.status)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
