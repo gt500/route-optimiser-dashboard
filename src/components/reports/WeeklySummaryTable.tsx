@@ -1,25 +1,10 @@
 
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
-interface DailySummary {
-  date: Date;
-  formattedDate: string;
-  deliveries: number;
-  totalCylinders: number;
-  totalKms: number;
-  totalFuelCost: number;
-}
-
-interface WeeklyTotals {
-  deliveries: number;
-  cylinders: number;
-  kms: number;
-  fuelCost: number;
-}
+import { WeeklyDataSummary, WeeklyTotals } from '@/hooks/useWeeklyData';
 
 interface WeeklySummaryTableProps {
-  dailySummary: DailySummary[];
+  dailySummary: WeeklyDataSummary[];
   weeklyTotals: WeeklyTotals;
 }
 
