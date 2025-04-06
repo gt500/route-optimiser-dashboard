@@ -5,6 +5,7 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 import ReportTabs from '@/components/reports/ReportTabs';
 import WeeklyCalendarCard from '@/components/reports/WeeklyCalendarCard';
 import WeeklySummaryTable from '@/components/reports/WeeklySummaryTable';
+import ReportMetricsGrid from '@/components/reports/ReportMetricsGrid';
 import { useWeeklyData } from '@/hooks/useWeeklyData';
 
 const WeeklyReports = () => {
@@ -26,6 +27,15 @@ const WeeklyReports = () => {
   return (
     <div className="space-y-4">
       <ReportTabs defaultValue="weekly" />
+      
+      {dailySummary.length > 0 && (
+        <ReportMetricsGrid
+          totalCylinders={weeklyTotals.cylinders}
+          totalDistance={weeklyTotals.kms}
+          totalLocations={weeklyTotals.deliveries}
+          totalFuelCost={weeklyTotals.fuelCost}
+        />
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <WeeklyCalendarCard 
