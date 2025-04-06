@@ -12,18 +12,20 @@ interface ReportMetricsCardProps {
   icon: ReactNode;
   color: string;
   tooltip?: string;
+  className?: string;
 }
 
-const ReportMetricsCard: React.FC<ReportMetricsCardProps> = ({
+export const ReportMetricsCard: React.FC<ReportMetricsCardProps> = ({
   title,
   value,
   icon,
   color,
-  tooltip
+  tooltip,
+  className
 }) => {
   return (
-    <Card className={`${color} text-white shadow-md hover:shadow-lg transition-shadow`}>
-      <div className="p-6">
+    <Card className={`${color} text-white shadow-md hover:shadow-lg transition-shadow ${className}`}>
+      <div className="p-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-white/90">{icon}</span>
           <h3 className="text-lg font-medium text-white/90">
@@ -42,7 +44,7 @@ const ReportMetricsCard: React.FC<ReportMetricsCardProps> = ({
             )}
           </h3>
         </div>
-        <div className="text-3xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">{value}</div>
       </div>
     </Card>
   );

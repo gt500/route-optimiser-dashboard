@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,6 +11,8 @@ import RouteStopsList from "@/components/routes/stops/RouteStopsList";
 import RouteDetails from "@/components/routes/RouteDetails";
 import { LocationType } from "@/components/locations/LocationEditDialog";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
+import TruckWeightIndicator from '@/components/reports/TruckWeightIndicator';
+import { toast } from 'sonner';
 
 interface CreateRouteTabProps {
   route: {
@@ -43,6 +45,9 @@ interface CreateRouteTabProps {
   vehicleConfig: VehicleConfigProps;
 }
 
+const MAX_CYLINDERS = 80;
+const CYLINDER_WEIGHT_KG = 22;
+
 const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   route,
   isSyncingLocations,
@@ -64,19 +69,41 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onConfirmLoad,
   vehicleConfig
 }) => {
+  const isOverweight = route.cylinders > MAX_CYLINDERS;
+
+  // Create a wrapper for adding location to route that includes weight validation
+  const handleAddLocationToRoute = (location: LocationType & { cylinders: number }) => {
+    if (route.cylinders + location.cylinders > MAX_CYLINDERS) {
+      toast.error(`Weight limit exceeded! Adding ${location.cylinders} more cylinders would exceed the maximum capacity of ${MAX_CYLINDERS} cylinders (${MAX_CYLINDERS * CYLINDER_WEIGHT_KG}kg).`, {
+        duration: 5000
+      });
+      return;
+    }
+    onAddLocationToRoute(location);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="col-span-1 lg:col-span-2">
         <Card className="h-full">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg">Route Map</h3>
+              <div className="flex items-baseline gap-6">
+                <h3 className="font-semibold text-lg">Route Map</h3>
+                <div className="w-56">
+                  <TruckWeightIndicator 
+                    totalCylinders={route.cylinders} 
+                    maxCylinders={MAX_CYLINDERS}
+                    cylinderWeight={CYLINDER_WEIGHT_KG}
+                  />
+                </div>
+              </div>
               {transformedLocations.length > 0 && (
                 <Button 
                   variant="default" 
                   onClick={onOptimize}
                   className="gap-2"
-                  disabled={route.locations.length < 3}
+                  disabled={route.locations.length < 3 || isOverweight}
                 >
                   Optimize Route
                 </Button>
@@ -99,8 +126,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             <Separator className="my-4" />
             <LocationSelector
               availableLocations={filteredAvailableLocations}
-              onSelectLocation={onAddLocationToRoute}
-              disabled={!startLocation || isLoadConfirmed}
+              onSelectLocation={handleAddLocationToRoute}
+              disabled={!startLocation || isLoadConfirmed || isOverweight}
               onUpdateLocations={onUpdateLocations}
             />
             <Separator className="my-4" />
@@ -114,7 +141,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             locations={route.locations} 
             availableLocations={filteredAvailableLocations} 
             onRemoveLocation={onRemoveLocation}
-            onAddNewLocation={onAddNewLocation}
+            onAddNewLocation={isOverweight ? () => toast.error("Cannot add more locations: weight limit exceeded") : onAddNewLocation}
             routeMetrics={route.locations.length > 0 ? {
               distance: route.distance,
               duration: route.estimatedDuration || 0,
@@ -127,9 +154,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             onFuelCostUpdate={onFuelCostUpdate}
             onRouteDataUpdate={onRouteDataUpdate}
             onOptimize={onOptimize}
-            onSave={onConfirmLoad}
+            onSave={isOverweight ? () => toast.error("Cannot save route: weight limit exceeded") : onConfirmLoad}
             isLoadConfirmed={isLoadConfirmed}
             vehicleConfig={vehicleConfig}
+            isOverweight={isOverweight}
           />
         </div>
       </div>

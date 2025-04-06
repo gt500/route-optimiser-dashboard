@@ -23,6 +23,9 @@ export const defaultVehicleConfig: VehicleConfigProps = {
   maintenanceCostPerKm: 0.50
 };
 
+export const MAX_CYLINDERS = 80;
+export const CYLINDER_WEIGHT_KG = 22;
+
 export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   const [availableLocations, setAvailableLocations] = useState<LocationType[]>(initialLocations);
   const [startLocation, setStartLocation] = useState<LocationType | null>(null);
@@ -377,9 +380,12 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       
       console.log("Updated route locations after add:", newLocations);
       
+      const newTotalCylinders = newLocations.reduce((sum, loc) => 
+        sum + (loc.emptyCylinders || 0), 0);
+      
       const newRouteState = {
         ...prev,
-        cylinders: prev.cylinders + locationWithCylinders.cylinders,
+        cylinders: newTotalCylinders,
         locations: newLocations
       };
       
@@ -404,9 +410,12 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       
       setAvailableLocations(prevAvailable => [...prevAvailable, removedLocation]);
       
+      const newTotalCylinders = newLocations.reduce((sum, loc) => 
+        sum + (loc.emptyCylinders || 0), 0);
+      
       return {
         ...prev,
-        cylinders: prev.cylinders - (removedLocation.emptyCylinders || 0),
+        cylinders: newTotalCylinders,
         locations: newLocations
       };
     });
@@ -522,6 +531,11 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   const handleConfirmLoad = async () => {
     if (route.locations.length < 2) {
       toast.error("Route must have at least 2 locations");
+      return;
+    }
+    
+    if (route.cylinders > MAX_CYLINDERS) {
+      toast.error(`Weight limit exceeded! Maximum capacity is ${MAX_CYLINDERS} cylinders (${MAX_CYLINDERS * CYLINDER_WEIGHT_KG}kg).`);
       return;
     }
     
