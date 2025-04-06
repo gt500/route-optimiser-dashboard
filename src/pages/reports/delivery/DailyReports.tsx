@@ -75,12 +75,19 @@ const DailyReports = () => {
     const formattedDateStr = format(date, 'yyyy-MM-dd');
     
     try {
-      // Fix: Convert the date string format for correct SQL comparison
-      // Use ::date to cast timestamp to date for proper comparison
+      // Fix: Use a more reliable approach to filter date values in Supabase
+      // Instead of using the 'like' operator, we'll use 'gte' and 'lt' to define a date range
+      const startOfDay = new Date(formattedDateStr);
+      const endOfDay = new Date(formattedDateStr);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+
+      console.log('Fetching routes between:', startOfDay.toISOString(), 'and', endOfDay.toISOString());
+      
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status')
-        .filter('date', 'like', `${formattedDateStr}%`)
+        .gte('date', startOfDay.toISOString())
+        .lt('date', endOfDay.toISOString())
         .order('created_at', { ascending: false });
       
       if (routesError) {
