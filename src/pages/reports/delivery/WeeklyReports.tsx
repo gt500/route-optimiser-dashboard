@@ -1,19 +1,10 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns';
-import { Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNavigate } from 'react-router-dom';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import ReportTabs from '@/components/reports/ReportTabs';
+import WeeklyCalendarCard from '@/components/reports/WeeklyCalendarCard';
+import WeeklySummaryTable from '@/components/reports/WeeklySummaryTable';
 
 // Sample data for daily deliveries
 const sampleDeliveries = [
@@ -30,25 +21,8 @@ const sampleDeliveries = [
 ];
 
 const WeeklyReports = () => {
-  const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleTabChange = (value: string) => {
-    switch (value) {
-      case 'daily':
-        navigate('/reports/delivery/daily');
-        break;
-      case 'weekly':
-        navigate('/reports/delivery/weekly');
-        break;
-      case 'monthly':
-        navigate('/reports/delivery/monthly');
-        break;
-      default:
-        break;
-    }
-  };
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -98,91 +72,25 @@ const WeeklyReports = () => {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="weekly" onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="daily">Daily</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <ReportTabs defaultValue="weekly" />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Select Week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-            />
-            <div className="mt-4 flex flex-col gap-2">
-              <Button onClick={handleRefresh} className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Loading
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" /> Refresh Data
-                  </>
-                )}
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>
-                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export to Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Download className="mr-2 h-4 w-4" /> Download PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </CardContent>
-        </Card>
+        <WeeklyCalendarCard 
+          date={date}
+          setDate={setDate}
+          isLoading={isLoading}
+          onRefresh={handleRefresh}
+        />
 
         <Card className="col-span-1 md:col-span-2">
           <CardHeader>
             <CardTitle>Weekly Summary: {weekRange}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Day</TableHead>
-                  <TableHead>Deliveries</TableHead>
-                  <TableHead>Cylinders</TableHead>
-                  <TableHead>Distance (km)</TableHead>
-                  <TableHead>Fuel Cost</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dailySummary.map((day) => (
-                  <TableRow key={day.formattedDate}>
-                    <TableCell>{day.formattedDate}</TableCell>
-                    <TableCell>{day.deliveries}</TableCell>
-                    <TableCell>{day.totalCylinders}</TableCell>
-                    <TableCell>{day.totalKms.toFixed(1)}</TableCell>
-                    <TableCell>R{day.totalFuelCost.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-                <TableRow className="font-bold">
-                  <TableCell>WEEKLY TOTALS</TableCell>
-                  <TableCell>{weeklyTotals.deliveries}</TableCell>
-                  <TableCell>{weeklyTotals.cylinders}</TableCell>
-                  <TableCell>{weeklyTotals.kms.toFixed(1)}</TableCell>
-                  <TableCell>R{weeklyTotals.fuelCost.toFixed(2)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+            <WeeklySummaryTable 
+              dailySummary={dailySummary}
+              weeklyTotals={weeklyTotals}
+            />
           </CardContent>
         </Card>
       </div>
