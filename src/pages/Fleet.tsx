@@ -1,27 +1,47 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard } from 'lucide-react';
+import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 
-// Updated vehicle data for South Africa
-const vehicles = [
-  { id: 'TRK-001', name: 'Isuzu NQR', status: 'On Route', capacity: 80, load: 65, fuelLevel: 78, location: 'Cape Town CBD', lastService: '2023-10-15' },
-  { id: 'TRK-002', name: 'Isuzu FVZ', status: 'Available', capacity: 80, load: 0, fuelLevel: 92, location: 'Afrox Epping Depot', lastService: '2023-11-02' },
-  { id: 'TRK-003', name: 'Hino 500', status: 'Maintenance', capacity: 80, load: 0, fuelLevel: 45, location: 'Service Center', lastService: '2023-12-05' },
-  { id: 'TRK-004', name: 'Isuzu NPR', status: 'Available', capacity: 80, load: 0, fuelLevel: 85, location: 'Storage Facility B', lastService: '2023-10-30' },
+// Updated vehicle data for two Leyland Phoenix trucks
+const initialVehicles = [
+  { 
+    id: 'TRK-001', 
+    name: 'Leyland Phoenix', 
+    licensePlate: 'CA 123-456',
+    status: 'On Route', 
+    capacity: 80, 
+    load: 65, 
+    fuelLevel: 78, 
+    location: 'Cape Town CBD', 
+    lastService: '2023-10-15',
+    country: 'South Africa',
+    region: 'Western Cape'
+  },
+  { 
+    id: 'TRK-002', 
+    name: 'Leyland Phoenix', 
+    licensePlate: 'CA 789-012',
+    status: 'Available', 
+    capacity: 80, 
+    load: 0, 
+    fuelLevel: 92, 
+    location: 'Afrox Epping Depot', 
+    lastService: '2023-11-02',
+    country: 'South Africa',
+    region: 'Western Cape'
+  },
 ];
 
 // Updated maintenance schedule
 const maintenanceSchedule = [
-  { vehicle: 'Hino 500', type: 'Engine Service', date: '2023-12-05', status: 'In Progress' },
-  { vehicle: 'Isuzu NQR', type: 'Tire Replacement', date: '2023-12-12', status: 'Scheduled' },
-  { vehicle: 'Isuzu FVZ', type: 'Brake Inspection', date: '2023-12-15', status: 'Scheduled' },
-  { vehicle: 'Isuzu NPR', type: 'Oil Change', date: '2023-12-18', status: 'Scheduled' },
+  { vehicle: 'Leyland Phoenix (CA 123-456)', type: 'Engine Service', date: '2023-12-05', status: 'In Progress' },
+  { vehicle: 'Leyland Phoenix (CA 789-012)', type: 'Tire Replacement', date: '2023-12-12', status: 'Scheduled' },
 ];
 
 // Variable costs data
@@ -76,11 +96,53 @@ const VehicleStatusCard = ({ status, count, icon: Icon, color }) => {
 };
 
 const Fleet = () => {
+  const [vehicles, setVehicles] = useState(initialVehicles);
+  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   // Counts for status cards
   const statusCounts = {
     available: vehicles.filter(v => v.status === 'Available').length,
     onRoute: vehicles.filter(v => v.status === 'On Route').length,
     maintenance: vehicles.filter(v => v.status === 'Maintenance').length,
+  };
+
+  const handleEditVehicle = (vehicle) => {
+    setEditingVehicle(vehicle);
+    setIsDialogOpen(true);
+  };
+
+  const handleSaveVehicle = (updatedVehicle) => {
+    if (updatedVehicle.id) {
+      // Update existing vehicle
+      setVehicles(vehicles.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+    } else {
+      // Add new vehicle
+      const newVehicle = {
+        ...updatedVehicle,
+        id: `TRK-${String(vehicles.length + 1).padStart(3, '0')}`,
+      };
+      setVehicles([...vehicles, newVehicle]);
+    }
+    setIsDialogOpen(false);
+    setEditingVehicle(null);
+  };
+
+  const handleAddVehicle = () => {
+    setEditingVehicle({
+      id: '',
+      name: 'Leyland Phoenix',
+      licensePlate: '',
+      status: 'Available',
+      capacity: 80,
+      load: 0,
+      fuelLevel: 100,
+      location: '',
+      lastService: new Date().toISOString().split('T')[0],
+      country: 'South Africa',
+      region: ''
+    });
+    setIsDialogOpen(true);
   };
 
   return (
@@ -90,7 +152,7 @@ const Fleet = () => {
           <h1 className="text-2xl font-bold tracking-tight">Fleet Management</h1>
           <p className="text-muted-foreground">Monitor and manage delivery vehicles</p>
         </div>
-        <Button className="gap-2">
+        <Button onClick={handleAddVehicle} className="gap-2">
           <Plus className="h-4 w-4" />
           Add Vehicle
         </Button>
@@ -121,11 +183,15 @@ const Fleet = () => {
                     <TableRow>
                       <TableHead>ID</TableHead>
                       <TableHead>Vehicle</TableHead>
+                      <TableHead>License Plate</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Region</TableHead>
                       <TableHead>Load</TableHead>
                       <TableHead>Fuel</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead>Last Service</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -133,6 +199,7 @@ const Fleet = () => {
                       <TableRow key={vehicle.id} className="transition-colors hover:bg-secondary/30">
                         <TableCell className="font-medium">{vehicle.id}</TableCell>
                         <TableCell>{vehicle.name}</TableCell>
+                        <TableCell>{vehicle.licensePlate}</TableCell>
                         <TableCell>
                           <Badge 
                             variant="outline" 
@@ -147,6 +214,8 @@ const Fleet = () => {
                             {vehicle.status}
                           </Badge>
                         </TableCell>
+                        <TableCell>{vehicle.country}</TableCell>
+                        <TableCell>{vehicle.region}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={(vehicle.load / vehicle.capacity) * 100} className="h-2 w-16" />
@@ -155,7 +224,6 @@ const Fleet = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
                             <Progress 
                               value={vehicle.fuelLevel} 
                               className="h-2 w-16"
@@ -168,6 +236,16 @@ const Fleet = () => {
                         </TableCell>
                         <TableCell>{vehicle.location}</TableCell>
                         <TableCell>{vehicle.lastService}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditVehicle(vehicle)}
+                            className="h-8 w-8"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -389,6 +467,16 @@ const Fleet = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <VehicleEditDialog 
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setEditingVehicle(null);
+        }}
+        vehicle={editingVehicle}
+        onSave={handleSaveVehicle}
+      />
     </div>
   );
 };
