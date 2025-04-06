@@ -19,3 +19,16 @@ export interface MaintenanceItem {
   date: string;
   status: 'Scheduled' | 'In Progress' | 'Completed';
 }
+
+export interface PerformanceMetric {
+  value: number;
+  target: number;
+  unit: string;
+}
+
+export interface FleetPerformanceMetrics {
+  fuelEfficiency: PerformanceMetric;
+  fleetUtilization: PerformanceMetric;
+  maintenanceCompliance: PerformanceMetric;
+  onTimeDeliveries: PerformanceMetric;
+}

@@ -4,45 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit } from 'lucide-react';
+import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
-
-// Updated vehicle data for two Leyland Phoenix trucks
-const initialVehicles = [
-  { 
-    id: 'TRK-001', 
-    name: 'Leyland Phoenix', 
-    licensePlate: 'CA 123-456',
-    status: 'On Route', 
-    capacity: 80, 
-    load: 65, 
-    fuelLevel: 78, 
-    location: 'Cape Town CBD', 
-    lastService: '2023-10-15',
-    country: 'South Africa',
-    region: 'Western Cape'
-  },
-  { 
-    id: 'TRK-002', 
-    name: 'Leyland Phoenix', 
-    licensePlate: 'CA 789-012',
-    status: 'Available', 
-    capacity: 80, 
-    load: 0, 
-    fuelLevel: 92, 
-    location: 'Afrox Epping Depot', 
-    lastService: '2023-11-02',
-    country: 'South Africa',
-    region: 'Western Cape'
-  },
-];
-
-// Updated maintenance schedule
-const maintenanceSchedule = [
-  { vehicle: 'Leyland Phoenix (CA 123-456)', type: 'Engine Service', date: '2023-12-05', status: 'In Progress' },
-  { vehicle: 'Leyland Phoenix (CA 789-012)', type: 'Tire Replacement', date: '2023-12-12', status: 'Scheduled' },
-];
+import { useFleetData } from '@/hooks/useFleetData';
 
 // Variable costs data
 const variableCosts = [
@@ -96,7 +61,15 @@ const VehicleStatusCard = ({ status, count, icon: Icon, color }) => {
 };
 
 const Fleet = () => {
-  const [vehicles, setVehicles] = useState(initialVehicles);
+  const { 
+    vehicles, 
+    maintenanceItems, 
+    performanceMetrics, 
+    isLoading, 
+    saveVehicle, 
+    refreshData 
+  } = useFleetData();
+  
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -113,19 +86,10 @@ const Fleet = () => {
   };
 
   const handleSaveVehicle = (updatedVehicle) => {
-    if (updatedVehicle.id) {
-      // Update existing vehicle
-      setVehicles(vehicles.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
-    } else {
-      // Add new vehicle
-      const newVehicle = {
-        ...updatedVehicle,
-        id: `TRK-${String(vehicles.length + 1).padStart(3, '0')}`,
-      };
-      setVehicles([...vehicles, newVehicle]);
-    }
-    setIsDialogOpen(false);
-    setEditingVehicle(null);
+    saveVehicle(updatedVehicle).then(() => {
+      setIsDialogOpen(false);
+      setEditingVehicle(null);
+    });
   };
 
   const handleAddVehicle = () => {
@@ -152,10 +116,15 @@ const Fleet = () => {
           <h1 className="text-2xl font-bold tracking-tight">Fleet Management</h1>
           <p className="text-muted-foreground">Monitor and manage delivery vehicles</p>
         </div>
-        <Button onClick={handleAddVehicle} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Vehicle
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={refreshData} size="icon" variant="outline">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button onClick={handleAddVehicle} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Vehicle
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
@@ -177,80 +146,84 @@ const Fleet = () => {
               <CardDescription>Status and details of all vehicles</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>License Plate</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Region</TableHead>
-                      <TableHead>Load</TableHead>
-                      <TableHead>Fuel</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Last Service</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id} className="transition-colors hover:bg-secondary/30">
-                        <TableCell className="font-medium">{vehicle.id}</TableCell>
-                        <TableCell>{vehicle.name}</TableCell>
-                        <TableCell>{vehicle.licensePlate}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="outline" 
-                            className={
-                              vehicle.status === 'Available' 
-                                ? 'bg-green-50 text-green-700 border-green-200' 
-                                : vehicle.status === 'On Route'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200'
-                            }
-                          >
-                            {vehicle.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{vehicle.country}</TableCell>
-                        <TableCell>{vehicle.region}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={(vehicle.load / vehicle.capacity) * 100} className="h-2 w-16" />
-                            <span className="text-xs">{vehicle.load}/{vehicle.capacity}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress 
-                              value={vehicle.fuelLevel} 
-                              className="h-2 w-16"
-                              style={{
-                                background: vehicle.fuelLevel < 30 ? 'rgba(239, 68, 68, 0.2)' : undefined,
-                              }}
-                            />
-                            <span className="text-xs">{vehicle.fuelLevel}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.location}</TableCell>
-                        <TableCell>{vehicle.lastService}</TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleEditVehicle(vehicle)}
-                            className="h-8 w-8"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+              {isLoading ? (
+                <div className="py-4 text-center text-muted-foreground">Loading vehicle data...</div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Vehicle</TableHead>
+                        <TableHead>License Plate</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Country</TableHead>
+                        <TableHead>Region</TableHead>
+                        <TableHead>Load</TableHead>
+                        <TableHead>Fuel</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Last Service</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {vehicles.map((vehicle) => (
+                        <TableRow key={vehicle.id} className="transition-colors hover:bg-secondary/30">
+                          <TableCell className="font-medium">{vehicle.id}</TableCell>
+                          <TableCell>{vehicle.name}</TableCell>
+                          <TableCell>{vehicle.licensePlate}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={
+                                vehicle.status === 'Available' 
+                                  ? 'bg-green-50 text-green-700 border-green-200' 
+                                  : vehicle.status === 'On Route'
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }
+                            >
+                              {vehicle.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{vehicle.country}</TableCell>
+                          <TableCell>{vehicle.region}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress value={(vehicle.load / vehicle.capacity) * 100} className="h-2 w-16" />
+                              <span className="text-xs">{vehicle.load}/{vehicle.capacity}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={vehicle.fuelLevel} 
+                                className="h-2 w-16"
+                                style={{
+                                  background: vehicle.fuelLevel < 30 ? 'rgba(239, 68, 68, 0.2)' : undefined,
+                                }}
+                              />
+                              <span className="text-xs">{vehicle.fuelLevel}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{vehicle.location}</TableCell>
+                          <TableCell>{vehicle.lastService}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleEditVehicle(vehicle)}
+                              className="h-8 w-8"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -265,7 +238,7 @@ const Fleet = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {maintenanceSchedule.map((item, i) => (
+                  {maintenanceItems.map((item, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                       <div>
                         <div className="font-medium">{item.vehicle}</div>
@@ -303,37 +276,57 @@ const Fleet = () => {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="text-sm font-medium">Average Fuel Efficiency</div>
-                      <div className="text-sm font-medium">8.3 km/L</div>
+                      <div className="text-sm font-medium">{performanceMetrics.fuelEfficiency.value} km/L</div>
                     </div>
-                    <Progress value={83} className="h-2" />
-                    <div className="text-xs text-muted-foreground mt-1">8.3 km/L (target: 10 km/L)</div>
+                    <Progress 
+                      value={(performanceMetrics.fuelEfficiency.value / performanceMetrics.fuelEfficiency.target) * 100}
+                      className="h-2" 
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {performanceMetrics.fuelEfficiency.value} km/L (target: {performanceMetrics.fuelEfficiency.target} km/L)
+                    </div>
                   </div>
                   
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="text-sm font-medium">Fleet Utilization</div>
-                      <div className="text-sm font-medium">75%</div>
+                      <div className="text-sm font-medium">{performanceMetrics.fleetUtilization.value}%</div>
                     </div>
-                    <Progress value={75} className="h-2" />
-                    <div className="text-xs text-muted-foreground mt-1">75% (target: 80%)</div>
+                    <Progress 
+                      value={performanceMetrics.fleetUtilization.value} 
+                      className="h-2" 
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {performanceMetrics.fleetUtilization.value}% (target: {performanceMetrics.fleetUtilization.target}%)
+                    </div>
                   </div>
                   
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="text-sm font-medium">Maintenance Compliance</div>
-                      <div className="text-sm font-medium">92%</div>
+                      <div className="text-sm font-medium">{performanceMetrics.maintenanceCompliance.value}%</div>
                     </div>
-                    <Progress value={92} className="h-2" />
-                    <div className="text-xs text-muted-foreground mt-1">92% (target: 95%)</div>
+                    <Progress 
+                      value={performanceMetrics.maintenanceCompliance.value} 
+                      className="h-2" 
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {performanceMetrics.maintenanceCompliance.value}% (target: {performanceMetrics.maintenanceCompliance.target}%)
+                    </div>
                   </div>
                   
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="text-sm font-medium">On-Time Deliveries</div>
-                      <div className="text-sm font-medium">88%</div>
+                      <div className="text-sm font-medium">{performanceMetrics.onTimeDeliveries.value}%</div>
                     </div>
-                    <Progress value={88} className="h-2" />
-                    <div className="text-xs text-muted-foreground mt-1">88% (target: 90%)</div>
+                    <Progress 
+                      value={performanceMetrics.onTimeDeliveries.value} 
+                      className="h-2" 
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {performanceMetrics.onTimeDeliveries.value}% (target: {performanceMetrics.onTimeDeliveries.target}%)
+                    </div>
                   </div>
                 </div>
               </CardContent>
