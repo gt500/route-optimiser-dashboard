@@ -2,6 +2,16 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export interface RouteData {
+  id: string;
+  name: string;
+  date: string;
+  total_distance: number;
+  total_cylinders: number;
+  estimated_cost: number;
+  status: string;
+}
+
 export const useRouteData = () => {
   // Fetch route data from Supabase
   const fetchRouteData = async () => {
@@ -18,6 +28,48 @@ export const useRouteData = () => {
     } catch (error) {
       console.error('Error fetching route data:', error);
       toast.error('Failed to load route data');
+      return [];
+    }
+  };
+
+  // Fetch active routes (status = 'scheduled' or 'in_progress')
+  const fetchActiveRoutes = async (): Promise<RouteData[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status')
+        .in('status', ['scheduled', 'in_progress'])
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching active routes:', error);
+      toast.error('Failed to load active routes');
+      return [];
+    }
+  };
+
+  // Fetch route history (status = 'completed' or 'cancelled')
+  const fetchRouteHistory = async (): Promise<RouteData[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status')
+        .in('status', ['completed', 'cancelled'])
+        .order('date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching route history:', error);
+      toast.error('Failed to load route history');
       return [];
     }
   };
@@ -112,6 +164,8 @@ export const useRouteData = () => {
 
   return {
     fetchRouteData,
+    fetchActiveRoutes,
+    fetchRouteHistory,
     getOptimizationStats,
     getWeeklyDeliveryData
   };
