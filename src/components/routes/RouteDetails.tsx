@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -96,6 +97,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           fuelConsumption={route.fuelConsumption}
           fuelCost={route.fuelCost}
           locations={route.locations.length}
+          fuelCostPerLiter={vehicleConfig.fuelPrice}
         />
         
         <div className="pt-2">
@@ -106,8 +108,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             </div>
           </div>
           <FuelCostEditor 
-            fuelCost={vehicleConfig.fuelPrice} 
-            onSetFuelCost={handleSetFuelCost}
+            currentCost={vehicleConfig.fuelPrice} 
+            onChange={handleSetFuelCost}
             fuelConsumption={vehicleConfig.baseConsumption}
             isDisabled={isLoadConfirmed}
           />

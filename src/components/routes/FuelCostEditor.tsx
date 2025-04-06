@@ -1,181 +1,105 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Fuel, PencilIcon } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { Slider } from '@/components/ui/slider';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface FuelCostEditorProps {
-  currentCost?: number;
-  fuelCostPerLiter?: number;  // Make this optional
+  currentCost: number;
+  onChange: (newCost: number) => void;
   fuelConsumption?: number;
-  onChange?: (newCost: number) => void;
-  onUpdate?: (newCost: number) => void;  // Add alternative prop name
+  isDisabled?: boolean;
 }
 
-const FuelCostEditor = ({ 
+const FuelCostEditor: React.FC<FuelCostEditorProps> = ({
   currentCost,
-  fuelCostPerLiter = 21.95,  // Provide default value
-  fuelConsumption,
   onChange,
-  onUpdate  // Support both onChange and onUpdate
-}: FuelCostEditorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [fuelCost, setFuelCost] = useState(
-    (currentCost || fuelCostPerLiter).toString()
-  );
+  fuelConsumption,
+  isDisabled = false
+}) => {
+  const [localCost, setLocalCost] = useState(currentCost);
   
-  useEffect(() => {
-    if (currentCost !== undefined) {
-      setFuelCost(currentCost.toString());
-    } else if (fuelCostPerLiter !== undefined) {
-      setFuelCost(fuelCostPerLiter.toString());
-    }
-  }, [currentCost, fuelCostPerLiter]);
+  const handleSliderChange = (value: number[]) => {
+    const newCost = value[0];
+    setLocalCost(newCost);
+    onChange(newCost);
+  };
   
-  const fetchCurrentFuelCost = async () => {
-    const { data, error } = await supabase
-      .from('cost_factors')
-      .select('value')
-      .eq('name', 'fuel_cost_per_liter')
-      .single();
-    
-    if (error) {
-      console.error('Error fetching fuel cost:', error);
-      return;
-    }
-    
-    if (data) {
-      setFuelCost(data.value.toString());
-      
-      // Ensure both callbacks are called if they exist
-      if (onChange) {
-        onChange(data.value);
-      }
-      if (onUpdate) {
-        onUpdate(data.value);
-      }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setLocalCost(value);
+      onChange(value);
     }
   };
   
-  const saveFuelCost = async () => {
-    const numericCost = parseFloat(fuelCost);
-    
-    if (isNaN(numericCost) || numericCost <= 0) {
-      toast.error('Please enter a valid fuel cost');
-      return;
-    }
-    
-    // First check if the record exists
-    const { data: existingRecord, error: fetchError } = await supabase
-      .from('cost_factors')
-      .select('id')
-      .eq('name', 'fuel_cost_per_liter')
-      .single();
-    
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Error checking for existing record:', fetchError);
-      toast.error('Failed to save fuel cost');
-      return;
-    }
-    
-    // If record exists, update it with the id, otherwise insert with a generated id
-    const recordToUpsert = existingRecord 
-      ? { 
-          id: existingRecord.id,
-          name: 'fuel_cost_per_liter', 
-          value: numericCost, 
-          description: 'Cost per liter of fuel in Rand',
-          updated_at: new Date().toISOString()
-        }
-      : {
-          id: crypto.randomUUID(), // Generate a unique ID
-          name: 'fuel_cost_per_liter', 
-          value: numericCost, 
-          description: 'Cost per liter of fuel in Rand',
-          updated_at: new Date().toISOString()
-        };
-    
-    const { error } = await supabase
-      .from('cost_factors')
-      .upsert(recordToUpsert, { onConflict: 'id' });
-    
-    if (error) {
-      console.error('Error saving fuel cost:', error);
-      toast.error('Failed to save fuel cost');
-      return;
-    }
-    
-    // Make sure to update UI and calculations by calling both callbacks
-    if (onChange) {
-      onChange(numericCost);
-    }
-    if (onUpdate) {
-      onUpdate(numericCost);
-    }
-    
-    toast.success('Fuel cost updated successfully');
-    setIsOpen(false);
-    
-    // This ensures the calculation is updated immediately in parent components
-    console.log('Updated fuel cost to:', numericCost);
+  const incrementCost = () => {
+    const newCost = Math.round((localCost + 0.1) * 100) / 100;
+    setLocalCost(newCost);
+    onChange(newCost);
   };
   
-  useEffect(() => {
-    fetchCurrentFuelCost();
-  }, []);
-  
-  const displayCost = currentCost || fuelCostPerLiter;
+  const decrementCost = () => {
+    if (localCost > 0.1) {
+      const newCost = Math.round((localCost - 0.1) * 100) / 100;
+      setLocalCost(newCost);
+      onChange(newCost);
+    }
+  };
   
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-8 gap-1 border-dashed bg-black text-white hover:bg-black/90 hover:text-white"
-        >
-          <Fuel className="h-3.5 w-3.5" />
-          R{displayCost.toFixed(2)}/L
-          <PencilIcon className="h-3 w-3 ml-1" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-medium">Update Fuel Cost</h4>
-            <p className="text-sm text-muted-foreground">
-              Update the current cost per liter of fuel.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fuelCost">Cost per liter (R)</Label>
-            <Input 
-              id="fuelCost" 
-              type="number" 
-              min="0.01" 
-              step="0.01" 
-              value={fuelCost} 
-              onChange={(e) => setFuelCost(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              This will be used to calculate route costs.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={saveFuelCost}>
-              Save
-            </Button>
-          </div>
+    <div className="space-y-3">
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1">
+          <Input
+            type="number"
+            value={localCost}
+            onChange={handleInputChange}
+            step="0.01"
+            min="0"
+            className="pl-7"
+            disabled={isDisabled}
+          />
+          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            R
+          </span>
         </div>
-      </PopoverContent>
-    </Popover>
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={incrementCost}
+            disabled={isDisabled}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={decrementCost}
+            disabled={isDisabled || localCost <= 0.1}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <Slider
+        value={[localCost]}
+        min={15}
+        max={30}
+        step={0.01}
+        onValueChange={handleSliderChange}
+        disabled={isDisabled}
+      />
+      {fuelConsumption && (
+        <p className="text-xs text-muted-foreground">
+          Vehicle consumption rate: {fuelConsumption.toFixed(1)}L/100km
+        </p>
+      )}
+    </div>
   );
 };
 

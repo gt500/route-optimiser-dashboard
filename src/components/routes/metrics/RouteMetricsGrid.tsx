@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import RouteMetricsCard from './RouteMetricsCard';
-import FuelCostEditor from '../FuelCostEditor';
 import { CircleX, CircleCheck, Clock, Fuel, ChevronsDown, ChevronsUp, MapPin, TruckIcon } from 'lucide-react';
 
 interface RouteMetricsGridProps {
@@ -10,19 +9,21 @@ interface RouteMetricsGridProps {
   fuelConsumption: number;
   fuelCost: number;
   cylinders: number;
-  fuelCostPerLiter: number;
+  locations: number;
+  fuelCostPerLiter?: number;
   trafficConditions?: 'light' | 'moderate' | 'heavy';
   usingRealTimeData?: boolean;
   onFuelCostChange?: (newCost: number) => void;
 }
 
 const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
-  distance,
-  duration,
-  fuelConsumption,
-  fuelCost,
-  cylinders,
-  fuelCostPerLiter,
+  distance = 0,
+  duration = 0,
+  fuelConsumption = 0,
+  fuelCost = 0,
+  cylinders = 0,
+  locations = 0,
+  fuelCostPerLiter = 0,
   trafficConditions = 'moderate',
   usingRealTimeData = false,
   onFuelCostChange
@@ -33,7 +34,9 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   // Update local state when props change
   useEffect(() => {
     setLocalFuelCost(fuelCost);
-    setLocalFuelCostPerLiter(fuelCostPerLiter);
+    if (fuelCostPerLiter) {
+      setLocalFuelCostPerLiter(fuelCostPerLiter);
+    }
   }, [fuelCost, fuelCostPerLiter]);
   
   // Handle fuel cost changes
@@ -130,14 +133,8 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         subtitle={
           <>
             <div className="mb-1 text-sm">
-              {fuelConsumption.toFixed(1)}L @ R{localFuelCostPerLiter.toFixed(2)}/L
+              {fuelConsumption.toFixed(1)}L @ R{localFuelCostPerLiter?.toFixed(2) || '0.00'}/L
             </div>
-            <FuelCostEditor 
-              fuelConsumption={fuelConsumption} 
-              fuelCostPerLiter={localFuelCostPerLiter}
-              onChange={handleFuelCostChange}
-              currentCost={localFuelCostPerLiter}
-            />
           </>
         }
         tooltip="Estimated fuel cost based on current prices"
