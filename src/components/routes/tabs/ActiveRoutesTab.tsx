@@ -4,9 +4,11 @@ import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TruckIcon, CalendarIcon, MapPinIcon, ExternalLinkIcon } from 'lucide-react';
+import { TruckIcon, CalendarIcon, MapPinIcon, CheckCircle } from 'lucide-react';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const [routes, setRoutes] = useState<RouteData[]>([]);
@@ -14,15 +16,15 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const { fetchActiveRoutes } = useRouteData();
 
   useEffect(() => {
-    const loadRoutes = async () => {
-      setIsLoading(true);
-      const activeRoutes = await fetchActiveRoutes();
-      setRoutes(activeRoutes);
-      setIsLoading(false);
-    };
-
     loadRoutes();
   }, []);
+
+  const loadRoutes = async () => {
+    setIsLoading(true);
+    const activeRoutes = await fetchActiveRoutes();
+    setRoutes(activeRoutes);
+    setIsLoading(false);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -39,6 +41,45 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">In Progress</Badge>;
     }
     return <Badge variant="outline">{status}</Badge>;
+  };
+
+  const markRouteAsComplete = async (routeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('routes')
+        .update({ status: 'completed' })
+        .eq('id', routeId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Route marked as completed');
+      loadRoutes(); // Reload the routes to update the UI
+    } catch (error) {
+      console.error('Error completing route:', error);
+      toast.error('Failed to complete route');
+    }
+  };
+
+  const startRoute = async (routeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('routes')
+        .update({ status: 'in_progress' })
+        .eq('id', routeId)
+        .eq('status', 'scheduled'); // Only update if currently scheduled
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Route started');
+      loadRoutes(); // Reload the routes to update the UI
+    } catch (error) {
+      console.error('Error starting route:', error);
+      toast.error('Failed to start route');
+    }
   };
 
   if (isLoading) {
@@ -68,7 +109,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
             </div>
             <h3 className="font-medium text-lg">No active routes</h3>
             <p className="text-muted-foreground max-w-md">
-              No routes are currently in progress. Create a new route and dispatch it to see it here.
+              No routes are currently in progress. Create a new route and confirm a load to see it here.
             </p>
             <Button variant="outline" className="mt-2" onClick={onCreateRoute}>
               Create Route
@@ -94,7 +135,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
               <TableHead>Cylinders</TableHead>
               <TableHead>Distance</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -111,10 +152,27 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
                 <TableCell>{route.total_distance?.toFixed(1)} km</TableCell>
                 <TableCell>{getStatusBadge(route.status)}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <ExternalLinkIcon className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    {route.status === 'scheduled' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 px-2"
+                        onClick={() => startRoute(route.id)}
+                      >
+                        Start
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 px-2 text-green-600"
+                      onClick={() => markRouteAsComplete(route.id)}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Complete
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

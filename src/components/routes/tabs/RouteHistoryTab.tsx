@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, CalendarIcon, CheckCircle, XCircle, ExternalLinkIcon } from 'lucide-react';
+import { AlertCircle, CalendarIcon, CheckCircle, XCircle } from 'lucide-react';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { Badge } from '@/components/ui/badge';
 
@@ -13,14 +13,14 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { fetchRouteHistory } = useRouteData();
 
-  useEffect(() => {
-    const loadRoutes = async () => {
-      setIsLoading(true);
-      const historyRoutes = await fetchRouteHistory();
-      setRoutes(historyRoutes);
-      setIsLoading(false);
-    };
+  const loadRoutes = async () => {
+    setIsLoading(true);
+    const historyRoutes = await fetchRouteHistory();
+    setRoutes(historyRoutes);
+    setIsLoading(false);
+  };
 
+  useEffect(() => {
     loadRoutes();
   }, []);
 
@@ -77,7 +77,7 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
             </div>
             <h3 className="font-medium text-lg">No route history</h3>
             <p className="text-muted-foreground max-w-md">
-              Your completed routes will appear here. You haven't completed any routes yet.
+              Your completed routes will appear here after you mark them as completed from the Active Routes tab.
             </p>
             <Button variant="outline" className="mt-2" onClick={onCreateRoute}>
               Create Route
@@ -104,7 +104,6 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
               <TableHead>Distance</TableHead>
               <TableHead>Cost</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,12 +124,6 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
                     {getStatusIcon(route.status)}
                     {getStatusBadge(route.status)}
                   </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <ExternalLinkIcon className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
                 </TableCell>
               </TableRow>
             ))}
