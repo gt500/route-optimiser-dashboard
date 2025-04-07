@@ -596,7 +596,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost,
-        // Note: vehicle_id field removed because it doesn't exist in the database yet
+        ...(selectedVehicle && selectedVehicle !== 'none' ? { vehicle_id: selectedVehicle } : {})
       };
       
       console.log("Saving route data:", routeData);
@@ -614,12 +614,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       console.log("Route inserted successfully with ID:", routeId);
       
       if (selectedVehicle && selectedVehicle !== 'none') {
-        const vehicle = availableVehicles.find(v => v.id === selectedVehicle);
-        if (vehicle) {
-          // Use this function from our scope
-          updateVehicleStatus(vehicle, 'On Route', route.cylinders);
-          console.log(`Vehicle ${selectedVehicle} status updated to On Route with load ${route.cylinders}`);
-        }
+        console.log(`Vehicle ${selectedVehicle} status would be updated to On Route with load ${route.cylinders}`);
       }
       
       const deliveries = route.locations.map((location, index) => ({
@@ -658,12 +653,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     }
   };
 
-  // Add helper function to update vehicle status
   const updateVehicleStatus = (vehicle: any, status: string, load: number) => {
-    // This function will update vehicle status locally
-    // In a full implementation, we would save to database
     console.log(`Updating ${vehicle.id} status to ${status} with load ${load}`);
-    // For now we just log it
   };
 
   const handleUpdateLocations = (updatedLocations: LocationType[]) => {
