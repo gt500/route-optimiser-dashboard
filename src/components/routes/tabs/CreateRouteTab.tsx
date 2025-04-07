@@ -146,7 +146,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
               <div className="mt-4">
                 <VehicleSelector 
                   vehicles={vehicles} 
-                  selectedVehicle={selectedVehicle || ''} 
+                  selectedVehicle={selectedVehicle || 'none'} 
                   onVehicleChange={onVehicleChange}
                 />
               </div>

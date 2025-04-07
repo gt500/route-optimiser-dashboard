@@ -30,6 +30,9 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
       
+      // Get the route details to find the associated vehicle before updating
+      const route = routes.find(r => r.id === routeId);
+      
       const { error } = await supabase
         .from('routes')
         .update({ status: 'in_progress' })
@@ -41,10 +44,10 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       }
       
       // Also update the vehicle status if this route has a vehicle assigned
-      const route = routes.find(r => r.id === routeId);
       if (route && route.vehicle_id) {
         const vehicle = vehicles.find(v => v.id === route.vehicle_id);
         if (vehicle) {
+          console.log(`Updating vehicle ${vehicle.id} status to On Route`);
           await saveVehicle({
             ...vehicle,
             status: 'On Route'

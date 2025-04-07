@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types/fleet';
 import { toast } from 'sonner';
@@ -46,7 +46,27 @@ export const useVehiclesData = () => {
       // Initialize with our initial vehicles
       let updatedVehicles = [...initialVehicles];
       
-      // Return the initial vehicles since the database doesn't have a vehicles table
+      // Check for active routes to update vehicle statuses
+      const { data: activeRoutes, error: routesError } = await supabase
+        .from('routes')
+        .select('id, vehicle_id, status')
+        .in('status', ['scheduled', 'in_progress']);
+      
+      if (!routesError && activeRoutes && activeRoutes.length > 0) {
+        // Update vehicle statuses based on route assignments
+        updatedVehicles = updatedVehicles.map(vehicle => {
+          const assignedRoute = activeRoutes.find(route => route.vehicle_id === vehicle.id);
+          if (assignedRoute && assignedRoute.status === 'in_progress') {
+            return {
+              ...vehicle,
+              status: 'On Route'
+            };
+          }
+          return vehicle;
+        });
+      }
+      
+      // Return the updated vehicles
       setVehicles(updatedVehicles);
       return updatedVehicles;
     } catch (error) {
@@ -85,6 +105,11 @@ export const useVehiclesData = () => {
       return false;
     }
   };
+
+  // Add a useEffect hook to refresh vehicle data when component mounts
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
 
   return {
     vehicles,

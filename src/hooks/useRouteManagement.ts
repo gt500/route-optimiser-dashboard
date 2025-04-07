@@ -596,6 +596,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost,
+        vehicle_id: selectedVehicle === 'none' ? null : selectedVehicle,
       };
       
       console.log("Saving route data:", routeData);
@@ -611,6 +612,18 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       }
 
       console.log("Route inserted successfully with ID:", routeId);
+      
+      if (selectedVehicle && selectedVehicle !== 'none') {
+        const vehicle = vehicles?.find(v => v.id === selectedVehicle);
+        if (vehicle) {
+          await saveVehicle({
+            ...vehicle,
+            status: 'On Route',
+            load: route.cylinders
+          });
+          console.log(`Vehicle ${selectedVehicle} status updated to On Route with load ${route.cylinders}`);
+        }
+      }
       
       const deliveries = route.locations.map((location, index) => ({
         id: crypto.randomUUID(),
