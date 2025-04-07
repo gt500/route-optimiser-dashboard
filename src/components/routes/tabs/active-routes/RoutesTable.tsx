@@ -43,7 +43,7 @@ const RoutesTable = ({
       </TableHeader>
       <TableBody>
         {routes.map((route) => (
-          <TableRow key={route.id}>
+          <TableRow key={route.id + route.status}>
             <TableCell className="font-medium">{route.name || `Route ${formatDate(route.date)}`}</TableCell>
             <TableCell>
               <div className="flex items-center gap-2">

@@ -39,7 +39,9 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       }
       
       toast.success('Route started');
-      await loadRoutes(); // Reload the routes to update the UI
+      
+      // Ensure we wait for the routes to be reloaded before updating the UI
+      await loadRoutes();
     } catch (error) {
       console.error('Error starting route:', error);
       toast.error('Failed to start route');
@@ -56,9 +58,18 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
-      // Log statement to debug update operation
       console.log(`Marking route ${routeId} as completed`);
       
+      // First, directly update the local state to show immediate feedback
+      setRoutes(prev => 
+        prev.map(route => 
+          route.id === routeId 
+            ? { ...route, status: 'completed' } 
+            : route
+        )
+      );
+      
+      // Then update in database
       const { error } = await supabase
         .from('routes')
         .update({ status: 'completed' })
@@ -71,11 +82,13 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       toast.success('Route marked as completed');
       
-      // Force reload the routes to refresh the UI with the updated status
+      // Reload routes to ensure everything is in sync
       await loadRoutes();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
+      // Roll back the optimistic update if there was an error
+      await loadRoutes();
     } finally {
       setProcessingRoutes(prev => {
         const updated = { ...prev };

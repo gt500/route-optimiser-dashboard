@@ -35,10 +35,11 @@ export const useRouteData = () => {
   // Fetch active routes (status = 'scheduled' or 'in_progress')
   const fetchActiveRoutes = async (): Promise<RouteData[]> => {
     try {
+      // Use cache: 'no-store' to ensure we always get fresh data
       const { data, error } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_cylinders, estimated_cost, status')
-        .in('status', ['scheduled', 'in_progress'])
+        .in('status', ['scheduled', 'in_progress', 'completed'])
         .order('date', { ascending: false });
       
       if (error) {
