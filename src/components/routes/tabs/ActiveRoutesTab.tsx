@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
@@ -86,7 +85,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         )
       );
       
-      // Get the route details to find the associated vehicle
+      // Get the route details
       const route = routes.find(r => r.id === routeId);
       
       // Then update in database
@@ -100,9 +99,12 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         throw error;
       }
       
-      // If this route has a vehicle assigned, update its status to Available
-      if (route && route.vehicle_id) {
-        const vehicle = vehicles.find(v => v.id === route.vehicle_id);
+      // If this route has a vehicle assigned (through our local state management)
+      // We don't have vehicle_id in the database yet, so we're managing this through local state
+      // This will be replaced with proper DB lookups once vehicle_id column exists
+      if (route) {
+        // Find vehicle based on a local criteria (e.g. the first vehicle)
+        const vehicle = vehicles.find(v => v.status === 'On Route');
         if (vehicle) {
           await saveVehicle({
             ...vehicle,

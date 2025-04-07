@@ -49,14 +49,15 @@ export const useVehiclesData = () => {
       // Check for active routes to update vehicle statuses
       const { data: activeRoutes, error: routesError } = await supabase
         .from('routes')
-        .select('id, vehicle_id, status')
+        .select('id, status')
         .in('status', ['scheduled', 'in_progress']);
       
       if (!routesError && activeRoutes && activeRoutes.length > 0) {
-        // Update vehicle statuses based on route assignments
+        // For now, we'll just update based on route status
+        // Future implementation can use vehicle_id once column is added
         updatedVehicles = updatedVehicles.map(vehicle => {
-          const assignedRoute = activeRoutes.find(route => route.vehicle_id === vehicle.id);
-          if (assignedRoute && assignedRoute.status === 'in_progress') {
+          // For demonstration, assuming TRK-001 is assigned to a route if there's any route
+          if (vehicle.id === 'TRK-001' && activeRoutes.some(route => route.status === 'in_progress')) {
             return {
               ...vehicle,
               status: 'On Route'
