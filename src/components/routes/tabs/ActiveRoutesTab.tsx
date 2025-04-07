@@ -102,18 +102,22 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       // Find any vehicles that are 'On Route' and set them back to 'Available'
       const vehiclesOnRoute = vehicles.filter(v => v.status === 'On Route');
       for (const vehicle of vehiclesOnRoute) {
+        console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
         await saveVehicle({
           ...vehicle,
           status: 'Available', // Always set vehicle back to Available
-          load: 0 // Reset the load since the route is complete
+          load: 0, // Reset the load since the route is complete
+          region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region // Ensure TRK-001 is Western Cape
         });
-        console.log(`Vehicle ${vehicle.id} status updated to Available`);
       }
       
       toast.success('Route marked as completed');
       
       // Reload routes to ensure everything is in sync
       await loadRoutes();
+      
+      // Force refresh vehicle data to ensure statuses are updated
+      await fetchVehicles();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');

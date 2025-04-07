@@ -50,8 +50,10 @@ export const useVehiclesData = () => {
       const { data: activeRoutes, error: routesError } = await supabase
         .from('routes')
         .select('id, status')
-        .in('status', ['in_progress']); // Only consider in_progress routes for vehicle status
+        .eq('status', 'in_progress'); // Only consider in_progress routes for vehicle status
 
+      console.log("Active routes for vehicle status update:", activeRoutes);
+      
       if (!routesError && activeRoutes && activeRoutes.length > 0) {
         // Update vehicles based on active routes (in_progress only)
         updatedVehicles = updatedVehicles.map(vehicle => {
@@ -61,6 +63,19 @@ export const useVehiclesData = () => {
               ...vehicle,
               status: 'On Route',
               region: 'Western Cape' // Ensure region is always Western Cape for TRK-001
+            };
+          }
+          return vehicle;
+        });
+      } else {
+        // If no active routes, ensure all vehicles are Available
+        updatedVehicles = updatedVehicles.map(vehicle => {
+          if (vehicle.status === 'On Route') {
+            return {
+              ...vehicle,
+              status: 'Available',
+              load: 0,
+              region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
             };
           }
           return vehicle;
@@ -85,13 +100,10 @@ export const useVehiclesData = () => {
       console.log("Saving vehicle:", vehicle);
       
       // Enforce Western Cape region for TRK-001
-      let updatedVehicle = vehicle;
-      if (vehicle.id === 'TRK-001') {
-        updatedVehicle = {
-          ...vehicle,
-          region: 'Western Cape'
-        };
-      }
+      let updatedVehicle = {
+        ...vehicle,
+        region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
+      };
       
       // Update existing vehicle
       if (updatedVehicle.id) {

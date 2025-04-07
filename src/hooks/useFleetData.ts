@@ -27,10 +27,13 @@ export const useFleetData = () => {
       
       // Check if we need to update vehicle statuses
       const inProgressRoutes = routeData.filter(route => route.status === 'in_progress');
+      
+      // If no routes are in progress, make sure all vehicles are Available
       if (inProgressRoutes.length === 0) {
-        // If no routes are in progress, make sure all vehicles are Available
+        console.log("No routes in progress, checking if any vehicles need status update");
         for (const vehicle of vehiclesData) {
           if (vehicle.status === 'On Route') {
+            console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
             await saveVehicle({
               ...vehicle,
               status: 'Available',
@@ -38,6 +41,8 @@ export const useFleetData = () => {
             });
           }
         }
+      } else {
+        console.log(`Found ${inProgressRoutes.length} routes in progress`);
       }
       
       // Then calculate performance using that data
