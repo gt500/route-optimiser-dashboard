@@ -134,7 +134,7 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="none" disabled>No locations available</SelectItem>
+                        <SelectItem value="no-locations" disabled>No locations available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>

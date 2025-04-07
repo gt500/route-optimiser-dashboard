@@ -198,12 +198,12 @@ const VehicleSelector = ({
   return (
     <div className="space-y-2">
       <Label htmlFor="vehicle-select">Assign Vehicle</Label>
-      <Select value={selectedVehicle || ''} onValueChange={onVehicleChange}>
+      <Select value={selectedVehicle} onValueChange={onVehicleChange}>
         <SelectTrigger id="vehicle-select">
           <SelectValue placeholder="Select a vehicle" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">None</SelectItem>
+          <SelectItem value="none">None</SelectItem>
           {vehicles
             .filter(vehicle => vehicle.status === 'Available')
             .map(vehicle => (
