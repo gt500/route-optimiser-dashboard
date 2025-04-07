@@ -50,17 +50,17 @@ export const useVehiclesData = () => {
       const { data: activeRoutes, error: routesError } = await supabase
         .from('routes')
         .select('id, status')
-        .in('status', ['scheduled', 'in_progress']);
-      
+        .in('status', ['in_progress']); // Only consider in_progress routes for vehicle status
+
       if (!routesError && activeRoutes && activeRoutes.length > 0) {
-        // For now, we'll just update based on route status
-        // Future implementation can use vehicle_id once column is added
+        // Update vehicles based on active routes (in_progress only)
         updatedVehicles = updatedVehicles.map(vehicle => {
-          // For demonstration, assuming TRK-001 is assigned to a route if there's any route
+          // For demonstration, assuming TRK-001 is assigned to a route if there's any route in progress
           if (vehicle.id === 'TRK-001' && activeRoutes.some(route => route.status === 'in_progress')) {
             return {
               ...vehicle,
-              status: 'On Route'
+              status: 'On Route',
+              region: 'Western Cape' // Ensure region is always Western Cape for TRK-001
             };
           }
           return vehicle;
@@ -84,16 +84,25 @@ export const useVehiclesData = () => {
     try {
       console.log("Saving vehicle:", vehicle);
       
+      // Enforce Western Cape region for TRK-001
+      let updatedVehicle = vehicle;
+      if (vehicle.id === 'TRK-001') {
+        updatedVehicle = {
+          ...vehicle,
+          region: 'Western Cape'
+        };
+      }
+      
       // Update existing vehicle
-      if (vehicle.id) {
+      if (updatedVehicle.id) {
         // First update in our local state
-        setVehicles(prev => prev.map(v => v.id === vehicle.id ? vehicle : v));
+        setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
         
-        toast.success(`Vehicle ${vehicle.name} (${vehicle.licensePlate}) updated successfully`);
+        toast.success(`Vehicle ${updatedVehicle.name} (${updatedVehicle.licensePlate}) updated successfully`);
       } else {
         // Add new vehicle
         const newVehicle = {
-          ...vehicle,
+          ...updatedVehicle,
           id: `TRK-${String(vehicles.length + 1).padStart(3, '0')}`,
         };
         setVehicles(prev => [...prev, newVehicle]);

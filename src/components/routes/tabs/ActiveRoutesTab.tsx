@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
@@ -12,7 +13,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
   const { fetchActiveRoutes } = useRouteData();
-  const { vehicles, saveVehicle } = useVehiclesData();
+  const { vehicles, saveVehicle, fetchVehicles } = useVehiclesData();
 
   useEffect(() => {
     loadRoutes();
@@ -22,6 +23,10 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     setIsLoading(true);
     const activeRoutes = await fetchActiveRoutes();
     setRoutes(activeRoutes);
+    
+    // Refresh vehicle data to ensure statuses are in sync with routes
+    await fetchVehicles();
+    
     setIsLoading(false);
   };
 
@@ -29,7 +34,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
       
-      // Get the route details to find the associated vehicle before updating
+      // Get the route details
       const route = routes.find(r => r.id === routeId);
       
       const { error } = await supabase
@@ -42,16 +47,14 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         throw error;
       }
       
-      // Also update the vehicle status if this route has a vehicle assigned
-      if (route && route.vehicle_id) {
-        const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-        if (vehicle) {
-          console.log(`Updating vehicle ${vehicle.id} status to On Route`);
-          await saveVehicle({
-            ...vehicle,
-            status: 'On Route'
-          });
-        }
+      // Update the first available vehicle status to 'On Route'
+      const availableVehicle = vehicles.find(v => v.status === 'Available');
+      if (availableVehicle) {
+        console.log(`Updating vehicle ${availableVehicle.id} status to On Route`);
+        await saveVehicle({
+          ...availableVehicle,
+          status: 'On Route'
+        });
       }
       
       toast.success('Route started');
@@ -85,10 +88,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         )
       );
       
-      // Get the route details
-      const route = routes.find(r => r.id === routeId);
-      
-      // Then update in database
+      // Update in database
       const { error } = await supabase
         .from('routes')
         .update({ status: 'completed' })
@@ -99,20 +99,15 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         throw error;
       }
       
-      // If this route has a vehicle assigned (through our local state management)
-      // We don't have vehicle_id in the database yet, so we're managing this through local state
-      // This will be replaced with proper DB lookups once vehicle_id column exists
-      if (route) {
-        // Find vehicle based on a local criteria (e.g. the first vehicle)
-        const vehicle = vehicles.find(v => v.status === 'On Route');
-        if (vehicle) {
-          await saveVehicle({
-            ...vehicle,
-            status: 'Available', // Set vehicle back to Available
-            load: 0 // Reset the load since the route is complete
-          });
-          console.log(`Vehicle ${vehicle.id} status updated to Available`);
-        }
+      // Find any vehicles that are 'On Route' and set them back to 'Available'
+      const vehiclesOnRoute = vehicles.filter(v => v.status === 'On Route');
+      for (const vehicle of vehiclesOnRoute) {
+        await saveVehicle({
+          ...vehicle,
+          status: 'Available', // Always set vehicle back to Available
+          load: 0 // Reset the load since the route is complete
+        });
+        console.log(`Vehicle ${vehicle.id} status updated to Available`);
       }
       
       toast.success('Route marked as completed');

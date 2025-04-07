@@ -19,9 +19,26 @@ export const useFleetData = () => {
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      // First fetch vehicles and route data
+      // First fetch vehicles
       const vehiclesData = await fetchVehicles();
+      
+      // Then fetch route data
       const routeData = await fetchRouteData();
+      
+      // Check if we need to update vehicle statuses
+      const inProgressRoutes = routeData.filter(route => route.status === 'in_progress');
+      if (inProgressRoutes.length === 0) {
+        // If no routes are in progress, make sure all vehicles are Available
+        for (const vehicle of vehiclesData) {
+          if (vehicle.status === 'On Route') {
+            await saveVehicle({
+              ...vehicle,
+              status: 'Available',
+              load: 0
+            });
+          }
+        }
+      }
       
       // Then calculate performance using that data
       await calculateFleetPerformance(vehiclesData, routeData);
