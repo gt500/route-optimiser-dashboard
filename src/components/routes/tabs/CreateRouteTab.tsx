@@ -1,6 +1,8 @@
-
-import React, { useMemo } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect } from 'react';
+import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import RouteMap from "@/components/routes/RouteMap";
@@ -161,6 +163,32 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
           />
         </div>
       </div>
+    </div>
+  );
+};
+
+const VehicleSelector = ({ vehicles, selectedVehicle, onVehicleChange }) => {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="vehicle-select">Assign Vehicle</Label>
+      <Select value={selectedVehicle || ''} onValueChange={onVehicleChange}>
+        <SelectTrigger id="vehicle-select">
+          <SelectValue placeholder="Select a vehicle" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">None</SelectItem>
+          {vehicles
+            .filter(vehicle => vehicle.status === 'Available')
+            .map(vehicle => (
+              <SelectItem key={vehicle.id} value={vehicle.id}>
+                {vehicle.name} ({vehicle.licensePlate})
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-muted-foreground">
+        Only available vehicles can be assigned to routes
+      </p>
     </div>
   );
 };

@@ -10,9 +10,9 @@ const initialVehicles: Vehicle[] = [
     id: 'TRK-001', 
     name: 'Leyland Phoenix', 
     licensePlate: 'CA 123-456',
-    status: 'On Route', 
+    status: 'Available', 
     capacity: 80, 
-    load: 65, 
+    load: 0, 
     fuelLevel: 78, 
     location: 'Cape Town CBD', 
     lastService: '2023-10-15',
@@ -43,24 +43,43 @@ export const useVehiclesData = () => {
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase
+      // First try to get existing vehicles from routes
+      const { data: routesData, error: routesError } = await supabase
         .from('routes')
-        .select('id, total_distance, total_cylinders, estimated_cost, date, status');
+        .select('id, name, vehicle_id, status')
+        .not('vehicle_id', 'is', null);
       
-      if (error) {
-        throw error;
+      if (routesError) {
+        throw routesError;
       }
 
-      // If we don't have any routes data yet, use the initial vehicles
-      if (!data || data.length === 0) {
-        setVehicles(initialVehicles);
-        return initialVehicles;
+      // Initialize with our initial vehicles
+      let updatedVehicles = [...initialVehicles];
+      
+      // Update vehicle status based on active routes
+      if (routesData && routesData.length > 0) {
+        updatedVehicles = updatedVehicles.map(vehicle => {
+          // Check if this vehicle is assigned to any route
+          const activeRoute = routesData.find(route => 
+            route.vehicle_id === vehicle.id && 
+            (route.status === 'scheduled' || route.status === 'in_progress')
+          );
+          
+          if (activeRoute) {
+            // If the vehicle is on an active route, set its status accordingly
+            return {
+              ...vehicle,
+              status: 'On Route',
+              load: 65, // Assuming a default load for active routes
+            };
+          }
+          
+          return vehicle;
+        });
       }
-
-      // For now, we don't have a vehicles table yet in Supabase,
-      // so we're using initial vehicles
-      setVehicles(initialVehicles);
-      return initialVehicles;
+      
+      setVehicles(updatedVehicles);
+      return updatedVehicles;
     } catch (error) {
       console.error('Error fetching vehicle data:', error);
       toast.error('Failed to load fleet data');
@@ -73,11 +92,44 @@ export const useVehiclesData = () => {
   // Save or update a vehicle
   const saveVehicle = async (vehicle: Vehicle) => {
     try {
-      // Since we don't have a vehicles table yet in Supabase,
-      // we handle locally only for now
+      console.log("Saving vehicle:", vehicle);
+      
+      // Update existing vehicle
       if (vehicle.id) {
-        // Update existing vehicle
+        // First update in our local state
         setVehicles(prev => prev.map(v => v.id === vehicle.id ? vehicle : v));
+        
+        // Then update in routes if status changed to or from "On Route"
+        if (vehicle.status === 'On Route' || vehicle.status === 'Available') {
+          // Get any route that might be associated with this vehicle
+          const { data: routeData, error: routeError } = await supabase
+            .from('routes')
+            .select('id, status')
+            .eq('vehicle_id', vehicle.id)
+            .in('status', ['scheduled', 'in_progress'])
+            .maybeSingle();
+            
+          if (routeError) {
+            console.error('Error checking routes for vehicle:', routeError);
+          } else if (routeData) {
+            // If vehicle is no longer on route but the route is still active,
+            // update the route status according to vehicle status
+            if (vehicle.status === 'Available' && 
+                (routeData.status === 'scheduled' || routeData.status === 'in_progress')) {
+              // Update route to completed if vehicle is now available
+              const { error: updateError } = await supabase
+                .from('routes')
+                .update({ status: 'completed' })
+                .eq('id', routeData.id);
+                
+              if (updateError) {
+                console.error('Error updating route status:', updateError);
+              } else {
+                toast.success('Route has been marked as completed');
+              }
+            }
+          }
+        }
       } else {
         // Add new vehicle
         const newVehicle = {
@@ -87,6 +139,7 @@ export const useVehiclesData = () => {
         setVehicles(prev => [...prev, newVehicle]);
       }
       
+      toast.success(`Vehicle ${vehicle.name} (${vehicle.licensePlate}) updated successfully`);
       return true;
     } catch (error) {
       console.error('Error saving vehicle:', error);

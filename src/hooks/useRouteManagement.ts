@@ -33,6 +33,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   const [vehicleConfig, setVehicleConfig] = useState<VehicleConfigProps>(defaultVehicleConfig);
   const [isLoadConfirmed, setIsLoadConfirmed] = useState(false);
   const [isSyncingLocations, setSyncingLocations] = useState(true);
+  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   
   const [route, setRoute] = useState({
     distance: 0,
@@ -594,7 +595,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         total_distance: route.distance || 0,
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
-        estimated_cost: route.fuelCost
+        estimated_cost: route.fuelCost,
+        vehicle_id: selectedVehicle
       };
       
       console.log("Saving route data:", routeData);
@@ -635,6 +637,31 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
           .eq('id', routeId);
           
         return;
+      }
+      
+      if (selectedVehicle) {
+        const { data: vehiclesData } = await supabase
+          .from('vehicles')
+          .select('*')
+          .eq('id', selectedVehicle)
+          .single();
+          
+        if (vehiclesData) {
+          const { error: vehicleUpdateError } = await supabase
+            .from('vehicles')
+            .update({ 
+              status: 'On Route',
+              load: route.cylinders
+            })
+            .eq('id', selectedVehicle);
+            
+          if (vehicleUpdateError) {
+            console.error('Error updating vehicle status:', vehicleUpdateError);
+            toast.error("Failed to update vehicle status");
+          } else {
+            toast.success("Vehicle has been assigned to this route");
+          }
+        }
       }
       
       setIsLoadConfirmed(true);
@@ -694,7 +721,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     handleUpdateLocations,
     setIsLoadConfirmed,
     setAvailableLocations,
-    updateVehicleConfig
+    updateVehicleConfig,
+    selectedVehicle,
+    setSelectedVehicle
   };
 };
 

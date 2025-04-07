@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Fuel, AlertTriangle } from 'lucide-react';
+import { Check, Fuel, AlertTriangle, Truck } from 'lucide-react';
 import FuelCostEditor from './FuelCostEditor';
 import RouteMetricsGrid from './metrics/RouteMetricsGrid';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
+import { Vehicle } from '@/types/fleet';
 
 interface RouteDetailsProps {
   route: {
@@ -26,6 +27,8 @@ interface RouteDetailsProps {
   onOptimize: () => void;
   onSave: () => void;
   vehicleConfig: VehicleConfigProps;
+  selectedVehicle?: string | null;
+  vehicles?: Vehicle[];
 }
 
 const RouteDetails: React.FC<RouteDetailsProps> = ({
@@ -37,7 +40,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   onRouteDataUpdate,
   onOptimize,
   onSave,
-  vehicleConfig
+  vehicleConfig,
+  selectedVehicle,
+  vehicles = []
 }) => {
   const [estimatedTime, setEstimatedTime] = useState<number>(route.estimatedDuration || 0);
   const [totalCost, setTotalCost] = useState<number>(route.fuelCost);
@@ -57,6 +62,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);
   };
+
+  // Find the assigned vehicle details if one is selected
+  const assignedVehicle = selectedVehicle ? 
+    vehicles.find(v => v.id === selectedVehicle) : 
+    null;
 
   return (
     <Card className="border shadow-sm p-4">
@@ -99,6 +109,15 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           locations={route.locations.length}
           fuelCostPerLiter={vehicleConfig.fuelPrice}
         />
+        
+        {assignedVehicle && (
+          <div className="bg-blue-50 p-3 rounded-md flex items-center gap-2 text-blue-700">
+            <Truck className="h-4 w-4" />
+            <span>
+              Assigned to: <strong>{assignedVehicle.name}</strong> ({assignedVehicle.licensePlate})
+            </span>
+          </div>
+        )}
         
         <div className="pt-2">
           <div className="flex items-center justify-between mb-2">

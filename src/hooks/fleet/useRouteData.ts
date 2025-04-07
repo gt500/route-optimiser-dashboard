@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -10,6 +9,7 @@ export interface RouteData {
   total_cylinders: number;
   estimated_cost: number;
   status: string;
+  vehicle_id?: string;
 }
 
 export const useRouteData = () => {
@@ -18,7 +18,7 @@ export const useRouteData = () => {
     try {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status');
+        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status, vehicle_id');
       
       if (error) {
         throw error;
@@ -43,7 +43,7 @@ export const useRouteData = () => {
       // Use cache: 'no-store' to ensure we always get fresh data
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id')
         .in('status', ['scheduled', 'in_progress', 'completed'])
         .order('date', { ascending: false });
       
@@ -69,7 +69,7 @@ export const useRouteData = () => {
     try {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id')
         .in('status', ['completed', 'cancelled'])
         .order('date', { ascending: false });
       

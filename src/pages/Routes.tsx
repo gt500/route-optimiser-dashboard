@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, MapPin } from 'lucide-react';
@@ -11,12 +10,11 @@ import RouteHistoryTab from '@/components/routes/tabs/RouteHistoryTab';
 import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
+import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 
-// Initial location data - in a real app, this would come from an API or database
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
   { id: "2", name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', lat: -33.731659, long: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-  // Removed the Food Lovers Sunningdale location
   { id: "4", name: 'Haasendaal Gables', address: 'Haasendaal, Western Cape', lat: -33.907776, long: 18.698757, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
   { id: "5", name: 'Pick n Pay TableView', address: 'Table View, Cape Town', lat: -33.8258, long: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
   { id: "6", name: 'SUPERSPAR Parklands', address: 'Parklands, Cape Town', lat: -33.815781, long: 18.495968, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
@@ -43,6 +41,8 @@ const RoutesList = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   
+  const { vehicles, fetchVehicles } = useVehiclesData();
+  
   const {
     route,
     availableLocations,
@@ -51,6 +51,8 @@ const RoutesList = () => {
     isLoadConfirmed,
     isSyncingLocations,
     vehicleConfig,
+    selectedVehicle,
+    setSelectedVehicle,
     handleStartLocationChange,
     handleEndLocationChange,
     addLocationToRoute,
@@ -64,6 +66,10 @@ const RoutesList = () => {
     handleUpdateLocations,
     setAvailableLocations
   } = useRouteManagement(initialLocations);
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
 
   const filteredAvailableLocations = useMemo(() => {
     return availableLocations.filter(loc => 
@@ -101,9 +107,15 @@ const RoutesList = () => {
     toast.success(`Added new location: ${location.name}`);
   };
   
-  // Create a wrapper for optimize function
   const handleOptimizeRoute = () => {
     handleOptimize(routeOptimizationDefaultParams);
+  };
+
+  const handleVehicleChange = (vehicleId: string) => {
+    setSelectedVehicle(vehicleId === "" ? null : vehicleId);
+    toast.success(vehicleId === "" 
+      ? "Vehicle assignment removed" 
+      : `Vehicle assigned: ${vehicles.find(v => v.id === vehicleId)?.name}`);
   };
 
   return (
@@ -160,6 +172,9 @@ const RoutesList = () => {
             onRouteDataUpdate={handleRouteDataUpdate}
             onConfirmLoad={handleConfirmLoad}
             vehicleConfig={vehicleConfig || defaultVehicleConfig}
+            vehicles={vehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
           />
         </TabsContent>
         
