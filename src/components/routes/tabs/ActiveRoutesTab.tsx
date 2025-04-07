@@ -39,7 +39,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       }
       
       toast.success('Route started');
-      loadRoutes(); // Reload the routes to update the UI
+      await loadRoutes(); // Reload the routes to update the UI
     } catch (error) {
       console.error('Error starting route:', error);
       toast.error('Failed to start route');
@@ -56,17 +56,23 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
+      // Log statement to debug update operation
+      console.log(`Marking route ${routeId} as completed`);
+      
       const { error } = await supabase
         .from('routes')
         .update({ status: 'completed' })
         .eq('id', routeId);
       
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
       
       toast.success('Route marked as completed');
-      loadRoutes(); // Reload the routes to update the UI
+      
+      // Force reload the routes to refresh the UI with the updated status
+      await loadRoutes();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
