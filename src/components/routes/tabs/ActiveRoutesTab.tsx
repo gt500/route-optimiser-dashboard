@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TruckIcon, CalendarIcon, MapPinIcon, CheckCircle } from 'lucide-react';
+import { TruckIcon, CalendarIcon, MapPinIcon, CheckCircle, Play } from 'lucide-react';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
   const { fetchActiveRoutes } = useRouteData();
 
   useEffect(() => {
@@ -45,6 +46,8 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
 
   const startRoute = async (routeId: string) => {
     try {
+      setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
+      
       const { error } = await supabase
         .from('routes')
         .update({ status: 'in_progress' })
@@ -60,11 +63,19 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     } catch (error) {
       console.error('Error starting route:', error);
       toast.error('Failed to start route');
+    } finally {
+      setProcessingRoutes(prev => {
+        const updated = { ...prev };
+        delete updated[routeId];
+        return updated;
+      });
     }
   };
 
   const markRouteAsComplete = async (routeId: string) => {
     try {
+      setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
+      
       const { error } = await supabase
         .from('routes')
         .update({ status: 'completed' })
@@ -79,6 +90,12 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
+    } finally {
+      setProcessingRoutes(prev => {
+        const updated = { ...prev };
+        delete updated[routeId];
+        return updated;
+      });
     }
   };
 
@@ -159,20 +176,31 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-8 px-2"
+                        className={`h-8 px-2 transition-colors ${
+                          processingRoutes[route.id] === 'starting'
+                            ? 'bg-blue-500 text-white border-blue-600'
+                            : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                        }`}
                         onClick={() => startRoute(route.id)}
+                        disabled={processingRoutes[route.id] === 'starting'}
                       >
-                        Start
+                        <Play className="h-4 w-4 mr-1" />
+                        {processingRoutes[route.id] === 'starting' ? 'Starting...' : 'Start'}
                       </Button>
                     )}
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="h-8 px-2 bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+                      className={`h-8 px-2 transition-colors ${
+                        processingRoutes[route.id] === 'completing'
+                          ? 'bg-green-500 text-white border-green-600'
+                          : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700'
+                      }`}
                       onClick={() => markRouteAsComplete(route.id)}
+                      disabled={processingRoutes[route.id] === 'completing'}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
-                      Complete
+                      {processingRoutes[route.id] === 'completing' ? 'Completing...' : 'Complete'}
                     </Button>
                   </div>
                 </TableCell>
