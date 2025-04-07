@@ -101,6 +101,8 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       // Find any vehicles that are 'On Route' and set them back to 'Available'
       const vehiclesOnRoute = vehicles.filter(v => v.status === 'On Route');
+      console.log(`Found ${vehiclesOnRoute.length} vehicles on route to update status`);
+      
       for (const vehicle of vehiclesOnRoute) {
         console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
         await saveVehicle({
@@ -113,10 +115,10 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       toast.success('Route marked as completed');
       
-      // Reload routes to ensure everything is in sync
+      // Run complete data reload to ensure everything is in sync
       await loadRoutes();
       
-      // Force refresh vehicle data to ensure statuses are updated
+      // One more explicit vehicle data refresh to ensure statuses are updated
       await fetchVehicles();
     } catch (error) {
       console.error('Error completing route:', error);

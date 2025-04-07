@@ -19,33 +19,48 @@ export const useFleetData = () => {
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      // First fetch vehicles
+      // First fetch vehicles and routes
       const vehiclesData = await fetchVehicles();
-      
-      // Then fetch route data
       const routeData = await fetchRouteData();
       
-      // Check if we need to update vehicle statuses
+      // Check for in-progress routes
       const inProgressRoutes = routeData.filter(route => route.status === 'in_progress');
       
-      // If no routes are in progress, make sure all vehicles are Available
+      // Synchronize vehicle statuses with routes
       if (inProgressRoutes.length === 0) {
         console.log("No routes in progress, checking if any vehicles need status update");
+        
+        // If no routes are in progress, all vehicles should be Available
         for (const vehicle of vehiclesData) {
           if (vehicle.status === 'On Route') {
-            console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
+            console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available" during refresh`);
             await saveVehicle({
               ...vehicle,
               status: 'Available',
-              load: 0
+              load: 0,
+              region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
             });
           }
         }
       } else {
         console.log(`Found ${inProgressRoutes.length} routes in progress`);
+        
+        // If TRK-001 is not already "On Route", update it
+        const trk001 = vehiclesData.find(v => v.id === 'TRK-001');
+        if (trk001 && trk001.status !== 'On Route') {
+          console.log('Setting TRK-001 to "On Route" since there are active routes');
+          await saveVehicle({
+            ...trk001,
+            status: 'On Route',
+            region: 'Western Cape'
+          });
+        }
       }
       
-      // Then calculate performance using that data
+      // Refetch vehicles to ensure we have the latest data after updates
+      await fetchVehicles();
+      
+      // Then calculate performance using updated data
       await calculateFleetPerformance(vehiclesData, routeData);
       
       // Finally fetch maintenance data

@@ -57,32 +57,45 @@ export const useVehiclesData = () => {
       if (!routesError && activeRoutes && activeRoutes.length > 0) {
         // Update vehicles based on active routes (in_progress only)
         updatedVehicles = updatedVehicles.map(vehicle => {
-          // For demonstration, assuming TRK-001 is assigned to a route if there's any route in progress
+          // Always ensure TRK-001 has Western Cape region
+          const updatedVehicle = {
+            ...vehicle,
+            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
+          };
+          
+          // If it's TRK-001 and there are active routes, set to On Route
           if (vehicle.id === 'TRK-001' && activeRoutes.some(route => route.status === 'in_progress')) {
             return {
-              ...vehicle,
-              status: 'On Route',
-              region: 'Western Cape' // Ensure region is always Western Cape for TRK-001
+              ...updatedVehicle,
+              status: 'On Route'
             };
           }
-          return vehicle;
+          
+          return updatedVehicle;
         });
       } else {
         // If no active routes, ensure all vehicles are Available
         updatedVehicles = updatedVehicles.map(vehicle => {
-          if (vehicle.status === 'On Route') {
+          // Always ensure TRK-001 has Western Cape region
+          const updatedVehicle = {
+            ...vehicle,
+            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
+          };
+          
+          if (updatedVehicle.status === 'On Route') {
+            console.log(`Setting ${vehicle.id} from "On Route" to "Available" because no active routes`);
             return {
-              ...vehicle,
+              ...updatedVehicle,
               status: 'Available',
-              load: 0,
-              region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
+              load: 0
             };
           }
-          return vehicle;
+          
+          return updatedVehicle;
         });
       }
       
-      // Return the updated vehicles
+      // Set the updated vehicles in state
       setVehicles(updatedVehicles);
       return updatedVehicles;
     } catch (error) {
@@ -99,7 +112,7 @@ export const useVehiclesData = () => {
     try {
       console.log("Saving vehicle:", vehicle);
       
-      // Enforce Western Cape region for TRK-001
+      // Always enforce Western Cape region for TRK-001
       let updatedVehicle = {
         ...vehicle,
         region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
@@ -107,8 +120,10 @@ export const useVehiclesData = () => {
       
       // Update existing vehicle
       if (updatedVehicle.id) {
-        // First update in our local state
-        setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+        // Update in our local state
+        setVehicles(prev => 
+          prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v)
+        );
         
         toast.success(`Vehicle ${updatedVehicle.name} (${updatedVehicle.licensePlate}) updated successfully`);
       } else {
@@ -128,7 +143,7 @@ export const useVehiclesData = () => {
     }
   };
 
-  // Add a useEffect hook to refresh vehicle data when component mounts
+  // Initialize vehicle data when component mounts
   useEffect(() => {
     fetchVehicles();
   }, []);
