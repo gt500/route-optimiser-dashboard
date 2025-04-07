@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +16,7 @@ import { LocationType } from "@/components/locations/LocationEditDialog";
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import TruckWeightIndicator from '@/components/reports/TruckWeightIndicator';
 import { toast } from 'sonner';
+import { Vehicle } from '@/types/fleet';
 
 interface CreateRouteTabProps {
   route: {
@@ -45,6 +47,9 @@ interface CreateRouteTabProps {
   onRouteDataUpdate: (distance: number, duration: number) => void;
   onConfirmLoad: () => void;
   vehicleConfig: VehicleConfigProps;
+  vehicles?: Vehicle[];
+  selectedVehicle?: string | null;
+  onVehicleChange?: (vehicleId: string) => void;
 }
 
 const MAX_CYLINDERS = 80;
@@ -69,7 +74,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onFuelCostUpdate,
   onRouteDataUpdate,
   onConfirmLoad,
-  vehicleConfig
+  vehicleConfig,
+  vehicles = [],
+  selectedVehicle,
+  onVehicleChange
 }) => {
   const isOverweight = route.cylinders > MAX_CYLINDERS;
 
@@ -134,6 +142,15 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             />
             <Separator className="my-4" />
             <OptimizationParameters onOptimize={onOptimize} />
+            {vehicles && vehicles.length > 0 && onVehicleChange && (
+              <div className="mt-4">
+                <VehicleSelector 
+                  vehicles={vehicles} 
+                  selectedVehicle={selectedVehicle || ''} 
+                  onVehicleChange={onVehicleChange}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -160,6 +177,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             isLoadConfirmed={isLoadConfirmed}
             vehicleConfig={vehicleConfig}
             isOverweight={isOverweight}
+            selectedVehicle={selectedVehicle}
+            vehicles={vehicles}
           />
         </div>
       </div>
@@ -167,7 +186,15 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   );
 };
 
-const VehicleSelector = ({ vehicles, selectedVehicle, onVehicleChange }) => {
+const VehicleSelector = ({ 
+  vehicles, 
+  selectedVehicle, 
+  onVehicleChange 
+}: { 
+  vehicles: Vehicle[], 
+  selectedVehicle: string, 
+  onVehicleChange: (vehicleId: string) => void 
+}) => {
   return (
     <div className="space-y-2">
       <Label htmlFor="vehicle-select">Assign Vehicle</Label>

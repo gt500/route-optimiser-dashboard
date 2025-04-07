@@ -596,7 +596,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost,
-        vehicle_id: selectedVehicle
       };
       
       console.log("Saving route data:", routeData);
@@ -637,31 +636,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
           .eq('id', routeId);
           
         return;
-      }
-      
-      if (selectedVehicle) {
-        const { data: vehiclesData } = await supabase
-          .from('vehicles')
-          .select('*')
-          .eq('id', selectedVehicle)
-          .single();
-          
-        if (vehiclesData) {
-          const { error: vehicleUpdateError } = await supabase
-            .from('vehicles')
-            .update({ 
-              status: 'On Route',
-              load: route.cylinders
-            })
-            .eq('id', selectedVehicle);
-            
-          if (vehicleUpdateError) {
-            console.error('Error updating vehicle status:', vehicleUpdateError);
-            toast.error("Failed to update vehicle status");
-          } else {
-            toast.success("Vehicle has been assigned to this route");
-          }
-        }
       }
       
       setIsLoadConfirmed(true);
