@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TruckIcon, CalendarIcon, MapPinIcon, CheckCircle, Play } from 'lucide-react';
+import { TruckIcon, CalendarIcon, MapPinIcon, CheckCircle, Play, CheckCircle2 } from 'lucide-react';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,6 +40,11 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Scheduled</Badge>;
     } else if (status === 'in_progress') {
       return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">In Progress</Badge>;
+    } else if (status === 'completed') {
+      return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 flex items-center gap-1">
+        <CheckCircle2 className="h-3 w-3" />
+        Done
+      </Badge>;
     }
     return <Badge variant="outline">{status}</Badge>;
   };
@@ -188,20 +193,22 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
                         {processingRoutes[route.id] === 'starting' ? 'Starting...' : 'Start'}
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className={`h-8 px-2 transition-colors ${
-                        processingRoutes[route.id] === 'completing'
-                          ? 'bg-green-500 text-white border-green-600'
-                          : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700'
-                      }`}
-                      onClick={() => markRouteAsComplete(route.id)}
-                      disabled={processingRoutes[route.id] === 'completing'}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      {processingRoutes[route.id] === 'completing' ? 'Completing...' : 'Complete'}
-                    </Button>
+                    {route.status !== 'completed' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={`h-8 px-2 transition-colors ${
+                          processingRoutes[route.id] === 'completing'
+                            ? 'bg-green-500 text-white border-green-600'
+                            : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700'
+                        }`}
+                        onClick={() => markRouteAsComplete(route.id)}
+                        disabled={processingRoutes[route.id] === 'completing'}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        {processingRoutes[route.id] === 'completing' ? 'Completing...' : 'Complete'}
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
