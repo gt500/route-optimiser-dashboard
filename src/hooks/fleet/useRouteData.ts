@@ -18,7 +18,7 @@ export const useRouteData = () => {
     try {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, total_distance, total_cylinders, estimated_cost, date, status');
+        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status');
       
       if (error) {
         throw error;
