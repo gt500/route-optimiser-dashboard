@@ -24,7 +24,12 @@ export const useRouteData = () => {
         throw error;
       }
       
-      return data || [];
+      // Filter out any routes that might have "Food Lovers Sunningdale" in their name
+      const filteredData = data?.filter(route => 
+        !route.name?.toLowerCase().includes('food lovers sunningdale')
+      ) || [];
+      
+      return filteredData;
     } catch (error) {
       console.error('Error fetching route data:', error);
       toast.error('Failed to load route data');
@@ -46,7 +51,12 @@ export const useRouteData = () => {
         throw error;
       }
       
-      return data || [];
+      // Filter out any routes with "Food Lovers Sunningdale" in the name
+      const filteredData = data?.filter(route => 
+        !route.name?.toLowerCase().includes('food lovers sunningdale')
+      ) || [];
+      
+      return filteredData;
     } catch (error) {
       console.error('Error fetching active routes:', error);
       toast.error('Failed to load active routes');
@@ -67,7 +77,12 @@ export const useRouteData = () => {
         throw error;
       }
       
-      return data || [];
+      // Filter out any routes with "Food Lovers Sunningdale" in the name
+      const filteredData = data?.filter(route => 
+        !route.name?.toLowerCase().includes('food lovers sunningdale')
+      ) || [];
+      
+      return filteredData;
     } catch (error) {
       console.error('Error fetching route history:', error);
       toast.error('Failed to load route history');

@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
   { id: "2", name: 'Birkenhead Shopping Centre', address: 'Birkenhead, Western Cape', lat: -33.731659, long: 18.443239, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-  { id: "3", name: 'Food Lovers Sunningdale', address: 'Sunningdale, KwaZulu-Natal', lat: -29.7486, long: 31.0462, type: 'Customer', fullCylinders: 0, emptyCylinders: 8 },
+  // Removed the Food Lovers Sunningdale location
   { id: "4", name: 'Haasendaal Gables', address: 'Haasendaal, Western Cape', lat: -33.907776, long: 18.698757, type: 'Customer', fullCylinders: 0, emptyCylinders: 23 },
   { id: "5", name: 'Pick n Pay TableView', address: 'Table View, Cape Town', lat: -33.8258, long: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
   { id: "6", name: 'SUPERSPAR Parklands', address: 'Parklands, Cape Town', lat: -33.815781, long: 18.495968, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },

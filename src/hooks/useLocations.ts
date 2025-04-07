@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,8 +28,9 @@ export const useLocations = () => {
       }
 
       if (data) {
+        // Ensure Food Lovers Sunningdale is completely excluded from the data
         const filteredData = data.filter(item => 
-          !item.name?.includes('Food Lovers Sunningdale'));
+          !item.name?.toLowerCase().includes('food lovers sunningdale'));
         
         const mappedLocations = filteredData.map(item => {
           let locationType = item.type || 'Customer';
