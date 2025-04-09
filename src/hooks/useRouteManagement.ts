@@ -596,7 +596,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost,
-        ...(selectedVehicle && selectedVehicle !== 'none' ? { vehicle_id: selectedVehicle } : {})
+        vehicle_id: selectedVehicle && selectedVehicle !== 'none' ? selectedVehicle : null
       };
       
       console.log("Saving route data:", routeData);

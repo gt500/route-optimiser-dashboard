@@ -159,6 +159,7 @@ export type Database = {
           total_distance: number | null
           total_duration: number | null
           updated_at: string | null
+          vehicle_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -171,6 +172,7 @@ export type Database = {
           total_distance?: number | null
           total_duration?: number | null
           updated_at?: string | null
+          vehicle_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -183,6 +185,7 @@ export type Database = {
           total_distance?: number | null
           total_duration?: number | null
           updated_at?: string | null
+          vehicle_id?: string | null
         }
         Relationships: []
       }

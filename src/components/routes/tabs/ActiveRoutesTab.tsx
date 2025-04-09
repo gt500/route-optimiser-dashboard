@@ -36,6 +36,11 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       // Get the route details
       const route = routes.find(r => r.id === routeId);
+      if (!route) {
+        throw new Error('Route not found');
+      }
+      
+      console.log(`Starting route ${routeId}, vehicle assignment: ${route.vehicle_id || 'none'}`);
       
       const { error } = await supabase
         .from('routes')
@@ -47,14 +52,38 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         throw error;
       }
       
-      // Update the first available vehicle status to 'On Route'
-      const availableVehicle = vehicles.find(v => v.status === 'Available');
-      if (availableVehicle) {
-        console.log(`Updating vehicle ${availableVehicle.id} status to On Route`);
-        await saveVehicle({
-          ...availableVehicle,
-          status: 'On Route'
-        });
+      // If there's a vehicle assigned to this route, update its status
+      if (route.vehicle_id) {
+        const vehicleToUpdate = vehicles.find(v => v.id === route.vehicle_id);
+        if (vehicleToUpdate) {
+          console.log(`Updating assigned vehicle ${vehicleToUpdate.id} status to On Route`);
+          await saveVehicle({
+            ...vehicleToUpdate,
+            status: 'On Route',
+            region: vehicleToUpdate.id === 'TRK-001' ? 'Western Cape' : vehicleToUpdate.region
+          });
+        }
+      } else {
+        // If no vehicle assigned, use the first available vehicle
+        const availableVehicle = vehicles.find(v => v.status === 'Available');
+        if (availableVehicle) {
+          console.log(`No vehicle assigned, updating ${availableVehicle.id} status to On Route`);
+          await saveVehicle({
+            ...availableVehicle,
+            status: 'On Route',
+            region: availableVehicle.id === 'TRK-001' ? 'Western Cape' : availableVehicle.region
+          });
+          
+          // Update the route with the vehicle ID
+          const { error: updateError } = await supabase
+            .from('routes')
+            .update({ vehicle_id: availableVehicle.id })
+            .eq('id', routeId);
+            
+          if (updateError) {
+            console.error('Error updating route with vehicle ID:', updateError);
+          }
+        }
       }
       
       toast.success('Route started');
@@ -77,7 +106,9 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
-      console.log(`Marking route ${routeId} as completed`);
+      // Get the route to find assigned vehicle
+      const routeToComplete = routes.find(r => r.id === routeId);
+      console.log(`Marking route ${routeId} as completed, assigned vehicle: ${routeToComplete?.vehicle_id || 'none'}`);
       
       // First, directly update the local state to show immediate feedback
       setRoutes(prev => 
@@ -99,18 +130,32 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         throw error;
       }
       
-      // Find any vehicles that are 'On Route' and set them back to 'Available'
-      const vehiclesOnRoute = vehicles.filter(v => v.status === 'On Route');
-      console.log(`Found ${vehiclesOnRoute.length} vehicles on route to update status`);
-      
-      for (const vehicle of vehiclesOnRoute) {
-        console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
-        await saveVehicle({
-          ...vehicle,
-          status: 'Available', // Always set vehicle back to Available
-          load: 0, // Reset the load since the route is complete
-          region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region // Ensure TRK-001 is Western Cape
-        });
+      // If the route has an assigned vehicle, update that vehicle specifically
+      if (routeToComplete?.vehicle_id) {
+        const assignedVehicle = vehicles.find(v => v.id === routeToComplete.vehicle_id);
+        if (assignedVehicle) {
+          console.log(`Setting assigned vehicle ${assignedVehicle.id} from "On Route" to "Available"`);
+          await saveVehicle({
+            ...assignedVehicle,
+            status: 'Available', // Always set vehicle back to Available
+            load: 0, // Reset the load since the route is complete
+            region: assignedVehicle.id === 'TRK-001' ? 'Western Cape' : assignedVehicle.region // Ensure TRK-001 is Western Cape
+          });
+        }
+      } else {
+        // If no vehicle is assigned, update any vehicles that are 'On Route'
+        const vehiclesOnRoute = vehicles.filter(v => v.status === 'On Route');
+        console.log(`Found ${vehiclesOnRoute.length} vehicles on route to update status`);
+        
+        for (const vehicle of vehiclesOnRoute) {
+          console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
+          await saveVehicle({
+            ...vehicle,
+            status: 'Available', // Always set vehicle back to Available
+            load: 0, // Reset the load since the route is complete
+            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region // Ensure TRK-001 is Western Cape
+          });
+        }
       }
       
       toast.success('Route marked as completed');
