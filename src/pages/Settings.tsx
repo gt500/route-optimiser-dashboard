@@ -27,19 +27,43 @@ const profileFormSchema = z.object({
   company: z.string().optional(),
 });
 
+// Notification settings schema
+const notificationFormSchema = z.object({
+  emailNotifications: z.boolean(),
+  smsNotifications: z.boolean(),
+  pushNotifications: z.boolean(),
+  marketingEmails: z.boolean(),
+  weeklyReports: z.boolean(),
+  routeNotifications: z.boolean(),
+  deliveryUpdates: z.boolean(),
+});
+
+// App settings schema
+const appSettingsFormSchema = z.object({
+  distanceUnit: z.enum(["km", "mi"]),
+  language: z.enum(["en", "af", "zu", "xh"]),
+  currency: z.enum(["ZAR", "USD", "EUR", "GBP"]),
+  timeFormat: z.enum(["12h", "24h"]),
+});
+
+// Advanced settings schema
+const advancedSettingsFormSchema = z.object({
+  dataSync: z.boolean(),
+  offlineMode: z.boolean(),
+  developerMode: z.boolean(),
+  automaticUpdates: z.boolean(),
+});
+
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
   const { user, session } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+  const [isSavingAppSettings, setIsSavingAppSettings] = useState(false);
+  const [isSavingAdvanced, setIsSavingAdvanced] = useState(false);
   
-  // User profile settings
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [company, setCompany] = useState("");
-  
-  // Create form with validation
-  const form = useForm<z.infer<typeof profileFormSchema>>({
+  // Create profile form with validation
+  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       fullName: "",
@@ -49,46 +73,91 @@ const SettingsPage = () => {
     },
   });
 
+  // Create notification settings form
+  const notificationForm = useForm<z.infer<typeof notificationFormSchema>>({
+    resolver: zodResolver(notificationFormSchema),
+    defaultValues: {
+      emailNotifications: true,
+      smsNotifications: false,
+      pushNotifications: true,
+      marketingEmails: false,
+      weeklyReports: true,
+      routeNotifications: true,
+      deliveryUpdates: true,
+    },
+  });
+
+  // Create app settings form
+  const appSettingsForm = useForm<z.infer<typeof appSettingsFormSchema>>({
+    resolver: zodResolver(appSettingsFormSchema),
+    defaultValues: {
+      distanceUnit: "km",
+      language: "en",
+      currency: "ZAR",
+      timeFormat: "24h",
+    },
+  });
+
+  // Create advanced settings form
+  const advancedSettingsForm = useForm<z.infer<typeof advancedSettingsFormSchema>>({
+    resolver: zodResolver(advancedSettingsFormSchema),
+    defaultValues: {
+      dataSync: true,
+      offlineMode: false,
+      developerMode: false,
+      automaticUpdates: true,
+    },
+  });
+
   // Load user data on component mount
   useEffect(() => {
     if (user) {
+      // Load profile data
       const userMeta = user.user_metadata || {};
-      setFullName(userMeta.full_name || "");
-      setEmail(user.email || "");
-      setPhone(userMeta.phone || "");
-      setCompany(userMeta.company || "");
-      
-      form.reset({
+      profileForm.reset({
         fullName: userMeta.full_name || "",
         email: user.email || "",
         phone: userMeta.phone || "",
         company: userMeta.company || "",
       });
+      
+      // Load notification preferences if they exist
+      if (userMeta.notification_preferences) {
+        const notifPrefs = userMeta.notification_preferences;
+        notificationForm.reset({
+          emailNotifications: notifPrefs.emailNotifications ?? true,
+          smsNotifications: notifPrefs.smsNotifications ?? false,
+          pushNotifications: notifPrefs.pushNotifications ?? true,
+          marketingEmails: notifPrefs.marketingEmails ?? false,
+          weeklyReports: notifPrefs.weeklyReports ?? true,
+          routeNotifications: notifPrefs.routeNotifications ?? true,
+          deliveryUpdates: notifPrefs.deliveryUpdates ?? true,
+        });
+      }
+      
+      // Load app settings if they exist
+      if (userMeta.app_settings) {
+        const appSettings = userMeta.app_settings;
+        appSettingsForm.reset({
+          distanceUnit: appSettings.distanceUnit || "km",
+          language: appSettings.language || "en",
+          currency: appSettings.currency || "ZAR",
+          timeFormat: appSettings.timeFormat || "24h",
+        });
+      }
+      
+      // Load advanced settings if they exist
+      if (userMeta.advanced_settings) {
+        const advancedSettings = userMeta.advanced_settings;
+        advancedSettingsForm.reset({
+          dataSync: advancedSettings.dataSync ?? true,
+          offlineMode: advancedSettings.offlineMode ?? false,
+          developerMode: advancedSettings.developerMode ?? false,
+          automaticUpdates: advancedSettings.automaticUpdates ?? true,
+        });
+      }
     }
-  }, [user, form]);
-  
-  // Notification settings
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    marketingEmails: false,
-    weeklyReports: true,
-    routeNotifications: true,
-    deliveryUpdates: true
-  });
-  
-  // App settings
-  const [distanceUnit, setDistanceUnit] = useState("km");
-  const [language, setLanguage] = useState("en");
-  const [currency, setCurrency] = useState("ZAR");
-  const [timeFormat, setTimeFormat] = useState("24h");
-  
-  // Advanced settings
-  const [dataSync, setDataSync] = useState(true);
-  const [offlineMode, setOfflineMode] = useState(false);
-  const [developerMode, setDeveloperMode] = useState(false);
-  const [automaticUpdates, setAutomaticUpdates] = useState(true);
+  }, [user, profileForm, notificationForm, appSettingsForm, advancedSettingsForm]);
   
   // Handle saving profile changes
   const handleSaveProfile = async (data: z.infer<typeof profileFormSchema>) => {
@@ -112,11 +181,6 @@ const SettingsPage = () => {
       
       if (error) throw error;
       
-      // Update local state
-      setFullName(data.fullName);
-      setPhone(data.phone || "");
-      setCompany(data.company || "");
-      
       toast.success("Profile updated successfully", {
         description: "Your profile information has been updated."
       });
@@ -130,34 +194,108 @@ const SettingsPage = () => {
   };
   
   // Handle saving notification settings
-  const handleSaveNotifications = async () => {
+  const handleSaveNotifications = async (data: z.infer<typeof notificationFormSchema>) => {
+    if (!user) {
+      toast.error("User not logged in");
+      return;
+    }
+    
+    setIsSavingNotifications(true);
+    
     try {
-      // Here you would typically make an API call to update notification preferences
+      // Get current user metadata
+      const currentMetadata = user.user_metadata || {};
+      
+      // Update the user's metadata in Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ...currentMetadata,
+          notification_preferences: data
+        }
+      });
+      
+      if (error) throw error;
+      
       toast.success("Notification preferences saved", {
         description: "Your notification preferences have been updated."
       });
-    } catch (error) {
-      toast.error("Failed to update notification preferences");
+    } catch (error: any) {
+      toast.error("Failed to update notification preferences", { 
+        description: error.message || "An unexpected error occurred"
+      });
+    } finally {
+      setIsSavingNotifications(false);
     }
   };
   
   // Handle saving app settings
-  const handleSaveAppSettings = async () => {
+  const handleSaveAppSettings = async (data: z.infer<typeof appSettingsFormSchema>) => {
+    if (!user) {
+      toast.error("User not logged in");
+      return;
+    }
+    
+    setIsSavingAppSettings(true);
+    
     try {
-      // Here you would typically make an API call to update app settings
+      // Get current user metadata
+      const currentMetadata = user.user_metadata || {};
+      
+      // Update the user's metadata in Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ...currentMetadata,
+          app_settings: data
+        }
+      });
+      
+      if (error) throw error;
+      
       toast.success("App settings saved", {
         description: "Your application preferences have been updated."
       });
-    } catch (error) {
-      toast.error("Failed to update app settings");
+    } catch (error: any) {
+      toast.error("Failed to update app settings", { 
+        description: error.message || "An unexpected error occurred"
+      });
+    } finally {
+      setIsSavingAppSettings(false);
     }
   };
   
-  const toggleNotificationSetting = (setting: keyof typeof notificationSettings) => {
-    setNotificationSettings(prev => ({
-      ...prev,
-      [setting]: !prev[setting]
-    }));
+  // Handle saving advanced settings
+  const handleSaveAdvancedSettings = async (data: z.infer<typeof advancedSettingsFormSchema>) => {
+    if (!user) {
+      toast.error("User not logged in");
+      return;
+    }
+    
+    setIsSavingAdvanced(true);
+    
+    try {
+      // Get current user metadata
+      const currentMetadata = user.user_metadata || {};
+      
+      // Update the user's metadata in Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ...currentMetadata,
+          advanced_settings: data
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Advanced settings saved", {
+        description: "Your advanced settings have been updated."
+      });
+    } catch (error: any) {
+      toast.error("Failed to update advanced settings", { 
+        description: error.message || "An unexpected error occurred"
+      });
+    } finally {
+      setIsSavingAdvanced(false);
+    }
   };
 
   return (
@@ -188,12 +326,12 @@ const SettingsPage = () => {
                 Update your personal details and contact information.
               </CardDescription>
             </CardHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSaveProfile)}>
+            <Form {...profileForm}>
+              <form onSubmit={profileForm.handleSubmit(handleSaveProfile)}>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
-                      control={form.control}
+                      control={profileForm.control}
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
@@ -206,7 +344,7 @@ const SettingsPage = () => {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={profileForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
@@ -219,7 +357,7 @@ const SettingsPage = () => {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={profileForm.control}
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
@@ -232,7 +370,7 @@ const SettingsPage = () => {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={profileForm.control}
                       name="company"
                       render={({ field }) => (
                         <FormItem>
@@ -308,112 +446,181 @@ const SettingsPage = () => {
                 Configure how you receive notifications and updates from the system.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Notification Methods</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="email-notifications">Email Notifications</Label>
-                      <p className="text-xs text-muted-foreground">Receive updates and alerts via email.</p>
+            <Form {...notificationForm}>
+              <form onSubmit={notificationForm.handleSubmit(handleSaveNotifications)}>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Notification Methods</h3>
+                    <div className="space-y-4">
+                      <FormField
+                        control={notificationForm.control}
+                        name="emailNotifications"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="email-notifications">Email Notifications</Label>
+                              <p className="text-xs text-muted-foreground">Receive updates and alerts via email.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="email-notifications" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={notificationForm.control}
+                        name="smsNotifications"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="sms-notifications">SMS Notifications</Label>
+                              <p className="text-xs text-muted-foreground">Get important alerts via SMS.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="sms-notifications" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={notificationForm.control}
+                        name="pushNotifications"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="push-notifications">Push Notifications</Label>
+                              <p className="text-xs text-muted-foreground">Allow browser push notifications.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="push-notifications" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
                     </div>
-                    <Switch 
-                      id="email-notifications" 
-                      checked={notificationSettings.emailNotifications}
-                      onCheckedChange={() => toggleNotificationSetting('emailNotifications')}
-                    />
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="sms-notifications">SMS Notifications</Label>
-                      <p className="text-xs text-muted-foreground">Get important alerts via SMS.</p>
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Communication Preferences</h3>
+                    <div className="space-y-4">
+                      <FormField
+                        control={notificationForm.control}
+                        name="marketingEmails"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="marketing-emails">Marketing Emails</Label>
+                              <p className="text-xs text-muted-foreground">Receive promotional content and offers.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="marketing-emails" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={notificationForm.control}
+                        name="weeklyReports"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="weekly-reports">Weekly Reports</Label>
+                              <p className="text-xs text-muted-foreground">Get a weekly summary of your activity.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="weekly-reports" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
                     </div>
-                    <Switch 
-                      id="sms-notifications" 
-                      checked={notificationSettings.smsNotifications}
-                      onCheckedChange={() => toggleNotificationSetting('smsNotifications')}
-                    />
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="push-notifications">Push Notifications</Label>
-                      <p className="text-xs text-muted-foreground">Allow browser push notifications.</p>
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Route & Delivery Notifications</h3>
+                    <div className="space-y-4">
+                      <FormField
+                        control={notificationForm.control}
+                        name="routeNotifications"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="route-notifications">Route Notifications</Label>
+                              <p className="text-xs text-muted-foreground">Get notified about route changes and optimizations.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="route-notifications" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={notificationForm.control}
+                        name="deliveryUpdates"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="delivery-updates">Delivery Updates</Label>
+                              <p className="text-xs text-muted-foreground">Receive notifications about delivery status changes.</p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                id="delivery-updates" 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
                     </div>
-                    <Switch 
-                      id="push-notifications" 
-                      checked={notificationSettings.pushNotifications}
-                      onCheckedChange={() => toggleNotificationSetting('pushNotifications')}
-                    />
                   </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Communication Preferences</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                      <p className="text-xs text-muted-foreground">Receive promotional content and offers.</p>
-                    </div>
-                    <Switch 
-                      id="marketing-emails" 
-                      checked={notificationSettings.marketingEmails}
-                      onCheckedChange={() => toggleNotificationSetting('marketingEmails')}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="weekly-reports">Weekly Reports</Label>
-                      <p className="text-xs text-muted-foreground">Get a weekly summary of your activity.</p>
-                    </div>
-                    <Switch 
-                      id="weekly-reports" 
-                      checked={notificationSettings.weeklyReports}
-                      onCheckedChange={() => toggleNotificationSetting('weeklyReports')}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Route & Delivery Notifications</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="route-notifications">Route Notifications</Label>
-                      <p className="text-xs text-muted-foreground">Get notified about route changes and optimizations.</p>
-                    </div>
-                    <Switch 
-                      id="route-notifications" 
-                      checked={notificationSettings.routeNotifications}
-                      onCheckedChange={() => toggleNotificationSetting('routeNotifications')}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="delivery-updates">Delivery Updates</Label>
-                      <p className="text-xs text-muted-foreground">Receive notifications about delivery status changes.</p>
-                    </div>
-                    <Switch 
-                      id="delivery-updates" 
-                      checked={notificationSettings.deliveryUpdates}
-                      onCheckedChange={() => toggleNotificationSetting('deliveryUpdates')}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end">
-              <Button className="flex items-center gap-2" onClick={handleSaveNotifications}>
-                <MailCheck className="h-4 w-4" />
-                Save Notification Preferences
-              </Button>
-            </CardFooter>
+                </CardContent>
+                <CardFooter className="justify-end">
+                  <Button className="flex items-center gap-2" type="submit" disabled={isSavingNotifications}>
+                    {isSavingNotifications ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <MailCheck className="h-4 w-4" />
+                        Save Notification Preferences
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
           </Card>
         </TabsContent>
         
@@ -428,110 +635,155 @@ const SettingsPage = () => {
                 Customize your application settings and preferences.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Theme Settings</h3>
-                <RadioGroup defaultValue={theme} onValueChange={setTheme} className="grid grid-cols-3 gap-4">
-                  <div>
-                    <RadioGroupItem value="light" id="theme-light" className="sr-only" />
-                    <Label
-                      htmlFor="theme-light"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-                    >
-                      <SunIcon className="mb-2 h-6 w-6" />
-                      Light
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="dark" id="theme-dark" className="sr-only" />
-                    <Label
-                      htmlFor="theme-dark"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-                    >
-                      <MoonIcon className="mb-2 h-6 w-6" />
-                      Dark
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="system" id="theme-system" className="sr-only" />
-                    <Label
-                      htmlFor="theme-system"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-                    >
-                      <Settings2 className="mb-2 h-6 w-6" />
-                      System
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Regional Settings</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="distance-unit">Distance Unit</Label>
-                    <Select value={distanceUnit} onValueChange={setDistanceUnit}>
-                      <SelectTrigger id="distance-unit">
-                        <SelectValue placeholder="Select distance unit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="km">Kilometers (km)</SelectItem>
-                        <SelectItem value="mi">Miles (mi)</SelectItem>
-                      </SelectContent>
-                    </Select>
+            <Form {...appSettingsForm}>
+              <form onSubmit={appSettingsForm.handleSubmit(handleSaveAppSettings)}>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Theme Settings</h3>
+                    <RadioGroup defaultValue={theme} onValueChange={setTheme} className="grid grid-cols-3 gap-4">
+                      <div>
+                        <RadioGroupItem value="light" id="theme-light" className="sr-only" />
+                        <Label
+                          htmlFor="theme-light"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                        >
+                          <SunIcon className="mb-2 h-6 w-6" />
+                          Light
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem value="dark" id="theme-dark" className="sr-only" />
+                        <Label
+                          htmlFor="theme-dark"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                        >
+                          <MoonIcon className="mb-2 h-6 w-6" />
+                          Dark
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem value="system" id="theme-system" className="sr-only" />
+                        <Label
+                          htmlFor="theme-system"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                        >
+                          <Settings2 className="mb-2 h-6 w-6" />
+                          System
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger id="language">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="af">Afrikaans</SelectItem>
-                        <SelectItem value="zu">Zulu</SelectItem>
-                        <SelectItem value="xh">Xhosa</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Regional Settings</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={appSettingsForm.control}
+                        name="distanceUnit"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Distance Unit</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger id="distance-unit">
+                                  <SelectValue placeholder="Select distance unit" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="km">Kilometers (km)</SelectItem>
+                                <SelectItem value="mi">Miles (mi)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={appSettingsForm.control}
+                        name="language"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Language</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger id="language">
+                                  <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="af">Afrikaans</SelectItem>
+                                <SelectItem value="zu">Zulu</SelectItem>
+                                <SelectItem value="xh">Xhosa</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={appSettingsForm.control}
+                        name="currency"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Currency</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger id="currency">
+                                  <SelectValue placeholder="Select currency" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="ZAR">South African Rand (R)</SelectItem>
+                                <SelectItem value="USD">US Dollar ($)</SelectItem>
+                                <SelectItem value="EUR">Euro (€)</SelectItem>
+                                <SelectItem value="GBP">British Pound (£)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={appSettingsForm.control}
+                        name="timeFormat"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Time Format</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger id="time-format">
+                                  <SelectValue placeholder="Select time format" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
+                                <SelectItem value="24h">24-hour</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger id="currency">
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ZAR">South African Rand (R)</SelectItem>
-                        <SelectItem value="USD">US Dollar ($)</SelectItem>
-                        <SelectItem value="EUR">Euro (€)</SelectItem>
-                        <SelectItem value="GBP">British Pound (£)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="time-format">Time Format</Label>
-                    <Select value={timeFormat} onValueChange={setTimeFormat}>
-                      <SelectTrigger id="time-format">
-                        <SelectValue placeholder="Select time format" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                        <SelectItem value="24h">24-hour</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end">
-              <Button className="flex items-center gap-2" onClick={handleSaveAppSettings}>
-                <Globe className="h-4 w-4" />
-                Save App Settings
-              </Button>
-            </CardFooter>
+                </CardContent>
+                <CardFooter className="justify-end">
+                  <Button className="flex items-center gap-2" type="submit" disabled={isSavingAppSettings}>
+                    {isSavingAppSettings ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="h-4 w-4" />
+                        Save App Settings
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
           </Card>
         </TabsContent>
         
@@ -543,63 +795,108 @@ const SettingsPage = () => {
                 Configure advanced system options and developer features.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="data-sync">Data Synchronization</Label>
-                    <p className="text-xs text-muted-foreground">Keep data synchronized across devices automatically.</p>
+            <Form {...advancedSettingsForm}>
+              <form onSubmit={advancedSettingsForm.handleSubmit(handleSaveAdvancedSettings)}>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <FormField
+                      control={advancedSettingsForm.control}
+                      name="dataSync"
+                      render={({ field }) => (
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="data-sync">Data Synchronization</Label>
+                            <p className="text-xs text-muted-foreground">Keep data synchronized across devices automatically.</p>
+                          </div>
+                          <FormControl>
+                            <Switch 
+                              id="data-sync" 
+                              checked={field.value} 
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </div>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={advancedSettingsForm.control}
+                      name="offlineMode"
+                      render={({ field }) => (
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="offline-mode">Offline Mode</Label>
+                            <p className="text-xs text-muted-foreground">Allow application to work without internet connection.</p>
+                          </div>
+                          <FormControl>
+                            <Switch 
+                              id="offline-mode" 
+                              checked={field.value} 
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </div>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={advancedSettingsForm.control}
+                      name="developerMode"
+                      render={({ field }) => (
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="developer-mode">Developer Mode</Label>
+                            <p className="text-xs text-muted-foreground">Enable advanced debugging features.</p>
+                          </div>
+                          <FormControl>
+                            <Switch 
+                              id="developer-mode" 
+                              checked={field.value} 
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </div>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={advancedSettingsForm.control}
+                      name="automaticUpdates"
+                      render={({ field }) => (
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="automatic-updates">Automatic Updates</Label>
+                            <p className="text-xs text-muted-foreground">Keep application up to date automatically.</p>
+                          </div>
+                          <FormControl>
+                            <Switch 
+                              id="automatic-updates" 
+                              checked={field.value} 
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </div>
+                      )}
+                    />
                   </div>
-                  <Switch 
-                    id="data-sync" 
-                    checked={dataSync} 
-                    onCheckedChange={setDataSync}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="offline-mode">Offline Mode</Label>
-                    <p className="text-xs text-muted-foreground">Allow application to work without internet connection.</p>
-                  </div>
-                  <Switch 
-                    id="offline-mode" 
-                    checked={offlineMode} 
-                    onCheckedChange={setOfflineMode}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="developer-mode">Developer Mode</Label>
-                    <p className="text-xs text-muted-foreground">Enable advanced debugging features.</p>
-                  </div>
-                  <Switch 
-                    id="developer-mode" 
-                    checked={developerMode} 
-                    onCheckedChange={setDeveloperMode}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="automatic-updates">Automatic Updates</Label>
-                    <p className="text-xs text-muted-foreground">Keep application up to date automatically.</p>
-                  </div>
-                  <Switch 
-                    id="automatic-updates" 
-                    checked={automaticUpdates} 
-                    onCheckedChange={setAutomaticUpdates}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end">
-              <Button className="flex items-center gap-2" onClick={handleSaveAppSettings}>
-                <CheckCircle className="h-4 w-4" />
-                Save Preferences
-              </Button>
-            </CardFooter>
+                </CardContent>
+                <CardFooter className="justify-end">
+                  <Button className="flex items-center gap-2" type="submit" disabled={isSavingAdvanced}>
+                    {isSavingAdvanced ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4" />
+                        Save Preferences
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
           </Card>
           
           <Card className="border-destructive/50 bg-destructive/5">
