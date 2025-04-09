@@ -11,6 +11,7 @@ export interface RouteData {
   estimated_cost: number;
   status: string;
   vehicle_id?: string;
+  total_duration?: number;
 }
 
 export const useRouteData = () => {
@@ -19,7 +20,7 @@ export const useRouteData = () => {
     try {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status, vehicle_id');
+        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status, vehicle_id, total_duration');
       
       if (error) {
         console.error('Error fetching route data:', error);
@@ -46,7 +47,7 @@ export const useRouteData = () => {
       // Use cache: 'no-store' to ensure we always get fresh data
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id, total_duration')
         .in('status', ['scheduled', 'in_progress', 'completed'])
         .order('date', { ascending: false });
       
@@ -74,7 +75,7 @@ export const useRouteData = () => {
     try {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id, total_duration')
         .in('status', ['completed', 'cancelled'])
         .order('date', { ascending: false });
       

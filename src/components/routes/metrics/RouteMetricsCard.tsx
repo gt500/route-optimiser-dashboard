@@ -15,6 +15,8 @@ interface RouteMetricsCardProps {
   className?: string;
   onClick?: () => void;
   style?: React.CSSProperties;
+  subtitle?: ReactNode;
+  ringColor?: string;
 }
 
 export const ReportMetricsCard: React.FC<RouteMetricsCardProps> = ({
@@ -25,11 +27,13 @@ export const ReportMetricsCard: React.FC<RouteMetricsCardProps> = ({
   tooltip,
   className,
   onClick,
-  style
+  style,
+  subtitle,
+  ringColor
 }) => {
   return (
     <Card 
-      className={`${color} text-white shadow-md hover:shadow-lg transition-shadow ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`${color} text-white shadow-md hover:shadow-lg transition-shadow ${onClick ? 'cursor-pointer' : ''} ${className} ${ringColor ? `ring-2 ${ringColor}` : ''}`}
       onClick={onClick}
       style={style}
     >
@@ -53,6 +57,7 @@ export const ReportMetricsCard: React.FC<RouteMetricsCardProps> = ({
           </h3>
         </div>
         <div className="text-xl font-bold">{value}</div>
+        {subtitle && <div className="text-sm mt-1 text-white/80">{subtitle}</div>}
       </div>
     </Card>
   );
