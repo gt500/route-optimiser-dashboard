@@ -15,14 +15,16 @@ export interface RouteData {
 
 export const useRouteData = () => {
   // Fetch route data from Supabase
-  const fetchRouteData = async () => {
+  const fetchRouteData = async (): Promise<RouteData[]> => {
     try {
       const { data, error } = await supabase
         .from('routes')
         .select('id, name, total_distance, total_cylinders, estimated_cost, date, status, vehicle_id');
       
       if (error) {
-        throw error;
+        console.error('Error fetching route data:', error);
+        toast.error('Failed to load route data');
+        return [];
       }
       
       // Filter out any routes that might have "Food Lovers Sunningdale" in their name
@@ -49,7 +51,9 @@ export const useRouteData = () => {
         .order('date', { ascending: false });
       
       if (error) {
-        throw error;
+        console.error('Error fetching active routes:', error);
+        toast.error('Failed to load active routes');
+        return [];
       }
       
       // Filter out any routes with "Food Lovers Sunningdale" in the name
@@ -70,12 +74,14 @@ export const useRouteData = () => {
     try {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status')
+        .select('id, name, date, total_distance, total_cylinders, estimated_cost, status, vehicle_id')
         .in('status', ['completed', 'cancelled'])
         .order('date', { ascending: false });
       
       if (error) {
-        throw error;
+        console.error('Error fetching route history:', error);
+        toast.error('Failed to load route history');
+        return [];
       }
       
       // Filter out any routes with "Food Lovers Sunningdale" in the name
@@ -158,9 +164,11 @@ export const useRouteData = () => {
       
       // Count deliveries for each day of the week
       routeData.forEach(route => {
-        const routeDate = new Date(route.date);
-        const dayIndex = routeDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        weeklyData[dayIndex].deliveries += 1;
+        if (route && route.date) {
+          const routeDate = new Date(route.date);
+          const dayIndex = routeDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          weeklyData[dayIndex].deliveries += 1;
+        }
       });
       
       return weeklyData;

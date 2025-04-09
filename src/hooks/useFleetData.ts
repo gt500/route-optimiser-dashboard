@@ -24,7 +24,7 @@ export const useFleetData = () => {
       const routeData = await fetchRouteData();
       
       // Check for in-progress routes
-      const inProgressRoutes = routeData.filter(route => route.status === 'in_progress');
+      const inProgressRoutes = routeData.filter(route => route && route.status === 'in_progress');
       
       // Synchronize vehicle statuses with routes
       if (inProgressRoutes.length === 0) {
