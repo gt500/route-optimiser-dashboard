@@ -1,13 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TruckIcon, Trash2, ArrowUpDown, Plus, MapPin, Package, Clock, DollarSign, Route } from 'lucide-react';
+import { TruckIcon, Trash2, ArrowUpDown, Plus, MapPin, Package, Clock, DollarSign, Route, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LocationType } from '@/components/locations/LocationEditDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface RouteStopsListProps {
   locations: LocationType[];
@@ -19,6 +20,7 @@ interface RouteStopsListProps {
     duration: number;
     fuelCost: number;
   };
+  onReplaceLocation?: (index: number, newLocationId: string) => void;
 }
 
 const RouteStopsList: React.FC<RouteStopsListProps> = ({ 
@@ -26,10 +28,14 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
   availableLocations, 
   onRemoveLocation,
   onAddNewLocation,
-  routeMetrics
+  routeMetrics,
+  onReplaceLocation
 }) => {
-  const [addLocationOpen, setAddLocationOpen] = React.useState(false);
-  const [selectedLocationId, setSelectedLocationId] = React.useState<string>("");
+  const [addLocationOpen, setAddLocationOpen] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingLocationIndex, setEditingLocationIndex] = useState<number | null>(null);
+  const [replacementLocationId, setReplacementLocationId] = useState<string>("");
   
   const handleLocationChange = (locationId: string) => {
     console.log("Selected location ID:", locationId);
@@ -45,6 +51,29 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
       toast.success("Location added to route");
     } else {
       toast.error("Please select a location first");
+    }
+  };
+
+  const handleEditLocation = (index: number) => {
+    // Don't allow editing the first stop (start location)
+    if (index === 0) {
+      toast.error("Cannot modify the start location");
+      return;
+    }
+    
+    setEditingLocationIndex(index);
+    setReplacementLocationId("");
+    setEditDialogOpen(true);
+  };
+
+  const handleReplaceLocation = () => {
+    if (editingLocationIndex !== null && replacementLocationId && onReplaceLocation) {
+      onReplaceLocation(editingLocationIndex, replacementLocationId);
+      setEditDialogOpen(false);
+      setEditingLocationIndex(null);
+      toast.success("Location replaced successfully");
+    } else {
+      toast.error("Please select a replacement location");
     }
   };
 
@@ -215,14 +244,26 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
                   </div>
                   <div className="flex-shrink-0 text-sm font-medium">
                     {index > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => onRemoveLocation(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex space-x-1">
+                        {onReplaceLocation && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => handleEditLocation(index)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => onRemoveLocation(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -237,6 +278,50 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
           )}
         </div>
       </ScrollArea>
+
+      {/* Edit Location Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Replace Route Stop</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm mb-2">
+                  Current stop: <span className="font-medium">{editingLocationIndex !== null ? locations[editingLocationIndex]?.name : ''}</span>
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select a new location to replace this stop
+                </p>
+              </div>
+              <Select
+                value={replacementLocationId}
+                onValueChange={setReplacementLocationId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a replacement location" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {availableLocations && availableLocations.length > 0 ? (
+                    availableLocations.map((loc) => (
+                      <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
+                        {loc.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-locations" disabled>No locations available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleReplaceLocation} disabled={!replacementLocationId}>Replace Stop</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

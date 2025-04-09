@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,6 +65,7 @@ const RoutesList = () => {
     handleAddNewLocationFromPopover,
     handleConfirmLoad,
     handleUpdateLocations,
+    handleReplaceLocation,
     setAvailableLocations
   } = useRouteManagement(initialLocations);
 
@@ -175,6 +177,7 @@ const RoutesList = () => {
             vehicles={vehicles}
             selectedVehicle={selectedVehicle}
             onVehicleChange={handleVehicleChange}
+            onReplaceLocation={handleReplaceLocation}
           />
         </TabsContent>
         

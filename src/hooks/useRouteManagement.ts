@@ -681,6 +681,70 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     });
   };
 
+  const handleReplaceLocation = (index: number, newLocationId: string) => {
+    console.log(`Replacing location at index ${index} with location ID ${newLocationId}`);
+    
+    if (index === 0) {
+      toast.error("Cannot replace the start location");
+      return;
+    }
+    
+    const newLocation = availableLocations.find(loc => loc.id.toString() === newLocationId);
+    
+    if (!newLocation) {
+      toast.error("Selected location not found");
+      return;
+    }
+    
+    setRoute(prev => {
+      const newLocations = [...prev.locations];
+      const oldLocation = newLocations[index];
+      
+      const oldCylinders = oldLocation.type === 'Storage' 
+        ? oldLocation.fullCylinders || 0 
+        : oldLocation.emptyCylinders || 0;
+      
+      let newCylinders = 0;
+      const locationType = newLocation.type || 'Customer';
+      
+      if (locationType === 'Storage') {
+        newCylinders = newLocation.fullCylinders || 0;
+      } else {
+        newCylinders = newLocation.emptyCylinders || 10; // Default to 10 if not specified
+      }
+      
+      const newTotalCylinders = prev.cylinders - oldCylinders + newCylinders;
+      if (newTotalCylinders > MAX_CYLINDERS) {
+        toast.error(`Weight limit exceeded! Replacing this location would exceed the maximum capacity of ${MAX_CYLINDERS} cylinders.`);
+        return prev;
+      }
+      
+      const locationWithCylinders = {
+        ...newLocation,
+        id: newLocation.id.toString(),
+        emptyCylinders: locationType === 'Customer' ? newCylinders : 0,
+        fullCylinders: locationType === 'Storage' ? newCylinders : 0,
+        cylinders: newCylinders
+      };
+      
+      newLocations[index] = locationWithCylinders;
+      
+      setAvailableLocations(prevAvailable => [...prevAvailable, oldLocation]);
+      
+      setAvailableLocations(prevAvailable => 
+        prevAvailable.filter(loc => loc.id.toString() !== newLocationId)
+      );
+      
+      return {
+        ...prev,
+        cylinders: newTotalCylinders,
+        locations: newLocations
+      };
+    });
+    
+    toast.success("Location replaced successfully");
+  };
+
   return {
     route,
     availableLocations,
@@ -702,6 +766,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     handleAddNewLocationFromPopover,
     handleConfirmLoad,
     handleUpdateLocations,
+    handleReplaceLocation,
     setIsLoadConfirmed,
     setAvailableLocations,
     updateVehicleConfig,

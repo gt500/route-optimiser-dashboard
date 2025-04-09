@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -49,6 +50,7 @@ interface CreateRouteTabProps {
   vehicles?: Vehicle[];
   selectedVehicle?: string | null;
   onVehicleChange?: (vehicleId: string) => void;
+  onReplaceLocation?: (index: number, newLocationId: string) => void;
 }
 
 const MAX_CYLINDERS = 80;
@@ -76,7 +78,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   vehicleConfig,
   vehicles = [],
   selectedVehicle,
-  onVehicleChange
+  onVehicleChange,
+  onReplaceLocation
 }) => {
   const isOverweight = route.cylinders > MAX_CYLINDERS;
 
@@ -165,6 +168,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
               duration: route.estimatedDuration || 0,
               fuelCost: route.fuelCost
             } : undefined}
+            onReplaceLocation={onReplaceLocation}
           />
           <RouteDetails
             route={route}
