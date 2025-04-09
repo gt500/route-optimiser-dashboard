@@ -1,63 +1,61 @@
 
-import React, { ReactNode } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React from 'react';
+import { Card } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
+import { ReactNode } from 'react';
 
 interface RouteMetricsCardProps {
   title: string;
-  value: string | ReactNode;
-  icon?: React.ReactNode;
-  color?: string;
-  bgColor?: string;
-  subtitle?: string | ReactNode;
+  value: string | number;
+  icon: ReactNode;
+  color: string;
   tooltip?: string;
-  ringColor?: string;
+  className?: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
-const RouteMetricsCard = ({ 
-  title, 
+export const ReportMetricsCard: React.FC<RouteMetricsCardProps> = ({
+  title,
   value,
   icon,
-  color = 'bg-gradient-to-br from-blue-500 to-blue-600',
-  bgColor,
-  subtitle, 
+  color,
   tooltip,
-  ringColor = 'ring-blue-400/30',
-  onClick
-}: RouteMetricsCardProps) => {
-  // Use bgColor if provided, otherwise use color
-  const backgroundColorClass = bgColor || color;
-  
+  className,
+  onClick,
+  style
+}) => {
   return (
     <Card 
-      className={`shadow-lg hover:shadow-xl transition-all duration-300 ${backgroundColorClass} ring-1 ${ringColor} rounded-xl overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
+      className={`${color} text-white shadow-md hover:shadow-lg transition-shadow ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
+      style={style}
     >
-      <CardContent className="p-4">
-        <h3 className="text-sm flex items-center gap-2 font-medium mb-2 text-white/90">
-          {icon && <span className="flex items-center">{icon}</span>}
-          <span>{title}</span>
-          {tooltip && (
-            <HoverCard>
-              <HoverCardTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full bg-white/10 hover:bg-white/20 text-white/80">
-                  <Info className="h-3 w-3" />
-                </Button>
-              </HoverCardTrigger>
-              <HoverCardContent className="w-80">
-                <div className="text-sm">{tooltip}</div>
-              </HoverCardContent>
-            </HoverCard>
-          )}
-        </h3>
-        <div className="text-2xl font-bold text-white">{value}</div>
-        {subtitle && <p className="text-xs text-white/70 mt-1">{subtitle}</p>}
-      </CardContent>
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-white/90">{icon}</span>
+          <h3 className="text-lg font-medium text-white/90">
+            {title}
+            {tooltip && (
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80">
+                    <Info className="h-3 w-3" />
+                  </Button>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <div className="text-sm">{tooltip}</div>
+                </HoverCardContent>
+              </HoverCard>
+            )}
+          </h3>
+        </div>
+        <div className="text-xl font-bold">{value}</div>
+      </div>
     </Card>
   );
 };
 
-export default RouteMetricsCard;
+export default ReportMetricsCard;

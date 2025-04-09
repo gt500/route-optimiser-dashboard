@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,7 +29,8 @@ import {
   TruckIcon,
   Fuel,
   Route,
-  Package
+  Package,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,8 +38,19 @@ import { useAnalyticsData, TimePeriod } from '@/hooks/useAnalyticsData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { format, subDays } from 'date-fns';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+// Define the route legend data
+const routeLegendData = [
+  { id: 'Route 1', name: 'Food Lovers Market - Cape Town CBD', color: '#0088FE' },
+  { id: 'Route 2', name: 'Gas Depot - Southern Suburbs', color: '#00C49F' },
+  { id: 'Route 3', name: 'Northern Distribution Line', color: '#FFBB28' },
+  { id: 'Route 4', name: 'Atlantic Seaboard', color: '#FF8042' },
+  { id: 'Route 5', name: 'Stellenbosch Distribution', color: '#8884d8' },
+];
 
 type DetailType = 'deliveries' | 'fuel' | 'route' | 'cylinders' | null;
 
@@ -56,6 +69,7 @@ const Analytics = () => {
   const [detailData, setDetailData] = useState<any[]>([]);
   const [detailTitle, setDetailTitle] = useState('');
   const [detailLoading, setDetailLoading] = useState(false);
+  const [routeLegendOpen, setRouteLegendOpen] = useState(false);
 
   const handlePeriodChange = (value: string) => {
     setTimePeriod(value as TimePeriod);
@@ -293,7 +307,7 @@ const Analytics = () => {
                         {/* Always show some basic info regardless of the detail type */}
                         <div>
                           <p className="text-sm text-muted-foreground">Duration</p>
-                          <p className="text-lg font-medium">{Math.round(item.duration / 60)} min</p>
+                          <p className="text-lg font-medium">{Math.round((item.duration || 0) / 60)} min</p>
                         </div>
                         
                         <div>
@@ -311,6 +325,32 @@ const Analytics = () => {
               <p className="text-muted-foreground">No data available for the last 7 days</p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Route Legend Dialog */}
+      <Dialog open={routeLegendOpen} onOpenChange={setRouteLegendOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Route Legend</DialogTitle>
+            <DialogDescription>
+              Details about each route in the performance chart
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {routeLegendData.map((route) => (
+              <div key={route.id} className="flex items-center space-x-3">
+                <div 
+                  className="w-4 h-4 rounded-sm" 
+                  style={{ backgroundColor: route.color }}
+                ></div>
+                <div>
+                  <p className="font-medium">{route.id}</p>
+                  <p className="text-sm text-muted-foreground">{route.name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -534,9 +574,28 @@ const Analytics = () => {
         
         <TabsContent value="routes" className="space-y-4">
           <Card className="hover:shadow-md transition-shadow duration-300">
-            <CardHeader>
-              <CardTitle>Route Efficiency</CardTitle>
-              <CardDescription>Performance metrics for routes</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Route Efficiency</CardTitle>
+                <CardDescription>Performance metrics for routes</CardDescription>
+              </div>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setRouteLegendOpen(true)}
+                    className="rounded-full h-8 w-8"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </HoverCardTrigger>
+                <HoverCardContent side="left" className="w-64">
+                  <p className="text-sm">
+                    Click for detailed explanation of each route in the performance chart
+                  </p>
+                </HoverCardContent>
+              </HoverCard>
             </CardHeader>
             <CardContent>
               <div className="h-96">
@@ -577,6 +636,19 @@ const Analytics = () => {
                     </p>
                   </div>
                 )}
+              </div>
+              
+              {/* Inline Route Legend */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {routeLegendData.map((route) => (
+                  <RouteMetricsCard
+                    key={route.id}
+                    title={route.id}
+                    value={route.name}
+                    color={`bg-gradient-to-br from-[${route.color}]/90 to-[${route.color}]`}
+                    icon={<Route className="h-4 w-4" />}
+                  />
+                ))}
               </div>
             </CardContent>
           </Card>
