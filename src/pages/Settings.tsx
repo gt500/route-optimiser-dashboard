@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,20 +8,64 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { MoonIcon, SunIcon, CheckCircle, UserCircle, BellRing, Settings2, Globe, MailCheck } from 'lucide-react';
+import { MoonIcon, SunIcon, CheckCircle, UserCircle, BellRing, Settings2, Globe, MailCheck, Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
+// Profile form schema for validation
+const profileFormSchema = z.object({
+  fullName: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+});
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
+  const { user, session } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
   
   // User profile settings
-  const [fullName, setFullName] = useState("Daniel Radcliffe");
-  const [email, setEmail] = useState("daniel@example.com");
-  const [phone, setPhone] = useState("+27 72 123 4567");
-  const [company, setCompany] = useState("GAZ2GO");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [company, setCompany] = useState("");
+  
+  // Create form with validation
+  const form = useForm<z.infer<typeof profileFormSchema>>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      company: "",
+    },
+  });
+
+  // Load user data on component mount
+  useEffect(() => {
+    if (user) {
+      const userMeta = user.user_metadata || {};
+      setFullName(userMeta.full_name || "");
+      setEmail(user.email || "");
+      setPhone(userMeta.phone || "");
+      setCompany(userMeta.company || "");
+      
+      form.reset({
+        fullName: userMeta.full_name || "",
+        email: user.email || "",
+        phone: userMeta.phone || "",
+        company: userMeta.company || "",
+      });
+    }
+  }, [user, form]);
   
   // Notification settings
   const [notificationSettings, setNotificationSettings] = useState({
@@ -47,15 +91,41 @@ const SettingsPage = () => {
   const [automaticUpdates, setAutomaticUpdates] = useState(true);
   
   // Handle saving profile changes
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (data: z.infer<typeof profileFormSchema>) => {
+    if (!user) {
+      toast.error("User not logged in");
+      return;
+    }
+    
+    setIsSaving(true);
+    
     try {
-      // Here you would typically make an API call to update the user profile
-      // For now, we'll just show a success toast
+      // Update the user's metadata in Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        email: data.email !== user.email ? data.email : undefined, // Only update if changed
+        data: {
+          full_name: data.fullName,
+          phone: data.phone,
+          company: data.company,
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Update local state
+      setFullName(data.fullName);
+      setPhone(data.phone || "");
+      setCompany(data.company || "");
+      
       toast.success("Profile updated successfully", {
         description: "Your profile information has been updated."
       });
-    } catch (error) {
-      toast.error("Failed to update profile");
+    } catch (error: any) {
+      toast.error("Failed to update profile", { 
+        description: error.message || "An unexpected error occurred"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -118,46 +188,78 @@ const SettingsPage = () => {
                 Update your personal details and contact information.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full-name">Full Name</Label>
-                  <Input 
-                    id="full-name" 
-                    value={fullName} 
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input 
-                    id="phone" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company</Label>
-                  <Input 
-                    id="company" 
-                    value={company}
-                    onChange={(e) => setCompany(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end">
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
-            </CardFooter>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSaveProfile)}>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="justify-end">
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
           </Card>
           
           <Card>
