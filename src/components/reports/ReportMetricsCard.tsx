@@ -13,6 +13,7 @@ interface ReportMetricsCardProps {
   color: string;
   tooltip?: string;
   className?: string;
+  onClick?: () => void;
 }
 
 export const ReportMetricsCard: React.FC<ReportMetricsCardProps> = ({
@@ -21,10 +22,14 @@ export const ReportMetricsCard: React.FC<ReportMetricsCardProps> = ({
   icon,
   color,
   tooltip,
-  className
+  className,
+  onClick
 }) => {
   return (
-    <Card className={`${color} text-white shadow-md hover:shadow-lg transition-shadow ${className}`}>
+    <Card 
+      className={`${color} text-white shadow-md hover:shadow-lg transition-shadow cursor-pointer ${className}`}
+      onClick={onClick}
+    >
       <div className="p-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-white/90">{icon}</span>

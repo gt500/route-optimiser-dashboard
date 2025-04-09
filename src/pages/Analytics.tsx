@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -19,12 +18,28 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { ArrowUp, ArrowDown, ChevronDownIcon, DownloadIcon, RefreshCw } from 'lucide-react';
+import { 
+  ArrowUp, 
+  ArrowDown, 
+  ChevronDownIcon, 
+  DownloadIcon, 
+  RefreshCw,
+  XIcon,
+  TruckIcon,
+  Fuel,
+  Route,
+  Package
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAnalyticsData, TimePeriod } from '@/hooks/useAnalyticsData';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
+import { format, subDays } from 'date-fns';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+type DetailType = 'deliveries' | 'fuel' | 'route' | 'cylinders' | null;
 
 const Analytics = () => {
   const { 
@@ -35,6 +50,13 @@ const Analytics = () => {
     fetchData 
   } = useAnalyticsData();
 
+  const routeDataHook = useRouteData();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailType, setDetailType] = useState<DetailType>(null);
+  const [detailData, setDetailData] = useState<any[]>([]);
+  const [detailTitle, setDetailTitle] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+
   const handlePeriodChange = (value: string) => {
     setTimePeriod(value as TimePeriod);
   };
@@ -44,6 +66,67 @@ const Analytics = () => {
   const fuelCostChange = -4; // Placeholder
   const routeLengthChange = -8; // Placeholder
   const cylindersChange = 15; // Placeholder
+
+  const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
+
+  const showCardDetail = async (type: DetailType) => {
+    if (!type) return;
+    
+    setDetailType(type);
+    setDetailLoading(true);
+    setDetailOpen(true);
+
+    // Get data for last 7 days
+    const today = new Date();
+    const lastWeek = subDays(today, 7);
+    
+    try {
+      const routes = await routeDataHook.fetchRouteData();
+      
+      // Filter for routes in the last 7 days
+      const recentRoutes = routes.filter(route => {
+        const routeDate = new Date(route.date);
+        return routeDate >= lastWeek && routeDate <= today;
+      });
+
+      // Sort by date, most recent first
+      recentRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      // Format for display
+      const formattedData = recentRoutes.map(route => ({
+        id: route.id,
+        name: route.name,
+        date: format(new Date(route.date), 'MMM d, yyyy'),
+        rawDate: new Date(route.date),
+        distance: route.total_distance || 0,
+        duration: route.total_duration || 0,
+        cost: route.estimated_cost || 0,
+        cylinders: route.total_cylinders || 0,
+        status: route.status
+      }));
+
+      setDetailData(formattedData);
+      
+      switch(type) {
+        case 'deliveries':
+          setDetailTitle('Recent Deliveries');
+          break;
+        case 'fuel':
+          setDetailTitle('Recent Fuel Costs');
+          break;
+        case 'route':
+          setDetailTitle('Recent Route Lengths');
+          break;
+        case 'cylinders':
+          setDetailTitle('Recent Cylinder Deliveries');
+          break;
+      }
+    } catch (error) {
+      console.error('Error fetching detail data:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -79,10 +162,13 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card 
+          className="hover:shadow-md transition-shadow duration-300 cursor-pointer"
+          onClick={() => showCardDetail('deliveries')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Deliveries</CardTitle>
-            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            <TruckIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analyticsData.deliveries.toLocaleString()}</div>
@@ -93,10 +179,13 @@ const Analytics = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card 
+          className="hover:shadow-md transition-shadow duration-300 cursor-pointer"
+          onClick={() => showCardDetail('fuel')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Fuel Costs</CardTitle>
-            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            <Fuel className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R{analyticsData.fuelCost.toFixed(2)}</div>
@@ -107,10 +196,13 @@ const Analytics = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card 
+          className="hover:shadow-md transition-shadow duration-300 cursor-pointer"
+          onClick={() => showCardDetail('route')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Avg. Route Length</CardTitle>
-            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            <Route className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analyticsData.routeLength.toFixed(1)} km</div>
@@ -121,10 +213,13 @@ const Analytics = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300">
+        <Card 
+          className="hover:shadow-md transition-shadow duration-300 cursor-pointer"
+          onClick={() => showCardDetail('cylinders')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Cylinders Delivered</CardTitle>
-            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analyticsData.cylinders.toLocaleString()}</div>
@@ -136,6 +231,88 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{detailTitle}</span>
+              <Button variant="ghost" size="icon" onClick={() => setDetailOpen(false)}>
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+            <DialogDescription>
+              Data from the last 7 days
+            </DialogDescription>
+          </DialogHeader>
+          
+          {detailLoading ? (
+            <div className="flex justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : detailData.length > 0 ? (
+            <div className="mt-4">
+              <div className="grid grid-cols-1 gap-4">
+                {detailData.map(item => (
+                  <Card key={item.id} className="overflow-hidden">
+                    <CardHeader className="bg-muted/50 py-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">{item.name}</CardTitle>
+                        <span className="text-sm text-muted-foreground">{item.date}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {detailType === 'deliveries' || detailType === 'route' ? (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Distance</p>
+                            <p className="text-lg font-medium">{item.distance.toFixed(1)} km</p>
+                          </div>
+                        ) : null}
+                        
+                        {detailType === 'fuel' ? (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Fuel Cost</p>
+                            <p className="text-lg font-medium">R{item.cost.toFixed(2)}</p>
+                          </div>
+                        ) : null}
+                        
+                        {detailType === 'cylinders' ? (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Cylinders</p>
+                            <p className="text-lg font-medium">{item.cylinders}</p>
+                          </div>
+                        ) : null}
+                        
+                        <div>
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <p className="text-lg font-medium capitalize">{item.status.replace('_', ' ')}</p>
+                        </div>
+                        
+                        {/* Always show some basic info regardless of the detail type */}
+                        <div>
+                          <p className="text-sm text-muted-foreground">Duration</p>
+                          <p className="text-lg font-medium">{Math.round(item.duration / 60)} min</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm text-muted-foreground">Cost</p>
+                          <p className="text-lg font-medium">R{item.cost.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center py-8">
+              <p className="text-muted-foreground">No data available for the last 7 days</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>

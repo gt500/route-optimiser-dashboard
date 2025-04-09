@@ -14,6 +14,7 @@ interface RouteMetricsCardProps {
   subtitle?: string | ReactNode;
   tooltip?: string;
   ringColor?: string;
+  onClick?: () => void;
 }
 
 const RouteMetricsCard = ({ 
@@ -24,13 +25,17 @@ const RouteMetricsCard = ({
   bgColor,
   subtitle, 
   tooltip,
-  ringColor = 'ring-blue-400/30'
+  ringColor = 'ring-blue-400/30',
+  onClick
 }: RouteMetricsCardProps) => {
   // Use bgColor if provided, otherwise use color
   const backgroundColorClass = bgColor || color;
   
   return (
-    <Card className={`shadow-lg hover:shadow-xl transition-all duration-300 ${backgroundColorClass} ring-1 ${ringColor} rounded-xl overflow-hidden`}>
+    <Card 
+      className={`shadow-lg hover:shadow-xl transition-all duration-300 ${backgroundColorClass} ring-1 ${ringColor} rounded-xl overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <CardContent className="p-4">
         <h3 className="text-sm flex items-center gap-2 font-medium mb-2 text-white/90">
           {icon && <span className="flex items-center">{icon}</span>}
