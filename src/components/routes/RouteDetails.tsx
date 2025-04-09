@@ -92,9 +92,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </div>
         
         {isOverweight && (
-          <Alert variant="destructive" className="mb-2 py-2">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert variant="destructive" className="mb-2 py-2 border-2 border-red-500">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertDescription className="font-bold text-red-600">
               Weight limit exceeded! You cannot confirm this load until you reduce the number of cylinders.
             </AlertDescription>
           </Alert>

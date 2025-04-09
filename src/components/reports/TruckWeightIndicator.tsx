@@ -39,10 +39,10 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
       />
 
       {isOverweight && (
-        <Alert variant="destructive" className="mt-2 py-2">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Weight limit exceeded!</AlertTitle>
-          <AlertDescription>
+        <Alert variant="destructive" className="mt-2 py-2 border-2 border-red-500">
+          <AlertTriangle className="h-4 w-4 text-red-500" />
+          <AlertTitle className="text-red-600 font-bold">Weight limit exceeded!</AlertTitle>
+          <AlertDescription className="text-red-600 font-bold">
             Current load ({totalCylinders} cylinders, {currentWeight} kg) exceeds the maximum capacity 
             ({maxCylinders} cylinders, {maxWeight} kg). Please remove some locations.
           </AlertDescription>
