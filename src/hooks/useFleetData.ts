@@ -63,7 +63,7 @@ export const useFleetData = () => {
       // Then calculate performance using updated data
       await calculateFleetPerformance(vehiclesData, routeData);
       
-      // Finally fetch maintenance data
+      // Finally fetch maintenance data (now based on updated vehicle data)
       await fetchMaintenanceItems();
     } finally {
       setIsLoading(false);

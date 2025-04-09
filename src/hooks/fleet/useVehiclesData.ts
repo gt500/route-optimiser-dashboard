@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types/fleet';
 import { toast } from 'sonner';
+import { format, subDays } from 'date-fns';
+
+// Get today's date
+const today = new Date();
 
 // Initial vehicles data used when no database records exist
 const initialVehicles: Vehicle[] = [
@@ -15,7 +19,7 @@ const initialVehicles: Vehicle[] = [
     load: 0, 
     fuelLevel: 78, 
     location: 'Cape Town CBD', 
-    lastService: '2023-10-15',
+    lastService: format(subDays(today, 100), 'yyyy-MM-dd'), // About 3 months ago
     country: 'South Africa',
     region: 'Western Cape'
   },
@@ -28,7 +32,7 @@ const initialVehicles: Vehicle[] = [
     load: 0, 
     fuelLevel: 92, 
     location: 'Afrox Epping Depot', 
-    lastService: '2023-11-02',
+    lastService: format(subDays(today, 30), 'yyyy-MM-dd'), // 1 month ago
     country: 'South Africa',
     region: 'Western Cape'
   },
