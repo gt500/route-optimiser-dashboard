@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,11 +44,11 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 // Define the route legend data
 const routeLegendData = [
-  { id: 'Route 1', name: 'Food Lovers Market - Cape Town CBD', color: '#0088FE' },
-  { id: 'Route 2', name: 'Gas Depot - Southern Suburbs', color: '#00C49F' },
-  { id: 'Route 3', name: 'Northern Distribution Line', color: '#FFBB28' },
-  { id: 'Route 4', name: 'Atlantic Seaboard', color: '#FF8042' },
-  { id: 'Route 5', name: 'Stellenbosch Distribution', color: '#8884d8' },
+  { id: 'Route 1', name: 'Food Lovers Market - Cape Town CBD', color: '#0088FE', description: 'Urban delivery route' },
+  { id: 'Route 2', name: 'Gas Depot - Southern Suburbs', color: '#00C49F', description: 'Suburban delivery route' },
+  { id: 'Route 3', name: 'Northern Distribution Line', color: '#FFBB28', description: 'Industrial area route' },
+  { id: 'Route 4', name: 'Atlantic Seaboard', color: '#FF8042', description: 'Coastal delivery route' },
+  { id: 'Route 5', name: 'Stellenbosch Distribution', color: '#8884d8', description: 'Wine region route' },
 ];
 
 type DetailType = 'deliveries' | 'fuel' | 'route' | 'cylinders' | null;
@@ -75,11 +74,10 @@ const Analytics = () => {
     setTimePeriod(value as TimePeriod);
   };
 
-  // Calculate percent changes (in a real app, this would compare to previous periods)
-  const deliveriesChange = 12; // Placeholder
-  const fuelCostChange = -4; // Placeholder
-  const routeLengthChange = -8; // Placeholder
-  const cylindersChange = 15; // Placeholder
+  const deliveriesChange = 12;
+  const fuelCostChange = -4;
+  const routeLengthChange = -8;
+  const cylindersChange = 15;
 
   const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
 
@@ -90,23 +88,19 @@ const Analytics = () => {
     setDetailLoading(true);
     setDetailOpen(true);
 
-    // Get data for last 7 days
     const today = new Date();
     const lastWeek = subDays(today, 7);
     
     try {
       const routes = await routeDataHook.fetchRouteData();
       
-      // Filter for routes in the last 7 days
       const recentRoutes = routes.filter(route => {
         const routeDate = new Date(route.date);
         return routeDate >= lastWeek && routeDate <= today;
       });
 
-      // Sort by date, most recent first
       recentRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      // Format for display
       const formattedData = recentRoutes.map(route => ({
         id: route.id,
         name: route.name,
@@ -246,7 +240,6 @@ const Analytics = () => {
         </Card>
       </div>
 
-      {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -304,7 +297,6 @@ const Analytics = () => {
                           <p className="text-lg font-medium capitalize">{item.status.replace('_', ' ')}</p>
                         </div>
                         
-                        {/* Always show some basic info regardless of the detail type */}
                         <div>
                           <p className="text-sm text-muted-foreground">Duration</p>
                           <p className="text-lg font-medium">{Math.round((item.duration || 0) / 60)} min</p>
@@ -347,6 +339,7 @@ const Analytics = () => {
                 <div>
                   <p className="font-medium">{route.id}</p>
                   <p className="text-sm text-muted-foreground">{route.name}</p>
+                  <p className="text-xs text-muted-foreground">{route.description}</p>
                 </div>
               </div>
             ))}
@@ -638,15 +631,19 @@ const Analytics = () => {
                 )}
               </div>
               
-              {/* Inline Route Legend */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {routeLegendData.map((route) => (
                   <RouteMetricsCard
                     key={route.id}
                     title={route.id}
                     value={route.name}
-                    color={`bg-gradient-to-br from-[${route.color}]/90 to-[${route.color}]`}
+                    color={route.color === '#0088FE' ? 'bg-blue-500' :
+                           route.color === '#00C49F' ? 'bg-emerald-500' :
+                           route.color === '#FFBB28' ? 'bg-amber-500' :
+                           route.color === '#FF8042' ? 'bg-orange-500' :
+                           'bg-purple-500'}
                     icon={<Route className="h-4 w-4" />}
+                    subtitle={<span className="text-xs">Reference color legend</span>}
                   />
                 ))}
               </div>
