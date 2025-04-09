@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
