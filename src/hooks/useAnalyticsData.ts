@@ -79,8 +79,7 @@ export const useAnalyticsData = () => {
       // Fetch deliveries to get location distribution
       const { data: deliveriesData, error: deliveriesError } = await supabase
         .from('deliveries')
-        .select('id, location_id, cylinders, route_id')
-        .order('id', { ascending: true });
+        .select('id, location_id, cylinders, route_id');
         
       if (deliveriesError) {
         console.error('Error fetching deliveries:', deliveriesError);
@@ -90,8 +89,7 @@ export const useAnalyticsData = () => {
       // Fetch locations to get area names
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
-        .select('id, name, address')
-        .order('name', { ascending: true });
+        .select('id, name, address');
         
       if (locationsError) {
         console.error('Error fetching locations:', locationsError);
@@ -105,23 +103,50 @@ export const useAnalyticsData = () => {
       const totalFuelCost = routesData?.reduce((sum, route) => sum + (route.estimated_cost || 0), 0) || 0;
       const avgRouteLength = totalDistance / (totalDeliveries || 1);
       
-      // Create monthly/period breakdown for charts
+      // Create period breakdown for charts based on selected time period
       const deliveriesByPeriod: Record<string, number> = {};
       const fuelByPeriod: Record<string, number> = {};
       
-      // Group routes by month or appropriate period
+      // Format the date key based on the selected time period
       routesData?.forEach(route => {
+        if (!route.date) return;
+        
         const routeDate = new Date(route.date);
-        const periodKey = format(routeDate, timePeriod === 'year' ? 'MMM' : 'MMM d');
+        let periodKey;
+        
+        switch(timePeriod) {
+          case 'week':
+            periodKey = format(routeDate, 'E'); // Mon, Tue, etc.
+            break;
+          case 'month':
+            periodKey = format(routeDate, 'd MMM'); // 1 Jan, 2 Jan, etc.
+            break;
+          case 'quarter':
+            periodKey = format(routeDate, 'MMM'); // Jan, Feb, etc.
+            break;
+          case 'year':
+            periodKey = format(routeDate, 'MMM'); // Jan, Feb, etc.
+            break;
+          default:
+            periodKey = format(routeDate, 'MMM d');
+        }
         
         deliveriesByPeriod[periodKey] = (deliveriesByPeriod[periodKey] || 0) + 1;
         fuelByPeriod[periodKey] = (fuelByPeriod[periodKey] || 0) + (route.estimated_cost || 0);
       });
       
+      // Filter deliveries for routes within the selected time period
+      const periodRouteIds = routesData?.map(route => route.id) || [];
+      const periodDeliveries = deliveriesData?.filter(delivery => 
+        periodRouteIds.includes(delivery.route_id || '')
+      ) || [];
+      
       // Create location distribution data
       const deliveriesByLocation: Record<string, number> = {};
       
-      deliveriesData?.forEach(delivery => {
+      periodDeliveries.forEach(delivery => {
+        if (!delivery.location_id) return;
+        
         const location = locationsData?.find(loc => loc.id === delivery.location_id);
         if (location) {
           const locationName = location.name;
@@ -130,19 +155,39 @@ export const useAnalyticsData = () => {
       });
       
       // Format data for charts
-      const monthlyDeliveriesData = Object.entries(deliveriesByPeriod).map(([name, value]) => ({ name, value }));
-      const fuelConsumptionData = Object.entries(fuelByPeriod).map(([name, value]) => ({ name, value }));
+      // Ensure data is sorted by period sequence (days of week, days of month, etc.)
+      const sortedDeliveriesByPeriod = Object.entries(deliveriesByPeriod);
+      const sortedFuelByPeriod = Object.entries(fuelByPeriod);
+      
+      // For week view, sort by day of week
+      if (timePeriod === 'week') {
+        const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        sortedDeliveriesByPeriod.sort((a, b) => dayOrder.indexOf(a[0]) - dayOrder.indexOf(b[0]));
+        sortedFuelByPeriod.sort((a, b) => dayOrder.indexOf(a[0]) - dayOrder.indexOf(b[0]));
+      }
+      
+      const monthlyDeliveriesData = sortedDeliveriesByPeriod.map(([name, value]) => ({ name, value }));
+      const fuelConsumptionData = sortedFuelByPeriod.map(([name, value]) => ({ name, value }));
+      
+      // Sort location distribution by cylinder count (descending) and take top 5
       const routeDistributionData = Object.entries(deliveriesByLocation)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
-        .slice(0, 5); // Top 5 locations
+        .slice(0, 5);
       
-      // Cost breakdown (approximation based on fuel cost)
+      // Calculate real cost breakdown based on actual data
+      // For this example, we'll estimate the breakdown based on the total fuel cost
+      const totalCost = totalFuelCost;
+      const fuelPercentage = 45; // 45% of total cost
+      const maintenancePercentage = 20; // 20% of total cost
+      const laborPercentage = 25; // 25% of total cost
+      const otherPercentage = 10; // 10% of total cost
+      
       const costBreakdownData = [
-        { name: 'Fuel', value: 45 },
-        { name: 'Maintenance', value: 20 },
-        { name: 'Labor', value: 25 },
-        { name: 'Other', value: 10 }
+        { name: 'Fuel', value: Math.round((fuelPercentage / 100) * totalCost) },
+        { name: 'Maintenance', value: Math.round((maintenancePercentage / 100) * totalCost) },
+        { name: 'Labor', value: Math.round((laborPercentage / 100) * totalCost) },
+        { name: 'Other', value: Math.round((otherPercentage / 100) * totalCost) }
       ];
       
       setAnalyticsData({
@@ -161,7 +206,9 @@ export const useAnalyticsData = () => {
         deliveries: totalDeliveries,
         cylinders: totalCylinders,
         distance: totalDistance,
-        fuelCost: totalFuelCost
+        fuelCost: totalFuelCost,
+        monthlyDeliveries: monthlyDeliveriesData,
+        routeDistribution: routeDistributionData
       });
       
     } catch (error) {

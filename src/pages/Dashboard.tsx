@@ -62,6 +62,7 @@ const Dashboard = () => {
     { name: 'Sun', deliveries: 0 },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadDistributionData, setLoadDistributionData] = useState<{ name: string; value: number }[]>([]);
 
   const { getOptimizationStats, getWeeklyDeliveryData } = useRouteData();
 
@@ -74,8 +75,8 @@ const Dashboard = () => {
 
       const lastWeekFormatted = lastWeek.toISOString();
       const todayFormatted = today.toISOString();
-      const todayDateString = today.toISOString().split('T')[0];
 
+      // Fetch recent routes data
       const { data: recentRoutesData, error: routesError } = await supabase
         .from('routes')
         .select('*')
@@ -90,21 +91,55 @@ const Dashboard = () => {
       if (recentRoutesData) {
         setTotalRoutes(recentRoutesData.length);
 
+        // Fetch all deliveries related to the routes from last week
         const { data: deliveryData, error: deliveryError } = await supabase
           .from('deliveries')
-          .select('location_id, route_id')
+          .select('id, location_id, cylinders, route_id')
           .in('route_id', recentRoutesData.map(route => route.id));
           
         if (deliveryError) {
           console.error('Error fetching deliveries:', deliveryError);
         } else if (deliveryData) {
+          // Count unique locations
           const uniqueLocations = new Set(deliveryData.map(d => d.location_id));
           setTotalLocations(uniqueLocations.size);
+          
+          // Calculate load distribution
+          const loadCounts: Record<string, number> = {
+            'Full Loads (20+ cylinders)': 0,
+            'Partial Loads (<20 cylinders)': 0
+          };
+          
+          // Group deliveries by route
+          const deliveriesByRoute: Record<string, number> = {};
+          deliveryData.forEach(delivery => {
+            if (delivery.route_id) {
+              deliveriesByRoute[delivery.route_id] = (deliveriesByRoute[delivery.route_id] || 0) + (delivery.cylinders || 0);
+            }
+          });
+          
+          // Categorize routes as full or partial loads
+          Object.entries(deliveriesByRoute).forEach(([routeId, cylinders]) => {
+            if (cylinders >= 20) {
+              loadCounts['Full Loads (20+ cylinders)']++;
+            } else {
+              loadCounts['Partial Loads (<20 cylinders)']++;
+            }
+          });
+          
+          // Format for the pie chart
+          const loadDistribution = Object.entries(loadCounts).map(([name, value]) => ({
+            name,
+            value
+          }));
+          
+          setLoadDistributionData(loadDistribution);
         }
         
-        const standardRouteTime = 95;
+        // Calculate time and fuel savings
+        const standardRouteTime = 95; // minutes
         const totalTimeSaved = recentRoutesData.reduce((total, route) => {
-          const standardTime = route.total_duration * 1.25;
+          const standardTime = route.total_duration * 1.25; // Assuming standard time is 25% more than optimized
           return total + (standardTime - route.total_duration);
         }, 0);
         
@@ -115,13 +150,14 @@ const Dashboard = () => {
         
         const fuelCostPerLiter = 21.95;
         const totalFuelSaved = recentRoutesData.reduce((total, route) => {
-          const standardFuelCost = route.estimated_cost * 1.15;
+          const standardFuelCost = route.estimated_cost * 1.15; // Assuming standard fuel cost is 15% more
           return total + (standardFuelCost - route.estimated_cost);
         }, 0);
         
         setFuelSavings(Math.round(totalFuelSaved));
       }
 
+      // Get optimization stats and weekly delivery data
       const stats = await getOptimizationStats();
       setOptimizationStats(stats);
       
@@ -133,6 +169,7 @@ const Dashboard = () => {
       const weeklyData = await getWeeklyDeliveryData();
       setDeliveryData(weeklyData);
 
+      // Fetch upcoming deliveries (scheduled or in progress)
       const { data: activeRoutesData, error: activeRoutesError } = await supabase
         .from('routes')
         .select('*')
@@ -142,6 +179,7 @@ const Dashboard = () => {
       if (activeRoutesError) {
         console.error('Error fetching active routes:', activeRoutesError);
       } else if (activeRoutesData && activeRoutesData.length > 0) {
+        // For each active route, get the related deliveries to count locations
         const activeWithDetails = await Promise.all(activeRoutesData.map(async (route) => {
           const { data: deliveries } = await supabase
             .from('deliveries')
@@ -155,6 +193,7 @@ const Dashboard = () => {
           };
         }));
         
+        // Format for the upcoming deliveries component
         const formattedDeliveries: DeliveryItem[] = activeWithDetails.map(route => ({
           id: route.id,
           name: route.name,
@@ -170,6 +209,7 @@ const Dashboard = () => {
         setUpcomingDeliveries([]);
       }
 
+      // Fetch recent completed or in-progress routes
       const { data: completedData, error: completedError } = await supabase
         .from('routes')
         .select('*')
@@ -241,7 +281,11 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <WeeklyDeliveryChart data={deliveryData} />
-        <OptimizationChart data={optimizationData} percentage={optimizationStats.percentage} />
+        <OptimizationChart 
+          data={optimizationData} 
+          percentage={optimizationStats.percentage}
+          loadDistribution={loadDistributionData}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
