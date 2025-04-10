@@ -124,9 +124,9 @@ export const fetchLocationsByIds = async (locationIds: string[]) => {
     
     if (error) {
       // Check if error message indicates missing columns
-      const errorMessage = error.message || '';
+      const errorMsg = typeof error.message === 'string' ? error.message : '';
       
-      if (errorMessage.includes('column "region" does not exist')) {
+      if (errorMsg.includes('column "region" does not exist')) {
         console.log('Region/country fields not found, falling back to basic location data');
         
         // Fallback to fetch without region and country
