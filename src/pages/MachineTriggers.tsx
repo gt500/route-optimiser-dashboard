@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useMachineData } from "@/components/machine-triggers/useMachineData";
 import MachineGrid from "@/components/machine-triggers/MachineGrid";
@@ -32,7 +32,7 @@ const MachineTriggers = () => {
   }, [refetch]);
 
   // Check for low stock levels
-  const checkLowStock = (forceCheck = false) => {
+  const checkLowStock = useCallback((forceCheck = false) => {
     if (machineData) {
       const lowStockMachine = machineData.find(machine => 
         machine.cylinder_stock <= 7 && 
@@ -51,7 +51,7 @@ const MachineTriggers = () => {
         });
       }
     }
-  };
+  }, [machineData, isAlertOpen, toast]);
 
   // Assign the check function to the global variable
   useEffect(() => {
@@ -61,7 +61,7 @@ const MachineTriggers = () => {
     return () => {
       globalCheckLowStock = null;
     };
-  }, [machineData, isAlertOpen]);
+  }, [checkLowStock]);
 
   // Run the check whenever data changes
   useEffect(() => {
@@ -69,7 +69,7 @@ const MachineTriggers = () => {
       console.log("Checking for low stock with data:", machineData.length);
       checkLowStock();
     }
-  }, [machineData]);
+  }, [machineData, checkLowStock]);
 
   const handleAcknowledgeAlert = () => {
     if (lowStockAlert) {

@@ -26,12 +26,14 @@ const AddRegionDialog = ({
   onAddRegion
 }: AddRegionDialogProps) => {
   const [regionName, setRegionName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
   // Reset the region name whenever the dialog opens with a new country
   useEffect(() => {
     if (open) {
       setRegionName('');
+      setIsSubmitting(false);
     }
   }, [open, country]);
   
@@ -48,6 +50,8 @@ const AddRegionDialog = ({
     }
     
     try {
+      setIsSubmitting(true);
+      
       // Call parent component's add region function
       onAddRegion(country, regionName.trim());
       
@@ -57,13 +61,15 @@ const AddRegionDialog = ({
         description: `Added ${regionName.trim()} to ${country}`,
       });
       
-      // Clear the input after submission
+      // Clear the input and reset submission state
       setRegionName('');
+      setIsSubmitting(false);
       
       // Close the dialog
       onClose();
     } catch (error) {
       console.error("Error adding region:", error);
+      setIsSubmitting(false);
       toast({
         title: "Error",
         description: "Failed to add region. Please try again.",
@@ -72,8 +78,14 @@ const AddRegionDialog = ({
     }
   };
   
+  // Handle dialog close properly
+  const handleDialogClose = () => {
+    setIsSubmitting(false);
+    onClose();
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Region to {country}</DialogTitle>
@@ -89,14 +101,23 @@ const AddRegionDialog = ({
               placeholder="Region name"
               className="w-full"
               autoFocus
+              disabled={isSubmitting}
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleDialogClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={!regionName.trim()}>
-              Add Region
+            <Button 
+              type="submit" 
+              disabled={!regionName.trim() || isSubmitting}
+            >
+              {isSubmitting ? 'Adding...' : 'Add Region'}
             </Button>
           </DialogFooter>
         </form>

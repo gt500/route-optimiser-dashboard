@@ -111,45 +111,49 @@ const MachineGrid = ({
       return;
     }
 
-    setCountryRegions(prevRegions => {
-      // Find country index
-      const countryIndex = prevRegions.findIndex(item => item.country === country);
-      
-      // If country doesn't exist
-      if (countryIndex === -1) {
-        toast({
-          title: "Error",
-          description: `Country "${country}" not found`,
-          variant: "destructive",
-        });
-        return prevRegions;
-      }
-      
-      // Check if region already exists
-      const countryItem = prevRegions[countryIndex];
-      if (countryItem.regions.includes(newRegion)) {
-        toast({
-          title: "Duplicate Region",
-          description: `Region "${newRegion}" already exists in ${country}`,
-          variant: "destructive",
-        });
-        return prevRegions;
-      }
-      
-      // Add the new region - Create a new array to ensure proper state update
-      const updatedRegions = [...prevRegions];
-      updatedRegions[countryIndex] = { 
-        ...countryItem, 
-        regions: [...countryItem.regions, newRegion]
-      };
-      
-      // Successfully added region
-      console.log(`Added region "${newRegion}" to ${country}:`, updatedRegions);
-      
-      return updatedRegions;
-    });
+    // Make a copy of the current regions to avoid direct state mutation
+    const updatedRegions = [...countryRegions];
+    
+    // Find country index
+    const countryIndex = updatedRegions.findIndex(item => item.country === country);
+    
+    // If country doesn't exist
+    if (countryIndex === -1) {
+      toast({
+        title: "Error",
+        description: `Country "${country}" not found`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if region already exists
+    const countryItem = updatedRegions[countryIndex];
+    if (countryItem.regions.includes(newRegion)) {
+      toast({
+        title: "Duplicate Region",
+        description: `Region "${newRegion}" already exists in ${country}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add the new region - Create a new array to ensure proper state update
+    updatedRegions[countryIndex] = { 
+      ...countryItem, 
+      regions: [...countryItem.regions, newRegion]
+    };
+    
+    // Update state with the new regions
+    setCountryRegions(updatedRegions);
     
     // Close dialog after successful addition
+    setIsAddRegionOpen(false);
+    
+    console.log(`Added region "${newRegion}" to ${country}:`, updatedRegions);
+  };
+
+  const handleCloseRegionDialog = () => {
     setIsAddRegionOpen(false);
   };
 
@@ -221,7 +225,7 @@ const MachineGrid = ({
       <AddRegionDialog
         open={isAddRegionOpen}
         country={selectedCountryForRegion}
-        onClose={() => setIsAddRegionOpen(false)}
+        onClose={handleCloseRegionDialog}
         onAddRegion={handleAddRegion}
       />
     </div>
