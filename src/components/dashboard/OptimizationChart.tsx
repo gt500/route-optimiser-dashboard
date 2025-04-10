@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { COLORS } from '@/components/analytics/data/routeLegendData';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Route, Package } from 'lucide-react';
 
 interface OptimizationChartProps {
   data: { name: string; value: number }[];
@@ -58,16 +59,26 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           <CardTitle>
             {activeChart === 'optimization' ? 'Route Optimization' : 'Load Distribution'}
           </CardTitle>
-          <Tabs 
-            value={activeChart} 
-            onValueChange={(value) => setActiveChart(value as 'optimization' | 'distribution')} 
-            className="w-fit"
-          >
-            <TabsList className="grid grid-cols-2 h-8">
-              <TabsTrigger value="optimization" className="text-xs px-2">Optimization</TabsTrigger>
-              <TabsTrigger value="distribution" className="text-xs px-2">Distribution</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex space-x-2">
+            <Button 
+              variant={activeChart === 'optimization' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setActiveChart('optimization')}
+              className="h-8 px-3 text-xs flex items-center gap-1"
+            >
+              <Route className="h-3 w-3" />
+              Optimization
+            </Button>
+            <Button 
+              variant={activeChart === 'distribution' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setActiveChart('distribution')}
+              className="h-8 px-3 text-xs flex items-center gap-1"
+            >
+              <Package className="h-3 w-3" />
+              Distribution
+            </Button>
+          </div>
         </div>
         <p className="text-sm text-gray-400">
           {activeChart === 'optimization' 
