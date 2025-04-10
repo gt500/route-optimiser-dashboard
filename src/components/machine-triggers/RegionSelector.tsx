@@ -43,7 +43,7 @@ const RegionSelector = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64">
-          <DropdownMenuLabel>Select Location</DropdownMenuItem>
+          <DropdownMenuLabel>Select Location</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             onClick={() => onSelectCountryRegion("", "")}
