@@ -8,7 +8,7 @@ interface DeliveryItemProps {
   id: string;
   name: string;
   date: string;
-  locationsCount?: number; // Make optional to match RouteData
+  locationsCount?: number; // Optional to match the data structure
   cylindersCount: number;
   status: string;
 }

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -23,6 +24,15 @@ interface RouteData {
   cylindersCount?: number;
 }
 
+interface DeliveryItem {
+  id: string;
+  name: string;
+  date: string;
+  locationsCount?: number;
+  cylindersCount: number;
+  status: string;
+}
+
 interface OptimizationStats {
   optimized: number;
   standard: number;
@@ -34,7 +44,7 @@ const Dashboard = () => {
   const [totalLocations, setTotalLocations] = useState(0);
   const [avgTimeSaved, setAvgTimeSaved] = useState(0);
   const [fuelSavings, setFuelSavings] = useState(0);
-  const [upcomingDeliveries, setUpcomingDeliveries] = useState<RouteData[]>([]);
+  const [upcomingDeliveries, setUpcomingDeliveries] = useState<DeliveryItem[]>([]);
   const [recentRoutes, setRecentRoutes] = useState<RouteData[]>([]);
   const [optimizationData, setOptimizationData] = useState<{ name: string; value: number }[]>([]);
   const [optimizationStats, setOptimizationStats] = useState<OptimizationStats>({
@@ -145,12 +155,12 @@ const Dashboard = () => {
           };
         }));
         
-        const formattedDeliveries = activeWithDetails.map(route => ({
+        const formattedDeliveries: DeliveryItem[] = activeWithDetails.map(route => ({
           id: route.id,
           name: route.name,
           date: route.date,
           locationsCount: route.locationsCount || 0,
-          cylindersCount: route.cylindersCount || route.total_cylinders,
+          cylindersCount: route.total_cylinders,
           status: route.status
         }));
         
