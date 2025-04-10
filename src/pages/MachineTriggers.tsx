@@ -26,11 +26,11 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
     
     const data = await response.json();
     return data.response.results
-      .filter((item: any) => item.SITE_NAME !== 'Food Emporium') // Filter out Food Emporium
+      .filter((item: any) => !item.SITE_NAME.includes('Food Emporium')) // Enhanced filtering to exclude any Food Emporium
       .map((item: any) => ({
         site_name: item.SITE_NAME || 'Unknown Site',
         machine_name: item.M_CODE || 'Unknown Machine',
-        terminal_id: item.TERMINAL_ID || 'Unknown Terminal',
+        terminal_id: item.TERMINAL_ID || item.M_CODE || 'Unknown Terminal',
         merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
         cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
         last_update: item.Modified_Date || new Date().toISOString(),
@@ -164,7 +164,7 @@ const MachineTriggers = () => {
         </div>
       )}
 
-      {/* Low Stock Alert Dialog */}
+      {/* Red Pop-up Alert Dialog */}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent className="border-destructive border-2">
           <AlertDialogHeader>
