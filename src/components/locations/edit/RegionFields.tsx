@@ -4,13 +4,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { LocationType } from '@/types/location';
 
 interface RegionFieldsProps {
-  region: string | undefined;
-  country: string | undefined;
+  region?: string;
+  country?: string;
   onRegionChange: (value: string) => void;
   onCountryChange: (value: string) => void;
   onAddRegionDialogOpen?: () => void;
+  formData?: LocationType;  // Add this prop
 }
 
 const RegionFields: React.FC<RegionFieldsProps> = ({
@@ -18,8 +20,13 @@ const RegionFields: React.FC<RegionFieldsProps> = ({
   country,
   onRegionChange,
   onCountryChange,
-  onAddRegionDialogOpen
+  onAddRegionDialogOpen,
+  formData
 }) => {
+  // We can use either the direct props or the values from formData
+  const regionValue = region || (formData?.region || '');
+  const countryValue = country || (formData?.country || '');
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -27,7 +34,7 @@ const RegionFields: React.FC<RegionFieldsProps> = ({
         <Input 
           id="country" 
           name="country" 
-          value={country || ''} 
+          value={countryValue} 
           onChange={(e) => onCountryChange(e.target.value)}
           placeholder="Enter country"
         />
@@ -38,7 +45,7 @@ const RegionFields: React.FC<RegionFieldsProps> = ({
           <Input 
             id="region" 
             name="region" 
-            value={region || ''} 
+            value={regionValue} 
             onChange={(e) => onRegionChange(e.target.value)}
             placeholder="Enter region"
             className="flex-1"

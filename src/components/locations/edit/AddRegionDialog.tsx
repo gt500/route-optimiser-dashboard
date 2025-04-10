@@ -11,16 +11,23 @@ interface AddRegionDialogProps {
   onOpenChange: (open: boolean) => void;
   existingRegions: string[];
   onRegionAdded: (region: string, country: string) => void;
+  country?: string; // Add this prop
 }
 
 const AddRegionDialog: React.FC<AddRegionDialogProps> = ({
   open,
   onOpenChange,
   existingRegions,
-  onRegionAdded
+  onRegionAdded,
+  country = '' // Default to empty string
 }) => {
   const [region, setRegion] = useState('');
-  const [country, setCountry] = useState('');
+  const [countryValue, setCountryValue] = useState(country);
+
+  // Update the country field when the country prop changes
+  React.useEffect(() => {
+    setCountryValue(country);
+  }, [country]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +37,7 @@ const AddRegionDialog: React.FC<AddRegionDialogProps> = ({
       return;
     }
     
-    if (!country.trim()) {
+    if (!countryValue.trim()) {
       toast.error('Please enter a country name');
       return;
     }
@@ -40,9 +47,9 @@ const AddRegionDialog: React.FC<AddRegionDialogProps> = ({
       return;
     }
     
-    onRegionAdded(region.trim(), country.trim());
+    onRegionAdded(region.trim(), countryValue.trim());
     setRegion('');
-    setCountry('');
+    setCountryValue(country); // Reset to the provided country
     onOpenChange(false);
   };
 
@@ -61,8 +68,8 @@ const AddRegionDialog: React.FC<AddRegionDialogProps> = ({
             <Label htmlFor="country">Country</Label>
             <Input 
               id="country" 
-              value={country} 
-              onChange={(e) => setCountry(e.target.value)}
+              value={countryValue} 
+              onChange={(e) => setCountryValue(e.target.value)}
               placeholder="Enter country name"
             />
           </div>

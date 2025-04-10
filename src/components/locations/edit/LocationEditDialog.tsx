@@ -103,11 +103,13 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
     });
   };
   
-  const handleAddRegion = (region: string) => {
+  const handleAddRegion = (region: string, country: string) => {
     setFormData({
       ...formData,
-      region: region
+      region: region,
+      country: country
     });
+    toast.success(`Added new region: ${region}, ${country}`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -147,10 +149,11 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
               />
               
               <RegionFields
-                formData={formData}
-                handleCountryChange={handleCountryChange}
-                handleRegionChange={handleRegionChange}
-                openAddRegionDialog={() => setIsAddRegionOpen(true)}
+                region={formData.region}
+                country={formData.country}
+                onRegionChange={handleRegionChange}
+                onCountryChange={handleCountryChange}
+                onAddRegionDialogOpen={() => setIsAddRegionOpen(true)}
               />
               
               <CoordinateFields 
@@ -180,8 +183,9 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
       <AddRegionDialog
         open={isAddRegionOpen}
         onOpenChange={setIsAddRegionOpen}
-        country={formData.country || ''}
-        onAddRegion={handleAddRegion}
+        existingRegions={[]}
+        onRegionAdded={handleAddRegion}
+        country={formData.country}
       />
     </>
   );
