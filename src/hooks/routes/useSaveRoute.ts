@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RouteState, MAX_CYLINDERS } from './types';
-import { LocationType } from '@/components/locations/LocationEditDialog';
+import { LocationType } from '@/types/location';
 import { toast } from 'sonner';
 
 export const useSaveRoute = (
@@ -55,8 +55,8 @@ export const useSaveRoute = (
           longitude: loc.long || 0,
           open_time: '08:00',
           close_time: '18:00',
-          region: loc.region || route.region,
-          country: loc.country || route.country
+          region: loc.region || route.region || '',
+          country: loc.country || route.country || ''
         }));
         
         const { error: insertError } = await supabase
@@ -115,8 +115,8 @@ export const useSaveRoute = (
         location_id: location.id.toString(),
         cylinders: location.emptyCylinders || 0,
         sequence: index,
-        region: location.region || route.region,
-        country: location.country || route.country
+        region: location.region || route.region || '',
+        country: location.country || route.country || ''
       }));
       
       console.log("Saving deliveries:", deliveries);
