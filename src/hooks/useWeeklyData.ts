@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { format, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchRoutesByDateRange } from './delivery/deliveryQueries';
 
 export interface WeeklyDataSummary {
   date: Date;
@@ -31,37 +31,32 @@ export const useWeeklyData = (date: Date | undefined) => {
   });
 
   const fetchWeeklyData = useCallback(async () => {
-    if (!date) return;
+    if (!date) {
+      console.error("Cannot fetch weekly data: date is undefined");
+      return;
+    }
     
     setIsLoading(true);
+    console.log("useWeeklyData: Starting fetch with date:", format(date, 'yyyy-MM-dd'));
     
     try {
       // Calculate week start and end dates - using weekStartsOn: 1 for Monday start
       const weekStart = startOfWeek(date, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
       
-      // Make weekEnd include the entire day (23:59:59.999)
-      const adjustedWeekEnd = new Date(weekEnd);
-      adjustedWeekEnd.setHours(23, 59, 59, 999);
-      
       console.log('Fetching routes for week between:', 
-        format(weekStart, 'yyyy-MM-dd'), 'and', 
-        format(adjustedWeekEnd, 'yyyy-MM-dd'));
+        `${format(weekStart, 'yyyy-MM-dd')} (${weekStart.toISOString()})`,
+        'and', 
+        `${format(weekEnd, 'yyyy-MM-dd')} (${weekEnd.toISOString()})`);
       
-      // Use a more precise date range filtering with ISO strings
-      const { data: routesData, error: routesError } = await supabase
-        .from('routes')
-        .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
-        .gte('date', weekStart.toISOString())
-        .lte('date', adjustedWeekEnd.toISOString())
-        .order('date', { ascending: true });
+      // Fetch routes data
+      const routesData = await fetchRoutesByDateRange(weekStart, weekEnd);
       
-      if (routesError) {
-        console.error('Error fetching routes:', routesError);
-        throw routesError;
+      console.log('Found routes for week:', routesData?.length || 0);
+      if (routesData && routesData.length > 0) {
+        console.log('First route:', routesData[0]);
+        console.log('Last route:', routesData[routesData.length - 1]);
       }
-      
-      console.log('Found routes for week:', routesData?.length || 0, routesData);
       
       // Create daily summary data structure with consistent date handling
       const weekData: WeeklyDataSummary[] = Array.from({ length: 7 }, (_, i) => {
@@ -72,14 +67,16 @@ export const useWeeklyData = (date: Date | undefined) => {
         const dayRoutes = routesData?.filter(route => {
           if (!route.date) return false;
           
-          // Parse the route date and format it to yyyy-MM-dd for comparison
+          // Parse the route date
           const routeDate = typeof route.date === 'string' 
             ? parseISO(route.date) 
             : new Date(route.date);
           
+          // Format for comparison
           const routeDateStr = format(routeDate, 'yyyy-MM-dd');
           
-          return routeDateStr === formattedDateStr;
+          const isMatching = routeDateStr === formattedDateStr;
+          return isMatching;
         }) || [];
         
         console.log(`Date ${formattedDateStr} has ${dayRoutes.length} routes`);
@@ -108,23 +105,19 @@ export const useWeeklyData = (date: Date | undefined) => {
         fuelCost: weekData.reduce((sum, day) => sum + day.totalFuelCost, 0)
       };
       
+      console.log("Week data processed:", weekData);
+      console.log("Weekly totals:", totals);
+      
       setDailySummary(weekData);
       setWeeklyTotals(totals);
-      
-      if (totals.deliveries > 0) {
-        toast.success(`Loaded data for week of ${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`);
-      } else {
-        toast.info(`No deliveries found for week of ${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`);
-      }
     } catch (error) {
       console.error('Error fetching weekly data:', error);
       toast.error('Failed to load weekly data');
+      throw error; // Rethrow to allow component to handle error
     } finally {
       setIsLoading(false);
     }
   }, [date]);
-
-  // Don't use useEffect here, let the component trigger fetchWeeklyData
 
   return {
     dailySummary,

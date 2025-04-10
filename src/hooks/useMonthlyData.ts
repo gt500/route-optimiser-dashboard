@@ -10,7 +10,7 @@ import {
   parseISO
 } from 'date-fns';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchRoutesByDateRange } from './delivery/deliveryQueries';
 
 export interface MonthlyDataSummary {
   weekNumber: number;
@@ -39,39 +39,31 @@ export const useMonthlyData = (date: Date | undefined) => {
   });
 
   const fetchMonthlyData = useCallback(async () => {
-    if (!date) return;
+    if (!date) {
+      console.error("Cannot fetch monthly data: date is undefined");
+      return;
+    }
     
     setIsLoading(true);
+    console.log("useMonthlyData: Starting fetch with date:", format(date, 'yyyy-MM-dd'));
     
     try {
       // Calculate month start and end dates
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
       
-      // Make monthEnd include the entire day (23:59:59.999)
-      const adjustedMonthEnd = new Date(monthEnd);
-      adjustedMonthEnd.setHours(23, 59, 59, 999);
-      
       console.log('Fetching routes for month between:', 
-        format(monthStart, 'yyyy-MM-dd'), 'and', 
-        format(adjustedMonthEnd, 'yyyy-MM-dd'));
+        `${format(monthStart, 'yyyy-MM-dd')} (${monthStart.toISOString()})`,
+        'and', 
+        `${format(monthEnd, 'yyyy-MM-dd')} (${monthEnd.toISOString()})`);
       
-      // Fetch routes with precise date range filtering using ISO strings
-      const { data: routesData, error: routesError } = await supabase
-        .from('routes')
-        .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
-        .gte('date', monthStart.toISOString())
-        .lte('date', adjustedMonthEnd.toISOString())
-        .order('date', { ascending: true });
-      
-      if (routesError) {
-        console.error('Error fetching routes:', routesError);
-        throw routesError;
-      }
+      // Fetch routes data
+      const routesData = await fetchRoutesByDateRange(monthStart, monthEnd);
       
       console.log('Found routes for month:', routesData?.length || 0);
       if (routesData && routesData.length > 0) {
-        console.log('Sample route:', routesData[0]);
+        console.log('First route:', routesData[0]);
+        console.log('Last route:', routesData[routesData.length - 1]);
       }
       
       // Get all weeks in the month - using weekStartsOn: 1 for Monday start
@@ -79,6 +71,8 @@ export const useMonthlyData = (date: Date | undefined) => {
         { start: monthStart, end: monthEnd },
         { weekStartsOn: 1 } // Start weeks on Monday
       );
+      
+      console.log(`Month has ${weeksInMonth.length} weeks`);
       
       // Create weekly summary data structure
       const monthData: MonthlyDataSummary[] = weeksInMonth.map((weekStart, index) => {
@@ -106,10 +100,8 @@ export const useMonthlyData = (date: Date | undefined) => {
           const routeDateFormatted = format(routeDate, 'yyyy-MM-dd');
           
           // Check if route date is within week range
-          const isInWeek = routeDateFormatted >= weekStartFormatted && 
-                          routeDateFormatted <= weekEndFormatted;
-          
-          return isInWeek;
+          return routeDateFormatted >= weekStartFormatted && 
+                 routeDateFormatted <= weekEndFormatted;
         }) || [];
         
         console.log(`Week ${index + 1} has ${weekRoutes.length} routes`);
@@ -138,23 +130,19 @@ export const useMonthlyData = (date: Date | undefined) => {
         fuelCost: monthData.reduce((sum, week) => sum + week.fuelCost, 0)
       };
       
+      console.log("Month data processed:", monthData);
+      console.log("Monthly totals:", totals);
+      
       setWeeklySummary(monthData);
       setMonthlyTotals(totals);
-      
-      if (totals.deliveries > 0) {
-        toast.success(`Loaded data for ${format(monthStart, 'MMMM yyyy')}`);
-      } else {
-        toast.info(`No deliveries found for ${format(monthStart, 'MMMM yyyy')}`);
-      }
     } catch (error) {
       console.error('Error fetching monthly data:', error);
       toast.error('Failed to load monthly data');
+      throw error; // Rethrow to allow component to handle error
     } finally {
       setIsLoading(false);
     }
   }, [date]);
-
-  // Don't use useEffect here, let the component trigger fetchMonthlyData
 
   return {
     weeklySummary,

@@ -17,38 +17,45 @@ const WeeklyReports = () => {
   
   const { dailySummary, weeklyTotals, isLoading, fetchWeeklyData } = useWeeklyData(date);
   
-  // Ensure data is fetched when date changes
+  // Fetch data on initial render and when date changes
   useEffect(() => {
+    console.log("WeeklyReports: Date changed or component mounted, fetching data...");
     if (date) {
-      console.log("Fetching weekly reports with date:", format(date, 'yyyy-MM-dd'));
-      fetchWeeklyData();
+      fetchWeeklyData().catch(error => {
+        console.error("Failed to fetch weekly data:", error);
+        toast.error("Error loading weekly report data");
+      });
     }
   }, [date, fetchWeeklyData]);
 
-  // Also fetch on component mount to ensure data is loaded
+  // Show alert if no data is found after loading completes
   useEffect(() => {
-    if (date) {
-      console.log("Initializing weekly reports with date:", format(date, 'yyyy-MM-dd'));
-      fetchWeeklyData();
+    if (!isLoading) {
+      console.log("Weekly data loading complete. Data found:", 
+        dailySummary.some(day => day.deliveries > 0));
+      
+      const noDataFound = dailySummary.length === 0 || 
+        dailySummary.every(day => day.deliveries === 0);
+      
+      setShowAlert(noDataFound);
+      
+      if (noDataFound) {
+        toast.warning("No delivery data found for this week", {
+          description: "Try selecting a different week or check your data source"
+        });
+      } else if (dailySummary.some(day => day.deliveries > 0)) {
+        toast.success(`Loaded data for week of ${format(startOfWeek(date || new Date(), { weekStartsOn: 1 }), 'MMM d')}`);
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    // Show alert if no data is found
-    if (!isLoading && dailySummary.length > 0 && dailySummary.every(day => day.deliveries === 0)) {
-      setShowAlert(true);
-      toast.warning("No delivery data found for this week", {
-        description: "Try selecting a different week or check your data source"
-      });
-    } else {
-      setShowAlert(false);
-    }
-  }, [dailySummary, isLoading]);
+  }, [dailySummary, isLoading, date]);
 
   const handleRefresh = () => {
     console.log("Manually refreshing weekly data");
-    fetchWeeklyData();
     toast.info("Refreshing weekly data");
+    fetchWeeklyData().catch(error => {
+      console.error("Failed to refresh weekly data:", error);
+      toast.error("Error refreshing weekly report data");
+    });
   };
 
   // Calculate week start and end dates
@@ -95,7 +102,11 @@ const WeeklyReports = () => {
             <CardTitle>Weekly Summary: {weekRange}</CardTitle>
           </CardHeader>
           <CardContent>
-            {dailySummary.length > 0 && dailySummary.some(day => day.deliveries > 0) ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">Loading weekly data...</p>
+              </div>
+            ) : dailySummary.length > 0 && dailySummary.some(day => day.deliveries > 0) ? (
               <WeeklySummaryTable 
                 dailySummary={dailySummary}
                 weeklyTotals={weeklyTotals}
@@ -103,9 +114,7 @@ const WeeklyReports = () => {
             ) : (
               <div className="flex items-center justify-center h-64">
                 <p className="text-muted-foreground">
-                  {isLoading 
-                    ? "Loading weekly data..." 
-                    : "No delivery data found for this week."}
+                  No delivery data found for this week.
                 </p>
               </div>
             )}

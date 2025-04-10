@@ -17,38 +17,45 @@ const MonthlyReports = () => {
   
   const { weeklySummary, monthlyTotals, isLoading, fetchMonthlyData } = useMonthlyData(date);
   
-  // Ensure data is fetched when date changes
+  // Fetch data on initial render and when date changes
   useEffect(() => {
+    console.log("MonthlyReports: Date changed or component mounted, fetching data...");
     if (date) {
-      console.log("Fetching monthly reports with date:", format(date, 'yyyy-MM-dd'));
-      fetchMonthlyData();
+      fetchMonthlyData().catch(error => {
+        console.error("Failed to fetch monthly data:", error);
+        toast.error("Error loading monthly report data");
+      });
     }
   }, [date, fetchMonthlyData]);
 
-  // Also fetch on component mount to ensure data is loaded
+  // Show alert if no data is found after loading completes
   useEffect(() => {
-    if (date) {
-      console.log("Initializing monthly reports with date:", format(date, 'yyyy-MM-dd'));
-      fetchMonthlyData();
+    if (!isLoading) {
+      console.log("Monthly data loading complete. Data found:", 
+        weeklySummary.some(week => week.deliveries > 0));
+      
+      const noDataFound = weeklySummary.length === 0 || 
+        weeklySummary.every(week => week.deliveries === 0);
+      
+      setShowAlert(noDataFound);
+      
+      if (noDataFound) {
+        toast.warning("No delivery data found for this month", {
+          description: "Try selecting a different month or check your data source"
+        });
+      } else if (weeklySummary.some(week => week.deliveries > 0)) {
+        toast.success(`Loaded data for ${format(startOfMonth(date || new Date()), 'MMMM yyyy')}`);
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    // Show alert if no data is found
-    if (!isLoading && weeklySummary.length > 0 && weeklySummary.every(week => week.deliveries === 0)) {
-      setShowAlert(true);
-      toast.warning("No delivery data found for this month", {
-        description: "Try selecting a different month or check your data source"
-      });
-    } else {
-      setShowAlert(false);
-    }
-  }, [weeklySummary, isLoading]);
+  }, [weeklySummary, isLoading, date]);
 
   const handleRefresh = () => {
     console.log("Manually refreshing monthly data");
-    fetchMonthlyData();
     toast.info("Refreshing monthly data");
+    fetchMonthlyData().catch(error => {
+      console.error("Failed to refresh monthly data:", error);
+      toast.error("Error refreshing monthly report data");
+    });
   };
 
   // Calculate month start and end dates
@@ -95,7 +102,11 @@ const MonthlyReports = () => {
             <CardTitle>Monthly Summary: {monthDisplay}</CardTitle>
           </CardHeader>
           <CardContent>
-            {weeklySummary.length > 0 && weeklySummary.some(week => week.deliveries > 0) ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">Loading monthly data...</p>
+              </div>
+            ) : weeklySummary.length > 0 && weeklySummary.some(week => week.deliveries > 0) ? (
               <WeeklySummaryTable 
                 weeklySummary={weeklySummary}
                 monthlyTotals={monthlyTotals}
@@ -103,9 +114,7 @@ const MonthlyReports = () => {
             ) : (
               <div className="flex items-center justify-center h-64">
                 <p className="text-muted-foreground">
-                  {isLoading 
-                    ? "Loading monthly data..." 
-                    : "No delivery data found for this month."}
+                  No delivery data found for this month.
                 </p>
               </div>
             )}
