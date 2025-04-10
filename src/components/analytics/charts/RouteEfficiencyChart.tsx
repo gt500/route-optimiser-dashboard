@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   BarChart,
@@ -16,6 +16,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { Info, Route } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
+import RouteDetailDialog from '../RouteDetailDialog';
 
 interface RouteEfficiencyChartProps {
   isLoading: boolean;
@@ -26,6 +27,14 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   isLoading,
   onRouteLegendOpen
 }) => {
+  const [routeDetailOpen, setRouteDetailOpen] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
+
+  const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
+    setSelectedRoute(route);
+    setRouteDetailOpen(true);
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow duration-300">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -93,11 +102,22 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
               value={route.name}
               color={getColorClass(route.color)}
               icon={<Route className="h-4 w-4" />}
-              subtitle={<span className="text-xs">Reference color legend</span>}
+              subtitle={<span className="text-xs">{route.description}</span>}
+              onClick={() => handleRouteCardClick(route)}
             />
           ))}
         </div>
       </CardContent>
+
+      {selectedRoute && (
+        <RouteDetailDialog
+          open={routeDetailOpen}
+          onOpenChange={setRouteDetailOpen}
+          routeId={selectedRoute.id}
+          routeName={selectedRoute.name}
+          routeColor={getColorClass(selectedRoute.color)}
+        />
+      )}
     </Card>
   );
 };
