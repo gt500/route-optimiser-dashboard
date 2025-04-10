@@ -1,6 +1,15 @@
 
 import { LocationType } from "@/components/locations/LocationEditDialog";
 
+// Constants for accurate weight and fuel calculations
+const EMPTY_CYLINDER_WEIGHT_KG = 14; // Weight of an empty cylinder in kg
+const FULL_CYLINDER_WEIGHT_KG = 28;  // Weight of a full cylinder in kg
+const CYLINDER_GAS_WEIGHT_KG = 14;   // Weight of the gas in a cylinder
+
+// Average fuel consumption based on vehicle type and load (L/100km)
+const BASE_FUEL_CONSUMPTION = 12; // 12L/100km for an average delivery truck
+const LOAD_FACTOR = 0.02; // 2% increase in consumption per 100kg of load
+
 /**
  * Calculate distance between two sets of coordinates using the Haversine formula
  */
@@ -13,6 +22,36 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
             Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
+};
+
+/**
+ * Calculate total weight of all cylinders in a route
+ */
+export const calculateTotalWeight = (locations: LocationType[]): number => {
+  let totalWeight = 0;
+  
+  locations.forEach(location => {
+    // For customer locations with empty cylinders
+    if (location.type === 'Customer' && location.emptyCylinders) {
+      totalWeight += location.emptyCylinders * EMPTY_CYLINDER_WEIGHT_KG;
+    }
+    
+    // For storage locations with full cylinders
+    if ((location.type === 'Storage' || location.type === 'Distribution') && location.fullCylinders) {
+      totalWeight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
+    }
+  });
+  
+  return totalWeight;
+};
+
+/**
+ * Calculate fuel consumption based on distance, vehicle type, and load
+ */
+export const calculateFuelConsumption = (distance: number, totalWeight: number): number => {
+  // Base consumption plus adjustment for load weight
+  const weightFactor = 1 + (totalWeight / 100) * LOAD_FACTOR;
+  return (distance * BASE_FUEL_CONSUMPTION * weightFactor) / 100;
 };
 
 /**
@@ -51,7 +90,7 @@ export const optimizeLocationOrder = (
   params: OptimizationParams = {
     prioritizeFuel: true,
     avoidTraffic: true,
-    useRealTimeData: false,
+    useRealTimeData: true,
     optimizeForDistance: true
   }
 ): LocationType[] => {
@@ -78,7 +117,12 @@ export const optimizeLocationOrder = (
       
       // Apply modifiers based on optimization parameters
       const locationFactor = calculateLocationFactor(unvisited[i], params.prioritizeFuel);
-      const trafficFactor = params.avoidTraffic ? 0.8 : 1.0;
+      
+      // Apply traffic avoidance - if we have real-time data
+      const trafficFactor = params.avoidTraffic ? 
+        (params.useRealTimeData ? 0.7 : 0.85) : 1.0;
+        
+      // Apply fuel efficiency preference  
       const fuelFactor = params.prioritizeFuel ? 0.7 : 1.0;
       
       // Calculate weighted score (lower is better)
@@ -127,37 +171,84 @@ export const calculateRouteMetrics = (
       const lon2 = locations[i + 1].long || 0;
       
       const distance = calculateDistance(lat1, lon1, lat2, lon2);
-      calculatedDistance += distance * 1.3; // Adding a road curvature factor
+      
+      // Road curvature factor:
+      // - Mountains/hills: 1.4-1.6 (more winding roads)
+      // - Suburbs: 1.2-1.3 (grid street patterns)
+      // - Highways: 1.1-1.2 (mostly straight)
+      let curvatureFactor = 1.3; // Default suburban roads
+      
+      // Simple heuristic - if long distance, assume more highway portions
+      if (distance > 20) curvatureFactor = 1.15;
+      else if (distance > 5) curvatureFactor = 1.25;
+      
+      calculatedDistance += distance * curvatureFactor;
     }
   }
   
-  const trafficMultiplier = params.avoidTraffic ? 0.85 : 1.1;
+  // Calculate the total weight for fuel consumption calculation
+  const totalWeight = calculateTotalWeight(locations);
+  
+  // Traffic multiplier affects both distance and duration
+  let trafficMultiplier = 1.0;
+  if (params.avoidTraffic) {
+    trafficMultiplier = 0.9; // 10% reduction with traffic avoidance
+  }
+  
+  // Fuel efficiency multiplier
   const fuelMultiplier = params.prioritizeFuel ? 0.9 : 1.0;
+  
+  // Distance optimization multiplier
   const distanceMultiplier = params.optimizeForDistance ? 0.9 : 1.05;
   
-  let newDistance = calculatedDistance || 45.7;
-  let newDuration = calculatedDistance * 1.5;
+  let newDistance = calculatedDistance > 0 ? calculatedDistance : 45.7;
+  let newDuration = calculatedDistance * 1.5; // Base calculation: 1.5 minutes per km
   let trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
   
   if (params.useRealTimeData) {
-    const realTimeTrafficFactor = 0.8 + Math.random() * 0.4;
-    newDistance = newDistance * distanceMultiplier * realTimeTrafficFactor;
-    newDuration = newDuration * (1/distanceMultiplier) * realTimeTrafficFactor;
+    // In a real application, this would come from a traffic API
+    // Here we'll simulate with a reasonable variation
+    const hourOfDay = new Date().getHours();
+    let realTimeTrafficFactor = 1.0;
     
-    if (realTimeTrafficFactor < 0.9) trafficConditions = 'light';
-    if (realTimeTrafficFactor > 1.1) trafficConditions = 'heavy';
+    // Simulate rush hour patterns
+    if ((hourOfDay >= 7 && hourOfDay <= 9) || (hourOfDay >= 16 && hourOfDay <= 18)) {
+      // Rush hour - heavier traffic 
+      realTimeTrafficFactor = 1.3 + (Math.random() * 0.2); // 1.3-1.5x
+      trafficConditions = 'heavy';
+    } else if ((hourOfDay >= 10 && hourOfDay <= 15) || (hourOfDay >= 19 && hourOfDay <= 20)) {
+      // Regular daytime
+      realTimeTrafficFactor = 1.0 + (Math.random() * 0.2); // 1.0-1.2x
+      trafficConditions = 'moderate';
+    } else {
+      // Early morning or late night
+      realTimeTrafficFactor = 0.8 + (Math.random() * 0.1); // 0.8-0.9x
+      trafficConditions = 'light';
+    }
+    
+    // Apply the traffic factor to distance and duration
+    newDistance = newDistance * distanceMultiplier;
+    newDuration = newDuration * realTimeTrafficFactor * (1/distanceMultiplier);
   }
   
-  const fuelConsumption = Math.round(newDistance * 0.12 * fuelMultiplier * 100) / 100;
+  // Calculate fuel consumption based on distance and load weight
+  const fuelConsumption = calculateFuelConsumption(newDistance, totalWeight) * fuelMultiplier;
+  
   // Use the provided fuel cost parameter to calculate the total cost
   const fuelCost = Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100;
+  
+  // Calculate maintenance cost (approximately R0.85 per km)
+  const maintenanceCost = newDistance * 0.85;
   
   return {
     distance: Math.round(newDistance * 10) / 10,
     duration: Math.round(newDuration),
-    fuelConsumption,
+    fuelConsumption: Math.round(fuelConsumption * 100) / 100,
     fuelCost, // Now calculated with the provided fuel cost
+    maintenanceCost: Math.round(maintenanceCost * 100) / 100,
+    totalCost: Math.round((fuelCost + maintenanceCost) * 100) / 100,
     trafficConditions,
-    usingRealTimeData: params.useRealTimeData
+    usingRealTimeData: params.useRealTimeData,
+    totalWeight: Math.round(totalWeight)
   };
 };

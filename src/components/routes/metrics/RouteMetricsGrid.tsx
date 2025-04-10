@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import RouteMetricsCard from './RouteMetricsCard';
-import { CircleX, CircleCheck, Clock, Fuel, ChevronsDown, ChevronsUp, MapPin, TruckIcon } from 'lucide-react';
+import { CircleX, CircleCheck, Clock, Fuel, ChevronsDown, ChevronsUp, MapPin, TruckIcon, AlertTriangle } from 'lucide-react';
 
 interface RouteMetricsGridProps {
   distance: number;
@@ -10,6 +10,7 @@ interface RouteMetricsGridProps {
   fuelCost: number;
   cylinders: number;
   locations: number;
+  totalWeight?: number;
   fuelCostPerLiter?: number;
   trafficConditions?: 'light' | 'moderate' | 'heavy';
   usingRealTimeData?: boolean;
@@ -23,9 +24,10 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   fuelCost = 0,
   cylinders = 0,
   locations = 0,
+  totalWeight = 0,
   fuelCostPerLiter = 0,
   trafficConditions = 'moderate',
-  usingRealTimeData = false,
+  usingRealTimeData = true,
   onFuelCostChange
 }) => {
   const [localFuelCost, setLocalFuelCost] = useState(fuelCost);
@@ -107,6 +109,14 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
     }
   };
   
+  // Calculate CO2 emissions - about 2.3 kg CO2 per liter of diesel
+  const calculateCO2Emissions = (): number => {
+    return fuelConsumption * 2.3; // kg of CO2
+  };
+
+  const estimatedMaintenanceCost = distance * 0.85; // R0.85 per km for maintenance
+  const totalOperatingCost = localFuelCost + estimatedMaintenanceCost;
+  
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <RouteMetricsCard 
@@ -126,26 +136,36 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         tooltip="Estimated driving time with current traffic conditions"
       />
       <RouteMetricsCard 
-        title="Fuel Cost"
-        value={`R ${localFuelCost.toFixed(2)}`}
+        title="Operating Cost"
+        value={`R ${totalOperatingCost.toFixed(2)}`}
         icon={<Fuel className="h-5 w-5" />}
         color="bg-green-600"
         subtitle={
           <>
-            <div className="mb-1 text-sm">
-              {fuelConsumption.toFixed(1)}L @ R{localFuelCostPerLiter?.toFixed(2) || '0.00'}/L
+            <div className="mb-1 text-xs">
+              Fuel: R{localFuelCost.toFixed(2)} • Maintenance: R{estimatedMaintenanceCost.toFixed(2)}
+            </div>
+            <div className="text-xs text-green-700">
+              CO₂: {calculateCO2Emissions().toFixed(1)}kg
             </div>
           </>
         }
-        tooltip="Estimated fuel cost based on current prices"
+        tooltip="Total operating cost including fuel and maintenance"
       />
       <RouteMetricsCard 
-        title="Total Cylinders"
-        value={cylinders.toString()}
+        title="Load Details"
+        value={cylinders > 0 ? `${cylinders} Cylinders` : "No Load"}
         icon={<TruckIcon className="h-5 w-5" />}
         color="bg-indigo-600"
-        subtitle={`${Math.round(cylinders * 1.2)} kg estimated weight`}
-        tooltip="Total number of cylinders to be delivered"
+        subtitle={
+          totalWeight > 0 ? 
+          <div className={totalWeight > 1000 ? "text-amber-600 font-medium" : ""}>
+            {totalWeight.toFixed(0)} kg total weight
+            {totalWeight > 1000 && <AlertTriangle className="h-3 w-3 inline ml-1" />}
+          </div> : 
+          "No weight data"
+        }
+        tooltip="Total number of cylinders and weight in the vehicle"
       />
     </div>
   );

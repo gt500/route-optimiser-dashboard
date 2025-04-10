@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Fuel, AlertTriangle, Truck } from 'lucide-react';
@@ -10,6 +10,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
 
+// Constants for accurate weight calculations
+const EMPTY_CYLINDER_WEIGHT_KG = 14; // Weight of an empty cylinder in kg
+const FULL_CYLINDER_WEIGHT_KG = 28;  // Weight of a full cylinder in kg
+const CYLINDER_GAS_WEIGHT_KG = 14;   // Weight of the gas in a cylinder
+
 interface RouteDetailsProps {
   route: {
     distance: number;
@@ -18,12 +23,13 @@ interface RouteDetailsProps {
     cylinders: number;
     locations: LocationType[];
     estimatedDuration?: number;
+    trafficConditions?: 'light' | 'moderate' | 'heavy'; 
   };
   isLoadConfirmed?: boolean;
   isOverweight?: boolean;
   onRemoveLocation: (index: number) => void;
   onFuelCostUpdate: (newCost: number) => void;
-  onRouteDataUpdate: (distance: number, duration: number) => void;
+  onRouteDataUpdate: (distance: number, duration: number, trafficConditions?: string) => void;
   onOptimize: () => void;
   onSave: () => void;
   vehicleConfig: VehicleConfigProps;
@@ -44,20 +50,26 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   selectedVehicle,
   vehicles = []
 }) => {
-  const [estimatedTime, setEstimatedTime] = useState<number>(route.estimatedDuration || 0);
-  const [totalCost, setTotalCost] = useState<number>(route.fuelCost);
+  const [totalWeight, setTotalWeight] = useState<number>(0);
 
-  const calculateEstimatedTime = () => {
-    const calculatedTime = route.locations.length * 60;
-    setEstimatedTime(calculatedTime);
-    return calculatedTime;
-  };
-
-  const calculateTotalCost = () => {
-    const calculatedCost = route.distance * 0.5;
-    setTotalCost(calculatedCost);
-    return calculatedCost;
-  };
+  // Calculate total weight of all cylinders more accurately
+  useEffect(() => {
+    let weight = 0;
+    
+    route.locations.forEach(location => {
+      // For customer locations, count empty cylinders weight
+      if (location.type === 'Customer' && location.emptyCylinders) {
+        weight += location.emptyCylinders * EMPTY_CYLINDER_WEIGHT_KG;
+      }
+      
+      // For storage locations, count full cylinders weight
+      if ((location.type === 'Storage' || location.type === 'Distribution') && location.fullCylinders) {
+        weight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
+      }
+    });
+    
+    setTotalWeight(weight);
+  }, [route.locations]);
 
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);
@@ -108,6 +120,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           fuelCost={route.fuelCost}
           locations={route.locations.length}
           fuelCostPerLiter={vehicleConfig.fuelPrice}
+          trafficConditions={route.trafficConditions}
+          totalWeight={totalWeight}
         />
         
         {assignedVehicle && (
@@ -115,6 +129,14 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             <Truck className="h-4 w-4" />
             <span>
               Assigned to: <strong>{assignedVehicle.name}</strong> ({assignedVehicle.licensePlate})
+              {assignedVehicle.maxPayload && 
+                <span className="ml-1 text-sm font-medium">
+                  • Max payload: {assignedVehicle.maxPayload} kg • Current load: {totalWeight} kg
+                  {totalWeight > (assignedVehicle.maxPayload || 0) && 
+                    <span className="text-red-600 ml-1">(Overweight!)</span>
+                  }
+                </span>
+              }
             </span>
           </div>
         )}

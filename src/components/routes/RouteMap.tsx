@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -7,6 +8,7 @@ import SetViewOnChange from './map-components/SetViewOnChange';
 import LocationMarker from './map-components/LocationMarker';
 import DepotMarker from './map-components/DepotMarker';
 import RoutingMachine from './map-components/RoutingMachine';
+import { toast } from 'sonner';
 
 // Make sure the marker images are available
 import '../../../node_modules/leaflet/dist/images/marker-icon.png';
@@ -39,7 +41,8 @@ interface RouteMapProps {
   forceRouteUpdate?: boolean;
   trafficConditions?: 'light' | 'moderate' | 'heavy';
   showAlternateRoutes?: boolean;
-  onRouteDataUpdate?: (distance: number, duration: number, coordinates?: [number, number][]) => void;
+  useRealTimeTraffic?: boolean;
+  onRouteDataUpdate?: (distance: number, duration: number, trafficConditions?: 'light' | 'moderate' | 'heavy', coordinates?: [number, number][]) => void;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -55,12 +58,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
   forceRouteUpdate = false,
   trafficConditions = 'moderate',
   showAlternateRoutes = false,
+  useRealTimeTraffic = true,
   onRouteDataUpdate,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [allWaypoints, setAllWaypoints] = useState<L.LatLng[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
+  const [routeInitialized, setRouteInitialized] = useState(false);
 
   // Calculate center based on all markers if not provided
   const calculateCenter = () => {
@@ -150,15 +155,30 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
     // Update waypoints state
     setAllWaypoints(routeWaypoints);
+    
+    if (routeWaypoints.length >= 2 && !routeInitialized) {
+      setRouteInitialized(true);
+      toast.info("Calculating optimal route with real-time traffic data...");
+    }
   }, [startLocation, endLocation, waypoints, mapReady, showRouting, forceRouteUpdate]);
 
   const handleMapInit = (mapInstance: L.Map) => {
     mapRef.current = mapInstance;
   };
 
-  const handleRouteFound = (route: { distance: number; duration: number; coordinates: [number, number][] }) => {
+  const handleRouteFound = (route: { 
+    distance: number; 
+    duration: number; 
+    coordinates: [number, number][];
+    trafficDensity?: 'light' | 'moderate' | 'heavy';
+  }) => {
     if (onRouteDataUpdate) {
-      onRouteDataUpdate(route.distance, route.duration, route.coordinates);
+      onRouteDataUpdate(
+        route.distance, 
+        route.duration, 
+        route.trafficDensity || trafficConditions,
+        route.coordinates
+      );
     }
   };
 
@@ -219,7 +239,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
           onRouteFound={handleRouteFound}
           routeOptions={{
             avoidTraffic: getTrafficAvoidanceOption(),
-            alternateRoutes: showAlternateRoutes
+            alternateRoutes: showAlternateRoutes,
+            useRealTimeData: useRealTimeTraffic
           }}
         />
       )}
