@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type NotificationType = "email" | "sms" | "push";
+type NotificationCategory = "weekly_report" | "route_update" | "delivery_update" | "general";
 
 interface SendNotificationOptions {
   email: string;
   subject: string;
   message: string;
   type: NotificationType;
+  category?: NotificationCategory;
 }
 
 /**
@@ -18,7 +20,8 @@ export const sendNotification = async ({
   email,
   subject,
   message,
-  type
+  type,
+  category = "general"
 }: SendNotificationOptions): Promise<boolean> => {
   try {
     const { data, error } = await supabase.functions.invoke("send-notification", {
@@ -26,7 +29,8 @@ export const sendNotification = async ({
         email,
         subject,
         message,
-        type
+        type,
+        category
       }
     });
 
@@ -81,23 +85,68 @@ export const isNotificationEnabled = async (
 };
 
 /**
+ * Checks if a specific notification category is enabled
+ */
+export const isCategoryEnabled = async (
+  userId: string,
+  category: NotificationCategory
+): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return false;
+    
+    const preferences = user.user_metadata?.notification_preferences;
+    
+    if (!preferences) return false;
+    
+    // Check based on notification category
+    switch (category) {
+      case "weekly_report":
+        return preferences.weeklyReports || false;
+      case "route_update":
+        return preferences.routeNotifications || false;
+      case "delivery_update":
+        return preferences.deliveryUpdates || false;
+      case "general":
+        return true; // General notifications are always enabled
+      default:
+        return false;
+    }
+  } catch (error) {
+    console.error("Error checking category preferences:", error);
+    return false;
+  }
+};
+
+/**
  * Sends notifications based on user preferences
- * Will check if the user has enabled the notification type before sending
+ * Will check if the user has enabled the notification type and category before sending
  */
 export const notifyUser = async ({
   userId,
   email,
   subject,
   message,
-  types = ["email"]
+  types = ["email"],
+  category = "general"
 }: {
   userId: string;
   email: string;
   subject: string;
   message: string;
   types?: NotificationType[];
+  category?: NotificationCategory;
 }): Promise<void> => {
   try {
+    // First check if the category is enabled
+    const isCategoryEnabledResult = await isCategoryEnabled(userId, category);
+    
+    if (!isCategoryEnabledResult) {
+      console.log(`Category ${category} is disabled for user ${userId}`);
+      return;
+    }
+    
     const enabledTypes = await Promise.all(
       types.map(async (type) => {
         const enabled = await isNotificationEnabled(userId, type);
@@ -113,10 +162,142 @@ export const notifyUser = async ({
           email,
           subject,
           message,
-          type
+          type,
+          category
         });
       });
   } catch (error) {
     console.error("Error in notifyUser:", error);
   }
+};
+
+/**
+ * Sends a weekly report notification
+ */
+export const sendWeeklyReport = async ({
+  userId,
+  email,
+  reportData
+}: {
+  userId: string;
+  email: string;
+  reportData: {
+    deliveries: number;
+    cylinders: number;
+    kms: number;
+    fuelCost: number;
+    weekStart: string;
+    weekEnd: string;
+  };
+}): Promise<void> => {
+  const { deliveries, cylinders, kms, fuelCost, weekStart, weekEnd } = reportData;
+  
+  const subject = `Weekly Report: ${weekStart} - ${weekEnd}`;
+  const message = `
+    Here's your weekly summary:
+    
+    Period: ${weekStart} - ${weekEnd}
+    Total Deliveries: ${deliveries}
+    Total Cylinders: ${cylinders}
+    Total Distance: ${kms.toFixed(1)} km
+    Total Fuel Cost: R${fuelCost.toFixed(2)}
+    
+    View detailed reports in your dashboard.
+  `;
+  
+  await notifyUser({
+    userId,
+    email,
+    subject,
+    message,
+    types: ["email"], // Weekly reports are typically sent via email
+    category: "weekly_report"
+  });
+};
+
+/**
+ * Sends a route update notification
+ */
+export const sendRouteUpdate = async ({
+  userId,
+  email,
+  routeId,
+  routeName,
+  updateType,
+  details
+}: {
+  userId: string;
+  email: string;
+  routeId: string;
+  routeName: string;
+  updateType: "created" | "updated" | "completed" | "cancelled" | "optimized";
+  details?: string;
+}): Promise<void> => {
+  const updateTypeMap = {
+    created: "created",
+    updated: "updated",
+    completed: "completed",
+    cancelled: "cancelled",
+    optimized: "optimized"
+  };
+  
+  const subject = `Route ${updateTypeMap[updateType]}: ${routeName}`;
+  const message = `
+    Your route "${routeName}" has been ${updateTypeMap[updateType]}.
+    ${details ? `\nDetails: ${details}` : ""}
+    
+    View route details in your dashboard.
+  `;
+  
+  await notifyUser({
+    userId,
+    email,
+    subject,
+    message,
+    types: ["email", "push"],
+    category: "route_update"
+  });
+};
+
+/**
+ * Sends a delivery update notification
+ */
+export const sendDeliveryUpdate = async ({
+  userId,
+  email,
+  deliveryId,
+  locationName,
+  status,
+  details
+}: {
+  userId: string;
+  email: string;
+  deliveryId: string;
+  locationName: string;
+  status: "scheduled" | "in_progress" | "completed" | "failed";
+  details?: string;
+}): Promise<void> => {
+  const statusMap = {
+    scheduled: "scheduled",
+    in_progress: "in progress",
+    completed: "completed",
+    failed: "failed"
+  };
+  
+  const subject = `Delivery Update: ${locationName}`;
+  const message = `
+    Your delivery to "${locationName}" is now ${statusMap[status]}.
+    ${details ? `\nDetails: ${details}` : ""}
+    
+    View delivery details in your dashboard.
+  `;
+  
+  await notifyUser({
+    userId,
+    email,
+    subject,
+    message,
+    types: ["email", "sms", "push"],
+    category: "delivery_update"
+  });
 };
