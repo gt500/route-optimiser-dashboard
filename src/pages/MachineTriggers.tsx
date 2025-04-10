@@ -6,9 +6,13 @@ import MachineGrid from "@/components/machine-triggers/MachineGrid";
 import MachineAlertDialog from "@/components/machine-triggers/MachineAlertDialog";
 import { MachineData } from "@/components/machine-triggers/types";
 
+// Create a global object to store acknowledged alerts
+// This is outside the component to persist across navigation
+const globalAcknowledgedAlerts: Record<string, { time: string, user: string }> = {};
+
 const MachineTriggers = () => {
   const [lowStockAlert, setLowStockAlert] = useState<MachineData | null>(null);
-  const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<Record<string, { time: string, user: string }>>({});
+  const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<Record<string, { time: string, user: string }>>(globalAcknowledgedAlerts);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
 
@@ -35,10 +39,16 @@ const MachineTriggers = () => {
       const timestamp = new Date().toISOString();
       const user = "Current User"; // In a real app, get this from auth context
       
-      setAcknowledgedAlerts(prev => ({
-        ...prev,
-        [key]: { time: timestamp, user }
-      }));
+      // Update both the component state and the global object
+      setAcknowledgedAlerts(prev => {
+        const updated = {
+          ...prev,
+          [key]: { time: timestamp, user }
+        };
+        // Update global object
+        Object.assign(globalAcknowledgedAlerts, updated);
+        return updated;
+      });
       
       toast({
         title: "Alert Acknowledged",
