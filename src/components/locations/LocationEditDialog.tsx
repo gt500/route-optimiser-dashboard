@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,8 @@ export type LocationType = {
   isWarehouse?: boolean;
   open_time?: string;
   close_time?: string;
+  region?: string;
+  country?: string;
 };
 
 interface LocationEditDialogProps {
@@ -52,7 +53,6 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
         isWarehouse: location.type === 'Storage'
       });
     } else {
-      // Reset to defaults for new location
       setFormData({
         id: '',
         name: '',
@@ -76,7 +76,6 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Allow negative numbers for coordinates
     const numValue = parseFloat(value);
     setFormData({ ...formData, [name]: isNaN(numValue) ? 0 : numValue });
   };
@@ -93,16 +92,13 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
     if (!formData.name || !formData.address) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Log the form data to verify the coordinates are correct
     console.log('Form data to be saved:', formData);
     
-    // Use a copy to prevent any reference issues
     const locationToSave = {...formData};
     onSave(locationToSave);
   };
