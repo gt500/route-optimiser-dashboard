@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -132,7 +131,6 @@ const Dashboard = () => {
         setFuelSavings(Math.round(totalFuelSaved));
       }
 
-      // Fetch optimization stats
       const stats = await getOptimizationStats();
       setOptimizationStats(stats);
       
@@ -141,21 +139,19 @@ const Dashboard = () => {
         { name: 'Standard Routes', value: stats.standard },
       ]);
 
-      // Fetch weekly delivery data
       const weeklyData = await getWeeklyDeliveryData();
       setDeliveryData(weeklyData);
 
-      const { data: upcomingData, error: upcomingError } = await supabase
+      const { data: activeRoutesData, error: activeRoutesError } = await supabase
         .from('routes')
         .select('*')
-        .eq('status', 'scheduled')
-        .filter('date', 'like', `${todayDateString}%`)
+        .in('status', ['scheduled', 'in_progress'])
         .order('date', { ascending: true });
         
-      if (upcomingError) {
-        console.error('Error fetching upcoming deliveries:', upcomingError);
-      } else if (upcomingData && upcomingData.length > 0) {
-        const upcomingWithDetails = await Promise.all(upcomingData.map(async (route) => {
+      if (activeRoutesError) {
+        console.error('Error fetching active routes:', activeRoutesError);
+      } else if (activeRoutesData && activeRoutesData.length > 0) {
+        const activeWithDetails = await Promise.all(activeRoutesData.map(async (route) => {
           const { data: deliveries } = await supabase
             .from('deliveries')
             .select('*, locations!inner(*)')
@@ -168,9 +164,9 @@ const Dashboard = () => {
           };
         }));
         
-        setUpcomingDeliveries(upcomingWithDetails);
+        setUpcomingDeliveries(activeWithDetails);
       } else {
-        console.log('No upcoming deliveries found for today');
+        console.log('No upcoming or in-progress deliveries found');
         setUpcomingDeliveries([]);
       }
 
@@ -361,6 +357,9 @@ const Dashboard = () => {
                       <div className="text-sm text-gray-400">
                         {delivery.locationsCount} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
                       </div>
+                    </div>
+                    <div className="px-2 py-1 text-xs font-medium rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                      {delivery.status === 'in_progress' ? 'In Progress' : 'Scheduled'}
                     </div>
                     <Button size="sm" variant="ghost">
                       <ArrowRight className="h-4 w-4" />
