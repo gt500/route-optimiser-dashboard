@@ -104,8 +104,7 @@ export const fetchDeliveriesByRouteIds = async (routeIds: string[]) => {
 };
 
 /**
- * Attempts to fetch location data with region and country fields first,
- * falls back to fetching without those fields if they don't exist
+ * Fetches location data including the newly added region and country fields
  */
 export const fetchLocationsByIds = async (locationIds: string[]) => {
   if (locationIds.length === 0) {
@@ -116,50 +115,27 @@ export const fetchLocationsByIds = async (locationIds: string[]) => {
   console.log(`fetchLocationsByIds: Fetching ${locationIds.length} locations`);
   
   try {
-    // Try to fetch with region and country fields
+    // Now we can directly fetch with region and country fields without worrying about errors
     const { data, error } = await supabase
       .from('locations')
       .select('id, name, address, latitude, longitude, region, country')
       .in('id', locationIds);
     
     if (error) {
-      // Extract error message safely, ensuring it's a string
-      const errorMessage = typeof error.message === 'string' ? error.message : String(error);
-      
-      // Check if error message indicates missing columns (either region or country)
-      if (errorMessage.includes('column "region" does not exist') || 
-          errorMessage.includes('column "country" does not exist')) {
-        console.log('Region/country fields not found, falling back to basic location data');
-        
-        // Fallback to fetch without region and country
-        const { data: basicData, error: fallbackError } = await supabase
-          .from('locations')
-          .select('id, name, address, latitude, longitude')
-          .in('id', locationIds);
-        
-        if (fallbackError) {
-          console.error('Error fetching locations without region/country:', fallbackError);
-          toast.error('Error fetching location data');
-          throw fallbackError;
-        }
-        
-        console.log(`Found ${basicData?.length || 0} locations (without region/country)`);
-        return { locations: basicData || [], includeRegionCountry: false };
-      } else {
-        // If it's some other error, throw it
-        console.error('Error fetching locations:', error);
-        toast.error('Error fetching location data');
-        throw error;
-      }
+      console.error('Error fetching locations:', error);
+      toast.error('Error fetching location data');
+      throw error;
     }
     
-    // If we get here, we successfully fetched locations with region and country
-    // Check if the data actually has these fields by examining the first item
-    const hasRegionCountry = data && data.length > 0 && 
-      ('region' in data[0] || 'country' in data[0]);
+    // Check if any of the locations have region or country data
+    const hasRegionCountryData = data && data.length > 0 && 
+      data.some(location => location.region || location.country);
     
-    console.log(`Found ${data?.length || 0} locations (with region/country: ${hasRegionCountry})`);
-    return { locations: data || [], includeRegionCountry: hasRegionCountry };
+    console.log(`Found ${data?.length || 0} locations (with region/country data: ${hasRegionCountryData})`);
+    return { 
+      locations: data || [], 
+      includeRegionCountry: hasRegionCountryData 
+    };
   } catch (error) {
     console.error('Unexpected error in fetchLocationsByIds:', error);
     throw error;

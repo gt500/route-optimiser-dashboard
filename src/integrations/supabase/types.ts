@@ -85,36 +85,42 @@ export type Database = {
         Row: {
           address: string
           close_time: string | null
+          country: string | null
           created_at: string | null
           id: string
           latitude: number
           longitude: number
           name: string
           open_time: string | null
+          region: string | null
           type: string | null
           updated_at: string | null
         }
         Insert: {
           address: string
           close_time?: string | null
+          country?: string | null
           created_at?: string | null
           id: string
           latitude: number
           longitude: number
           name: string
           open_time?: string | null
+          region?: string | null
           type?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string
           close_time?: string | null
+          country?: string | null
           created_at?: string | null
           id?: string
           latitude?: number
           longitude?: number
           name?: string
           open_time?: string | null
+          region?: string | null
           type?: string | null
           updated_at?: string | null
         }
