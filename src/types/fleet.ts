@@ -1,4 +1,3 @@
-
 export interface Vehicle {
   id: string;
   name: string;
@@ -11,6 +10,7 @@ export interface Vehicle {
   lastService: string;
   country: string;
   region: string;
+  maxPayload?: number; // Added maxPayload property as optional
 }
 
 export interface MaintenanceItem {
