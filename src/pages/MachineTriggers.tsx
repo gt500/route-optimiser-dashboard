@@ -24,10 +24,10 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
     
     const data = await response.json();
     return data.response.results.map((item: any) => ({
-      site_name: item.site_name || 'Unknown Site',
-      machine_name: item.machine_name || 'Unknown Machine',
-      cylinder_stock: parseInt(item.cylinder_stock || '0', 10),
-      last_update: item.last_update || new Date().toISOString(),
+      site_name: item.SITE_NAME || 'Unknown Site',
+      machine_name: item.M_CODE || 'Unknown Machine',
+      cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
+      last_update: item.Modified_Date || new Date().toISOString(),
     }));
   } catch (error) {
     console.error('Error fetching machine data:', error);
