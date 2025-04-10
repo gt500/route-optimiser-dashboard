@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -45,23 +46,36 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { fetchRouteDataByName } = useRouteData();
+  const { fetchRouteHistory } = useRouteData();
   const [realWestCoastData, setRealWestCoastData] = useState<any | null>(null);
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
 
   useEffect(() => {
     const fetchWestCoastData = async () => {
       try {
-        console.log('Fetching West Coast route data...');
+        console.log('Fetching completed West Coast route data...');
         setDataFetchAttempted(true);
-        const westCoastData = await fetchRouteDataByName('West Coast');
         
-        if (westCoastData && westCoastData.length > 0) {
-          console.log('Found West Coast route data:', westCoastData[0]);
-          setRealWestCoastData(westCoastData[0]);
-          toast.success('Real data loaded for West Coast route');
+        // Get completed routes from history
+        const completedRoutes = await fetchRouteHistory();
+        console.log('Completed routes:', completedRoutes);
+        
+        // Find West Coast routes among completed routes
+        const westCoastRoutes = completedRoutes.filter(route => 
+          route.name.toLowerCase().includes('west coast') || 
+          route.route_type === 'West Coast'
+        );
+        
+        if (westCoastRoutes && westCoastRoutes.length > 0) {
+          // Sort by date to get the most recent one
+          westCoastRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const mostRecentRoute = westCoastRoutes[0];
+          
+          console.log('Found completed West Coast route data:', mostRecentRoute);
+          setRealWestCoastData(mostRecentRoute);
+          toast.success('Real data loaded for completed West Coast route');
         } else {
-          console.log('No West Coast route data found in database');
+          console.log('No completed West Coast route data found in database');
           setRealWestCoastData(null);
         }
       } catch (error) {
@@ -78,7 +92,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
           return {
             name: realWestCoastData.name || 'West Coast',
             routeId: 'Route 6',
-            time: Math.round(realWestCoastData.total_duration / 60) || 65,
+            time: Math.round((realWestCoastData.total_duration || 3900) / 60),
             distance: realWestCoastData.total_distance || 22.4,
             cost: realWestCoastData.estimated_cost || 310,
             cylinders: realWestCoastData.total_cylinders || 15
@@ -100,7 +114,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
     if (!dataFetchAttempted) {
       fetchWestCoastData();
     }
-  }, [fetchRouteDataByName, dataFetchAttempted, realWestCoastData]);
+  }, [fetchRouteHistory, dataFetchAttempted, realWestCoastData]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);

@@ -144,15 +144,32 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
           setAllRoutes(routes);
           
           if (routeName.includes('West Coast')) {
-            const westCoastData = await fetchRouteDataByName('West Coast');
-            console.log('Fetched West Coast data:', westCoastData);
-            if (westCoastData && westCoastData.length > 0) {
-              setRealRouteData(westCoastData[0]);
+            const { fetchRouteHistory } = useRouteData();
+            const completedRoutes = await fetchRouteHistory();
+            
+            const westCoastCompletedRoutes = completedRoutes.filter(route => 
+              route.name.toLowerCase().includes('west coast') || 
+              route.route_type === 'West Coast'
+            );
+            
+            if (westCoastCompletedRoutes && westCoastCompletedRoutes.length > 0) {
+              westCoastCompletedRoutes.sort((a, b) => 
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+              );
+              console.log('Found completed West Coast route for detail view:', westCoastCompletedRoutes[0]);
+              setRealRouteData(westCoastCompletedRoutes[0]);
               setUseRealData(true);
             } else {
-              console.log('Using dummy data for West Coast');
-              setRealRouteData(WEST_COAST_DUMMY_DATA);
-              setUseRealData(false);
+              const westCoastData = await fetchRouteDataByName('West Coast');
+              console.log('Fetched West Coast data:', westCoastData);
+              if (westCoastData && westCoastData.length > 0) {
+                setRealRouteData(westCoastData[0]);
+                setUseRealData(true);
+              } else {
+                console.log('Using dummy data for West Coast');
+                setRealRouteData(WEST_COAST_DUMMY_DATA);
+                setUseRealData(false);
+              }
             }
           }
         } catch (error) {
