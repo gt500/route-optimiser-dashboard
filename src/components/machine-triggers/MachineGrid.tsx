@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Package } from "lucide-react";
 import MachineCard from './MachineCard';
 import { MachineData } from './types';
+import { Toggle } from "@/components/ui/toggle";
 
 interface MachineGridProps {
   machineData: MachineData[] | undefined;
@@ -18,6 +19,16 @@ const MachineGrid = ({
   error, 
   acknowledgedAlerts 
 }: MachineGridProps) => {
+  const [showLowStockOnly, setShowLowStockOnly] = React.useState(false);
+  
+  // Filter machines with low stock if the filter is active
+  const filteredMachines = React.useMemo(() => {
+    if (!machineData) return [];
+    return showLowStockOnly 
+      ? machineData.filter(machine => machine.cylinder_stock <= 7)
+      : machineData;
+  }, [machineData, showLowStockOnly]);
+
   if (isLoading) {
     return (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -45,14 +56,35 @@ const MachineGrid = ({
   }
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {machineData?.map((machine, idx) => (
-        <MachineCard 
-          key={idx} 
-          machine={machine} 
-          acknowledgedAlerts={acknowledgedAlerts} 
-        />
-      ))}
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Toggle
+          variant="outline"
+          pressed={showLowStockOnly}
+          onPressedChange={setShowLowStockOnly}
+          className="flex items-center gap-2"
+          aria-label="Show only machines with low stock"
+        >
+          <Package className="h-4 w-4" />
+          <span>Low Stock Only</span>
+        </Toggle>
+      </div>
+      
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {filteredMachines.length > 0 ? (
+          filteredMachines.map((machine, idx) => (
+            <MachineCard 
+              key={idx} 
+              machine={machine} 
+              acknowledgedAlerts={acknowledgedAlerts} 
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-8">
+            <p className="text-muted-foreground">No machines match the current filter</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
