@@ -26,6 +26,8 @@ export interface LocationInfo {
   emptyCylinders?: number;
   open_time?: string;
   close_time?: string;
+  // Add missing fields needed for compatibility
+  status?: string;
 }
 
 export interface SupabaseLocation {

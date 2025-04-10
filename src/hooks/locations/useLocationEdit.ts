@@ -59,22 +59,13 @@ export const useLocationEdit = (
       id: '',
       name: '',
       address: '',
-      type: 'customer',
-      status: 'active',
-      coordinates: { lat: 0, lng: 0 },
-      contactName: '',
-      contactPhone: '',
-      email: '',
-      notes: '',
-      deliveryWindow: {
-        start: '09:00',
-        end: '17:00',
-      },
-      inventory: {
-        current: 0,
-        capacity: 0,
-        reorderPoint: 0,
-      },
+      latitude: 0,
+      longitude: 0,
+      type: 'Customer',
+      fullCylinders: 0,
+      emptyCylinders: 0,
+      open_time: '09:00',
+      close_time: '17:00'
     };
     
     setEditLocation(emptyLocation);

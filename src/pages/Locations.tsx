@@ -6,6 +6,7 @@ import LocationSearch from '@/components/locations/LocationSearch';
 import LocationTabs from '@/components/locations/LocationTabs';
 import LocationActions from '@/components/locations/LocationActions';
 import LocationEditDialog from '@/components/locations/edit/LocationEditDialog';
+import { LocationType, LocationInfo } from '@/types/location';
 
 const Locations: React.FC = () => {
   const {
@@ -27,6 +28,43 @@ const Locations: React.FC = () => {
     handleAddNew
   } = useLocations();
 
+  // Create a function to convert LocationInfo to LocationType for the edit dialog
+  const convertToLocationType = (location: LocationInfo | null): LocationType | null => {
+    if (!location) return null;
+    
+    return {
+      id: location.id,
+      name: location.name,
+      address: location.address,
+      lat: location.latitude,
+      long: location.longitude,
+      type: location.type || 'Customer',
+      fullCylinders: location.fullCylinders,
+      emptyCylinders: location.emptyCylinders,
+      isWarehouse: location.type === 'Storage',
+      open_time: location.open_time,
+      close_time: location.close_time
+    };
+  };
+
+  // Create wrapper function to convert LocationType back to LocationInfo
+  const handleSaveLocationWrapper = (locationData: LocationType) => {
+    const locationInfo: LocationInfo = {
+      id: locationData.id,
+      name: locationData.name,
+      address: locationData.address,
+      latitude: locationData.lat,
+      longitude: locationData.long,
+      type: locationData.type,
+      fullCylinders: locationData.fullCylinders,
+      emptyCylinders: locationData.emptyCylinders,
+      open_time: locationData.open_time,
+      close_time: locationData.close_time
+    };
+    
+    handleSaveLocation(locationInfo);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <LocationHeader onAddNew={handleAddNew} />
@@ -41,26 +79,19 @@ const Locations: React.FC = () => {
         filteredLocations={filteredLocations}
         allLocations={locations}
         onEdit={handleEdit}
-        onDelete={openDeleteConfirmation}
+        onDelete={(id: string) => {
+          const locationToDelete = locations.find(loc => loc.id === id);
+          if (locationToDelete) {
+            openDeleteConfirmation(locationToDelete);
+          }
+        }}
       />
       
       <LocationEditDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        location={editLocation ? {
-          id: editLocation.id,
-          name: editLocation.name,
-          address: editLocation.address,
-          lat: editLocation.latitude,
-          long: editLocation.longitude,
-          type: editLocation.type || 'Customer',
-          fullCylinders: editLocation.fullCylinders,
-          emptyCylinders: editLocation.emptyCylinders,
-          isWarehouse: editLocation.type === 'Storage',
-          open_time: editLocation.open_time,
-          close_time: editLocation.close_time
-        } : null}
-        onSave={handleSaveLocation}
+        location={convertToLocationType(editLocation)}
+        onSave={handleSaveLocationWrapper}
       />
 
       <LocationActions
