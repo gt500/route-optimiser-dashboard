@@ -10,6 +10,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
+import { toast } from 'sonner';
+import { DeliveryData } from '@/hooks/useDeliveryData';
 
 interface DailyCalendarCardProps {
   date: Date | undefined;
@@ -18,6 +21,7 @@ interface DailyCalendarCardProps {
   onRefresh: () => void;
   onToggleView: () => void;
   viewMode: 'table' | 'map';
+  deliveries?: DeliveryData[];
 }
 
 const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
@@ -26,8 +30,45 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
   isLoading,
   onRefresh,
   onToggleView,
-  viewMode
+  viewMode,
+  deliveries = []
 }) => {
+  const handleExportToExcel = () => {
+    try {
+      if (!deliveries || deliveries.length === 0) {
+        toast.warning('No data to export');
+        return;
+      }
+      
+      const formattedDate = date ? new Date(date).toISOString().split('T')[0] : 'delivery-data';
+      const filename = `daily-deliveries-${formattedDate}`;
+      
+      exportToExcel(deliveries, filename);
+      toast.success('Data exported to Excel successfully');
+    } catch (error) {
+      console.error('Export to Excel failed:', error);
+      toast.error('Failed to export data to Excel');
+    }
+  };
+
+  const handleExportToPDF = () => {
+    try {
+      if (!deliveries || deliveries.length === 0) {
+        toast.warning('No data to export');
+        return;
+      }
+      
+      const formattedDate = date ? new Date(date).toISOString().split('T')[0] : 'delivery-data';
+      const filename = `daily-deliveries-${formattedDate}`;
+      
+      exportToPDF(deliveries, filename, 'Daily Deliveries Report', date);
+      toast.success('Data exported to PDF successfully');
+    } catch (error) {
+      console.error('Export to PDF failed:', error);
+      toast.error('Failed to export data to PDF');
+    }
+  };
+
   return (
     <Card className="col-span-1">
       <CardHeader>
@@ -63,10 +104,10 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportToExcel}>
                   <FileSpreadsheet className="mr-2 h-4 w-4" /> Export to Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportToPDF}>
                   <Download className="mr-2 h-4 w-4" /> Download PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>

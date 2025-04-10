@@ -1,22 +1,15 @@
+
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart, Truck, MapPin, Clock, ArrowRight, Calendar, RefreshCw } from 'lucide-react';
-import {
-  BarChart as ReBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from 'recharts';
+import { RefreshCw } from 'lucide-react';
+import { Truck, MapPin, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
+import StatCard from '@/components/dashboard/StatCard';
+import WeeklyDeliveryChart from '@/components/dashboard/WeeklyDeliveryChart';
+import OptimizationChart from '@/components/dashboard/OptimizationChart';
+import UpcomingDeliveries from '@/components/dashboard/UpcomingDeliveries';
+import RecentRoutes from '@/components/dashboard/RecentRoutes';
 
 interface RouteData {
   id: string;
@@ -29,15 +22,6 @@ interface RouteData {
   estimated_cost: number;
   locationsCount?: number;
   cylindersCount?: number;
-}
-
-interface DeliveryData {
-  id: string;
-  route_id: string;
-  location_id: string;
-  sequence: number;
-  cylinders: number;
-  location_name?: string;
 }
 
 interface OptimizationStats {
@@ -72,8 +56,6 @@ const Dashboard = () => {
 
   const { getOptimizationStats, getWeeklyDeliveryData } = useRouteData();
 
-  const COLORS = ['#0088FE', '#8B5CF6'];
-
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -85,6 +67,7 @@ const Dashboard = () => {
       const todayFormatted = today.toISOString();
       const todayDateString = today.toISOString().split('T')[0];
 
+      // Fetch recent routes
       const { data: recentRoutesData, error: routesError } = await supabase
         .from('routes')
         .select('*')
@@ -99,6 +82,7 @@ const Dashboard = () => {
       if (recentRoutesData) {
         setTotalRoutes(recentRoutesData.length);
 
+        // Fetch delivery data
         const { data: deliveryData, error: deliveryError } = await supabase
           .from('deliveries')
           .select('location_id, route_id')
@@ -111,6 +95,7 @@ const Dashboard = () => {
           setTotalLocations(uniqueLocations.size);
         }
         
+        // Calculate time saved and fuel savings
         const standardRouteTime = 95;
         const totalTimeSaved = recentRoutesData.reduce((total, route) => {
           const standardTime = route.total_duration * 1.25;
@@ -142,6 +127,7 @@ const Dashboard = () => {
       const weeklyData = await getWeeklyDeliveryData();
       setDeliveryData(weeklyData);
 
+      // Fetch active routes (scheduled or in progress)
       const { data: activeRoutesData, error: activeRoutesError } = await supabase
         .from('routes')
         .select('*')
@@ -170,6 +156,7 @@ const Dashboard = () => {
         setUpcomingDeliveries([]);
       }
 
+      // Fetch completed or in-progress routes
       const { data: completedData, error: completedError } = await supabase
         .from('routes')
         .select('*')
@@ -213,219 +200,40 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Routes</CardTitle>
-            <Truck className="h-4 w-4 text-gray-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalRoutes}</div>
-            <p className="text-xs text-gray-400">From last week</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Locations</CardTitle>
-            <MapPin className="h-4 w-4 text-gray-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalLocations}</div>
-            <p className="text-xs text-gray-400">Delivered to last week</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Time Saved</CardTitle>
-            <Clock className="h-4 w-4 text-gray-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgTimeSaved.toFixed(1)} min</div>
-            <p className="text-xs text-gray-400">Per optimized route</p>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Fuel Savings</CardTitle>
-            <MapPin className="h-4 w-4 text-gray-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R{fuelSavings.toLocaleString()}</div>
-            <p className="text-xs text-gray-400">This week</p>
-          </CardContent>
-        </Card>
+        <StatCard 
+          title="Total Routes" 
+          value={totalRoutes} 
+          subtitle="From last week" 
+          icon={<Truck className="h-4 w-4 text-gray-400" />}
+        />
+        <StatCard 
+          title="Total Locations" 
+          value={totalLocations} 
+          subtitle="Delivered to last week" 
+          icon={<MapPin className="h-4 w-4 text-gray-400" />}
+        />
+        <StatCard 
+          title="Avg. Time Saved" 
+          value={`${avgTimeSaved.toFixed(1)} min`} 
+          subtitle="Per optimized route" 
+          icon={<Clock className="h-4 w-4 text-gray-400" />}
+        />
+        <StatCard 
+          title="Fuel Savings" 
+          value={`R${fuelSavings.toLocaleString()}`} 
+          subtitle="This week" 
+          icon={<MapPin className="h-4 w-4 text-gray-400" />}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Weekly Deliveries</CardTitle>
-              <p className="text-sm text-gray-400">Overview of deliveries this week</p>
-            </div>
-            <BarChart className="h-4 w-4 text-gray-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <ReBarChart
-                  data={deliveryData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="name" stroke="#fff" />
-                  <YAxis stroke="#fff" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '12px', 
-                      border: 'none', 
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)'
-                    }} 
-                  />
-                  <Bar dataKey="deliveries" fill="#0088FE" radius={[4, 4, 0, 0]} />
-                </ReBarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader>
-            <CardTitle>Route Optimization</CardTitle>
-            <p className="text-sm text-gray-400">Fuel efficiency improvements</p>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80 flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height="80%">
-                <PieChart>
-                  <Pie
-                    data={optimizationData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={90}
-                    fill="#8884d8"
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {optimizationData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '12px', 
-                      border: 'none', 
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)'
-                    }} 
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="text-center mt-2">
-                <div className="text-2xl font-bold">
-                  {optimizationStats.percentage}%
-                </div>
-                <p className="text-xs text-gray-400">Routes optimized</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <WeeklyDeliveryChart data={deliveryData} />
+        <OptimizationChart data={optimizationData} percentage={optimizationStats.percentage} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader>
-            <CardTitle>Upcoming Deliveries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {upcomingDeliveries.length > 0 ? (
-                upcomingDeliveries.map((delivery) => (
-                  <div key={delivery.id} className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
-                    <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium">{delivery.name}</div>
-                      <div className="text-sm text-gray-400">
-                        {delivery.locationsCount} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="px-2 py-1 text-xs font-medium rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                      {delivery.status === 'in_progress' ? 'In Progress' : 'Scheduled'}
-                    </div>
-                    <Button size="sm" variant="ghost">
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
-                  <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                    <Truck className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">No deliveries scheduled for today</div>
-                    <div className="text-sm text-gray-400">Schedule deliveries in the Routes section</div>
-                  </div>
-                  <Button size="sm" variant="ghost">
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <Button variant="outline" className="w-full">View All</Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
-          <CardHeader>
-            <CardTitle>Recent Routes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentRoutes.length > 0 ? (
-                recentRoutes.map((route) => (
-                  <div key={route.id} className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
-                    <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium">{route.name}</div>
-                      <div className="text-sm text-gray-400">
-                        {route.total_distance?.toFixed(1) || '0'} km • {new Date(route.date).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="text-xs font-medium bg-gray-700 text-white py-1 px-2 rounded-full">
-                      R{route.estimated_cost?.toFixed(2) || '0.00'}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
-                  <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">No recent routes</div>
-                    <div className="text-sm text-gray-400">Complete routes to see them here</div>
-                  </div>
-                  <div className="text-xs font-medium bg-gray-700 text-white py-1 px-2 rounded-full">
-                    R0.00
-                  </div>
-                </div>
-              )}
-              <Button variant="outline" className="w-full">View All</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <UpcomingDeliveries deliveries={upcomingDeliveries} />
+        <RecentRoutes routes={recentRoutes} />
       </div>
     </div>
   );

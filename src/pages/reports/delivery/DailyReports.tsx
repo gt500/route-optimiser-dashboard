@@ -93,6 +93,7 @@ const DailyReports = () => {
           onRefresh={handleRefresh}
           onToggleView={toggleViewMode}
           viewMode={viewMode}
+          deliveries={filteredDeliveries}
         />
 
         <Card className="col-span-1 md:col-span-2">
