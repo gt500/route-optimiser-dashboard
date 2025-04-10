@@ -50,8 +50,12 @@ export const exportToPDF = (
   date?: Date
 ) => {
   try {
-    // Create PDF document
-    const doc = new jsPDF();
+    // Create PDF document with explicit unit
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
     
     // Add title
     const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
@@ -85,18 +89,51 @@ export const exportToPDF = (
       `R${totalFuelCost.toFixed(2)}`
     ]);
     
-    // Add table to PDF
-    doc.autoTable({
-      head: [tableColumns],
-      body: tableRows,
-      startY: date ? 30 : 20,
-      theme: 'striped',
-      headStyles: { fillColor: [0, 0, 0] },
-      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
-    });
-    
-    // Save the PDF
-    doc.save(`${filename}.pdf`);
+    // Define an autoTable function with explicit typing
+    try {
+      // @ts-ignore - Using ts-ignore here because we know autoTable exists on jsPDF
+      doc.autoTable({
+        head: [tableColumns],
+        body: tableRows,
+        startY: date ? 30 : 20,
+        theme: 'striped',
+        headStyles: { fillColor: [0, 0, 0] },
+        footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+      });
+      
+      // Save the PDF
+      doc.save(`${filename}.pdf`);
+    } catch (tableError) {
+      console.error('Error adding table to PDF:', tableError);
+      
+      // Alternative approach if autotable fails
+      if (!doc.autoTable) {
+        console.log('AutoTable not available, using basic text output');
+        let y = date ? 40 : 30;
+        const lineHeight = 8;
+        
+        // Draw header manually
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        tableColumns.forEach((col, index) => {
+          doc.text(col, 14 + (index * 40), y);
+        });
+        
+        // Draw rows manually
+        doc.setFont('helvetica', 'normal');
+        tableRows.forEach(row => {
+          y += lineHeight;
+          row.forEach((cell, index) => {
+            doc.text(cell, 14 + (index * 40), y);
+          });
+        });
+        
+        // Save the PDF
+        doc.save(`${filename}.pdf`);
+      } else {
+        throw tableError;
+      }
+    }
   } catch (error) {
     console.error('Error exporting to PDF:', error);
     throw new Error('Failed to export data to PDF');
