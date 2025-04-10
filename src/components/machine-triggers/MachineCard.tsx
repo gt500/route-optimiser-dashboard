@@ -17,7 +17,7 @@ const MachineCard = ({ machine, acknowledgedAlerts }: MachineCardProps) => {
     <Card className={isLowStock ? "border-destructive" : ""}>
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          {machine.terminal_id}
+          {machine.site_name}
           {isLowStock && (
             <span className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded-full">
               Low Stock
@@ -25,10 +25,8 @@ const MachineCard = ({ machine, acknowledgedAlerts }: MachineCardProps) => {
           )}
         </CardTitle>
         <CardDescription>
-          {machine.site_name}
-          {machine.merchant_id && (
-            <div className="mt-1">Merchant ID: {machine.merchant_id}</div>
-          )}
+          <div className="font-medium">Merchant ID: {machine.merchant_id}</div>
+          <div className="text-sm mt-1">Terminal ID: {machine.terminal_id}</div>
         </CardDescription>
       </CardHeader>
       <CardContent>
