@@ -21,6 +21,16 @@ import RouteDetailDialog from '../RouteDetailDialog';
 // Define full load threshold consistently across components
 const FULL_LOAD_THRESHOLD = 20;
 
+// Dummy data for the chart
+const dummyChartData = [
+  { name: 'Cape Town CBD', time: 45, distance: 12.5, cost: 210, cylinders: 25 },
+  { name: 'Gas Depot - Southern Suburbs', time: 60, distance: 18.3, cost: 280, cylinders: 32 },
+  { name: 'Northern Distribution Line', time: 75, distance: 24.7, cost: 350, cylinders: 18 },
+  { name: 'Atlantic Seaboard', time: 50, distance: 15.6, cost: 240, cylinders: 22 },
+  { name: 'Stellenbosch Distribution', time: 90, distance: 28.2, cost: 420, cylinders: 28 },
+  { name: 'West Coast', time: 65, distance: 22.4, cost: 310, cylinders: 15 },
+];
+
 interface RouteEfficiencyChartProps {
   isLoading: boolean;
   onRouteLegendOpen: () => void;
@@ -38,102 +48,11 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && routeData.length > 0) {
-      processRouteData();
-    } else if (!isLoading) {
-      // If we're not loading but there's no data, set empty chart data
-      setChartData([]);
-      setLoading(false);
-    }
-  }, [isLoading, routeData]);
-  
-  const processRouteData = () => {
-    setLoading(true);
-    try {
-      console.log('RouteEfficiencyChart - Processing route data for chart, routes length:', routeData.length);
-      
-      // Create a map to categorize routes based on keywords
-      const routeCategories = {
-        'Cape Town CBD': ['cape town', 'cbd', 'city center', 'downtown'],
-        'Gas Depot - Southern Suburbs': ['southern suburbs', 'claremont', 'kenilworth', 'wynberg', 'retreat', 'tokai'],
-        'Northern Distribution Line': ['northern', 'durbanville', 'bellville', 'brackenfell', 'kraaifontein'],
-        'Atlantic Seaboard': ['atlantic', 'seaboard', 'sea point', 'camps bay', 'clifton', 'green point'],
-        'Stellenbosch Distribution': ['stellenbosch', 'university', 'winelands'],
-        'West Coast': ['west coast', 'blouberg', 'table view', 'melkbos']
-      };
-      
-      // Categorize routes based on their name and keywords
-      const categorizedRoutes: Record<string, any[]> = {};
-      
-      routeData.forEach(route => {
-        let matched = false;
-        const routeName = (route.name || '').toLowerCase();
-        
-        // Match route to a category
-        for (const [category, keywords] of Object.entries(routeCategories)) {
-          if (keywords.some(keyword => routeName.includes(keyword))) {
-            if (!categorizedRoutes[category]) {
-              categorizedRoutes[category] = [];
-            }
-            categorizedRoutes[category].push(route);
-            matched = true;
-            break;
-          }
-        }
-        
-        // If no category matches, assign to a default category
-        if (!matched) {
-          // Get the first part of the route name before any delimiters
-          const defaultCategory = route.name.split(/[-–—]/)[0].trim();
-          if (!categorizedRoutes[defaultCategory]) {
-            categorizedRoutes[defaultCategory] = [];
-          }
-          categorizedRoutes[defaultCategory].push(route);
-        }
-      });
-      
-      console.log('RouteEfficiencyChart - Categorized routes:', Object.keys(categorizedRoutes));
-      
-      // Use the routeLegendData for chart categories
-      const chartDataArray = routeLegendData.map(legend => {
-        const categoryRoutes = categorizedRoutes[legend.name] || [];
-        console.log(`RouteEfficiencyChart - Found ${categoryRoutes.length} routes for ${legend.name}`);
-        
-        if (categoryRoutes.length === 0) {
-          // If no routes in this category, use some sample data
-          return {
-            name: legend.name,
-            time: 0,
-            distance: 0,
-            cost: 0,
-            cylinders: 0
-          };
-        }
-        
-        // Calculate averages for this route type
-        const totalDistance = categoryRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
-        const totalDuration = categoryRoutes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
-        const totalCost = categoryRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
-        const totalCylinders = categoryRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
-        
-        return {
-          name: legend.name,
-          time: Math.round(totalDuration / 60 / Math.max(1, categoryRoutes.length)), // Convert seconds to minutes
-          distance: Math.round((totalDistance / Math.max(1, categoryRoutes.length)) * 10) / 10, // Average with 1 decimal
-          cost: Math.round(totalCost / Math.max(1, categoryRoutes.length)),
-          cylinders: Math.round(totalCylinders / Math.max(1, categoryRoutes.length))
-        };
-      });
-      
-      console.log('RouteEfficiencyChart - Generated chart data:', chartDataArray);
-      setChartData(chartDataArray);
-    } catch (error) {
-      console.error('Error processing route data for chart:', error);
-      setChartData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Use dummy data instead of trying to process route data
+    console.log('RouteEfficiencyChart - Using dummy data for chart');
+    setChartData(dummyChartData);
+    setLoading(false);
+  }, []);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);

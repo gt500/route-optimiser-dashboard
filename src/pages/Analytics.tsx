@@ -11,6 +11,17 @@ import DetailDialog from '@/components/analytics/DetailDialog';
 import RouteLegendDialog from '@/components/analytics/RouteLegendDialog';
 import AnalyticsTabs from '@/components/analytics/AnalyticsTabs';
 
+// Dummy data for route charts
+const dummyOptimizationData = [
+  { name: 'Optimized Routes', value: 65 },
+  { name: 'Standard Routes', value: 35 }
+];
+
+const dummyLoadDistribution = [
+  { name: 'Full Loads', value: 70 },
+  { name: 'Partial Loads', value: 30 }
+];
+
 type DetailType = 'deliveries' | 'fuel' | 'route' | 'cylinders' | null;
 
 const Analytics = () => {
@@ -156,7 +167,12 @@ const Analytics = () => {
       />
 
       <AnalyticsTabs 
-        analyticsData={analyticsData}
+        analyticsData={{
+          ...analyticsData,
+          optimizationData: dummyOptimizationData,
+          loadDistribution: dummyLoadDistribution,
+          optimizationPercentage: 65
+        }}
         timePeriod={timePeriod}
         isLoading={isLoading}
         onRouteLegendOpen={() => setRouteLegendOpen(true)}

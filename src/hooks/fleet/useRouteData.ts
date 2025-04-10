@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
@@ -13,6 +12,7 @@ export interface RouteData {
   status: string;
   vehicle_id?: string;
   total_duration?: number;
+  route_type?: string;
 }
 
 export const useRouteData = () => {
@@ -39,7 +39,8 @@ export const useRouteData = () => {
         total_distance: route.total_distance || 0,
         total_cylinders: route.total_cylinders || 0,
         estimated_cost: route.estimated_cost || 0,
-        total_duration: route.total_duration || 0
+        total_duration: route.total_duration || 0,
+        route_type: categorizeRouteByName(route.name || '')
       }));
       
       // For each route, ensure we have some non-zero data to display
@@ -71,6 +72,31 @@ export const useRouteData = () => {
       toast.error('Failed to load route data');
       return [];
     }
+  };
+
+  // Helper function to categorize a route based on its name
+  const categorizeRouteByName = (routeName: string): string => {
+    const nameLower = routeName.toLowerCase();
+    
+    // Define keywords for each route category
+    const categories = {
+      'Cape Town CBD': ['cape town', 'cbd', 'city center', 'downtown'],
+      'Gas Depot - Southern Suburbs': ['southern suburbs', 'claremont', 'kenilworth', 'wynberg', 'retreat', 'tokai'],
+      'Northern Distribution Line': ['northern', 'durbanville', 'bellville', 'brackenfell', 'kraaifontein'],
+      'Atlantic Seaboard': ['atlantic', 'seaboard', 'sea point', 'camps bay', 'clifton', 'green point'],
+      'Stellenbosch Distribution': ['stellenbosch', 'university', 'winelands'],
+      'West Coast': ['west coast', 'blouberg', 'table view', 'melkbos']
+    };
+    
+    // Check if route name contains any of the keywords for each category
+    for (const [category, keywords] of Object.entries(categories)) {
+      if (keywords.some(keyword => nameLower.includes(keyword))) {
+        return category;
+      }
+    }
+    
+    // If no match found, use a generic category
+    return 'Other';
   };
 
   // Fetch route data for a specific period
