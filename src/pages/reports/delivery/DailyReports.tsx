@@ -9,6 +9,7 @@ import RouteMap from '@/components/routes/RouteMap';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { Truck, MapPin, Fuel } from 'lucide-react';
 import { useDeliveryData } from '@/hooks/useDeliveryData';
+import { toast } from 'sonner';
 
 const DailyReports = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -16,12 +17,12 @@ const DailyReports = () => {
   
   const { deliveries, isLoading, fetchDeliveryData } = useDeliveryData(date);
   
-  // Ensure the data is fetched on component mount
+  // Ensure the data is fetched on component mount and when date changes
   useEffect(() => {
     if (date) {
       fetchDeliveryData();
     }
-  }, []);
+  }, [date]);
   
   const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
   const filteredDeliveries = deliveries.filter(
@@ -33,20 +34,25 @@ const DailyReports = () => {
   const totalFuelCost = filteredDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
 
   const handleRefresh = () => {
-    fetchDeliveryData();
+    if (date) {
+      toast.info(`Refreshing data for ${format(date, 'MMM dd, yyyy')}`);
+      fetchDeliveryData();
+    }
   };
 
   const toggleViewMode = () => {
     setViewMode(viewMode === 'table' ? 'map' : 'table');
   };
 
-  const mapLocations = filteredDeliveries.map(delivery => ({
-    id: delivery.id,
-    name: delivery.siteName,
-    latitude: delivery.latitude,
-    longitude: delivery.longitude,
-    address: `${delivery.cylinders} cylinders`
-  })).filter(loc => loc.latitude && loc.longitude);
+  const mapLocations = filteredDeliveries
+    .map(delivery => ({
+      id: delivery.id,
+      name: delivery.siteName,
+      latitude: delivery.latitude,
+      longitude: delivery.longitude,
+      address: `${delivery.cylinders} cylinders`
+    }))
+    .filter(loc => loc.latitude && loc.longitude);
 
   return (
     <div className="space-y-4">
@@ -130,7 +136,7 @@ const DailyReports = () => {
                 <p className="text-muted-foreground">
                   {isLoading 
                     ? "Loading delivery data..." 
-                    : "No deliveries found for this date."}
+                    : "No deliveries found for this date. Try selecting a different date or refreshing the data."}
                 </p>
               </div>
             )}

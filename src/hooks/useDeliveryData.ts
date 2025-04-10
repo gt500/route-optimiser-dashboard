@@ -56,13 +56,59 @@ export const useDeliveryData = (date: Date | undefined) => {
       console.log('Found routes for date', formattedDateStr, ':', routesData?.length || 0);
       
       if (!routesData || routesData.length === 0) {
-        setDeliveries([]);
-        setIsLoading(false);
+        console.log('No routes found for the selected date. Fetching recent routes instead.');
+        
+        // If no routes found for selected date, get the most recent 3 routes as fallback
+        const { data: recentRoutesData, error: recentRoutesError } = await supabase
+          .from('routes')
+          .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
+          .order('date', { ascending: false })
+          .limit(3);
+          
+        if (recentRoutesError) {
+          console.error('Error fetching recent routes:', recentRoutesError);
+          throw recentRoutesError;
+        }
+        
+        if (!recentRoutesData || recentRoutesData.length === 0) {
+          setDeliveries([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Use the recent routes data instead
+        console.log('Using recent routes data instead:', recentRoutesData.length);
+        
+        // Get the first route date to display as fallback
+        const firstRouteDate = new Date(recentRoutesData[0].date);
+        const firstRouteDateStr = format(firstRouteDate, 'yyyy-MM-dd');
+        
+        // Convert the routesData to the expected format and continue
+        const routeIds = recentRoutesData.map(route => route.id);
+        const processedRoutes = recentRoutesData;
+        
+        await processRouteDeliveries(routeIds, processedRoutes, firstRouteDateStr);
         return;
       }
       
       const routeIds = routesData.map(route => route.id);
-      
+      await processRouteDeliveries(routeIds, routesData, formattedDateStr);
+    } catch (error) {
+      console.error('Error fetching delivery data:', error);
+      toast.error('Failed to load delivery data');
+      setDeliveries([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to process route deliveries
+  const processRouteDeliveries = async (
+    routeIds: string[],
+    routesData: any[],
+    formattedDateStr: string
+  ) => {
+    try {
       const { data: deliveriesData, error: deliveriesError } = await supabase
         .from('deliveries')
         .select('id, route_id, location_id, cylinders, sequence')
@@ -77,7 +123,6 @@ export const useDeliveryData = (date: Date | undefined) => {
       
       if (!deliveriesData || deliveriesData.length === 0) {
         setDeliveries([]);
-        setIsLoading(false);
         return;
       }
       
@@ -117,11 +162,9 @@ export const useDeliveryData = (date: Date | undefined) => {
         processDeliveryData(routesData, deliveriesData, locationsData || [], formattedDateStr, false);
       }
     } catch (error) {
-      console.error('Error fetching delivery data:', error);
-      toast.error('Failed to load delivery data');
+      console.error('Error processing route deliveries:', error);
+      toast.error('Failed to process delivery data');
       setDeliveries([]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
