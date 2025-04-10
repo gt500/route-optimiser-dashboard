@@ -23,12 +23,12 @@ const FULL_LOAD_THRESHOLD = 20;
 
 // Dummy data for the chart
 const dummyChartData = [
-  { name: 'Cape Town CBD', time: 45, distance: 12.5, cost: 210, cylinders: 25 },
-  { name: 'Gas Depot - Southern Suburbs', time: 60, distance: 18.3, cost: 280, cylinders: 32 },
-  { name: 'Northern Distribution Line', time: 75, distance: 24.7, cost: 350, cylinders: 18 },
-  { name: 'Atlantic Seaboard', time: 50, distance: 15.6, cost: 240, cylinders: 22 },
-  { name: 'Stellenbosch Distribution', time: 90, distance: 28.2, cost: 420, cylinders: 28 },
-  { name: 'West Coast', time: 65, distance: 22.4, cost: 310, cylinders: 15 },
+  { name: 'Cape Town CBD', routeId: 'Route 1', time: 45, distance: 12.5, cost: 210, cylinders: 25 },
+  { name: 'Gas Depot - Southern Suburbs', routeId: 'Route 2', time: 60, distance: 18.3, cost: 280, cylinders: 32 },
+  { name: 'Northern Distribution Line', routeId: 'Route 3', time: 75, distance: 24.7, cost: 350, cylinders: 18 },
+  { name: 'Atlantic Seaboard', routeId: 'Route 4', time: 50, distance: 15.6, cost: 240, cylinders: 22 },
+  { name: 'Stellenbosch Distribution', routeId: 'Route 5', time: 90, distance: 28.2, cost: 420, cylinders: 28 },
+  { name: 'West Coast', routeId: 'Route 6', time: 65, distance: 22.4, cost: 310, cylinders: 15 },
 ];
 
 interface RouteEfficiencyChartProps {
@@ -50,7 +50,12 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   useEffect(() => {
     // Use dummy data instead of trying to process route data
     console.log('RouteEfficiencyChart - Using dummy data for chart');
-    setChartData(dummyChartData);
+    // Add routeId to the data if it doesn't exist
+    const processedData = dummyChartData.map((route, index) => ({
+      ...route,
+      routeId: route.routeId || `Route ${index + 1}`
+    }));
+    setChartData(processedData);
     setLoading(false);
   }, []);
 
@@ -98,7 +103,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="routeId" />
                 <YAxis yAxisId="left" orientation="left" stroke="#0088FE" />
                 <YAxis yAxisId="right" orientation="right" stroke="#00C49F" />
                 <Tooltip 
@@ -115,6 +120,11 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                       return [`${value} (${numValue >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
                     }
                     return [`${value}`, name];
+                  }}
+                  labelFormatter={(label) => {
+                    // Find the full name for the route ID
+                    const routeItem = chartData.find(item => item.routeId === label);
+                    return routeItem ? `${label}: ${routeItem.name}` : label;
                   }}
                 />
                 <Legend />
