@@ -5,6 +5,7 @@ import { useMachineData } from "@/components/machine-triggers/useMachineData";
 import MachineGrid from "@/components/machine-triggers/MachineGrid";
 import MachineAlertDialog from "@/components/machine-triggers/MachineAlertDialog";
 import { MachineData } from "@/components/machine-triggers/types";
+import { setGlobalAlertStatus } from "@/components/notifications/AlertIndicator";
 
 // Create a global object to store acknowledged alerts
 // This is outside the component to persist across navigation
@@ -38,6 +39,9 @@ const MachineTriggers = () => {
         machine.cylinder_stock <= 7 && 
         !globalAcknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`]
       );
+      
+      // Update global alert status based on whether there's a low stock machine
+      setGlobalAlertStatus(!!lowStockMachine);
       
       if (lowStockMachine && (!isAlertOpen || forceCheck)) {
         setLowStockAlert(lowStockMachine);
@@ -96,6 +100,13 @@ const MachineTriggers = () => {
       
       setIsAlertOpen(false);
       setLowStockAlert(null);
+      
+      // Also update global alert status if all alerts have been acknowledged
+      if (!machineData?.find(machine => 
+        machine.cylinder_stock <= 7 && 
+        !updatedAlerts[`${machine.site_name}-${machine.terminal_id}`])) {
+        setGlobalAlertStatus(false);
+      }
     }
   };
 

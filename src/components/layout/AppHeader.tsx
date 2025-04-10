@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AlertIndicator } from '@/components/notifications/AlertIndicator';
 
 export function AppHeader() {
   const location = useLocation();
@@ -35,6 +36,8 @@ export function AppHeader() {
         return 'Analytics';
       case '/settings':
         return 'Settings';
+      case '/machine-triggers':
+        return 'Machine Triggers';
       default:
         return 'Dashboard';
     }
@@ -78,6 +81,9 @@ export function AppHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {/* Alert Indicator */}
+        <AlertIndicator />
+      
         <Button 
           size="icon" 
           variant="ghost" 
