@@ -27,7 +27,6 @@ export interface LocationInfo {
   emptyCylinders?: number;
   open_time?: string;
   close_time?: string;
-  // Add missing fields needed for compatibility
   status?: string;
   region?: string;
   country?: string;
@@ -46,7 +45,6 @@ export interface SupabaseLocation {
   country?: string;
 }
 
-// Define prop interfaces for react-leaflet components
 export interface LeafletMarkerProps {
   position: [number, number];
   children?: React.ReactNode;
@@ -63,7 +61,6 @@ export interface LeafletTileLayerProps {
   children?: React.ReactNode;
 }
 
-// Add proper type definitions for default Leaflet props
 export interface LeafletEventHandlerProps {
   eventHandlers?: {
     [key: string]: (() => void) | undefined;
