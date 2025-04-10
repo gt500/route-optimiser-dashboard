@@ -11,6 +11,7 @@ interface MachineData {
   site_name: string;
   machine_name: string;
   terminal_id: string;
+  merchant_id: string;
   cylinder_stock: number;
   last_update: string;
 }
@@ -30,6 +31,7 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
         site_name: item.SITE_NAME || 'Unknown Site',
         machine_name: item.M_CODE || 'Unknown Machine',
         terminal_id: item.TERMINAL_ID || 'Unknown Terminal',
+        merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
         cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
         last_update: item.Modified_Date || new Date().toISOString(),
       }));
@@ -80,17 +82,12 @@ const MachineTriggers = () => {
       toast({
         title: "Alert Acknowledged",
         description: `${lowStockAlert.site_name} low stock alert has been acknowledged at ${new Date().toLocaleTimeString()}`,
+        variant: "destructive",
       });
       
-      // Explicitly close the alert
       setIsAlertOpen(false);
       setLowStockAlert(null);
     }
-  };
-
-  const closeAlert = () => {
-    setIsAlertOpen(false);
-    setLowStockAlert(null);
   };
 
   return (
@@ -126,14 +123,19 @@ const MachineTriggers = () => {
             <Card key={idx} className={machine.cylinder_stock <= 7 ? "border-destructive" : ""}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  {machine.terminal_id} - {machine.machine_name}
+                  {machine.terminal_id}
                   {machine.cylinder_stock <= 7 && (
                     <span className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded-full">
                       Low Stock
                     </span>
                   )}
                 </CardTitle>
-                <CardDescription>{machine.site_name}</CardDescription>
+                <CardDescription>
+                  {machine.site_name}
+                  {machine.merchant_id && (
+                    <div className="mt-1">Merchant ID: {machine.merchant_id}</div>
+                  )}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -170,32 +172,36 @@ const MachineTriggers = () => {
               <AlertTriangle className="h-5 w-5" />
               Refill Required - Critical Stock Level
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="space-y-4 py-2">
-                <div className="flex justify-between">
-                  <strong>Site:</strong>
-                  <span>{lowStockAlert?.site_name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Terminal ID:</strong>
-                  <span>{lowStockAlert?.terminal_id}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Machine:</strong>
-                  <span>{lowStockAlert?.machine_name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Cylinder Stock:</strong>
-                  <span className="text-destructive font-bold">{lowStockAlert?.cylinder_stock} units</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Alert Time:</strong>
-                  <span>{new Date().toLocaleString()}</span>
-                </div>
-                <div className="bg-destructive/10 p-3 rounded-md text-center text-destructive font-medium">
-                  Immediate action required. Stock is below threshold of 7 units.
-                </div>
-              </div>
+            <AlertDialogDescription className="space-y-4 py-2">
+              {lowStockAlert && (
+                <>
+                  <div className="flex justify-between">
+                    <strong>Site:</strong>
+                    <span>{lowStockAlert.site_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>Terminal ID:</strong>
+                    <span>{lowStockAlert.terminal_id}</span>
+                  </div>
+                  {lowStockAlert.merchant_id && (
+                    <div className="flex justify-between">
+                      <strong>Merchant ID:</strong>
+                      <span>{lowStockAlert.merchant_id}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <strong>Cylinder Stock:</strong>
+                    <span className="text-destructive font-bold">{lowStockAlert.cylinder_stock} units</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>Alert Time:</strong>
+                    <span>{new Date().toLocaleString()}</span>
+                  </div>
+                  <div className="bg-destructive/10 p-3 rounded-md text-center text-destructive font-medium">
+                    Immediate action required. Stock is below threshold of 7 units.
+                  </div>
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
