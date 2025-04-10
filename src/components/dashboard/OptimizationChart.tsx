@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
+import { COLORS } from '@/components/analytics/data/routeLegendData';
 
 interface OptimizationChartProps {
   data: { name: string; value: number }[];
@@ -9,8 +10,6 @@ interface OptimizationChartProps {
 }
 
 const OptimizationChart: React.FC<OptimizationChartProps> = ({ data, percentage }) => {
-  const COLORS = ['#0088FE', '#8B5CF6'];
-
   return (
     <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
       <CardHeader>

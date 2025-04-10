@@ -61,6 +61,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                 { name: 'Route 3', time: 52, distance: 40, cost: 320 },
                 { name: 'Route 4', time: 32, distance: 22, cost: 180 },
                 { name: 'Route 5', time: 42, distance: 30, cost: 260 },
+                { name: 'Route 6', time: 60, distance: 48, cost: 350 },
               ]}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
