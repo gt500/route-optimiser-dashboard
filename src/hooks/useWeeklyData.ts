@@ -42,9 +42,9 @@ export const useWeeklyData = (date: Date | undefined) => {
     setIsLoading(true);
     
     try {
-      // Calculate week start and end dates
-      const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Monday
-      const weekEnd = endOfWeek(date, { weekStartsOn: 1 }); // Sunday
+      // Calculate week start and end dates - using weekStartsOn: 1 for Monday start
+      const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
       
       // Make weekEnd include the entire day
       const adjustedWeekEnd = new Date(weekEnd);
@@ -52,7 +52,7 @@ export const useWeeklyData = (date: Date | undefined) => {
       
       console.log('Fetching routes for week between:', weekStart.toISOString(), 'and', adjustedWeekEnd.toISOString());
       
-      // Fetch routes for the entire week with improved date range filtering
+      // Use a more precise date range filtering
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
@@ -67,15 +67,20 @@ export const useWeeklyData = (date: Date | undefined) => {
       
       console.log('Found routes for week:', routesData?.length || 0);
       
-      // Create daily summary data structure
+      // Create daily summary data structure with consistent date handling
       const weekData: WeeklyDataSummary[] = Array.from({ length: 7 }, (_, i) => {
         const currentDate = addDays(weekStart, i);
         const formattedDateStr = format(currentDate, 'yyyy-MM-dd');
         
-        // Filter routes for current day
+        // Filter routes for current day with more precise date comparison
         const dayRoutes = routesData?.filter(route => {
-          const routeDate = new Date(route.date);
-          return format(routeDate, 'yyyy-MM-dd') === formattedDateStr;
+          if (!route.date) return false;
+          
+          // Parse the route date and format it to yyyy-MM-dd for comparison
+          const routeDate = typeof route.date === 'string' ? new Date(route.date) : route.date;
+          const routeDateStr = format(routeDate, 'yyyy-MM-dd');
+          
+          return routeDateStr === formattedDateStr;
         }) || [];
         
         // Calculate totals for the day

@@ -60,7 +60,7 @@ export const useMonthlyData = (date: Date | undefined) => {
       
       console.log('Fetching routes for month between:', monthStart.toISOString(), 'and', adjustedMonthEnd.toISOString());
       
-      // Fetch routes for the entire month with improved date range filtering
+      // Fetch routes with precise date range filtering
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
@@ -75,7 +75,7 @@ export const useMonthlyData = (date: Date | undefined) => {
       
       console.log('Found routes for month:', routesData?.length || 0, routesData);
       
-      // Get all weeks in the month
+      // Get all weeks in the month - using weekStartsOn: 1 for Monday start
       const weeksInMonth = eachWeekOfInterval(
         { start: monthStart, end: monthEnd },
         { weekStartsOn: 1 } // Start weeks on Monday
@@ -85,9 +85,15 @@ export const useMonthlyData = (date: Date | undefined) => {
       const monthData: MonthlyDataSummary[] = weeksInMonth.map((weekStart, index) => {
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
         
-        // Filter routes for current week
+        // Ensure week boundaries are appropriate for filtering
+        const weekStartFormatted = format(weekStart, 'yyyy-MM-dd');
+        const weekEndFormatted = format(weekEnd, 'yyyy-MM-dd');
+        
+        // Filter routes for current week with more precise date comparison
         const weekRoutes = routesData?.filter(route => {
           if (!route.date) return false;
+          
+          // Parse the route date and get formatted date string
           let routeDate;
           
           // Handle string dates
@@ -97,7 +103,11 @@ export const useMonthlyData = (date: Date | undefined) => {
             routeDate = new Date(route.date);
           }
           
-          return routeDate >= weekStart && routeDate <= weekEnd;
+          // Format for comparison - this ensures consistent date handling
+          const routeDateFormatted = format(routeDate, 'yyyy-MM-dd');
+          
+          // Check if the route date is within the week
+          return routeDateFormatted >= weekStartFormatted && routeDateFormatted <= weekEndFormatted;
         }) || [];
         
         // Calculate totals for the week

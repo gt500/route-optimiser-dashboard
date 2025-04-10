@@ -28,7 +28,7 @@ export const useDeliveryData = (date: Date | undefined): DeliveryHookReturn => {
     const formattedDateStr = format(date, 'yyyy-MM-dd');
     
     try {
-      // Improved date range handling for better accuracy
+      // Improved date range handling for better accuracy - get full day
       const startOfSelectedDay = startOfDay(date);
       const endOfSelectedDay = endOfDay(date);
 
