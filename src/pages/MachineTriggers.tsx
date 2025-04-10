@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Check, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MachineData {
   site_name: string;
   machine_name: string;
+  terminal_id: string;
   cylinder_stock: number;
   last_update: string;
 }
@@ -23,12 +24,15 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
     }
     
     const data = await response.json();
-    return data.response.results.map((item: any) => ({
-      site_name: item.SITE_NAME || 'Unknown Site',
-      machine_name: item.M_CODE || 'Unknown Machine',
-      cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
-      last_update: item.Modified_Date || new Date().toISOString(),
-    }));
+    return data.response.results
+      .filter((item: any) => item.SITE_NAME !== 'Food Emporium') // Filter out Food Emporium
+      .map((item: any) => ({
+        site_name: item.SITE_NAME || 'Unknown Site',
+        machine_name: item.M_CODE || 'Unknown Machine',
+        terminal_id: item.TERMINAL_ID || 'Unknown Terminal',
+        cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
+        last_update: item.Modified_Date || new Date().toISOString(),
+      }));
   } catch (error) {
     console.error('Error fetching machine data:', error);
     throw error;
@@ -52,7 +56,7 @@ const MachineTriggers = () => {
     if (machineData) {
       const lowStockMachine = machineData.find(machine => 
         machine.cylinder_stock <= 7 && 
-        !acknowledgedAlerts[`${machine.site_name}-${machine.machine_name}`]
+        !acknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`]
       );
       
       if (lowStockMachine && !isAlertOpen) {
@@ -64,7 +68,7 @@ const MachineTriggers = () => {
 
   const handleAcknowledgeAlert = () => {
     if (lowStockAlert) {
-      const key = `${lowStockAlert.site_name}-${lowStockAlert.machine_name}`;
+      const key = `${lowStockAlert.site_name}-${lowStockAlert.terminal_id}`;
       const timestamp = new Date().toISOString();
       const user = "Current User"; // In a real app, get this from auth context
       
@@ -78,8 +82,9 @@ const MachineTriggers = () => {
         description: `${lowStockAlert.site_name} low stock alert has been acknowledged at ${new Date().toLocaleTimeString()}`,
       });
       
-      setLowStockAlert(null);
+      // Explicitly close the alert
       setIsAlertOpen(false);
+      setLowStockAlert(null);
     }
   };
 
@@ -121,7 +126,7 @@ const MachineTriggers = () => {
             <Card key={idx} className={machine.cylinder_stock <= 7 ? "border-destructive" : ""}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  {machine.machine_name}
+                  {machine.terminal_id} - {machine.machine_name}
                   {machine.cylinder_stock <= 7 && (
                     <span className="bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded-full">
                       Low Stock
@@ -144,10 +149,10 @@ const MachineTriggers = () => {
                       {new Date(machine.last_update).toLocaleString()}
                     </span>
                   </div>
-                  {acknowledgedAlerts[`${machine.site_name}-${machine.machine_name}`] && (
+                  {acknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`] && (
                     <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground border-t pt-2">
-                      <span>Acknowledged by: {acknowledgedAlerts[`${machine.site_name}-${machine.machine_name}`].user}</span>
-                      <span>{new Date(acknowledgedAlerts[`${machine.site_name}-${machine.machine_name}`].time).toLocaleTimeString()}</span>
+                      <span>Acknowledged by: {acknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`].user}</span>
+                      <span>{new Date(acknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`].time).toLocaleTimeString()}</span>
                     </div>
                   )}
                 </div>
@@ -158,8 +163,8 @@ const MachineTriggers = () => {
       )}
 
       {/* Low Stock Alert Dialog */}
-      <AlertDialog open={isAlertOpen} onOpenChange={closeAlert}>
-        <AlertDialogContent className="border-destructive animate-pulse">
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent className="border-destructive border-2">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
@@ -170,6 +175,10 @@ const MachineTriggers = () => {
                 <div className="flex justify-between">
                   <strong>Site:</strong>
                   <span>{lowStockAlert?.site_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <strong>Terminal ID:</strong>
+                  <span>{lowStockAlert?.terminal_id}</span>
                 </div>
                 <div className="flex justify-between">
                   <strong>Machine:</strong>
