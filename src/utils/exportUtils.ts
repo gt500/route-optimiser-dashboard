@@ -69,7 +69,8 @@ export const exportToPDF = (
     const totalFuelCost = data.reduce((sum, row) => sum + row.fuelCost, 0);
     
     // Prepare table data
-    const tableData = data.map(row => [
+    const tableColumns = ['Site Name', 'Cylinders', 'Distance (km)', 'Fuel Cost'];
+    const tableRows = data.map(row => [
       row.siteName,
       row.cylinders.toString(),
       row.kms.toFixed(1),
@@ -77,7 +78,7 @@ export const exportToPDF = (
     ]);
     
     // Add totals row
-    tableData.push([
+    tableRows.push([
       'TOTALS',
       totalCylinders.toString(),
       totalKms.toFixed(1),
@@ -86,8 +87,8 @@ export const exportToPDF = (
     
     // Add table to PDF
     doc.autoTable({
-      head: [['Site Name', 'Cylinders', 'Distance (km)', 'Fuel Cost']],
-      body: tableData,
+      head: [tableColumns],
+      body: tableRows,
       startY: date ? 30 : 20,
       theme: 'striped',
       headStyles: { fillColor: [0, 0, 0] },
