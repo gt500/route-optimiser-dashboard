@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,6 +60,7 @@ interface CreateRouteTabProps {
 
 const MAX_CYLINDERS = 80;
 const CYLINDER_WEIGHT_KG = 22;
+const MAX_PAYLOAD_KG = 1760; // 80 cylinders * 22kg
 
 const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   route,
@@ -92,10 +92,9 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
 }) => {
   const isOverweight = route.cylinders > MAX_CYLINDERS;
 
-  // Create a wrapper for adding location to route that includes weight validation
   const handleAddLocationToRoute = (location: LocationType & { cylinders: number }) => {
     if (route.cylinders + location.cylinders > MAX_CYLINDERS) {
-      toast.error(`Weight limit exceeded! Adding ${location.cylinders} more cylinders would exceed the maximum capacity of ${MAX_CYLINDERS} cylinders (${MAX_CYLINDERS * CYLINDER_WEIGHT_KG}kg).`, {
+      toast.error(`Weight limit exceeded! Adding ${location.cylinders} more cylinders would exceed the maximum capacity of ${MAX_CYLINDERS} cylinders (${MAX_PAYLOAD_KG}kg).`, {
         duration: 5000
       });
       return;

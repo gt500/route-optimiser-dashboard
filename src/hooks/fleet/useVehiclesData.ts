@@ -22,7 +22,7 @@ const initialVehicles: Vehicle[] = [
     lastService: format(subDays(today, 100), 'yyyy-MM-dd'), // About 3 months ago
     country: 'South Africa',
     region: 'Western Cape',
-    maxPayload: 1200 // 1.2 tons payload capacity
+    maxPayload: 1760 // 1760 kg payload capacity (80 cylinders)
   },
   { 
     id: 'TRK-002', 
@@ -36,7 +36,7 @@ const initialVehicles: Vehicle[] = [
     lastService: format(subDays(today, 30), 'yyyy-MM-dd'), // 1 month ago
     country: 'South Africa',
     region: 'Western Cape',
-    maxPayload: 1200 // 1.2 tons payload capacity
+    maxPayload: 1760 // 1760 kg payload capacity (80 cylinders)
   },
 ];
 
