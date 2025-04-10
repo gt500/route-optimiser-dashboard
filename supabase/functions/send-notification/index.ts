@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Resend } from "npm:resend@1.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,10 +45,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     try {
-      // Initialize Resend with the API key
-      const resend = new Resend(resendApiKey);
-      console.log("Resend client initialized successfully");
-      
       // Parse the request body
       let requestBody;
       try {
@@ -111,19 +106,28 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Sending email using template for category: ${category}`);
         
         try {
-          // Send email notification using Resend
-          const { data, error } = await resend.emails.send({
-            from: "Route Optimizer <notifications@routeoptimizer.app>",
-            to: [email],
-            subject: subject,
-            html: template,
+          // Send email notification using Resend API directly
+          const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: "Route Optimizer <notifications@routeoptimizer.app>",
+              to: [email],
+              subject: subject,
+              html: template,
+            }),
           });
-
-          if (error) {
-            console.error("Resend API error:", error);
-            throw new Error(`Failed to send email: ${error.message}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Resend API error:", errorData);
+            throw new Error(`Failed to send email: ${errorData.message || 'Unknown error'}`);
           }
-
+          
+          const data = await response.json();
           console.log("Email sent successfully:", data);
 
           return new Response(JSON.stringify({ success: true, data }), {
@@ -175,11 +179,11 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error("Invalid notification type");
       }
     } catch (resendInitError) {
-      console.error("Error initializing Resend client:", resendInitError);
+      console.error("Error in request processing:", resendInitError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Failed to initialize email client. Check if the API key is valid." 
+          error: "Failed to process request. Check if the API key is valid." 
         }),
         {
           headers: { "Content-Type": "application/json", ...corsHeaders },
