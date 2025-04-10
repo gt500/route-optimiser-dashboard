@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { sendNotification, sendWeeklyReport, sendRouteUpdate, sendDeliveryUpdate } from "@/utils/notificationUtils";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Mail, FileBarChart, MapPin, Truck } from "lucide-react";
+import { Loader2, Mail, FileBarChart, MapPin, Truck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { 
   Tabs, 
@@ -16,6 +16,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { format, startOfWeek, endOfWeek } from "date-fns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const TestNotifications = () => {
   const { user } = useAuth();
@@ -161,6 +162,15 @@ const TestNotifications = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <Alert className="mb-6" variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Resend API Testing Limitation</AlertTitle>
+          <AlertDescription>
+            During testing, Resend only allows sending emails to the account owner's email address. 
+            To send to other recipients, verify a domain at <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline">resend.com/domains</a>.
+          </AlertDescription>
+        </Alert>
+        
         <Tabs defaultValue="general">
           <TabsList className="grid grid-cols-4 mb-4">
             <TabsTrigger value="general">General</TabsTrigger>

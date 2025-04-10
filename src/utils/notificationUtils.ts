@@ -65,9 +65,17 @@ export const sendNotification = async ({
     
     if (data && !data.success) {
       console.error("Error response from edge function:", data);
-      toast.error(`Failed to send ${type} notification`, {
-        description: data.error || "The server returned an error"
-      });
+      
+      // Check for Resend API restriction about sending to own email
+      if (data.error && data.error.includes("Resend API restriction")) {
+        toast.error("Email sending restricted", {
+          description: "During testing, Resend only allows sending emails to the account owner's email address. To send to other addresses, verify a domain in Resend."
+        });
+      } else {
+        toast.error(`Failed to send ${type} notification`, {
+          description: data.error || "The server returned an error"
+        });
+      }
       return false;
     }
 

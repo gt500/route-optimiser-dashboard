@@ -106,6 +106,9 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Sending email using template for category: ${category}`);
         
         try {
+          // Extract domain from the email for better "from" field configuration
+          const userEmailDomain = email.split('@')[1];
+          
           // Send email notification using Resend API directly
           const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -114,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: "Route Optimizer <onboarding@resend.dev>", // Use the default Resend domain first
+              from: "Route Optimizer <onboarding@resend.dev>", // Default Resend domain
               to: [email],
               subject: subject,
               html: template,
@@ -137,6 +140,22 @@ const handler = async (req: Request): Promise<Response> => {
           
           if (!response.ok) {
             console.error("Resend API error:", responseData);
+            
+            // Check if it's the specific error about sending to own email in test mode
+            if (responseData.message && responseData.message.includes("can only send testing emails to your own email address")) {
+              return new Response(
+                JSON.stringify({ 
+                  success: false, 
+                  error: "Resend API restriction: You can only send test emails to the email used to create your Resend account. Please verify a domain at resend.com/domains to send to other recipients.",
+                  details: responseData.message
+                }),
+                {
+                  headers: { "Content-Type": "application/json", ...corsHeaders },
+                  status: 403,
+                }
+              );
+            }
+            
             throw new Error(`Failed to send email: ${responseData.message || responseData.error || 'Unknown error'}`);
           }
           
