@@ -124,10 +124,11 @@ export const fetchLocationsByIds = async (locationIds: string[]) => {
     
     if (error) {
       // Extract error message safely, ensuring it's a string
-      const errorMsg = error.message ? String(error.message) : '';
+      const errorMessage = typeof error.message === 'string' ? error.message : String(error);
       
       // Check if error message indicates missing columns (either region or country)
-      if (errorMsg.includes('column "region" does not exist') || errorMsg.includes('column "country" does not exist')) {
+      if (errorMessage.includes('column "region" does not exist') || 
+          errorMessage.includes('column "country" does not exist')) {
         console.log('Region/country fields not found, falling back to basic location data');
         
         // Fallback to fetch without region and country
@@ -155,7 +156,7 @@ export const fetchLocationsByIds = async (locationIds: string[]) => {
     // If we get here, we successfully fetched locations with region and country
     // Check if the data actually has these fields by examining the first item
     const hasRegionCountry = data && data.length > 0 && 
-      (data[0].region !== undefined || data[0].country !== undefined);
+      ('region' in data[0] || 'country' in data[0]);
     
     console.log(`Found ${data?.length || 0} locations (with region/country: ${hasRegionCountry})`);
     return { locations: data || [], includeRegionCountry: hasRegionCountry };
