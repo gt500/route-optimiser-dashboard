@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/card';
 import { WeeklyDataSummary, WeeklyTotals } from '@/hooks/useWeeklyData';
 import { MonthlyDataSummary, MonthlyTotals } from '@/hooks/useMonthlyData';
 

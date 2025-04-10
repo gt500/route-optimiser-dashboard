@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import ReportTabs from '@/components/reports/ReportTabs';
@@ -12,6 +12,13 @@ const MonthlyReports = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   
   const { weeklySummary, monthlyTotals, isLoading, fetchMonthlyData } = useMonthlyData(date);
+  
+  // Ensure data is fetched on component mount
+  useEffect(() => {
+    if (date) {
+      fetchMonthlyData();
+    }
+  }, []);
 
   const handleRefresh = () => {
     fetchMonthlyData();

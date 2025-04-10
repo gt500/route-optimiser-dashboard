@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 

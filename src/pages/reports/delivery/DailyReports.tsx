@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import ReportTabs from '@/components/reports/ReportTabs';
@@ -15,6 +15,13 @@ const DailyReports = () => {
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   
   const { deliveries, isLoading, fetchDeliveryData } = useDeliveryData(date);
+  
+  // Ensure the data is fetched on component mount
+  useEffect(() => {
+    if (date) {
+      fetchDeliveryData();
+    }
+  }, []);
   
   const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
   const filteredDeliveries = deliveries.filter(

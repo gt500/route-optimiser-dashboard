@@ -7,7 +7,7 @@ import {
   eachWeekOfInterval, 
   startOfWeek, 
   endOfWeek,
-  addDays
+  parseISO
 } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,7 +73,7 @@ export const useMonthlyData = (date: Date | undefined) => {
         throw routesError;
       }
       
-      console.log('Found routes for month:', routesData?.length || 0);
+      console.log('Found routes for month:', routesData?.length || 0, routesData);
       
       // Get all weeks in the month
       const weeksInMonth = eachWeekOfInterval(
@@ -87,7 +87,16 @@ export const useMonthlyData = (date: Date | undefined) => {
         
         // Filter routes for current week
         const weekRoutes = routesData?.filter(route => {
-          const routeDate = new Date(route.date);
+          if (!route.date) return false;
+          let routeDate;
+          
+          // Handle string dates
+          if (typeof route.date === 'string') {
+            routeDate = parseISO(route.date);
+          } else {
+            routeDate = new Date(route.date);
+          }
+          
           return routeDate >= weekStart && routeDate <= weekEnd;
         }) || [];
         

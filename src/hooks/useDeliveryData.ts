@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format, addDays } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,18 +33,17 @@ export const useDeliveryData = (date: Date | undefined) => {
     
     try {
       // Improved date range handling for better accuracy
-      const startOfDay = new Date(formattedDateStr);
-      const endOfDay = new Date(formattedDateStr);
-      endOfDay.setHours(23, 59, 59, 999);
+      const startOfSelectedDay = startOfDay(date);
+      const endOfSelectedDay = endOfDay(date);
 
-      console.log('Fetching routes between:', startOfDay.toISOString(), 'and', endOfDay.toISOString());
+      console.log('Fetching routes between:', startOfSelectedDay.toISOString(), 'and', endOfSelectedDay.toISOString());
       
       // Update the query to use explicit timestamps for better accuracy
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
-        .gte('date', startOfDay.toISOString())
-        .lte('date', endOfDay.toISOString()) // Changed to lte to include the end of day
+        .gte('date', startOfSelectedDay.toISOString())
+        .lte('date', endOfSelectedDay.toISOString())
         .order('created_at', { ascending: false });
       
       if (routesError) {
@@ -84,7 +83,7 @@ export const useDeliveryData = (date: Date | undefined) => {
       
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
-        .select('id, name, address, latitude, longitude')
+        .select('id, name, address, latitude, longitude, region, country')
         .in('id', locationIds);
       
       if (locationsError) {
@@ -108,7 +107,9 @@ export const useDeliveryData = (date: Date | undefined) => {
               cylinders: delivery.cylinders,
               sequence: delivery.sequence,
               latitude: location?.latitude,
-              longitude: location?.longitude
+              longitude: location?.longitude,
+              region: location?.region,
+              country: location?.country
             };
           })
           .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
@@ -143,7 +144,9 @@ export const useDeliveryData = (date: Date | undefined) => {
             fuelCost: parseFloat(costPerDelivery.toFixed(2)),
             date: formattedDateStr,
             latitude: delivery.latitude,
-            longitude: delivery.longitude
+            longitude: delivery.longitude,
+            region: delivery.region,
+            country: delivery.country
           });
         });
       });

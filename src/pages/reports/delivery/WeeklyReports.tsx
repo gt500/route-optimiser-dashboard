@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import ReportTabs from '@/components/reports/ReportTabs';
@@ -12,6 +12,13 @@ const WeeklyReports = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   
   const { dailySummary, weeklyTotals, isLoading, fetchWeeklyData } = useWeeklyData(date);
+  
+  // Ensure data is fetched on component mount
+  useEffect(() => {
+    if (date) {
+      fetchWeeklyData();
+    }
+  }, []);
 
   const handleRefresh = () => {
     fetchWeeklyData();
