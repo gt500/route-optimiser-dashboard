@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import TestNotifications from '@/components/notifications/TestNotifications';
 
 // Profile form schema for validation
 const profileFormSchema = z.object({
