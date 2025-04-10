@@ -17,6 +17,10 @@ export interface AnalyticsData {
   fuelConsumption: { name: string; value: number }[];
   routeDistribution: { name: string; value: number }[];
   costBreakdown: { name: string; value: number }[];
+  // Add the missing properties
+  optimizationData?: { name: string; value: number }[];
+  loadDistribution?: { name: string; value: number }[];
+  optimizationPercentage?: number;
 }
 
 export const useAnalyticsData = () => {
