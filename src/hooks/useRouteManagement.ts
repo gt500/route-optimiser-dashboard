@@ -46,7 +46,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     availableLocations: [] as LocationType[],
     trafficConditions: 'moderate' as 'light' | 'moderate' | 'heavy',
     estimatedDuration: 0,
-    usingRealTimeData: false
+    usingRealTimeData: false,
+    country: '',
+    region: ''
   });
 
   useEffect(() => {
@@ -480,7 +482,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       availableLocations: availableLocations,
       trafficConditions: 'moderate',
       estimatedDuration: 75,
-      usingRealTimeData: false
+      usingRealTimeData: false,
+      country: route.country,
+      region: route.region
     });
     toast.info("New route created");
   };
@@ -568,7 +572,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
           latitude: loc.lat || 0,
           longitude: loc.long || 0,
           open_time: '08:00',
-          close_time: '18:00'
+          close_time: '18:00',
+          region: route.region || loc.region,
+          country: route.country || loc.country
         }));
         
         const { error: insertError } = await supabase
@@ -596,7 +602,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost,
-        vehicle_id: selectedVehicle && selectedVehicle !== 'none' ? selectedVehicle : null
+        vehicle_id: selectedVehicle && selectedVehicle !== 'none' ? selectedVehicle : null,
+        region: route.region,
+        country: route.country
       };
       
       console.log("Saving route data:", routeData);
@@ -622,7 +630,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         route_id: routeId,
         location_id: location.id.toString(),
         cylinders: location.emptyCylinders || 0,
-        sequence: index
+        sequence: index,
+        region: location.region || route.region,
+        country: location.country || route.country
       }));
       
       console.log("Saving deliveries:", deliveries);
@@ -745,6 +755,14 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     toast.success("Location replaced successfully");
   };
 
+  const setRouteRegion = (country: string, region: string) => {
+    setRoute(prev => ({
+      ...prev,
+      country,
+      region
+    }));
+  };
+
   return {
     route,
     availableLocations,
@@ -771,7 +789,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     setAvailableLocations,
     updateVehicleConfig,
     selectedVehicle,
-    setSelectedVehicle
+    setSelectedVehicle,
+    setRouteRegion
   };
 };
 

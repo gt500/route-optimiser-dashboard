@@ -17,6 +17,7 @@ import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import TruckWeightIndicator from '@/components/reports/TruckWeightIndicator';
 import { toast } from 'sonner';
 import { Vehicle } from '@/types/fleet';
+import { MapPin, Globe } from 'lucide-react';
 
 interface CreateRouteTabProps {
   route: {
@@ -28,6 +29,8 @@ interface CreateRouteTabProps {
     estimatedDuration?: number;
     trafficConditions?: 'light' | 'moderate' | 'heavy';
     usingRealTimeData?: boolean;
+    country?: string;
+    region?: string;
   };
   isSyncingLocations: boolean;
   isLoadConfirmed: boolean;
@@ -51,6 +54,9 @@ interface CreateRouteTabProps {
   selectedVehicle?: string | null;
   onVehicleChange?: (vehicleId: string) => void;
   onReplaceLocation?: (index: number, newLocationId: string) => void;
+  selectedCountry?: string;
+  selectedRegion?: string;
+  onRegionChange?: (country: string, region: string) => void;
 }
 
 const MAX_CYLINDERS = 80;
@@ -79,7 +85,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   vehicles = [],
   selectedVehicle,
   onVehicleChange,
-  onReplaceLocation
+  onReplaceLocation,
+  selectedCountry,
+  selectedRegion,
+  onRegionChange
 }) => {
   const isOverweight = route.cylinders > MAX_CYLINDERS;
 
@@ -110,6 +119,12 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                   />
                 </div>
               </div>
+              {route.region && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mr-4">
+                  <Globe className="h-4 w-4" />
+                  <span>{route.country} - {route.region}</span>
+                </div>
+              )}
               {transformedLocations.length > 0 && (
                 <Button 
                   variant="default" 
@@ -130,6 +145,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                 onEndLocationChange={onEndLocationChange}
                 isLoadingLocations={isSyncingLocations}
                 isDisabled={isLoadConfirmed}
+                selectedCountry={selectedCountry}
+                selectedRegion={selectedRegion}
               />
             </div>
             <div className="h-[400px] mt-4 relative">

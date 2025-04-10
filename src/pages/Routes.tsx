@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, MapPin } from 'lucide-react';
+import { Plus, MapPin, Globe } from 'lucide-react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
 import CreateRouteTab from '@/components/routes/tabs/CreateRouteTab';
@@ -12,6 +12,7 @@ import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManage
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
+import RegionSelectionDialog from '@/components/routes/RegionSelectionDialog';
 
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -41,6 +42,9 @@ const initialLocations: LocationType[] = [
 const RoutesList = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [newLocationDialog, setNewLocationDialog] = useState(false);
+  const [regionSelectionOpen, setRegionSelectionOpen] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
   
   const { vehicles, fetchVehicles } = useVehiclesData();
   
@@ -66,12 +70,20 @@ const RoutesList = () => {
     handleConfirmLoad,
     handleUpdateLocations,
     handleReplaceLocation,
-    setAvailableLocations
+    setAvailableLocations,
+    setRouteRegion
   } = useRouteManagement(initialLocations);
 
   useEffect(() => {
     fetchVehicles();
   }, []);
+
+  useEffect(() => {
+    // Show region selection dialog when creating a new route
+    if (activeTab === 'create' && !isLoadConfirmed && !selectedCountry) {
+      setRegionSelectionOpen(true);
+    }
+  }, [activeTab, isLoadConfirmed]);
 
   const filteredAvailableLocations = useMemo(() => {
     return availableLocations.filter(loc => 
@@ -100,7 +112,9 @@ const RoutesList = () => {
     
     const newLocation = {
       ...location,
-      id: newLocationId
+      id: newLocationId,
+      country: selectedCountry,
+      region: selectedRegion
     };
     
     const updatedLocations = [...availableLocations, newLocation];
@@ -118,6 +132,18 @@ const RoutesList = () => {
     toast.success(vehicleId === "" 
       ? "Vehicle assignment removed" 
       : `Vehicle assigned: ${vehicles.find(v => v.id === vehicleId)?.name}`);
+  };
+
+  const handleRegionChange = (country: string, region: string) => {
+    setSelectedCountry(country);
+    setSelectedRegion(region);
+    setRouteRegion(country, region);
+    toast.success(`Selected region: ${region}, ${country}`);
+  };
+
+  const handleCreateRoute = () => {
+    handleCreateNewRoute();
+    setRegionSelectionOpen(true);
   };
 
   return (
@@ -139,7 +165,11 @@ const RoutesList = () => {
             <MapPin className="h-4 w-4" />
             New Location
           </Button>
-          <Button className="gap-1" onClick={handleCreateNewRoute}>
+          <Button variant="outline" className="gap-2" onClick={() => setRegionSelectionOpen(true)}>
+            <Globe className="h-4 w-4" />
+            Change Region
+          </Button>
+          <Button className="gap-1" onClick={handleCreateRoute}>
             <Plus className="h-4 w-4" />
             New Route
           </Button>
@@ -155,7 +185,11 @@ const RoutesList = () => {
         
         <TabsContent value="create" className="space-y-4">
           <CreateRouteTab
-            route={route}
+            route={{
+              ...route,
+              country: selectedCountry,
+              region: selectedRegion
+            }}
             isSyncingLocations={isSyncingLocations}
             isLoadConfirmed={isLoadConfirmed}
             availableLocations={availableLocations}
@@ -178,6 +212,9 @@ const RoutesList = () => {
             selectedVehicle={selectedVehicle}
             onVehicleChange={handleVehicleChange}
             onReplaceLocation={handleReplaceLocation}
+            selectedCountry={selectedCountry}
+            selectedRegion={selectedRegion}
+            onRegionChange={handleRegionChange}
           />
         </TabsContent>
         
@@ -195,6 +232,12 @@ const RoutesList = () => {
         onOpenChange={setNewLocationDialog}
         location={null}
         onSave={handleSaveNewLocation}
+      />
+
+      <RegionSelectionDialog
+        open={regionSelectionOpen}
+        onOpenChange={setRegionSelectionOpen}
+        onComplete={handleRegionChange}
       />
     </div>
   );

@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { LocationType } from '../locations/LocationEditDialog';
-import { MapPin } from 'lucide-react';
+import { MapPin, Globe } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface RouteEndpointsProps {
   startLocation: LocationType | null;
@@ -14,6 +15,8 @@ interface RouteEndpointsProps {
   onEndLocationChange: (locationId: string) => void;
   isLoadingLocations?: boolean;
   isDisabled?: boolean;
+  selectedCountry?: string;
+  selectedRegion?: string;
 }
 
 const RouteEndpoints = ({
@@ -24,6 +27,8 @@ const RouteEndpoints = ({
   onEndLocationChange,
   isLoadingLocations = false,
   isDisabled = false,
+  selectedCountry,
+  selectedRegion,
 }: RouteEndpointsProps) => {
   // Identify storage/warehouses (Afrox depot, Shell stations)
   const warehouses = availableLocations.filter(loc => 
@@ -38,8 +43,18 @@ const RouteEndpoints = ({
   return (
     <Card className="shadow-sm bg-black">
       <CardHeader>
-        <CardTitle className="text-base text-white">Route Endpoints</CardTitle>
-        <CardDescription className="text-gray-300">Set your starting and ending locations</CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-base text-white">Route Endpoints</CardTitle>
+            <CardDescription className="text-gray-300">Set your starting and ending locations</CardDescription>
+          </div>
+          {selectedRegion && (
+            <div className="flex items-center gap-2 text-white bg-gray-800 px-3 py-1 rounded-md text-sm">
+              <Globe className="h-4 w-4" />
+              <span>{selectedCountry} - {selectedRegion}</span>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
