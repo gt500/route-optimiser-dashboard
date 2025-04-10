@@ -1,0 +1,36 @@
+
+import { useQuery } from "@tanstack/react-query";
+import { MachineData } from "./types";
+
+const fetchMachineData = async (): Promise<MachineData[]> => {
+  try {
+    const response = await fetch('https://g2g-dashboard.aimrxd.com/version-test/api/1.1/obj/SITE_DATA');
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch machine data');
+    }
+    
+    const data = await response.json();
+    return data.response.results
+      .filter((item: any) => !item.SITE_NAME.includes('Food Emporium')) // Enhanced filtering to exclude any Food Emporium
+      .map((item: any) => ({
+        site_name: item.SITE_NAME || 'Unknown Site',
+        machine_name: item.M_CODE || 'Unknown Machine',
+        terminal_id: item.TERMINAL_ID || item.M_CODE || item.SITE_NAME || 'Unknown Terminal', // Use site name as fallback
+        merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
+        cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
+        last_update: item.Modified_Date || new Date().toISOString(),
+      }));
+  } catch (error) {
+    console.error('Error fetching machine data:', error);
+    throw error;
+  }
+};
+
+export const useMachineData = () => {
+  return useQuery({
+    queryKey: ['machineData'],
+    queryFn: fetchMachineData,
+    refetchInterval: 60000, // Refetch every minute
+  });
+};
