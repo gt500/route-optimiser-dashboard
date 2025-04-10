@@ -38,7 +38,7 @@ import {
   FileText, 
   Download,
   FileSpreadsheet,
-  FileText as FilePdf 
+  FileText as FilePdfIcon 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -120,21 +120,35 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [routeStats, setRouteStats] = useState<RouteStats | null>(null);
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
+  const [allRoutes, setAllRoutes] = useState<any[]>([]);
   const { fetchRouteData } = useRouteData();
 
   useEffect(() => {
-    if (open && routeId) {
+    if (open) {
+      const getAllRoutes = async () => {
+        try {
+          const routes = await fetchRouteData();
+          setAllRoutes(routes);
+        } catch (error) {
+          console.error('Error fetching all routes:', error);
+        }
+      };
+      
+      getAllRoutes();
+    }
+  }, [open, fetchRouteData]);
+
+  useEffect(() => {
+    if (open && routeId && allRoutes.length > 0) {
       fetchRouteStatistics();
     }
-  }, [open, routeId, period]);
+  }, [open, routeId, period, allRoutes]);
 
   const fetchRouteStatistics = async () => {
     if (!open) return;
     
     setIsLoading(true);
     try {
-      const allRoutes = await fetchRouteData();
-      
       const routeData = allRoutes.filter(route => 
         route.name.toLowerCase().includes(routeName.toLowerCase()) || 
         route.id === routeId
@@ -162,6 +176,22 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
       const monthRoutes = routeData.filter(route => 
         new Date(route.date) >= monthAgo && new Date(route.date) <= today
       );
+
+      const allDayRoutes = allRoutes.filter(route => 
+        new Date(route.date) >= dayAgo && new Date(route.date) <= today
+      );
+      
+      const allWeekRoutes = allRoutes.filter(route => 
+        new Date(route.date) >= weekAgo && new Date(route.date) <= today
+      );
+      
+      const allMonthRoutes = allRoutes.filter(route => 
+        new Date(route.date) >= monthAgo && new Date(route.date) <= today
+      );
+
+      const dayAverages = calculateAverages(allDayRoutes);
+      const weekAverages = calculateAverages(allWeekRoutes);
+      const monthAverages = calculateAverages(allMonthRoutes);
 
       const timeSeriesData = weekRoutes.map(route => ({
         date: format(new Date(route.date), 'MMM dd'),
@@ -197,26 +227,9 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         { name: 'Partial Loads (<20 cylinders)', value: weekRoutes.length - fullLoadsWeek }
       ];
 
-      const comparisonToOtherRoutes = [
-        { 
-          metric: 'Distance (km)', 
-          value: weekStats.distance, 
-          average: 35, 
-          difference: weekStats.distance - 35 
-        },
-        { 
-          metric: 'Duration (min)', 
-          value: weekStats.duration, 
-          average: 45, 
-          difference: weekStats.duration - 45 
-        },
-        { 
-          metric: 'Cost (R)', 
-          value: weekStats.cost, 
-          average: 280, 
-          difference: weekStats.cost - 280 
-        }
-      ];
+      const dayComparison = createComparisonData(dayStats, dayAverages);
+      const weekComparison = createComparisonData(weekStats, weekAverages);
+      const monthComparison = createComparisonData(monthStats, monthAverages);
 
       setRouteStats({
         day: dayStats,
@@ -225,7 +238,11 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         trends,
         timeSeriesData,
         loadDistribution,
-        comparisonToOtherRoutes
+        comparisonToOtherRoutes: period === 'day' 
+          ? dayComparison 
+          : period === 'week' 
+            ? weekComparison 
+            : monthComparison
       });
 
     } catch (error) {
@@ -234,6 +251,49 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const calculateAverages = (routes: any[]) => {
+    if (!routes.length) {
+      return {
+        distance: 0,
+        duration: 0,
+        cost: 0
+      };
+    }
+
+    const totalDistance = routes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
+    const totalDuration = routes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
+    const totalCost = routes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
+    
+    return {
+      distance: totalDistance / routes.length,
+      duration: Math.round(totalDuration / 60 / routes.length),
+      cost: totalCost / routes.length
+    };
+  };
+
+  const createComparisonData = (stats: any, averages: any) => {
+    return [
+      { 
+        metric: 'Distance (km)', 
+        value: stats.distance, 
+        average: averages.distance, 
+        difference: stats.distance - averages.distance 
+      },
+      { 
+        metric: 'Duration (min)', 
+        value: stats.duration, 
+        average: averages.duration, 
+        difference: stats.duration - averages.duration 
+      },
+      { 
+        metric: 'Cost (R)', 
+        value: stats.cost, 
+        average: averages.cost, 
+        difference: stats.cost - averages.cost 
+      }
+    ];
   };
 
   const calculatePeriodStats = (routes: any[], fullLoads: number, partialLoads: number) => {
@@ -263,7 +323,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
   };
 
   const setMockData = () => {
-    const mockStats: RouteStats = {
+    const baseMockStats = {
       day: {
         deliveries: 2,
         distance: 48,
@@ -290,7 +350,53 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         cylinders: 830,
         fullLoads: 28,
         partialLoads: 14
+      }
+    };
+
+    const mockAverages = {
+      day: {
+        distance: 38,
+        duration: 58,
+        cost: 310
       },
+      week: {
+        distance: 245,
+        duration: 420,
+        cost: 1750
+      },
+      month: {
+        distance: 1100,
+        duration: 1450,
+        cost: 7800
+      }
+    };
+
+    const dayComparison = [
+      { metric: 'Distance (km)', value: 48, average: 38, difference: 10 },
+      { metric: 'Duration (min)', value: 67, average: 58, difference: 9 },
+      { metric: 'Cost (R)', value: 340, average: 310, difference: 30 }
+    ];
+
+    const weekComparison = [
+      { metric: 'Distance (km)', value: 287, average: 245, difference: 42 },
+      { metric: 'Duration (min)', value: 385, average: 420, difference: -35 },
+      { metric: 'Cost (R)', value: 1870, average: 1750, difference: 120 }
+    ];
+
+    const monthComparison = [
+      { metric: 'Distance (km)', value: 1245, average: 1100, difference: 145 },
+      { metric: 'Duration (min)', value: 1680, average: 1450, difference: 230 },
+      { metric: 'Cost (R)', value: 8350, average: 7800, difference: 550 }
+    ];
+
+    const mockComparison = period === 'day' 
+      ? dayComparison 
+      : period === 'week' 
+        ? weekComparison 
+        : monthComparison;
+    
+    const mockStats: RouteStats = {
+      ...baseMockStats,
       trends: {
         deliveries: 'increasing',
         distance: 'stable',
@@ -310,11 +416,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         { name: 'Full Loads (20+ cylinders)', value: 6 },
         { name: 'Partial Loads (<20 cylinders)', value: 4 }
       ],
-      comparisonToOtherRoutes: [
-        { metric: 'Distance (km)', value: 287, average: 245, difference: 42 },
-        { metric: 'Duration (min)', value: 385, average: 420, difference: -35 },
-        { metric: 'Cost (R)', value: 1870, average: 1750, difference: 120 }
-      ]
+      comparisonToOtherRoutes: mockComparison
     };
     
     setRouteStats(mockStats);
@@ -590,7 +692,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
             
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Comparison to Other Routes</CardTitle>
+                <CardTitle className="text-sm">Comparison to Other Routes ({period === 'day' ? 'Last 24 Hours' : period === 'week' ? 'Last 7 Days' : 'Last Month'})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -640,7 +742,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                     <span>Export to Excel</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExportData('pdf')}>
-                    <FilePdf className="h-4 w-4 mr-2" />
+                    <FilePdfIcon className="h-4 w-4 mr-2" />
                     <span>Export to PDF</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
