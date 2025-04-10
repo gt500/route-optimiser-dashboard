@@ -7,13 +7,19 @@ import { toast } from 'sonner';
  * Fetches route data for a specific date range
  */
 export const fetchRoutesByDateRange = async (startDate: Date, endDate: Date) => {
-  console.log('Fetching routes between:', format(startDate, 'yyyy-MM-dd'), 'and', format(endDate, 'yyyy-MM-dd'));
+  // Ensure we're using the full day range for proper filtering
+  const start = startOfDay(startDate);
+  const end = endOfDay(endDate);
+  
+  console.log('Fetching routes between:', 
+    `${format(start, 'yyyy-MM-dd')} ${start.toISOString()}`, 'and', 
+    `${format(end, 'yyyy-MM-dd')} ${end.toISOString()}`);
   
   const { data: routesData, error: routesError } = await supabase
     .from('routes')
     .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
-    .gte('date', startDate.toISOString())
-    .lte('date', endDate.toISOString())
+    .gte('date', start.toISOString())
+    .lte('date', end.toISOString())
     .order('created_at', { ascending: false });
   
   if (routesError) {
@@ -22,6 +28,11 @@ export const fetchRoutesByDateRange = async (startDate: Date, endDate: Date) => 
   }
   
   console.log('Found routes:', routesData?.length || 0);
+  if (routesData && routesData.length > 0) {
+    console.log('First route date:', routesData[0].date);
+    console.log('Last route date:', routesData[routesData.length - 1].date);
+  }
+  
   return routesData || [];
 };
 

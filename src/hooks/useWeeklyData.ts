@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,13 +30,7 @@ export const useWeeklyData = (date: Date | undefined) => {
     fuelCost: 0
   });
 
-  useEffect(() => {
-    if (date) {
-      fetchWeeklyData();
-    }
-  }, [date]);
-
-  const fetchWeeklyData = async () => {
+  const fetchWeeklyData = useCallback(async () => {
     if (!date) return;
     
     setIsLoading(true);
@@ -50,7 +44,9 @@ export const useWeeklyData = (date: Date | undefined) => {
       const adjustedWeekEnd = new Date(weekEnd);
       adjustedWeekEnd.setHours(23, 59, 59, 999);
       
-      console.log('Fetching routes for week between:', format(weekStart, 'yyyy-MM-dd'), 'and', format(adjustedWeekEnd, 'yyyy-MM-dd'));
+      console.log('Fetching routes for week between:', 
+        format(weekStart, 'yyyy-MM-dd'), 'and', 
+        format(adjustedWeekEnd, 'yyyy-MM-dd'));
       
       // Use a more precise date range filtering with ISO strings
       const { data: routesData, error: routesError } = await supabase
@@ -77,7 +73,10 @@ export const useWeeklyData = (date: Date | undefined) => {
           if (!route.date) return false;
           
           // Parse the route date and format it to yyyy-MM-dd for comparison
-          const routeDate = typeof route.date === 'string' ? parseISO(route.date) : new Date(route.date);
+          const routeDate = typeof route.date === 'string' 
+            ? parseISO(route.date) 
+            : new Date(route.date);
+          
           const routeDateStr = format(routeDate, 'yyyy-MM-dd');
           
           return routeDateStr === formattedDateStr;
@@ -123,7 +122,9 @@ export const useWeeklyData = (date: Date | undefined) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [date]);
+
+  // Don't use useEffect here, let the component trigger fetchWeeklyData
 
   return {
     dailySummary,

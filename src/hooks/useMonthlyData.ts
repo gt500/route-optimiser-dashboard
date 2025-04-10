@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { 
   format, 
   startOfMonth, 
@@ -38,13 +38,7 @@ export const useMonthlyData = (date: Date | undefined) => {
     fuelCost: 0
   });
 
-  useEffect(() => {
-    if (date) {
-      fetchMonthlyData();
-    }
-  }, [date]);
-
-  const fetchMonthlyData = async () => {
+  const fetchMonthlyData = useCallback(async () => {
     if (!date) return;
     
     setIsLoading(true);
@@ -58,7 +52,9 @@ export const useMonthlyData = (date: Date | undefined) => {
       const adjustedMonthEnd = new Date(monthEnd);
       adjustedMonthEnd.setHours(23, 59, 59, 999);
       
-      console.log('Fetching routes for month between:', format(monthStart, 'yyyy-MM-dd'), 'and', format(adjustedMonthEnd, 'yyyy-MM-dd'));
+      console.log('Fetching routes for month between:', 
+        format(monthStart, 'yyyy-MM-dd'), 'and', 
+        format(adjustedMonthEnd, 'yyyy-MM-dd'));
       
       // Fetch routes with precise date range filtering using ISO strings
       const { data: routesData, error: routesError } = await supabase
@@ -73,7 +69,10 @@ export const useMonthlyData = (date: Date | undefined) => {
         throw routesError;
       }
       
-      console.log('Found routes for month:', routesData?.length || 0, routesData);
+      console.log('Found routes for month:', routesData?.length || 0);
+      if (routesData && routesData.length > 0) {
+        console.log('Sample route:', routesData[0]);
+      }
       
       // Get all weeks in the month - using weekStartsOn: 1 for Monday start
       const weeksInMonth = eachWeekOfInterval(
@@ -85,35 +84,30 @@ export const useMonthlyData = (date: Date | undefined) => {
       const monthData: MonthlyDataSummary[] = weeksInMonth.map((weekStart, index) => {
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
         
-        // Ensure week boundaries are appropriate for filtering
+        // For comparison, convert dates to yyyy-MM-dd format
         const weekStartFormatted = format(weekStart, 'yyyy-MM-dd');
         const weekEndFormatted = format(weekEnd, 'yyyy-MM-dd');
         
         console.log(`Processing week ${index + 1}: ${weekStartFormatted} to ${weekEndFormatted}`);
         
-        // Filter routes for current week with more precise date comparison
+        // Filter routes for current week
         const weekRoutes = routesData?.filter(route => {
           if (!route.date) return false;
           
-          // Parse the route date and get formatted date string
+          // Parse the route date
           let routeDate;
-          
-          // Handle string dates
           if (typeof route.date === 'string') {
             routeDate = parseISO(route.date);
           } else {
             routeDate = new Date(route.date);
           }
           
-          // Format for comparison - this ensures consistent date handling
+          // Format for comparison
           const routeDateFormatted = format(routeDate, 'yyyy-MM-dd');
           
-          // Check if the route date is within the week
-          const isInWeek = routeDateFormatted >= weekStartFormatted && routeDateFormatted <= weekEndFormatted;
-          
-          if (isInWeek) {
-            console.log(`Route ${route.id} from ${routeDateFormatted} is in week ${index + 1}`);
-          }
+          // Check if route date is within week range
+          const isInWeek = routeDateFormatted >= weekStartFormatted && 
+                          routeDateFormatted <= weekEndFormatted;
           
           return isInWeek;
         }) || [];
@@ -158,7 +152,9 @@ export const useMonthlyData = (date: Date | undefined) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [date]);
+
+  // Don't use useEffect here, let the component trigger fetchMonthlyData
 
   return {
     weeklySummary,

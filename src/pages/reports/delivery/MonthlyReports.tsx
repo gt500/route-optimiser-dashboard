@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { toast } from 'sonner';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import ReportTabs from '@/components/reports/ReportTabs';
 import MonthlyCalendarCard from '@/components/reports/MonthlyCalendarCard';
 import WeeklySummaryTable from '@/components/reports/WeeklySummaryTable';
@@ -10,10 +13,19 @@ import { useMonthlyData } from '@/hooks/useMonthlyData';
 
 const MonthlyReports = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [showAlert, setShowAlert] = useState<boolean>(false);
   
   const { weeklySummary, monthlyTotals, isLoading, fetchMonthlyData } = useMonthlyData(date);
   
-  // Ensure data is fetched on component mount
+  // Ensure data is fetched when date changes
+  useEffect(() => {
+    if (date) {
+      console.log("Fetching monthly reports with date:", format(date, 'yyyy-MM-dd'));
+      fetchMonthlyData();
+    }
+  }, [date, fetchMonthlyData]);
+
+  // Also fetch on component mount to ensure data is loaded
   useEffect(() => {
     if (date) {
       console.log("Initializing monthly reports with date:", format(date, 'yyyy-MM-dd'));
@@ -21,9 +33,22 @@ const MonthlyReports = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // Show alert if no data is found
+    if (!isLoading && weeklySummary.length > 0 && weeklySummary.every(week => week.deliveries === 0)) {
+      setShowAlert(true);
+      toast.warning("No delivery data found for this month", {
+        description: "Try selecting a different month or check your data source"
+      });
+    } else {
+      setShowAlert(false);
+    }
+  }, [weeklySummary, isLoading]);
+
   const handleRefresh = () => {
     console.log("Manually refreshing monthly data");
     fetchMonthlyData();
+    toast.info("Refreshing monthly data");
   };
 
   // Calculate month start and end dates
@@ -37,7 +62,17 @@ const MonthlyReports = () => {
     <div className="space-y-4">
       <ReportTabs defaultValue="monthly" />
       
-      {weeklySummary.length > 0 && (
+      {showAlert && (
+        <Alert variant="warning" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>No Data Found</AlertTitle>
+          <AlertDescription>
+            No delivery data was found for the selected month. Try selecting a different date range.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {weeklySummary.length > 0 && weeklySummary.some(week => week.deliveries > 0) && (
         <ReportMetricsGrid
           totalCylinders={monthlyTotals.cylinders}
           totalDistance={monthlyTotals.kms}
@@ -60,7 +95,7 @@ const MonthlyReports = () => {
             <CardTitle>Monthly Summary: {monthDisplay}</CardTitle>
           </CardHeader>
           <CardContent>
-            {weeklySummary.length > 0 ? (
+            {weeklySummary.length > 0 && weeklySummary.some(week => week.deliveries > 0) ? (
               <WeeklySummaryTable 
                 weeklySummary={weeklySummary}
                 monthlyTotals={monthlyTotals}
