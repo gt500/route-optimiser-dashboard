@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { MoonIcon, SunIcon, CheckCircle, UserCircle, BellRing, Settings2, Globe, MailCheck, Loader2 } from 'lucide-react';
+import { MoonIcon, SunIcon, CheckCircle, UserCircle, BellRing, Settings2, Globe, MailCheck, Loader2, Bell, MessageSquare, Mail, Volume } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
@@ -457,9 +456,12 @@ const SettingsPage = () => {
                         name="emailNotifications"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="email-notifications">Email Notifications</Label>
-                              <p className="text-xs text-muted-foreground">Receive updates and alerts via email.</p>
+                            <div className="flex items-start gap-3">
+                              <Mail className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="email-notifications">Email Notifications</Label>
+                                <p className="text-xs text-muted-foreground">Receive updates and alerts via email.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -477,9 +479,12 @@ const SettingsPage = () => {
                         name="smsNotifications"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="sms-notifications">SMS Notifications</Label>
-                              <p className="text-xs text-muted-foreground">Get important alerts via SMS.</p>
+                            <div className="flex items-start gap-3">
+                              <MessageSquare className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="sms-notifications">SMS Notifications</Label>
+                                <p className="text-xs text-muted-foreground">Get important alerts via SMS.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -497,9 +502,12 @@ const SettingsPage = () => {
                         name="pushNotifications"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="push-notifications">Push Notifications</Label>
-                              <p className="text-xs text-muted-foreground">Allow browser push notifications.</p>
+                            <div className="flex items-start gap-3">
+                              <Bell className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="push-notifications">Push Notifications</Label>
+                                <p className="text-xs text-muted-foreground">Allow browser push notifications.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -522,9 +530,12 @@ const SettingsPage = () => {
                         name="marketingEmails"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                              <p className="text-xs text-muted-foreground">Receive promotional content and offers.</p>
+                            <div className="flex items-start gap-3">
+                              <Mail className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="marketing-emails">Marketing Emails</Label>
+                                <p className="text-xs text-muted-foreground">Receive promotional content and offers.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -542,9 +553,12 @@ const SettingsPage = () => {
                         name="weeklyReports"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="weekly-reports">Weekly Reports</Label>
-                              <p className="text-xs text-muted-foreground">Get a weekly summary of your activity.</p>
+                            <div className="flex items-start gap-3">
+                              <MailCheck className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="weekly-reports">Weekly Reports</Label>
+                                <p className="text-xs text-muted-foreground">Get a weekly summary of your activity.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -567,9 +581,12 @@ const SettingsPage = () => {
                         name="routeNotifications"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="route-notifications">Route Notifications</Label>
-                              <p className="text-xs text-muted-foreground">Get notified about route changes and optimizations.</p>
+                            <div className="flex items-start gap-3">
+                              <Globe className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="route-notifications">Route Notifications</Label>
+                                <p className="text-xs text-muted-foreground">Get notified about route changes and optimizations.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -587,9 +604,12 @@ const SettingsPage = () => {
                         name="deliveryUpdates"
                         render={({ field }) => (
                           <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <Label htmlFor="delivery-updates">Delivery Updates</Label>
-                              <p className="text-xs text-muted-foreground">Receive notifications about delivery status changes.</p>
+                            <div className="flex items-start gap-3">
+                              <Volume className="h-5 w-5 text-primary mt-0.5" />
+                              <div className="space-y-0.5">
+                                <Label htmlFor="delivery-updates">Delivery Updates</Label>
+                                <p className="text-xs text-muted-foreground">Receive notifications about delivery status changes.</p>
+                              </div>
                             </div>
                             <FormControl>
                               <Switch 
@@ -605,7 +625,12 @@ const SettingsPage = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="justify-end">
-                  <Button className="flex items-center gap-2" type="submit" disabled={isSavingNotifications}>
+                  <Button 
+                    className="flex items-center gap-2" 
+                    type="submit" 
+                    disabled={isSavingNotifications}
+                    variant="default"
+                  >
                     {isSavingNotifications ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -613,7 +638,7 @@ const SettingsPage = () => {
                       </>
                     ) : (
                       <>
-                        <MailCheck className="h-4 w-4" />
+                        <BellRing className="h-4 w-4" />
                         Save Notification Preferences
                       </>
                     )}
