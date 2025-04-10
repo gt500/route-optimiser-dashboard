@@ -61,19 +61,19 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           </CardTitle>
           <div className="flex flex-col space-y-2">
             <Button 
-              variant={activeChart === 'optimization' ? 'default' : 'outline'} 
+              variant="default"
               size="sm"
               onClick={() => setActiveChart('optimization')}
-              className="h-8 px-3 text-xs flex items-center gap-1 w-full"
+              className={`h-8 px-3 text-xs flex items-center gap-1 w-full ${activeChart !== 'optimization' && 'bg-transparent text-white hover:bg-gray-800 border border-gray-700'}`}
             >
               <Route className="h-3 w-3" />
               Optimization
             </Button>
             <Button 
-              variant={activeChart === 'distribution' ? 'default' : 'outline'} 
+              variant="default" 
               size="sm"
               onClick={() => setActiveChart('distribution')}
-              className="h-8 px-3 text-xs flex items-center gap-1 w-full"
+              className={`h-8 px-3 text-xs flex items-center gap-1 w-full ${activeChart !== 'distribution' && 'bg-transparent text-white hover:bg-gray-800 border border-gray-700'}`}
             >
               <Package className="h-3 w-3" />
               Distribution
