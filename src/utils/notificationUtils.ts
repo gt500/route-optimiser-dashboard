@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -23,7 +24,23 @@ export const sendNotification = async ({
   category = "general"
 }: SendNotificationOptions): Promise<boolean> => {
   try {
+    const startTime = Date.now();
     console.log(`Calling send-notification edge function for ${type} notification...`);
+    
+    // Validate inputs
+    if (!email || !subject || !message) {
+      const missingFields = [];
+      if (!email) missingFields.push('email');
+      if (!subject) missingFields.push('subject');
+      if (!message) missingFields.push('message');
+      
+      const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
+      console.error(errorMsg);
+      toast.error(`Failed to send ${type} notification`, {
+        description: errorMsg
+      });
+      return false;
+    }
     
     const { data, error } = await supabase.functions.invoke("send-notification", {
       body: {
@@ -35,10 +52,21 @@ export const sendNotification = async ({
       }
     });
 
+    const endTime = Date.now();
+    console.log(`Edge function call completed in ${endTime - startTime}ms`);
+    
     if (error) {
-      console.error("Error sending notification:", error);
+      console.error("Error from edge function:", error);
       toast.error(`Failed to send ${type} notification`, {
         description: error.message || "An unexpected error occurred"
+      });
+      return false;
+    }
+    
+    if (data && !data.success) {
+      console.error("Error response from edge function:", data);
+      toast.error(`Failed to send ${type} notification`, {
+        description: data.error || "The server returned an error"
       });
       return false;
     }
@@ -159,9 +187,9 @@ export const notifyUser = async ({
     );
     
     // Send notifications for all enabled types
-    enabledTypes
-      .filter(({ enabled }) => enabled)
-      .forEach(async ({ type }) => {
+    for (const { type, enabled } of enabledTypes.filter(({ enabled }) => enabled)) {
+      console.log(`Sending ${type} notification for category ${category} to user ${userId}`);
+      try {
         await sendNotification({
           email,
           subject,
@@ -169,7 +197,10 @@ export const notifyUser = async ({
           type,
           category
         });
-      });
+      } catch (error) {
+        console.error(`Error sending ${type} notification:`, error);
+      }
+    }
   } catch (error) {
     console.error("Error in notifyUser:", error);
   }

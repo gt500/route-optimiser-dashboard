@@ -2,7 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "npm:resend@1.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +26,40 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, subject, message, type, category = "general" }: EmailNotificationRequest = await req.json();
+    console.log("Request received in send-notification function");
+    
+    // Check if RESEND_API_KEY is configured
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "RESEND_API_KEY is not configured in environment variables" 
+        }),
+        {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+          status: 500,
+        }
+      );
+    }
+
+    // Parse the request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log("Request body parsed successfully:", requestBody);
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid JSON in request body" }),
+        {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+          status: 400,
+        }
+      );
+    }
+
+    const { email, subject, message, type, category = "general" }: EmailNotificationRequest = requestBody;
 
     console.log(`Processing ${type} notification to ${email} with subject: ${subject}`);
     
@@ -52,25 +86,39 @@ const handler = async (req: Request): Promise<Response> => {
       
       console.log(`Sending email using template for category: ${category}`);
       
-      // Send email notification using Resend
-      const { data, error } = await resend.emails.send({
-        from: "Route Optimizer <notifications@routeoptimizer.app>",
-        to: [email],
-        subject: subject,
-        html: template,
-      });
+      try {
+        // Send email notification using Resend
+        const { data, error } = await resend.emails.send({
+          from: "Route Optimizer <notifications@routeoptimizer.app>",
+          to: [email],
+          subject: subject,
+          html: template,
+        });
 
-      if (error) {
-        console.error("Resend API error:", error);
-        throw new Error(`Failed to send email: ${error.message}`);
+        if (error) {
+          console.error("Resend API error:", error);
+          throw new Error(`Failed to send email: ${error.message}`);
+        }
+
+        console.log("Email sent successfully:", data);
+
+        return new Response(JSON.stringify({ success: true, data }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+          status: 200,
+        });
+      } catch (emailError) {
+        console.error("Error sending email with Resend:", emailError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: emailError instanceof Error ? emailError.message : "Unknown email sending error" 
+          }),
+          {
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+            status: 500,
+          }
+        );
       }
-
-      console.log("Email sent successfully:", data);
-
-      return new Response(JSON.stringify({ success: true, data }), {
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-        status: 200,
-      });
     } else if (type === "sms") {
       // For SMS, we'd integrate with Twilio here
       // This is a placeholder for the SMS implementation
