@@ -1,84 +1,60 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Globe } from 'lucide-react';
-import { LocationType } from '@/types/location';
-import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
+import { Plus } from 'lucide-react';
 
 interface RegionFieldsProps {
-  formData: LocationType;
-  handleCountryChange: (value: string) => void;
-  handleRegionChange: (value: string) => void;
-  openAddRegionDialog: () => void;
+  region: string | undefined;
+  country: string | undefined;
+  onRegionChange: (value: string) => void;
+  onCountryChange: (value: string) => void;
+  onAddRegionDialogOpen?: () => void;
 }
 
-const RegionFields = ({ 
-  formData, 
-  handleCountryChange, 
-  handleRegionChange,
-  openAddRegionDialog
-}: RegionFieldsProps) => {
-  const countryRegions = getStoredCountryRegions();
-  const selectedCountry = formData.country || '';
-  const regions = countryRegions.find(cr => cr.country === selectedCountry)?.regions || [];
-
+const RegionFields: React.FC<RegionFieldsProps> = ({
+  region,
+  country,
+  onRegionChange,
+  onCountryChange,
+  onAddRegionDialogOpen
+}) => {
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <Label htmlFor="country">Country</Label>
-        <Select
-          value={selectedCountry}
-          onValueChange={handleCountryChange}
-        >
-          <SelectTrigger id="country" className="w-full">
-            <SelectValue placeholder="Select country" />
-          </SelectTrigger>
-          <SelectContent>
-            {countryRegions.map((item) => (
-              <SelectItem key={item.country} value={item.country}>
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  {item.country}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input 
+          id="country" 
+          name="country" 
+          value={country || ''} 
+          onChange={(e) => onCountryChange(e.target.value)}
+          placeholder="Enter country"
+        />
       </div>
-
-      <div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="region">Region</Label>
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="sm" 
-            onClick={openAddRegionDialog}
-            disabled={!selectedCountry}
-            className="h-8 px-2"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Region
-          </Button>
+      <div className="space-y-2">
+        <Label htmlFor="region">Region</Label>
+        <div className="flex gap-2">
+          <Input 
+            id="region" 
+            name="region" 
+            value={region || ''} 
+            onChange={(e) => onRegionChange(e.target.value)}
+            placeholder="Enter region"
+            className="flex-1"
+          />
+          {onAddRegionDialogOpen && (
+            <Button 
+              type="button" 
+              variant="outline"
+              size="icon"
+              onClick={onAddRegionDialogOpen}
+              title="Add new region"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-        <Select
-          value={formData.region || ''}
-          onValueChange={handleRegionChange}
-          disabled={!selectedCountry || regions.length === 0}
-        >
-          <SelectTrigger id="region" className="w-full">
-            <SelectValue placeholder={!selectedCountry ? "Select country first" : "Select region"} />
-          </SelectTrigger>
-          <SelectContent>
-            {regions.map((region) => (
-              <SelectItem key={region} value={region}>
-                {region}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
     </div>
   );

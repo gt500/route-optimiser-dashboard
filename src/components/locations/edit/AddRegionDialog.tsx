@@ -4,84 +4,83 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getStoredCountryRegions, saveCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 import { toast } from 'sonner';
 
 interface AddRegionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  country: string;
-  onAddRegion: (region: string) => void;
+  existingRegions: string[];
+  onRegionAdded: (region: string, country: string) => void;
 }
 
-const AddRegionDialog = ({ open, onOpenChange, country, onAddRegion }: AddRegionDialogProps) => {
-  const [newRegion, setNewRegion] = useState('');
+const AddRegionDialog: React.FC<AddRegionDialogProps> = ({
+  open,
+  onOpenChange,
+  existingRegions,
+  onRegionAdded
+}) => {
+  const [region, setRegion] = useState('');
+  const [country, setCountry] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newRegion.trim()) {
-      toast.error("Please enter a region name");
+    if (!region.trim()) {
+      toast.error('Please enter a region name');
       return;
     }
     
-    const countryRegions = getStoredCountryRegions();
-    const countryIndex = countryRegions.findIndex(cr => cr.country === country);
-    
-    if (countryIndex >= 0) {
-      // Check if region already exists
-      if (countryRegions[countryIndex].regions.includes(newRegion.trim())) {
-        toast.error(`Region "${newRegion}" already exists for ${country}`);
-        return;
-      }
-      
-      // Add region to existing country
-      countryRegions[countryIndex].regions.push(newRegion.trim());
-    } else {
-      // Add new country with region
-      countryRegions.push({
-        country,
-        regions: [newRegion.trim()]
-      });
+    if (!country.trim()) {
+      toast.error('Please enter a country name');
+      return;
     }
     
-    // Save updated regions
-    saveCountryRegions(countryRegions);
+    if (existingRegions.includes(region.trim())) {
+      toast.error(`Region "${region}" already exists`);
+      return;
+    }
     
-    // Notify parent component
-    onAddRegion(newRegion);
-    
-    // Reset form and close dialog
-    setNewRegion('');
+    onRegionAdded(region.trim(), country.trim());
+    setRegion('');
+    setCountry('');
     onOpenChange(false);
-    
-    toast.success(`Added "${newRegion}" to ${country} regions`);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle>Add New Region</DialogTitle>
           <DialogDescription>
-            Add a new region for {country}
+            Create a new region for organizing locations
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-region">Region Name</Label>
+          <div>
+            <Label htmlFor="country">Country</Label>
             <Input 
-              id="new-region" 
-              value={newRegion} 
-              onChange={(e) => setNewRegion(e.target.value)}
+              id="country" 
+              value={country} 
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Enter country name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="region">Region Name</Label>
+            <Input 
+              id="region" 
+              value={region} 
+              onChange={(e) => setRegion(e.target.value)}
               placeholder="Enter region name"
             />
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">Add Region</Button>
+          <DialogFooter className="pt-4">
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Save Region</Button>
           </DialogFooter>
         </form>
       </DialogContent>

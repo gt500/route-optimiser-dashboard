@@ -41,7 +41,9 @@ export const fetchLocationsFromAPI = async (): Promise<LocationInfo[]> => {
           fullCylinders: locationType === 'Storage' ? 75 : 0,
           emptyCylinders: locationType === 'Customer' ? 15 : 0,
           open_time: item.open_time || '08:00',
-          close_time: item.close_time || '17:00'
+          close_time: item.close_time || '17:00',
+          region: item.region || '',
+          country: item.country || ''
         };
       });
       
@@ -64,7 +66,9 @@ export const saveLocationToAPI = async (location: LocationType): Promise<boolean
       longitude: location.long,
       type: location.type,
       open_time: location.open_time || '08:00',
-      close_time: location.close_time || '17:00'
+      close_time: location.close_time || '17:00',
+      region: location.region || null,
+      country: location.country || null
     };
     
     console.log('Location data to save:', locationData);
