@@ -30,7 +30,7 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
       .map((item: any) => ({
         site_name: item.SITE_NAME || 'Unknown Site',
         machine_name: item.M_CODE || 'Unknown Machine',
-        terminal_id: item.TERMINAL_ID || item.M_CODE || 'Unknown Terminal',
+        terminal_id: item.TERMINAL_ID || item.M_CODE || item.SITE_NAME || 'Unknown Terminal', // Use site name as fallback
         merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
         cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
         last_update: item.Modified_Date || new Date().toISOString(),
