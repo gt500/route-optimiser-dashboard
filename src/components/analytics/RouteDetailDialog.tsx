@@ -25,11 +25,32 @@ import {
   Pie, 
   Cell 
 } from 'recharts';
-import { ArrowDown, ArrowUp, Calendar, Clock, Fuel, MapPin, Package, TruckIcon, Route, RefreshCw } from 'lucide-react';
+import { 
+  ArrowDown, 
+  ArrowUp, 
+  Calendar, 
+  Clock, 
+  Fuel, 
+  MapPin, 
+  Package, 
+  TruckIcon, 
+  Route, 
+  RefreshCw, 
+  FileText, 
+  Download,
+  FileSpreadsheet,
+  FilePdf 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { COLORS } from './data/routeLegendData';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { Separator } from '@/components/ui/separator';
+import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
+import { toast } from 'sonner';
+
+// Define full load threshold
+const FULL_LOAD_THRESHOLD = 20;
 
 interface RouteDetailDialogProps {
   open: boolean;
@@ -158,10 +179,10 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
       }));
 
       // Calculate load distribution (full vs partial loads)
-      // For this example, we'll consider routes with more than 5 cylinders as "full loads"
-      const fullLoadsDay = dayRoutes.filter(route => (route.total_cylinders || 0) > 5).length;
-      const fullLoadsWeek = weekRoutes.filter(route => (route.total_cylinders || 0) > 5).length;
-      const fullLoadsMonth = monthRoutes.filter(route => (route.total_cylinders || 0) > 5).length;
+      // Now using the FULL_LOAD_THRESHOLD (20+ cylinders) to determine full loads
+      const fullLoadsDay = dayRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
+      const fullLoadsWeek = weekRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
+      const fullLoadsMonth = monthRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
 
       // Route statistics for different time periods
       const dayStats = calculatePeriodStats(dayRoutes, fullLoadsDay, dayRoutes.length - fullLoadsDay);
@@ -185,8 +206,8 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
 
       // Format load distribution for pie chart
       const loadDistribution = [
-        { name: 'Full Loads', value: fullLoadsWeek },
-        { name: 'Partial Loads', value: weekRoutes.length - fullLoadsWeek }
+        { name: 'Full Loads (20+ cylinders)', value: fullLoadsWeek },
+        { name: 'Partial Loads (<20 cylinders)', value: weekRoutes.length - fullLoadsWeek }
       ];
 
       // Compare this route to others (mock comparison for now)
@@ -259,13 +280,14 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
 
   // Set mock data for testing
   const setMockData = () => {
+    // In our mock data, we'll maintain the FULL_LOAD_THRESHOLD value as the basis for our mock data
     const mockStats: RouteStats = {
       day: {
         deliveries: 2,
         distance: 48,
         duration: 67,
         cost: 340,
-        cylinders: 12,
+        cylinders: 42, // Adjusted to be more realistic
         fullLoads: 1,
         partialLoads: 1
       },
@@ -274,7 +296,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         distance: 287,
         duration: 385,
         cost: 1870,
-        cylinders: 67,
+        cylinders: 185, // Adjusted
         fullLoads: 6,
         partialLoads: 4
       },
@@ -283,7 +305,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         distance: 1245,
         duration: 1680,
         cost: 8350,
-        cylinders: 295,
+        cylinders: 830, // Adjusted
         fullLoads: 28,
         partialLoads: 14
       },
@@ -303,8 +325,8 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         { date: 'May 07', deliveries: 1, distance: 36, cost: 230 }
       ],
       loadDistribution: [
-        { name: 'Full Loads', value: 6 },
-        { name: 'Partial Loads', value: 4 }
+        { name: 'Full Loads (20+ cylinders)', value: 6 },
+        { name: 'Partial Loads (<20 cylinders)', value: 4 }
       ],
       comparisonToOtherRoutes: [
         { metric: 'Distance (km)', value: 287, average: 245, difference: 42 },
@@ -327,6 +349,45 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
       return <ArrowDown className={`h-4 w-4 ${isGoodTrend ? 'text-green-500' : 'text-red-500'}`} />;
     }
     return null;
+  };
+
+  // Handler for exporting data
+  const handleExportData = (format: 'excel' | 'pdf') => {
+    if (!routeStats || !currentStats) {
+      toast.error('No data available to export');
+      return;
+    }
+
+    const exportData = [
+      {
+        siteName: routeName,
+        deliveries: currentStats.deliveries,
+        cylinders: currentStats.cylinders,
+        kms: currentStats.distance,
+        fuelCost: currentStats.cost,
+        fullLoads: currentStats.fullLoads,
+        partialLoads: currentStats.partialLoads,
+        duration: currentStats.duration
+      }
+    ];
+
+    try {
+      if (format === 'excel') {
+        exportToExcel(exportData, `${routeName.replace(/\s/g, '_')}_${period}_data`);
+        toast.success('Data exported to Excel successfully');
+      } else {
+        exportToPDF(
+          exportData, 
+          `${routeName.replace(/\s/g, '_')}_${period}_data`,
+          `${routeName} Route Analysis - ${period.charAt(0).toUpperCase() + period.slice(1)}`,
+          new Date()
+        );
+        toast.success('Data exported to PDF successfully');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data');
+    }
   };
 
   return (
@@ -394,11 +455,11 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                   
                   {currentStats && currentStats.fullLoads > currentStats.partialLoads ? (
                     <span>
-                      {' '}This route primarily serves full load deliveries, suggesting efficient route planning.
+                      {' '}This route primarily serves full load deliveries (20+ cylinders), suggesting efficient route planning.
                     </span>
                   ) : (
                     <span>
-                      {' '}This route has more partial load deliveries, suggesting more frequent replenishments.
+                      {' '}This route has more partial load deliveries (&lt;20 cylinders), suggesting more frequent replenishments.
                     </span>
                   )}
                 </p>
@@ -591,14 +652,30 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               </CardContent>
             </Card>
             
-            {/* Additional info/action buttons */}
+            {/* Export buttons */}
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
-              <Button variant="default" onClick={() => console.log('Export data')}>
-                Export Data
-              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Data
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleExportData('excel')}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <span>Export to Excel</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportData('pdf')}>
+                    <FilePdf className="h-4 w-4 mr-2" />
+                    <span>Export to PDF</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         ) : (

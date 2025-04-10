@@ -18,6 +18,9 @@ import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
 
+// Define full load threshold consistently across components
+const FULL_LOAD_THRESHOLD = 20;
+
 interface RouteEfficiencyChartProps {
   isLoading: boolean;
   onRouteLegendOpen: () => void;
@@ -34,6 +37,16 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
     setSelectedRoute(route);
     setRouteDetailOpen(true);
   };
+
+  // Chart data with cylinders data included to help with full/partial load analysis
+  const chartData = [
+    { name: 'Route 1', time: 45, distance: 32, cost: 280, cylinders: 24 }, // Full load
+    { name: 'Route 2', time: 38, distance: 27, cost: 230, cylinders: 18 }, // Partial load
+    { name: 'Route 3', time: 52, distance: 40, cost: 320, cylinders: 32 }, // Full load
+    { name: 'Route 4', time: 32, distance: 22, cost: 180, cylinders: 15 }, // Partial load
+    { name: 'Route 5', time: 42, distance: 30, cost: 260, cylinders: 22 }, // Full load
+    { name: 'Route 6', time: 60, distance: 48, cost: 350, cylinders: 28 }, // Full load
+  ];
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-300">
@@ -55,7 +68,8 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
           </HoverCardTrigger>
           <HoverCardContent side="left" className="w-64">
             <p className="text-sm">
-              Click for detailed explanation of each route in the performance chart
+              Click for detailed explanation of each route in the performance chart. 
+              Routes with 20+ cylinders are considered full loads.
             </p>
           </HoverCardContent>
         </HoverCard>
@@ -64,14 +78,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={[
-                { name: 'Route 1', time: 45, distance: 32, cost: 280 },
-                { name: 'Route 2', time: 38, distance: 27, cost: 230 },
-                { name: 'Route 3', time: 52, distance: 40, cost: 320 },
-                { name: 'Route 4', time: 32, distance: 22, cost: 180 },
-                { name: 'Route 5', time: 42, distance: 30, cost: 260 },
-                { name: 'Route 6', time: 60, distance: 48, cost: 350 },
-              ]}
+              data={chartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
@@ -85,11 +92,18 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)'
                 }} 
+                formatter={(value, name) => {
+                  if (name === 'cylinders') {
+                    return [`${value} (${value >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
+                  }
+                  return [`${value}`, name];
+                }}
               />
               <Legend />
               <Bar yAxisId="left" dataKey="time" name="Time (min)" fill="#0088FE" radius={[4, 4, 0, 0]} />
               <Bar yAxisId="left" dataKey="distance" name="Distance (km)" fill="#00C49F" radius={[4, 4, 0, 0]} />
               <Bar yAxisId="right" dataKey="cost" name="Cost (R)" fill="#FFBB28" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="left" dataKey="cylinders" name="Cylinders" fill="#FF8042" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
