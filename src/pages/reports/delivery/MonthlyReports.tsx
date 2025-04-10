@@ -43,6 +43,7 @@ const MonthlyReports = () => {
           setDate={setDate}
           isLoading={isLoading}
           onRefresh={handleRefresh}
+          weeklySummary={weeklySummary}
         />
 
         <Card className="col-span-1 md:col-span-2">

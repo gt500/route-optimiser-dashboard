@@ -43,6 +43,7 @@ const WeeklyReports = () => {
           setDate={setDate}
           isLoading={isLoading}
           onRefresh={handleRefresh}
+          dailySummary={dailySummary}
         />
 
         <Card className="col-span-1 md:col-span-2">
