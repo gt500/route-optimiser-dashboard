@@ -81,51 +81,60 @@ const MachineGrid = ({
   };
 
   const handleAddRegion = (country: string, newRegion: string) => {
-    try {
-      setCountryRegions(prevRegions => {
-        // Check if region already exists
-        const countryIndex = prevRegions.findIndex(item => item.country === country);
-        if (countryIndex === -1) {
-          toast({
-            title: "Error",
-            description: `Country ${country} not found`,
-            variant: "destructive",
-          });
-          return prevRegions;
-        }
-        
-        const countryItem = prevRegions[countryIndex];
-        if (countryItem.regions.includes(newRegion)) {
-          toast({
-            title: "Region exists",
-            description: `${newRegion} already exists in ${country}`,
-            variant: "destructive",
-          });
-          return prevRegions;
-        }
-        
-        // Add the new region
-        const updatedRegions = [...prevRegions];
-        updatedRegions[countryIndex] = { 
-          ...countryItem, 
-          regions: [...countryItem.regions, newRegion] 
-        };
-        
-        toast({
-          title: "Region added",
-          description: `Added ${newRegion} to ${country}`,
-        });
-        
-        return updatedRegions;
-      });
-    } catch (error) {
-      console.error("Error adding region:", error);
+    // Validate inputs before proceeding
+    if (!country || !newRegion) {
       toast({
         title: "Error",
-        description: "Failed to add the region. Please try again.",
+        description: "Country and region must be provided",
         variant: "destructive",
       });
+      return;
     }
+
+    setCountryRegions(prevRegions => {
+      // Find country index
+      const countryIndex = prevRegions.findIndex(item => item.country === country);
+      
+      // If country doesn't exist
+      if (countryIndex === -1) {
+        toast({
+          title: "Error",
+          description: `Country "${country}" not found`,
+          variant: "destructive",
+        });
+        return prevRegions;
+      }
+      
+      // Check if region already exists
+      const countryItem = prevRegions[countryIndex];
+      if (countryItem.regions.includes(newRegion)) {
+        toast({
+          title: "Duplicate Region",
+          description: `Region "${newRegion}" already exists in ${country}`,
+          variant: "destructive",
+        });
+        return prevRegions;
+      }
+      
+      // Add the new region - Create a new array to ensure proper state update
+      const updatedRegions = [...prevRegions];
+      updatedRegions[countryIndex] = { 
+        ...countryItem, 
+        regions: [...countryItem.regions, newRegion]
+      };
+      
+      toast({
+        title: "Region Added",
+        description: `Added "${newRegion}" to ${country}`,
+      });
+      
+      // Close dialog after successful addition
+      setTimeout(() => {
+        setIsAddRegionOpen(false);
+      }, 0);
+      
+      return updatedRegions;
+    });
   };
 
   if (isLoading) {

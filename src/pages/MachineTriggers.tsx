@@ -10,6 +10,10 @@ import { MachineData } from "@/components/machine-triggers/types";
 // This is outside the component to persist across navigation
 const globalAcknowledgedAlerts: Record<string, { time: string, user: string }> = {};
 
+// Create a global function to check for low stock alerts
+// This allows other components to trigger alerts
+let globalCheckLowStock: ((forceCheck?: boolean) => void) | null = null;
+
 const MachineTriggers = () => {
   const [lowStockAlert, setLowStockAlert] = useState<MachineData | null>(null);
   const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<Record<string, { time: string, user: string }>>(globalAcknowledgedAlerts);
@@ -19,19 +23,34 @@ const MachineTriggers = () => {
   const { data: machineData, isLoading, error } = useMachineData();
 
   // Check for low stock levels
-  useEffect(() => {
+  const checkLowStock = (forceCheck = false) => {
     if (machineData) {
       const lowStockMachine = machineData.find(machine => 
         machine.cylinder_stock <= 7 && 
-        !acknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`]
+        !globalAcknowledgedAlerts[`${machine.site_name}-${machine.terminal_id}`]
       );
       
-      if (lowStockMachine && !isAlertOpen) {
+      if (lowStockMachine && (!isAlertOpen || forceCheck)) {
         setLowStockAlert(lowStockMachine);
         setIsAlertOpen(true);
       }
     }
-  }, [machineData, acknowledgedAlerts, isAlertOpen]);
+  };
+
+  // Assign the check function to the global variable
+  useEffect(() => {
+    globalCheckLowStock = checkLowStock;
+    
+    // Clean up
+    return () => {
+      globalCheckLowStock = null;
+    };
+  }, [machineData, isAlertOpen]);
+
+  // Run the check whenever data changes
+  useEffect(() => {
+    checkLowStock();
+  }, [machineData, acknowledgedAlerts]);
 
   const handleAcknowledgeAlert = () => {
     if (lowStockAlert) {
@@ -85,6 +104,13 @@ const MachineTriggers = () => {
       />
     </div>
   );
+};
+
+// Export the global check function to be used by other components
+export const triggerLowStockCheck = () => {
+  if (globalCheckLowStock) {
+    globalCheckLowStock(true);
+  }
 };
 
 export default MachineTriggers;

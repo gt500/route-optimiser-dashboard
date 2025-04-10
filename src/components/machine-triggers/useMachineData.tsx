@@ -20,6 +20,8 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
         merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
         cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
         last_update: item.Modified_Date || new Date().toISOString(),
+        country: item.COUNTRY || 'South Africa', // Add country info
+        region: item.REGION || 'Western Cape', // Add region info
       }));
   } catch (error) {
     console.error('Error fetching machine data:', error);
@@ -32,5 +34,7 @@ export const useMachineData = () => {
     queryKey: ['machineData'],
     queryFn: fetchMachineData,
     refetchInterval: 60000, // Refetch every minute
+    staleTime: 30000, // Consider data stale after 30 seconds
+    retry: 3, // Retry failed requests 3 times
   });
 };
