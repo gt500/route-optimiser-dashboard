@@ -153,6 +153,7 @@ export const fetchLocationsByIds = async (locationIds: string[]) => {
     }
     
     // If we get here, we successfully fetched locations with region and country
+    // Check if the data actually has these fields by examining the first item
     const hasRegionCountry = data && data.length > 0 && 
       (data[0].region !== undefined || data[0].country !== undefined);
     
