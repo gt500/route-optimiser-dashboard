@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, subDays, subWeeks, subMonths } from 'date-fns';
 import { 
@@ -149,6 +150,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     
     setIsLoading(true);
     try {
+      // Filter routes for the specific route we're viewing
       const routeData = allRoutes.filter(route => 
         route.name.toLowerCase().includes(routeName.toLowerCase()) || 
         route.id === routeId
@@ -156,7 +158,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
 
       if (!routeData.length) {
         console.log('No route data found for route:', routeId, routeName);
-        setMockData();
         return;
       }
 
@@ -165,6 +166,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
       const weekAgo = subWeeks(today, 1);
       const monthAgo = subMonths(today, 1);
 
+      // Filter by time period for THIS specific route
       const dayRoutes = routeData.filter(route => 
         new Date(route.date) >= dayAgo && new Date(route.date) <= today
       );
@@ -177,6 +179,13 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         new Date(route.date) >= monthAgo && new Date(route.date) <= today
       );
 
+      console.log(`Route ${routeName} data counts:`, {
+        dayRoutes: dayRoutes.length,
+        weekRoutes: weekRoutes.length,
+        monthRoutes: monthRoutes.length
+      });
+      
+      // Filter ALL routes by time period (for comparison)
       const allDayRoutes = allRoutes.filter(route => 
         new Date(route.date) >= dayAgo && new Date(route.date) <= today
       );
@@ -189,48 +198,96 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         new Date(route.date) >= monthAgo && new Date(route.date) <= today
       );
 
+      // Calculate averages for ALL routes for each time period
       const dayAverages = calculateAverages(allDayRoutes);
       const weekAverages = calculateAverages(allWeekRoutes);
       const monthAverages = calculateAverages(allMonthRoutes);
 
-      const timeSeriesData = weekRoutes.map(route => ({
-        date: format(new Date(route.date), 'MMM dd'),
-        deliveries: 1,
-        distance: route.total_distance || 0,
-        cost: route.estimated_cost || 0
-      }));
+      console.log('Period-specific averages:', {
+        dayAverages,
+        weekAverages,
+        monthAverages
+      });
 
+      // Create time series data based on the selected period's routes
+      const timeSeriesData = createTimeSeriesData(period === 'day' ? dayRoutes : 
+                                                period === 'week' ? weekRoutes : 
+                                                monthRoutes, period);
+
+      // Calculate full/partial loads for each period
       const fullLoadsDay = dayRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
       const fullLoadsWeek = weekRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
       const fullLoadsMonth = monthRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
 
+      // Calculate statistics for each period
       const dayStats = calculatePeriodStats(dayRoutes, fullLoadsDay, dayRoutes.length - fullLoadsDay);
       const weekStats = calculatePeriodStats(weekRoutes, fullLoadsWeek, weekRoutes.length - fullLoadsWeek);
       const monthStats = calculatePeriodStats(monthRoutes, fullLoadsMonth, monthRoutes.length - fullLoadsMonth);
-
+      
+      // Get previous period data for trend calculation
       const prevWeekAgo = subWeeks(weekAgo, 1);
+      const prevDayAgo = subDays(dayAgo, 1);
+      const prevMonthAgo = subMonths(monthAgo, 1);
+      
+      const prevDayRoutes = routeData.filter(route => 
+        new Date(route.date) >= prevDayAgo && new Date(route.date) < dayAgo
+      );
+      
       const prevWeekRoutes = routeData.filter(route => 
         new Date(route.date) >= prevWeekAgo && new Date(route.date) < weekAgo
       );
       
-      const prevWeekStats = calculatePeriodStats(prevWeekRoutes, 0, 0);
+      const prevMonthRoutes = routeData.filter(route => 
+        new Date(route.date) >= prevMonthAgo && new Date(route.date) < monthAgo
+      );
       
+      // Calculate previous period stats
+      const prevDayStats = calculatePeriodStats(prevDayRoutes, 0, 0);
+      const prevWeekStats = calculatePeriodStats(prevWeekRoutes, 0, 0);
+      const prevMonthStats = calculatePeriodStats(prevMonthRoutes, 0, 0);
+      
+      // Calculate trends based on the currently selected period
       const trends = {
-        deliveries: calculateTrend(weekStats.deliveries, prevWeekStats.deliveries),
-        distance: calculateTrend(weekStats.distance, prevWeekStats.distance),
-        duration: calculateTrend(weekStats.duration, prevWeekStats.duration),
-        cost: calculateTrend(weekStats.cost, prevWeekStats.cost)
+        deliveries: period === 'day' ? calculateTrend(dayStats.deliveries, prevDayStats.deliveries) :
+                    period === 'week' ? calculateTrend(weekStats.deliveries, prevWeekStats.deliveries) :
+                    calculateTrend(monthStats.deliveries, prevMonthStats.deliveries),
+        distance: period === 'day' ? calculateTrend(dayStats.distance, prevDayStats.distance) :
+                  period === 'week' ? calculateTrend(weekStats.distance, prevWeekStats.distance) :
+                  calculateTrend(monthStats.distance, prevMonthStats.distance),
+        duration: period === 'day' ? calculateTrend(dayStats.duration, prevDayStats.duration) :
+                  period === 'week' ? calculateTrend(weekStats.duration, prevWeekStats.duration) :
+                  calculateTrend(monthStats.duration, prevMonthStats.duration),
+        cost: period === 'day' ? calculateTrend(dayStats.cost, prevDayStats.cost) :
+              period === 'week' ? calculateTrend(weekStats.cost, prevWeekStats.cost) :
+              calculateTrend(monthStats.cost, prevMonthStats.cost)
       };
 
+      // Create load distribution data based on current period
+      const currentFullLoads = period === 'day' ? fullLoadsDay :
+                              period === 'week' ? fullLoadsWeek :
+                              fullLoadsMonth;
+                              
+      const currentTotalRoutes = period === 'day' ? dayRoutes.length :
+                                period === 'week' ? weekRoutes.length :
+                                monthRoutes.length;
+                                
       const loadDistribution = [
-        { name: 'Full Loads (20+ cylinders)', value: fullLoadsWeek },
-        { name: 'Partial Loads (<20 cylinders)', value: weekRoutes.length - fullLoadsWeek }
+        { name: 'Full Loads (20+ cylinders)', value: currentFullLoads },
+        { name: 'Partial Loads (<20 cylinders)', value: currentTotalRoutes - currentFullLoads }
       ];
 
-      const dayComparison = createComparisonData(dayStats, dayAverages);
-      const weekComparison = createComparisonData(weekStats, weekAverages);
-      const monthComparison = createComparisonData(monthStats, monthAverages);
+      // Create comparison data based on the current period
+      const currentStats = period === 'day' ? dayStats :
+                          period === 'week' ? weekStats :
+                          monthStats;
+                          
+      const currentAverages = period === 'day' ? dayAverages :
+                              period === 'week' ? weekAverages :
+                              monthAverages;
+                              
+      const comparisonToOtherRoutes = createComparisonData(currentStats, currentAverages);
 
+      // Set the route stats with all the period-specific data
       setRouteStats({
         day: dayStats,
         week: weekStats,
@@ -238,19 +295,49 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         trends,
         timeSeriesData,
         loadDistribution,
-        comparisonToOtherRoutes: period === 'day' 
-          ? dayComparison 
-          : period === 'week' 
-            ? weekComparison 
-            : monthComparison
+        comparisonToOtherRoutes
+      });
+
+      console.log('Set route stats with period-specific data:', {
+        period,
+        trends,
+        loadDistribution,
+        comparisonToOtherRoutes
       });
 
     } catch (error) {
       console.error('Error fetching route statistics:', error);
-      setMockData();
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const createTimeSeriesData = (routes: any[], currentPeriod: 'day' | 'week' | 'month') => {
+    if (!routes.length) return [];
+    
+    // Sort routes by date
+    const sortedRoutes = [...routes].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Format depends on the period
+    return sortedRoutes.map(route => {
+      const routeDate = new Date(route.date);
+      let dateFormat;
+      
+      if (currentPeriod === 'day') {
+        dateFormat = format(routeDate, 'HH:mm'); // Hours and minutes for day view
+      } else if (currentPeriod === 'week') {
+        dateFormat = format(routeDate, 'E dd'); // Day of week for week view
+      } else {
+        dateFormat = format(routeDate, 'MMM dd'); // Month and day for month view
+      }
+      
+      return {
+        date: dateFormat,
+        deliveries: 1,
+        distance: route.total_distance || 0,
+        cost: route.estimated_cost || 0
+      };
+    });
   };
 
   const calculateAverages = (routes: any[]) => {
@@ -297,6 +384,18 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
   };
 
   const calculatePeriodStats = (routes: any[], fullLoads: number, partialLoads: number) => {
+    if (!routes.length) {
+      return {
+        deliveries: 0,
+        distance: 0,
+        duration: 0,
+        cost: 0,
+        cylinders: 0,
+        fullLoads: 0,
+        partialLoads: 0
+      };
+    }
+    
     const totalDistance = routes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
     const totalDuration = routes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
     const totalCost = routes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
@@ -322,120 +421,16 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     return 'stable';
   };
 
-  const setMockData = () => {
-    const baseMockStats = {
-      day: {
-        deliveries: 2,
-        distance: 48,
-        duration: 67,
-        cost: 340,
-        cylinders: 42,
-        fullLoads: 1,
-        partialLoads: 1
-      },
-      week: {
-        deliveries: 10,
-        distance: 287,
-        duration: 385,
-        cost: 1870,
-        cylinders: 185,
-        fullLoads: 6,
-        partialLoads: 4
-      },
-      month: {
-        deliveries: 42,
-        distance: 1245,
-        duration: 1680,
-        cost: 8350,
-        cylinders: 830,
-        fullLoads: 28,
-        partialLoads: 14
-      }
-    };
-
-    const mockAverages = {
-      day: {
-        distance: 38,
-        duration: 58,
-        cost: 310
-      },
-      week: {
-        distance: 245,
-        duration: 420,
-        cost: 1750
-      },
-      month: {
-        distance: 1100,
-        duration: 1450,
-        cost: 7800
-      }
-    };
-
-    const dayComparison = [
-      { metric: 'Distance (km)', value: 48, average: 38, difference: 10 },
-      { metric: 'Duration (min)', value: 67, average: 58, difference: 9 },
-      { metric: 'Cost (R)', value: 340, average: 310, difference: 30 }
-    ];
-
-    const weekComparison = [
-      { metric: 'Distance (km)', value: 287, average: 245, difference: 42 },
-      { metric: 'Duration (min)', value: 385, average: 420, difference: -35 },
-      { metric: 'Cost (R)', value: 1870, average: 1750, difference: 120 }
-    ];
-
-    const monthComparison = [
-      { metric: 'Distance (km)', value: 1245, average: 1100, difference: 145 },
-      { metric: 'Duration (min)', value: 1680, average: 1450, difference: 230 },
-      { metric: 'Cost (R)', value: 8350, average: 7800, difference: 550 }
-    ];
-
-    const mockComparison = period === 'day' 
-      ? dayComparison 
-      : period === 'week' 
-        ? weekComparison 
-        : monthComparison;
-    
-    const mockStats: RouteStats = {
-      ...baseMockStats,
-      trends: {
-        deliveries: 'increasing',
-        distance: 'stable',
-        duration: 'decreasing',
-        cost: 'increasing'
-      },
-      timeSeriesData: [
-        { date: 'May 01', deliveries: 1, distance: 42, cost: 280 },
-        { date: 'May 02', deliveries: 2, distance: 65, cost: 420 },
-        { date: 'May 03', deliveries: 1, distance: 38, cost: 250 },
-        { date: 'May 04', deliveries: 0, distance: 0, cost: 0 },
-        { date: 'May 05', deliveries: 2, distance: 58, cost: 370 },
-        { date: 'May 06', deliveries: 3, distance: 72, cost: 460 },
-        { date: 'May 07', deliveries: 1, distance: 36, cost: 230 }
-      ],
-      loadDistribution: [
-        { name: 'Full Loads (20+ cylinders)', value: 6 },
-        { name: 'Partial Loads (<20 cylinders)', value: 4 }
-      ],
-      comparisonToOtherRoutes: mockComparison
-    };
-    
-    setRouteStats(mockStats);
-  };
-
-  const currentStats = routeStats ? routeStats[period] : null;
-
-  const renderTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable', isGoodTrend: boolean = true) => {
-    if (trend === 'increasing') {
-      return <ArrowUp className={`h-4 w-4 ${isGoodTrend ? 'text-green-500' : 'text-red-500'}`} />;
-    } else if (trend === 'decreasing') {
-      return <ArrowDown className={`h-4 w-4 ${isGoodTrend ? 'text-green-500' : 'text-red-500'}`} />;
-    }
-    return null;
-  };
-
   const handleExportData = (format: 'excel' | 'pdf') => {
-    if (!routeStats || !currentStats) {
+    if (!routeStats || !period) {
       toast.error('No data available to export');
+      return;
+    }
+
+    const currentStats = routeStats[period];
+    
+    if (!currentStats) {
+      toast.error('No data available for the selected period');
       return;
     }
 
@@ -469,6 +464,17 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
       console.error('Export error:', error);
       toast.error('Failed to export data');
     }
+  };
+
+  const currentStats = routeStats ? routeStats[period] : null;
+
+  const renderTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable', isGoodTrend: boolean = true) => {
+    if (trend === 'increasing') {
+      return <ArrowUp className={`h-4 w-4 ${isGoodTrend ? 'text-green-500' : 'text-red-500'}`} />;
+    } else if (trend === 'decreasing') {
+      return <ArrowDown className={`h-4 w-4 ${isGoodTrend ? 'text-green-500' : 'text-red-500'}`} />;
+    }
+    return null;
   };
 
   return (
@@ -514,9 +520,9 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  {routeName} has completed <span className="font-medium">{currentStats?.deliveries}</span> deliveries in the selected time period, 
-                  covering <span className="font-medium">{currentStats?.distance.toFixed(1)} km</span> at a cost of 
-                  <span className="font-medium"> R{currentStats?.cost.toFixed(2)}</span>.
+                  {routeName} has completed <span className="font-medium">{currentStats?.deliveries || 0}</span> deliveries in the selected time period, 
+                  covering <span className="font-medium">{currentStats?.distance.toFixed(1) || 0} km</span> at a cost of 
+                  <span className="font-medium"> R{currentStats?.cost.toFixed(2) || 0}</span>.
                   
                   {routeStats.trends.deliveries !== 'stable' && (
                     <span>
@@ -552,7 +558,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                         <TruckIcon className="h-4 w-4 text-muted-foreground" />
                         Deliveries
                       </p>
-                      <h3 className="text-2xl font-bold mt-1">{currentStats?.deliveries}</h3>
+                      <h3 className="text-2xl font-bold mt-1">{currentStats?.deliveries || 0}</h3>
                     </div>
                     {renderTrendIcon(routeStats.trends.deliveries, true)}
                   </div>
@@ -567,7 +573,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         Distance
                       </p>
-                      <h3 className="text-2xl font-bold mt-1">{currentStats?.distance.toFixed(1)} km</h3>
+                      <h3 className="text-2xl font-bold mt-1">{(currentStats?.distance || 0).toFixed(1)} km</h3>
                     </div>
                     {renderTrendIcon(routeStats.trends.distance, false)}
                   </div>
@@ -582,7 +588,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         Duration
                       </p>
-                      <h3 className="text-2xl font-bold mt-1">{currentStats?.duration} min</h3>
+                      <h3 className="text-2xl font-bold mt-1">{currentStats?.duration || 0} min</h3>
                     </div>
                     {renderTrendIcon(routeStats.trends.duration, false)}
                   </div>
@@ -597,7 +603,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                         <Fuel className="h-4 w-4 text-muted-foreground" />
                         Cost
                       </p>
-                      <h3 className="text-2xl font-bold mt-1">R{currentStats?.cost.toFixed(2)}</h3>
+                      <h3 className="text-2xl font-bold mt-1">R{(currentStats?.cost || 0).toFixed(2)}</h3>
                     </div>
                     {renderTrendIcon(routeStats.trends.cost, false)}
                   </div>
@@ -708,7 +714,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                         <div 
                           className={`h-full ${comparison.difference > 0 ? 'bg-blue-500' : 'bg-green-500'}`}
                           style={{ 
-                            width: `${Math.min(Math.abs(comparison.difference / comparison.average) * 100 + 50, 100)}%` 
+                            width: `${Math.min(Math.abs(comparison.difference / (comparison.average || 1)) * 100 + 50, 100)}%` 
                           }}
                         ></div>
                       </div>

@@ -83,7 +83,7 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
             <div className="text-center mt-2">
               <div className="text-2xl font-bold">
                 {Math.round((loadDistribution[0]?.value || 0) / 
-                  ((loadDistribution[0]?.value || 0) + (loadDistribution[1]?.value || 0)) * 100)}%
+                  ((loadDistribution[0]?.value || 0) + (loadDistribution[1]?.value || 0)) * 100) || 0}%
               </div>
               <p className="text-xs text-gray-400">Full load routes</p>
             </div>
