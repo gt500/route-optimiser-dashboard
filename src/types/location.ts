@@ -1,4 +1,3 @@
-
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
@@ -13,6 +12,8 @@ export interface LocationType {
   isWarehouse?: boolean;
   open_time?: string;
   close_time?: string;
+  region?: string;
+  country?: string;
 }
 
 export interface LocationInfo {
@@ -28,6 +29,8 @@ export interface LocationInfo {
   close_time?: string;
   // Add missing fields needed for compatibility
   status?: string;
+  region?: string;
+  country?: string;
 }
 
 export interface SupabaseLocation {
@@ -39,6 +42,8 @@ export interface SupabaseLocation {
   type?: string;
   open_time?: string;
   close_time?: string;
+  region?: string;
+  country?: string;
 }
 
 // Define prop interfaces for react-leaflet components

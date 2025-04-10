@@ -43,7 +43,9 @@ const Locations: React.FC = () => {
       emptyCylinders: location.emptyCylinders,
       isWarehouse: location.type === 'Storage',
       open_time: location.open_time,
-      close_time: location.close_time
+      close_time: location.close_time,
+      region: location.region,
+      country: location.country
     };
   };
 
@@ -59,7 +61,9 @@ const Locations: React.FC = () => {
       fullCylinders: locationData.fullCylinders,
       emptyCylinders: locationData.emptyCylinders,
       open_time: locationData.open_time,
-      close_time: locationData.close_time
+      close_time: locationData.close_time,
+      region: locationData.region,
+      country: locationData.country
     };
     
     handleSaveLocation(locationInfo);

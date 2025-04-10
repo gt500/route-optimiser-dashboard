@@ -9,6 +9,8 @@ import BasicInfoFields from './BasicInfoFields';
 import CoordinateFields from './CoordinateFields';
 import HoursFields from './HoursFields';
 import InventoryFields from './InventoryFields';
+import RegionFields from './RegionFields';
+import AddRegionDialog from './AddRegionDialog';
 
 interface LocationEditDialogProps {
   open: boolean;
@@ -29,15 +31,21 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
     emptyCylinders: 0,
     isWarehouse: false,
     open_time: '08:00',
-    close_time: '17:00'
+    close_time: '17:00',
+    country: 'South Africa',
+    region: ''
   });
+  
+  const [isAddRegionOpen, setIsAddRegionOpen] = useState(false);
 
   useEffect(() => {
     if (location) {
       console.log('Editing location:', location);
       setFormData({
         ...location,
-        isWarehouse: location.type === 'Storage'
+        isWarehouse: location.type === 'Storage',
+        country: location.country || 'South Africa',
+        region: location.region || ''
       });
     } else {
       // Reset to defaults for new location
@@ -52,7 +60,9 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
         emptyCylinders: 0,
         isWarehouse: false,
         open_time: '08:00',
-        close_time: '17:00'
+        close_time: '17:00',
+        country: 'South Africa',
+        region: ''
       });
     }
   }, [location, open]);
@@ -77,6 +87,28 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
       isWarehouse: isWarehouse
     });
   };
+  
+  const handleCountryChange = (value: string) => {
+    setFormData({
+      ...formData,
+      country: value,
+      region: '' // Reset region when country changes
+    });
+  };
+  
+  const handleRegionChange = (value: string) => {
+    setFormData({
+      ...formData,
+      region: value
+    });
+  };
+  
+  const handleAddRegion = (region: string) => {
+    setFormData({
+      ...formData,
+      region: region
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,46 +128,62 @@ const LocationEditDialog = ({ open, onOpenChange, location, onSave }: LocationEd
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
-        <DialogHeader>
-          <DialogTitle>{location ? 'Edit' : 'Add'} Location</DialogTitle>
-          <DialogDescription>
-            {location ? 'Update the location details' : 'Enter details for the new location'}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            <BasicInfoFields 
-              formData={formData} 
-              handleChange={handleChange} 
-              handleTypeChange={handleTypeChange} 
-            />
-            
-            <CoordinateFields 
-              formData={formData} 
-              handleNumberChange={handleNumberChange} 
-            />
-            
-            <HoursFields 
-              formData={formData} 
-              handleChange={handleChange} 
-            />
-            
-            <InventoryFields 
-              formData={formData} 
-              handleNumberChange={handleNumberChange} 
-            />
-          </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>{location ? 'Edit' : 'Add'} Location</DialogTitle>
+            <DialogDescription>
+              {location ? 'Update the location details' : 'Enter details for the new location'}
+            </DialogDescription>
+          </DialogHeader>
           
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">Save</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <BasicInfoFields 
+                formData={formData} 
+                handleChange={handleChange} 
+                handleTypeChange={handleTypeChange} 
+              />
+              
+              <RegionFields
+                formData={formData}
+                handleCountryChange={handleCountryChange}
+                handleRegionChange={handleRegionChange}
+                openAddRegionDialog={() => setIsAddRegionOpen(true)}
+              />
+              
+              <CoordinateFields 
+                formData={formData} 
+                handleNumberChange={handleNumberChange} 
+              />
+              
+              <HoursFields 
+                formData={formData} 
+                handleChange={handleChange} 
+              />
+              
+              <InventoryFields 
+                formData={formData} 
+                handleNumberChange={handleNumberChange} 
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      <AddRegionDialog
+        open={isAddRegionOpen}
+        onOpenChange={setIsAddRegionOpen}
+        country={formData.country || ''}
+        onAddRegion={handleAddRegion}
+      />
+    </>
   );
 };
 

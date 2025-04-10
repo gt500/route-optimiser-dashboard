@@ -65,7 +65,9 @@ export const useLocationEdit = (
       fullCylinders: 0,
       emptyCylinders: 0,
       open_time: '09:00',
-      close_time: '17:00'
+      close_time: '17:00',
+      country: 'South Africa',
+      region: ''
     };
     
     setEditLocation(emptyLocation);
