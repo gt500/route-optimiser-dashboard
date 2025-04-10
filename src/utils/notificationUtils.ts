@@ -53,7 +53,7 @@ export const sendNotification = async ({
     });
 
     const endTime = Date.now();
-    console.log(`Edge function call completed in ${endTime - startTime}ms`);
+    console.log(`Edge function call completed in ${endTime - startTime}ms, response:`, data);
     
     if (error) {
       console.error("Error from edge function:", error);

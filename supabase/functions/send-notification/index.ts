@@ -2,9 +2,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "npm:resend@1.0.0";
 
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-const resend = new Resend(resendApiKey);
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -28,6 +25,9 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("Request received in send-notification function");
     
+    // Get the API key from environment
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    
     // Check if RESEND_API_KEY is configured
     if (!resendApiKey) {
       console.error("RESEND_API_KEY is not configured");
@@ -42,7 +42,10 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
-
+    
+    // Initialize Resend with the API key
+    const resend = new Resend(resendApiKey);
+    
     // Parse the request body
     let requestBody;
     try {
@@ -63,8 +66,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Processing ${type} notification to ${email} with subject: ${subject}`);
     
-    // Check if user's notification preferences allow this type of notification
-    // This could be enhanced to query the user's preferences from the database
+    // Check if required fields are present
+    if (!email || !subject || !message || !type) {
+      const missingFields = [];
+      if (!email) missingFields.push('email');
+      if (!subject) missingFields.push('subject');
+      if (!message) missingFields.push('message');
+      if (!type) missingFields.push('type');
+      
+      const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
+      console.error(errorMsg);
+      
+      return new Response(
+        JSON.stringify({ success: false, error: errorMsg }),
+        {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+          status: 400,
+        }
+      );
+    }
     
     if (type === "email") {
       // Get email template based on category
