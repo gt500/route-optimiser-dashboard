@@ -1,99 +1,83 @@
 
 import { useState } from 'react';
 import { LocationInfo } from '@/types/location';
-import { LocationType } from '@/components/locations/LocationEditDialog';
-import { saveLocationToAPI, deleteLocationFromAPI } from '@/utils/locationUtils';
 
 export const useLocationEdit = (
-  locations: LocationInfo[],
-  setLocations: (locations: LocationInfo[]) => void
+  locations: LocationInfo[], 
+  setLocations: React.Dispatch<React.SetStateAction<LocationInfo[]>>
 ) => {
   const [editLocation, setEditLocation] = useState<LocationInfo | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [locationToDelete, setLocationToDelete] = useState<string | null>(null);
+  const [locationToDelete, setLocationToDelete] = useState<LocationInfo | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleEdit = (location: LocationInfo) => {
-    console.log('Editing location:', {
-      id: location.id,
-      name: location.name,
-      address: location.address,
-      lat: location.latitude,
-      long: location.longitude,
-      type: location.type || 'Customer',
-      fullCylinders: location.fullCylinders,
-      emptyCylinders: location.emptyCylinders,
-      isWarehouse: location.type === 'Storage',
-      open_time: location.open_time,
-      close_time: location.close_time
-    });
-    
     setEditLocation(location);
     setIsEditDialogOpen(true);
   };
-  
-  const handleSaveLocation = async (location: LocationType) => {
-    console.log('Saving location:', location);
-    const success = await saveLocationToAPI(location);
-    
-    if (success) {
-      if (location.id) {
-        // Update existing location
-        setLocations(prev => 
-          prev.map(loc => loc.id === location.id ? {
-            ...loc,
-            name: location.name,
-            address: location.address,
-            latitude: location.lat,
-            longitude: location.long,
-            type: location.type,
-            open_time: location.open_time,
-            close_time: location.close_time
-          } : loc)
-        );
-      } else {
-        // Add new location
-        const newLocation: LocationInfo = {
-          id: crypto.randomUUID(),
-          name: location.name,
-          address: location.address,
-          latitude: location.lat,
-          longitude: location.long,
-          type: location.type,
-          fullCylinders: location.type === 'Storage' ? 75 : 0,
-          emptyCylinders: location.type === 'Customer' ? 15 : 0,
-          open_time: location.open_time,
-          close_time: location.close_time
-        };
-        
-        setLocations(prev => [...prev, newLocation]);
-      }
+
+  const handleSaveLocation = (updatedLocation: LocationInfo) => {
+    // If it's a new location, add it to the list
+    if (!updatedLocation.id) {
+      const newLocation = {
+        ...updatedLocation,
+        id: `loc-${Date.now()}`, // Generate a temporary ID
+      };
       
-      setIsEditDialogOpen(false);
-      setEditLocation(null);
+      setLocations((prevLocations: LocationInfo[]) => [...prevLocations, newLocation]);
+    } else {
+      // If it's an existing location, update it
+      setLocations((prevLocations: LocationInfo[]) => 
+        prevLocations.map((loc) => 
+          loc.id === updatedLocation.id ? updatedLocation : loc
+        )
+      );
     }
+    
+    setIsEditDialogOpen(false);
+    setEditLocation(null);
   };
-  
-  const openDeleteConfirmation = (id: string) => {
-    setLocationToDelete(id);
+
+  const openDeleteConfirmation = (location: LocationInfo) => {
+    setLocationToDelete(location);
     setIsDeleteDialogOpen(true);
   };
-  
-  const handleDelete = async () => {
-    if (!locationToDelete) return;
-    
-    const success = await deleteLocationFromAPI(locationToDelete);
-    
-    if (success) {
-      setLocations(prev => prev.filter(location => location.id !== locationToDelete));
+
+  const handleDelete = () => {
+    if (locationToDelete) {
+      setLocations((prevLocations: LocationInfo[]) => 
+        prevLocations.filter((loc) => loc.id !== locationToDelete.id)
+      );
+      
+      setIsDeleteDialogOpen(false);
+      setLocationToDelete(null);
     }
-    
-    setLocationToDelete(null);
-    setIsDeleteDialogOpen(false);
   };
-  
+
   const handleAddNew = () => {
-    setEditLocation(null);
+    const emptyLocation: LocationInfo = {
+      id: '',
+      name: '',
+      address: '',
+      type: 'customer',
+      status: 'active',
+      coordinates: { lat: 0, lng: 0 },
+      contactName: '',
+      contactPhone: '',
+      email: '',
+      notes: '',
+      deliveryWindow: {
+        start: '09:00',
+        end: '17:00',
+      },
+      inventory: {
+        current: 0,
+        capacity: 0,
+        reorderPoint: 0,
+      },
+    };
+    
+    setEditLocation(emptyLocation);
     setIsEditDialogOpen(true);
   };
 
