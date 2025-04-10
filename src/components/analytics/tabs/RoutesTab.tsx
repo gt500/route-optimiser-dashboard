@@ -12,26 +12,33 @@ interface RoutesTabProps {
 
 const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) => {
   const [localLoading, setLocalLoading] = useState(true);
+  const [routeData, setRouteData] = useState<any[]>([]);
   const { fetchRouteData } = useRouteData();
   
   useEffect(() => {
-    const verifyRouteData = async () => {
+    const loadRouteData = async () => {
       try {
+        console.log('RoutesTab - Fetching route data');
         const routes = await fetchRouteData();
+        
         if (routes.length === 0) {
           toast.warning("No route data available. Charts may appear empty.", { 
             duration: 5000,
             position: 'top-center'
           });
+        } else {
+          console.log(`RoutesTab - Loaded ${routes.length} routes successfully`);
+          setRouteData(routes);
         }
       } catch (error) {
-        console.error("Error verifying route data:", error);
+        console.error("Error loading route data:", error);
+        toast.error("Failed to load route data");
       } finally {
         setLocalLoading(false);
       }
     };
     
-    verifyRouteData();
+    loadRouteData();
   }, [fetchRouteData]);
 
   return (
@@ -39,6 +46,7 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) =
       <RouteEfficiencyChart 
         isLoading={isLoading || localLoading}
         onRouteLegendOpen={onRouteLegendOpen}
+        routeData={routeData}
       />
     </TabsContent>
   );

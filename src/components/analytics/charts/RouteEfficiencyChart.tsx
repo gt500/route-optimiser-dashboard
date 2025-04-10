@@ -17,7 +17,6 @@ import { Info, Route, RefreshCw } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
-import { useRouteData } from '@/hooks/fleet/useRouteData';
 
 // Define full load threshold consistently across components
 const FULL_LOAD_THRESHOLD = 20;
@@ -25,92 +24,116 @@ const FULL_LOAD_THRESHOLD = 20;
 interface RouteEfficiencyChartProps {
   isLoading: boolean;
   onRouteLegendOpen: () => void;
+  routeData: any[];
 }
 
 const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   isLoading,
-  onRouteLegendOpen
+  onRouteLegendOpen,
+  routeData
 }) => {
   const [routeDetailOpen, setRouteDetailOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const { fetchRouteData } = useRouteData();
 
   useEffect(() => {
-    // Only load data if it hasn't been loaded yet or if isLoading prop changes from true to false
-    if (!dataLoaded || isLoading) {
-      const loadRouteData = async () => {
-        setLoading(true);
-        try {
-          console.log('RouteEfficiencyChart - Starting to fetch route data');
-          // Fetch actual route data from database
-          const routesData = await fetchRouteData();
-          
-          console.log('RouteEfficiencyChart - Fetched routes data:', routesData.length, 'routes');
-          
-          if (!routesData.length) {
-            console.log('No routes data available');
-            setChartData([]);
-            setLoading(false);
-            setDataLoaded(true);
-            return;
-          }
-
-          // Map the raw data to the format needed for the chart
-          // Focus on the route names mentioned in routeLegendData
-          const routeNames = routeLegendData.map(route => route.name);
-          
-          // Filter and summarize route data by route name
-          const routeSummaries = routeNames.map(routeName => {
-            // Find all routes that match this name
-            const matchingRoutes = routesData.filter(route => 
-              route.name && route.name.toLowerCase().includes(routeName.toLowerCase())
-            );
-            
-            console.log(`RouteEfficiencyChart - Found ${matchingRoutes.length} routes matching "${routeName}"`);
-            
-            if (matchingRoutes.length === 0) {
-              // Return empty data for routes with no data
-              return {
-                name: routeName,
-                time: 0,
-                distance: 0,
-                cost: 0,
-                cylinders: 0
-              };
-            }
-            
-            // Calculate averages for this route type
-            const totalDistance = matchingRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
-            const totalDuration = matchingRoutes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
-            const totalCost = matchingRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
-            const totalCylinders = matchingRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
-            
-            return {
-              name: routeName,
-              time: Math.round(totalDuration / 60 / matchingRoutes.length), // Convert seconds to minutes and average
-              distance: Math.round(totalDistance / matchingRoutes.length * 10) / 10, // Average with 1 decimal precision
-              cost: Math.round(totalCost / matchingRoutes.length),
-              cylinders: Math.round(totalCylinders / matchingRoutes.length)
-            };
-          });
-          
-          console.log('RouteEfficiencyChart - Generated route summaries:', routeSummaries);
-          setChartData(routeSummaries);
-          setDataLoaded(true);
-        } catch (error) {
-          console.error('Error loading route data for chart:', error);
-          setChartData([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      loadRouteData();
+    if (!isLoading && routeData.length > 0) {
+      processRouteData();
+    } else if (!isLoading) {
+      // If we're not loading but there's no data, set empty chart data
+      setChartData([]);
+      setLoading(false);
     }
-  }, [fetchRouteData, isLoading, dataLoaded]);
+  }, [isLoading, routeData]);
+  
+  const processRouteData = () => {
+    setLoading(true);
+    try {
+      console.log('RouteEfficiencyChart - Processing route data for chart, routes length:', routeData.length);
+      
+      // Create a map to categorize routes based on keywords
+      const routeCategories = {
+        'Cape Town CBD': ['cape town', 'cbd', 'city center', 'downtown'],
+        'Gas Depot - Southern Suburbs': ['southern suburbs', 'claremont', 'kenilworth', 'wynberg', 'retreat', 'tokai'],
+        'Northern Distribution Line': ['northern', 'durbanville', 'bellville', 'brackenfell', 'kraaifontein'],
+        'Atlantic Seaboard': ['atlantic', 'seaboard', 'sea point', 'camps bay', 'clifton', 'green point'],
+        'Stellenbosch Distribution': ['stellenbosch', 'university', 'winelands'],
+        'West Coast': ['west coast', 'blouberg', 'table view', 'melkbos']
+      };
+      
+      // Categorize routes based on their name and keywords
+      const categorizedRoutes: Record<string, any[]> = {};
+      
+      routeData.forEach(route => {
+        let matched = false;
+        const routeName = (route.name || '').toLowerCase();
+        
+        // Match route to a category
+        for (const [category, keywords] of Object.entries(routeCategories)) {
+          if (keywords.some(keyword => routeName.includes(keyword))) {
+            if (!categorizedRoutes[category]) {
+              categorizedRoutes[category] = [];
+            }
+            categorizedRoutes[category].push(route);
+            matched = true;
+            break;
+          }
+        }
+        
+        // If no category matches, assign to a default category
+        if (!matched) {
+          // Get the first part of the route name before any delimiters
+          const defaultCategory = route.name.split(/[-–—]/)[0].trim();
+          if (!categorizedRoutes[defaultCategory]) {
+            categorizedRoutes[defaultCategory] = [];
+          }
+          categorizedRoutes[defaultCategory].push(route);
+        }
+      });
+      
+      console.log('RouteEfficiencyChart - Categorized routes:', Object.keys(categorizedRoutes));
+      
+      // Use the routeLegendData for chart categories
+      const chartDataArray = routeLegendData.map(legend => {
+        const categoryRoutes = categorizedRoutes[legend.name] || [];
+        console.log(`RouteEfficiencyChart - Found ${categoryRoutes.length} routes for ${legend.name}`);
+        
+        if (categoryRoutes.length === 0) {
+          // If no routes in this category, use some sample data
+          return {
+            name: legend.name,
+            time: 0,
+            distance: 0,
+            cost: 0,
+            cylinders: 0
+          };
+        }
+        
+        // Calculate averages for this route type
+        const totalDistance = categoryRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
+        const totalDuration = categoryRoutes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
+        const totalCost = categoryRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
+        const totalCylinders = categoryRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
+        
+        return {
+          name: legend.name,
+          time: Math.round(totalDuration / 60 / Math.max(1, categoryRoutes.length)), // Convert seconds to minutes
+          distance: Math.round((totalDistance / Math.max(1, categoryRoutes.length)) * 10) / 10, // Average with 1 decimal
+          cost: Math.round(totalCost / Math.max(1, categoryRoutes.length)),
+          cylinders: Math.round(totalCylinders / Math.max(1, categoryRoutes.length))
+        };
+      });
+      
+      console.log('RouteEfficiencyChart - Generated chart data:', chartDataArray);
+      setChartData(chartDataArray);
+    } catch (error) {
+      console.error('Error processing route data for chart:', error);
+      setChartData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
