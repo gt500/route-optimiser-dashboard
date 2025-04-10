@@ -20,7 +20,7 @@ const MachineGrid = ({
 }: MachineGridProps) => {
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map(i => (
           <Card key={i} className="animate-pulse">
             <CardHeader className="h-24 bg-muted rounded-t-lg"></CardHeader>
@@ -45,7 +45,7 @@ const MachineGrid = ({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {machineData?.map((machine, idx) => (
         <MachineCard 
           key={idx} 
