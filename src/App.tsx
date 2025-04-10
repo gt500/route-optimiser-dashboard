@@ -19,6 +19,7 @@ import ReportsLayout from "./pages/reports/ReportsLayout";
 import DailyReports from "./pages/reports/delivery/DailyReports";
 import WeeklyReports from "./pages/reports/delivery/WeeklyReports";
 import MonthlyReports from "./pages/reports/delivery/MonthlyReports";
+import MachineTriggers from "./pages/MachineTriggers";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/routes" element={<RoutesList />} />
+                <Route path="/machine-triggers" element={<MachineTriggers />} />
                 <Route path="/locations" element={<Locations />} />
                 <Route path="/fleet" element={<Fleet />} />
                 <Route path="/analytics" element={<Analytics />} />

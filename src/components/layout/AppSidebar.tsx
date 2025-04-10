@@ -28,6 +28,7 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -41,6 +42,11 @@ const menuItems = [
     title: "Routes",
     icon: Map,
     path: "/routes",
+  },
+  {
+    title: "Machine Triggers",
+    icon: Zap,
+    path: "/machine-triggers",
   },
   {
     title: "Locations",
