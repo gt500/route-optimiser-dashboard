@@ -55,16 +55,16 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
   return (
     <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <CardTitle>
             {activeChart === 'optimization' ? 'Route Optimization' : 'Load Distribution'}
           </CardTitle>
-          <div className="flex space-x-2">
+          <div className="flex flex-col space-y-2">
             <Button 
               variant={activeChart === 'optimization' ? 'default' : 'outline'} 
               size="sm"
               onClick={() => setActiveChart('optimization')}
-              className="h-8 px-3 text-xs flex items-center gap-1"
+              className="h-8 px-3 text-xs flex items-center gap-1 w-full"
             >
               <Route className="h-3 w-3" />
               Optimization
@@ -73,7 +73,7 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
               variant={activeChart === 'distribution' ? 'default' : 'outline'} 
               size="sm"
               onClick={() => setActiveChart('distribution')}
-              className="h-8 px-3 text-xs flex items-center gap-1"
+              className="h-8 px-3 text-xs flex items-center gap-1 w-full"
             >
               <Package className="h-3 w-3" />
               Distribution
