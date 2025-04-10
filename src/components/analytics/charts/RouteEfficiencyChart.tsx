@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -19,6 +18,7 @@ import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
+import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
 
 const FULL_LOAD_THRESHOLD = 20;
 
@@ -56,18 +56,15 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         console.log('Fetching completed West Coast route data...');
         setDataFetchAttempted(true);
         
-        // Get completed routes from history
         const completedRoutes = await fetchRouteHistory();
         console.log('Completed routes:', completedRoutes);
         
-        // Find West Coast routes among completed routes
         const westCoastRoutes = completedRoutes.filter(route => 
           route.name.toLowerCase().includes('west coast') || 
           route.route_type === 'West Coast'
         );
         
         if (westCoastRoutes && westCoastRoutes.length > 0) {
-          // Sort by date to get the most recent one
           westCoastRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           const mostRecentRoute = westCoastRoutes[0];
           
@@ -142,7 +139,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
           <HoverCardContent side="left" className="w-64">
             <p className="text-sm">
               Click for detailed explanation of each route in the performance chart. 
-              Routes with 20+ cylinders are considered full loads.
+              Routes with {FULL_LOAD_PER_SITE}+ cylinders per site are considered full loads.
             </p>
           </HoverCardContent>
         </HoverCard>
@@ -173,7 +170,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                   formatter={(value, name) => {
                     if (name === 'cylinders') {
                       const numValue = Number(value);
-                      return [`${value} (${numValue >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
+                      return [`${value} (${numValue >= FULL_LOAD_PER_SITE ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
                     }
                     return [`${value}`, name];
                   }}

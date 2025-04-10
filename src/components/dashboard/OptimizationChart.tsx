@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recha
 import { COLORS } from '@/components/analytics/data/routeLegendData';
 import { Button } from '@/components/ui/button';
 import { Route, Package } from 'lucide-react';
+import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
 
 interface OptimizationChartProps {
   data: { name: string; value: number }[];
@@ -83,7 +84,7 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
         <p className="text-sm text-gray-400">
           {activeChart === 'optimization' 
             ? 'Fuel efficiency improvements' 
-            : 'Full vs partial load distribution'}
+            : `Sites with ${FULL_LOAD_PER_SITE}+ cylinders are full loads`}
         </p>
       </CardHeader>
       <CardContent>
@@ -122,7 +123,7 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
             <p className="text-xs text-gray-400">
               {activeChart === 'optimization' 
                 ? 'Routes optimized' 
-                : 'Full load routes'}
+                : 'Sites with full loads'}
             </p>
           </div>
         </div>

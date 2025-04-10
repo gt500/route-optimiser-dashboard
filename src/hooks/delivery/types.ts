@@ -39,3 +39,7 @@ export interface DeliveryHookReturn {
   isLoading: boolean;
   fetchDeliveryData: () => Promise<void>;
 }
+
+// Load type constants
+export const FULL_LOAD_PER_SITE = 20; // Number of cylinders that constitute a full load per site
+export const FULL_TRUCK_LOAD = 80;    // Total cylinders capacity for a full truck

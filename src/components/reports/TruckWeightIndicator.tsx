@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Weight, AlertTriangle } from 'lucide-react';
 import { ReportMetricsCard } from '@/components/reports/ReportMetricsCard';
+import { FULL_TRUCK_LOAD } from '@/hooks/delivery/types';
 
 interface TruckWeightIndicatorProps {
   totalCylinders: number;
@@ -13,7 +14,7 @@ interface TruckWeightIndicatorProps {
 
 const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
   totalCylinders,
-  maxCylinders = 80, // Default maximum of 80 cylinders
+  maxCylinders = FULL_TRUCK_LOAD, // Default using our constant
   cylinderWeight = 22 // Default weight of 22kg per cylinder
 }) => {
   const currentWeight = totalCylinders * cylinderWeight;

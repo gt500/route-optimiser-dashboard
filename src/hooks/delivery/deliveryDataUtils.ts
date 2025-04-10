@@ -1,7 +1,7 @@
 
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { DeliveryData, RouteDelivery, ProcessedRoute } from './types';
+import { DeliveryData, RouteDelivery, ProcessedRoute, FULL_LOAD_PER_SITE } from './types';
 
 /**
  * Processes delivery data from Supabase into a structured format
@@ -33,6 +33,14 @@ export const processDeliveryData = (
   }
   
   return transformedData;
+};
+
+/**
+ * Determines if a delivery is a full load based on cylinder count
+ * A full load is defined as 20 or more cylinders per site
+ */
+export const isFullLoad = (cylinders: number): boolean => {
+  return cylinders >= FULL_LOAD_PER_SITE;
 };
 
 /**
