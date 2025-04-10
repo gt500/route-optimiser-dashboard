@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddRegionDialogProps {
   open: boolean;
@@ -25,13 +26,27 @@ const AddRegionDialog = ({
   onAddRegion
 }: AddRegionDialogProps) => {
   const [regionName, setRegionName] = useState('');
+  const { toast } = useToast();
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (regionName.trim()) {
-      onAddRegion(country, regionName.trim());
-      setRegionName('');
-      onClose();
+      try {
+        onAddRegion(country, regionName.trim());
+        setRegionName('');
+        toast({
+          title: "Region Added",
+          description: `${regionName.trim()} has been added to ${country}`,
+        });
+        onClose();
+      } catch (error) {
+        console.error("Error adding region:", error);
+        toast({
+          title: "Error",
+          description: "Failed to add region. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
   

@@ -7,6 +7,7 @@ import { MachineData, CountryRegion } from './types';
 import { Toggle } from "@/components/ui/toggle";
 import RegionSelector from './RegionSelector';
 import AddRegionDialog from './AddRegionDialog';
+import { useToast } from "@/hooks/use-toast";
 
 interface MachineGridProps {
   machineData: MachineData[] | undefined;
@@ -39,6 +40,7 @@ const MachineGrid = ({
   const [countryRegions, setCountryRegions] = useState<CountryRegion[]>(initialCountryRegions);
   const [isAddRegionOpen, setIsAddRegionOpen] = useState(false);
   const [selectedCountryForRegion, setSelectedCountryForRegion] = useState("");
+  const { toast } = useToast();
   
   // Set all current machines to Western Cape region if no region specified
   const processedMachineData = useMemo(() => {
@@ -79,13 +81,51 @@ const MachineGrid = ({
   };
 
   const handleAddRegion = (country: string, newRegion: string) => {
-    setCountryRegions(prevRegions => 
-      prevRegions.map(item => 
-        item.country === country 
-          ? { ...item, regions: [...item.regions, newRegion] } 
-          : item
-      )
-    );
+    try {
+      setCountryRegions(prevRegions => {
+        // Check if region already exists
+        const countryIndex = prevRegions.findIndex(item => item.country === country);
+        if (countryIndex === -1) {
+          toast({
+            title: "Error",
+            description: `Country ${country} not found`,
+            variant: "destructive",
+          });
+          return prevRegions;
+        }
+        
+        const countryItem = prevRegions[countryIndex];
+        if (countryItem.regions.includes(newRegion)) {
+          toast({
+            title: "Region exists",
+            description: `${newRegion} already exists in ${country}`,
+            variant: "destructive",
+          });
+          return prevRegions;
+        }
+        
+        // Add the new region
+        const updatedRegions = [...prevRegions];
+        updatedRegions[countryIndex] = { 
+          ...countryItem, 
+          regions: [...countryItem.regions, newRegion] 
+        };
+        
+        toast({
+          title: "Region added",
+          description: `Added ${newRegion} to ${country}`,
+        });
+        
+        return updatedRegions;
+      });
+    } catch (error) {
+      console.error("Error adding region:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add the region. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
