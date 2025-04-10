@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, subDays, subWeeks, subMonths } from 'date-fns';
 import { 
@@ -39,7 +38,7 @@ import {
   FileText, 
   Download,
   FileSpreadsheet,
-  FilePdf 
+  FileText as FilePdf 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -49,7 +48,6 @@ import { Separator } from '@/components/ui/separator';
 import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 
-// Define full load threshold
 const FULL_LOAD_THRESHOLD = 20;
 
 interface RouteDetailDialogProps {
@@ -135,10 +133,8 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     
     setIsLoading(true);
     try {
-      // Fetch real route data from the API
       const allRoutes = await fetchRouteData();
       
-      // Filter for the selected route
       const routeData = allRoutes.filter(route => 
         route.name.toLowerCase().includes(routeName.toLowerCase()) || 
         route.id === routeId
@@ -146,18 +142,15 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
 
       if (!routeData.length) {
         console.log('No route data found for route:', routeId, routeName);
-        // Set mock data if no real data found
         setMockData();
         return;
       }
 
-      // Calculate statistics for different time periods
       const today = new Date();
       const dayAgo = subDays(today, 1);
       const weekAgo = subWeeks(today, 1);
       const monthAgo = subMonths(today, 1);
 
-      // Filter routes for each time period
       const dayRoutes = routeData.filter(route => 
         new Date(route.date) >= dayAgo && new Date(route.date) <= today
       );
@@ -170,7 +163,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         new Date(route.date) >= monthAgo && new Date(route.date) <= today
       );
 
-      // Prepare time series data (for charts)
       const timeSeriesData = weekRoutes.map(route => ({
         date: format(new Date(route.date), 'MMM dd'),
         deliveries: 1,
@@ -178,18 +170,14 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         cost: route.estimated_cost || 0
       }));
 
-      // Calculate load distribution (full vs partial loads)
-      // Now using the FULL_LOAD_THRESHOLD (20+ cylinders) to determine full loads
       const fullLoadsDay = dayRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
       const fullLoadsWeek = weekRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
       const fullLoadsMonth = monthRoutes.filter(route => (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD).length;
 
-      // Route statistics for different time periods
       const dayStats = calculatePeriodStats(dayRoutes, fullLoadsDay, dayRoutes.length - fullLoadsDay);
       const weekStats = calculatePeriodStats(weekRoutes, fullLoadsWeek, weekRoutes.length - fullLoadsWeek);
       const monthStats = calculatePeriodStats(monthRoutes, fullLoadsMonth, monthRoutes.length - fullLoadsMonth);
 
-      // Calculate trends (comparing week to previous week)
       const prevWeekAgo = subWeeks(weekAgo, 1);
       const prevWeekRoutes = routeData.filter(route => 
         new Date(route.date) >= prevWeekAgo && new Date(route.date) < weekAgo
@@ -204,13 +192,11 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         cost: calculateTrend(weekStats.cost, prevWeekStats.cost)
       };
 
-      // Format load distribution for pie chart
       const loadDistribution = [
         { name: 'Full Loads (20+ cylinders)', value: fullLoadsWeek },
         { name: 'Partial Loads (<20 cylinders)', value: weekRoutes.length - fullLoadsWeek }
       ];
 
-      // Compare this route to others (mock comparison for now)
       const comparisonToOtherRoutes = [
         { 
           metric: 'Distance (km)', 
@@ -250,7 +236,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     }
   };
 
-  // Helper function to calculate period statistics
   const calculatePeriodStats = (routes: any[], fullLoads: number, partialLoads: number) => {
     const totalDistance = routes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
     const totalDuration = routes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
@@ -260,7 +245,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     return {
       deliveries: routes.length,
       distance: totalDistance,
-      duration: Math.round(totalDuration / 60), // Convert seconds to minutes
+      duration: Math.round(totalDuration / 60),
       cost: totalCost,
       cylinders: totalCylinders,
       fullLoads,
@@ -268,7 +253,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     };
   };
 
-  // Helper function to determine trend
   const calculateTrend = (current: number, previous: number): 'increasing' | 'decreasing' | 'stable' => {
     if (previous === 0) return 'stable';
     const percentChange = ((current - previous) / previous) * 100;
@@ -278,16 +262,14 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     return 'stable';
   };
 
-  // Set mock data for testing
   const setMockData = () => {
-    // In our mock data, we'll maintain the FULL_LOAD_THRESHOLD value as the basis for our mock data
     const mockStats: RouteStats = {
       day: {
         deliveries: 2,
         distance: 48,
         duration: 67,
         cost: 340,
-        cylinders: 42, // Adjusted to be more realistic
+        cylinders: 42,
         fullLoads: 1,
         partialLoads: 1
       },
@@ -296,7 +278,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         distance: 287,
         duration: 385,
         cost: 1870,
-        cylinders: 185, // Adjusted
+        cylinders: 185,
         fullLoads: 6,
         partialLoads: 4
       },
@@ -305,7 +287,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
         distance: 1245,
         duration: 1680,
         cost: 8350,
-        cylinders: 830, // Adjusted
+        cylinders: 830,
         fullLoads: 28,
         partialLoads: 14
       },
@@ -338,10 +320,8 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     setRouteStats(mockStats);
   };
 
-  // Get current period stats
   const currentStats = routeStats ? routeStats[period] : null;
 
-  // Render trend icon
   const renderTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable', isGoodTrend: boolean = true) => {
     if (trend === 'increasing') {
       return <ArrowUp className={`h-4 w-4 ${isGoodTrend ? 'text-green-500' : 'text-red-500'}`} />;
@@ -351,7 +331,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
     return null;
   };
 
-  // Handler for exporting data
   const handleExportData = (format: 'excel' | 'pdf') => {
     if (!routeStats || !currentStats) {
       toast.error('No data available to export');
@@ -409,7 +388,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
           </div>
         ) : routeStats ? (
           <div className="space-y-6">
-            {/* Time period selector */}
             <Tabs 
               defaultValue="week" 
               className="w-full"
@@ -426,11 +404,8 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                   Last Month
                 </TabsTrigger>
               </TabsList>
-              
-              {/* Time period content is controlled by state, not by tabs directly */}
             </Tabs>
 
-            {/* Synopsis of current period */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Route Synopsis</CardTitle>
@@ -466,7 +441,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               </CardContent>
             </Card>
             
-            {/* Key metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-6">
@@ -529,9 +503,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               </Card>
             </div>
             
-            {/* Charts row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Line chart for time series data */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Delivery Trends</CardTitle>
@@ -577,7 +549,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                 </CardContent>
               </Card>
               
-              {/* Pie chart for load distribution */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Load Distribution</CardTitle>
@@ -617,7 +588,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               </Card>
             </div>
             
-            {/* Comparison to other routes */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Comparison to Other Routes</CardTitle>
@@ -652,7 +622,6 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               </CardContent>
             </Card>
             
-            {/* Export buttons */}
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Close

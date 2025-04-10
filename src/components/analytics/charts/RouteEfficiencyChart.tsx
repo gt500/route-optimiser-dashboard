@@ -94,7 +94,9 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                 }} 
                 formatter={(value, name) => {
                   if (name === 'cylinders') {
-                    return [`${value} (${value >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
+                    // Convert value to number before comparing with FULL_LOAD_THRESHOLD
+                    const numValue = Number(value);
+                    return [`${value} (${numValue >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
                   }
                   return [`${value}`, name];
                 }}
