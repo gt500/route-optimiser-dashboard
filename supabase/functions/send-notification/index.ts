@@ -114,23 +114,35 @@ const handler = async (req: Request): Promise<Response> => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: "Route Optimizer <notifications@routeoptimizer.app>",
+              from: "Route Optimizer <onboarding@resend.dev>", // Use the default Resend domain first
               to: [email],
               subject: subject,
               html: template,
             }),
           });
           
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Resend API error:", errorData);
-            throw new Error(`Failed to send email: ${errorData.message || 'Unknown error'}`);
+          // Log the entire response for debugging
+          const responseText = await response.text();
+          console.log("Resend API response status:", response.status);
+          console.log("Resend API response body:", responseText);
+          
+          // Parse the response text back to JSON
+          let responseData;
+          try {
+            responseData = JSON.parse(responseText);
+          } catch (e) {
+            console.error("Error parsing response JSON:", e);
+            responseData = { error: "Failed to parse response" };
           }
           
-          const data = await response.json();
-          console.log("Email sent successfully:", data);
+          if (!response.ok) {
+            console.error("Resend API error:", responseData);
+            throw new Error(`Failed to send email: ${responseData.message || responseData.error || 'Unknown error'}`);
+          }
+          
+          console.log("Email sent successfully:", responseData);
 
-          return new Response(JSON.stringify({ success: true, data }), {
+          return new Response(JSON.stringify({ success: true, data: responseData }), {
             headers: { "Content-Type": "application/json", ...corsHeaders },
             status: 200,
           });
