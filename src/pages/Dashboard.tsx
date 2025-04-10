@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -67,7 +66,6 @@ const Dashboard = () => {
       const todayFormatted = today.toISOString();
       const todayDateString = today.toISOString().split('T')[0];
 
-      // Fetch recent routes
       const { data: recentRoutesData, error: routesError } = await supabase
         .from('routes')
         .select('*')
@@ -82,7 +80,6 @@ const Dashboard = () => {
       if (recentRoutesData) {
         setTotalRoutes(recentRoutesData.length);
 
-        // Fetch delivery data
         const { data: deliveryData, error: deliveryError } = await supabase
           .from('deliveries')
           .select('location_id, route_id')
@@ -95,7 +92,6 @@ const Dashboard = () => {
           setTotalLocations(uniqueLocations.size);
         }
         
-        // Calculate time saved and fuel savings
         const standardRouteTime = 95;
         const totalTimeSaved = recentRoutesData.reduce((total, route) => {
           const standardTime = route.total_duration * 1.25;
@@ -127,7 +123,6 @@ const Dashboard = () => {
       const weeklyData = await getWeeklyDeliveryData();
       setDeliveryData(weeklyData);
 
-      // Fetch active routes (scheduled or in progress)
       const { data: activeRoutesData, error: activeRoutesError } = await supabase
         .from('routes')
         .select('*')
@@ -150,13 +145,21 @@ const Dashboard = () => {
           };
         }));
         
-        setUpcomingDeliveries(activeWithDetails);
+        const formattedDeliveries = activeWithDetails.map(route => ({
+          id: route.id,
+          name: route.name,
+          date: route.date,
+          locationsCount: route.locationsCount || 0,
+          cylindersCount: route.cylindersCount || route.total_cylinders,
+          status: route.status
+        }));
+        
+        setUpcomingDeliveries(formattedDeliveries);
       } else {
         console.log('No upcoming or in-progress deliveries found');
         setUpcomingDeliveries([]);
       }
 
-      // Fetch completed or in-progress routes
       const { data: completedData, error: completedError } = await supabase
         .from('routes')
         .select('*')

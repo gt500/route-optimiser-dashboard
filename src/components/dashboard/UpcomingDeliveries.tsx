@@ -8,7 +8,7 @@ interface DeliveryItemProps {
   id: string;
   name: string;
   date: string;
-  locationsCount: number;
+  locationsCount?: number; // Make optional to match RouteData
   cylindersCount: number;
   status: string;
 }
@@ -34,10 +34,14 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) =
                 <div className="flex-1">
                   <div className="font-medium">{delivery.name}</div>
                   <div className="text-sm text-gray-400">
-                    {delivery.locationsCount} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
+                    {delivery.locationsCount || 0} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
                   </div>
                 </div>
-                <div className="px-2 py-1 text-xs font-medium rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                <div className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  delivery.status === 'in_progress' 
+                    ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                    : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-100'
+                }`}>
                   {delivery.status === 'in_progress' ? 'In Progress' : 'Scheduled'}
                 </div>
                 <Button size="sm" variant="ghost">
