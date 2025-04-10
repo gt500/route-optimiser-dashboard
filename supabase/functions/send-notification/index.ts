@@ -27,6 +27,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, subject, message, type, category = "general" }: EmailNotificationRequest = await req.json();
 
+    console.log(`Processing ${type} notification to ${email} with subject: ${subject}`);
+    
     // Check if user's notification preferences allow this type of notification
     // This could be enhanced to query the user's preferences from the database
     
@@ -48,17 +50,22 @@ const handler = async (req: Request): Promise<Response> => {
           template = getDefaultTemplate(subject, message);
       }
       
+      console.log(`Sending email using template for category: ${category}`);
+      
       // Send email notification using Resend
       const { data, error } = await resend.emails.send({
-        from: "Route Optimizer <notifications@yourdomain.com>",
+        from: "Route Optimizer <notifications@routeoptimizer.app>",
         to: [email],
         subject: subject,
         html: template,
       });
 
       if (error) {
+        console.error("Resend API error:", error);
         throw new Error(`Failed to send email: ${error.message}`);
       }
+
+      console.log("Email sent successfully:", data);
 
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -67,6 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (type === "sms") {
       // For SMS, we'd integrate with Twilio here
       // This is a placeholder for the SMS implementation
+      console.log("SMS notification requested but not implemented yet");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -80,6 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (type === "push") {
       // For push notifications, we'd implement the Web Push API
       // This is a placeholder for the push implementation
+      console.log("Push notification requested but not implemented yet");
       return new Response(
         JSON.stringify({ 
           success: false, 

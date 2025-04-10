@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -24,6 +23,8 @@ export const sendNotification = async ({
   category = "general"
 }: SendNotificationOptions): Promise<boolean> => {
   try {
+    console.log(`Calling send-notification edge function for ${type} notification...`);
+    
     const { data, error } = await supabase.functions.invoke("send-notification", {
       body: {
         email,
@@ -37,16 +38,19 @@ export const sendNotification = async ({
     if (error) {
       console.error("Error sending notification:", error);
       toast.error(`Failed to send ${type} notification`, {
-        description: error.message
+        description: error.message || "An unexpected error occurred"
       });
       return false;
     }
 
-    console.log(`${type} notification sent successfully`, data);
+    console.log(`${type} notification sent successfully:`, data);
+    toast.success(`${type.toUpperCase()} notification sent successfully`);
     return true;
   } catch (error) {
     console.error("Error sending notification:", error);
-    toast.error(`Failed to send ${type} notification`);
+    toast.error(`Failed to send ${type} notification`, {
+      description: error instanceof Error ? error.message : "An unexpected error occurred"
+    });
     return false;
   }
 };
