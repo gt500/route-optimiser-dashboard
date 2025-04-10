@@ -20,7 +20,16 @@ const MachineTriggers = () => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: machineData, isLoading, error } = useMachineData();
+  const { data: machineData, isLoading, error, refetch } = useMachineData();
+  
+  // Periodically refetch data
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 30000); // Refetch every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   // Check for low stock levels
   const checkLowStock = (forceCheck = false) => {
@@ -33,6 +42,13 @@ const MachineTriggers = () => {
       if (lowStockMachine && (!isAlertOpen || forceCheck)) {
         setLowStockAlert(lowStockMachine);
         setIsAlertOpen(true);
+        
+        // Also show a toast notification
+        toast({
+          title: "Low Stock Alert",
+          description: `${lowStockMachine.site_name} has low cylinder stock (${lowStockMachine.cylinder_stock})`,
+          variant: "destructive",
+        });
       }
     }
   };
@@ -49,8 +65,11 @@ const MachineTriggers = () => {
 
   // Run the check whenever data changes
   useEffect(() => {
-    checkLowStock();
-  }, [machineData, acknowledgedAlerts]);
+    if (machineData) {
+      console.log("Checking for low stock with data:", machineData.length);
+      checkLowStock();
+    }
+  }, [machineData]);
 
   const handleAcknowledgeAlert = () => {
     if (lowStockAlert) {
@@ -59,20 +78,20 @@ const MachineTriggers = () => {
       const user = "Current User"; // In a real app, get this from auth context
       
       // Update both the component state and the global object
-      setAcknowledgedAlerts(prev => {
-        const updated = {
-          ...prev,
-          [key]: { time: timestamp, user }
-        };
-        // Update global object
-        Object.assign(globalAcknowledgedAlerts, updated);
-        return updated;
-      });
+      const updatedAlerts = {
+        ...acknowledgedAlerts,
+        [key]: { time: timestamp, user }
+      };
+      
+      // Update local state
+      setAcknowledgedAlerts(updatedAlerts);
+      
+      // Update global object for persistence across navigation
+      Object.assign(globalAcknowledgedAlerts, updatedAlerts);
       
       toast({
         title: "Alert Acknowledged",
-        description: `${lowStockAlert.site_name} low stock alert has been acknowledged at ${new Date().toLocaleTimeString()}`,
-        variant: "destructive",
+        description: `${lowStockAlert.site_name} low stock alert has been acknowledged`,
       });
       
       setIsAlertOpen(false);

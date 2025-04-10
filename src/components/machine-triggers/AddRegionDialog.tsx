@@ -51,8 +51,17 @@ const AddRegionDialog = ({
       // Call parent component's add region function
       onAddRegion(country, regionName.trim());
       
+      // Show success toast
+      toast({
+        title: "Success",
+        description: `Added ${regionName.trim()} to ${country}`,
+      });
+      
       // Clear the input after submission
       setRegionName('');
+      
+      // Close the dialog
+      onClose();
     } catch (error) {
       console.error("Error adding region:", error);
       toast({
@@ -63,14 +72,8 @@ const AddRegionDialog = ({
     }
   };
   
-  // Handle cancel - make sure to clear the input
-  const handleClose = () => {
-    setRegionName('');
-    onClose();
-  };
-  
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Region to {country}</DialogTitle>
@@ -89,7 +92,7 @@ const AddRegionDialog = ({
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={!regionName.trim()}>

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AlertTriangle, Package } from "lucide-react";
 import MachineCard from './MachineCard';
@@ -28,6 +28,17 @@ const initialCountryRegions: CountryRegion[] = [
   }
 ];
 
+// Use localStorage to persist country regions if available
+const getStoredCountryRegions = (): CountryRegion[] => {
+  try {
+    const stored = localStorage.getItem('countryRegions');
+    return stored ? JSON.parse(stored) : initialCountryRegions;
+  } catch (e) {
+    console.error('Failed to load country regions from localStorage', e);
+    return initialCountryRegions;
+  }
+};
+
 const MachineGrid = ({ 
   machineData, 
   isLoading, 
@@ -37,10 +48,19 @@ const MachineGrid = ({
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [countryRegions, setCountryRegions] = useState<CountryRegion[]>(initialCountryRegions);
+  const [countryRegions, setCountryRegions] = useState<CountryRegion[]>(getStoredCountryRegions());
   const [isAddRegionOpen, setIsAddRegionOpen] = useState(false);
   const [selectedCountryForRegion, setSelectedCountryForRegion] = useState("");
   const { toast } = useToast();
+  
+  // Save country regions to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('countryRegions', JSON.stringify(countryRegions));
+    } catch (e) {
+      console.error('Failed to save country regions to localStorage', e);
+    }
+  }, [countryRegions]);
   
   // Set all current machines to Western Cape region if no region specified
   const processedMachineData = useMemo(() => {
@@ -123,18 +143,14 @@ const MachineGrid = ({
         regions: [...countryItem.regions, newRegion]
       };
       
-      toast({
-        title: "Region Added",
-        description: `Added "${newRegion}" to ${country}`,
-      });
-      
-      // Close dialog after successful addition
-      setTimeout(() => {
-        setIsAddRegionOpen(false);
-      }, 0);
+      // Successfully added region
+      console.log(`Added region "${newRegion}" to ${country}:`, updatedRegions);
       
       return updatedRegions;
     });
+    
+    // Close dialog after successful addition
+    setIsAddRegionOpen(false);
   };
 
   if (isLoading) {
@@ -190,7 +206,7 @@ const MachineGrid = ({
         {filteredMachines.length > 0 ? (
           filteredMachines.map((machine, idx) => (
             <MachineCard 
-              key={idx} 
+              key={`${machine.site_name}-${machine.terminal_id}-${idx}`}
               machine={machine} 
               acknowledgedAlerts={acknowledgedAlerts} 
             />
