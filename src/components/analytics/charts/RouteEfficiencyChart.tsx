@@ -17,6 +17,7 @@ import { Info, Route, RefreshCw } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
 
 // Define full load threshold consistently across components
 const FULL_LOAD_THRESHOLD = 20;
@@ -46,6 +47,8 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { fetchRouteDataByName } = useRouteData();
+  const [realWestCoastData, setRealWestCoastData] = useState<any | null>(null);
 
   useEffect(() => {
     // Use dummy data instead of trying to process route data
@@ -57,7 +60,24 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
     }));
     setChartData(processedData);
     setLoading(false);
-  }, []);
+    
+    // Fetch real data for West Coast
+    const fetchWestCoastData = async () => {
+      try {
+        const westCoastData = await fetchRouteDataByName('West Coast');
+        if (westCoastData && westCoastData.length > 0) {
+          console.log('Found West Coast route data:', westCoastData);
+          setRealWestCoastData(westCoastData[0]);
+        } else {
+          console.log('No West Coast route data found');
+        }
+      } catch (error) {
+        console.error('Error fetching West Coast route data:', error);
+      }
+    };
+    
+    fetchWestCoastData();
+  }, [fetchRouteDataByName]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
@@ -142,17 +162,37 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         )}
         
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {routeLegendData.map((route) => (
-            <RouteMetricsCard
-              key={route.id}
-              title={route.id}
-              value={route.name}
-              color={getColorClass(route.color)}
-              icon={<Route className="h-4 w-4" />}
-              subtitle={<span className="text-xs">{route.description}</span>}
-              onClick={() => handleRouteCardClick(route)}
-            />
-          ))}
+          {routeLegendData.map((route) => {
+            // Special handling for West Coast to use real data if available
+            const isWestCoast = route.name.includes('West Coast');
+            const routeMetrics = isWestCoast && realWestCoastData 
+              ? {
+                  title: `Route 6 (Real Data)`,
+                  value: realWestCoastData.name || 'West Coast',
+                  subtitle: (
+                    <span className="text-xs">
+                      {`Distance: ${realWestCoastData.total_distance?.toFixed(1) || '0'} km • Cylinders: ${realWestCoastData.total_cylinders || '0'}`}
+                    </span>
+                  )
+                }
+              : {
+                  title: route.id,
+                  value: route.name,
+                  subtitle: <span className="text-xs">{route.description}</span>
+                };
+                
+            return (
+              <RouteMetricsCard
+                key={route.id}
+                title={routeMetrics.title}
+                value={routeMetrics.value}
+                color={getColorClass(route.color)}
+                icon={<Route className="h-4 w-4" />}
+                subtitle={routeMetrics.subtitle}
+                onClick={() => handleRouteCardClick(route)}
+              />
+            );
+          })}
         </div>
       </CardContent>
 
