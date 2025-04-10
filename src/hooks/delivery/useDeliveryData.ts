@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { format, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { DeliveryData, DeliveryHookReturn } from './types';
 import { processDeliveryData } from './deliveryDataUtils';
@@ -31,6 +31,8 @@ export const useDeliveryData = (date: Date | undefined): DeliveryHookReturn => {
       // Improved date range handling for better accuracy - get full day
       const startOfSelectedDay = startOfDay(date);
       const endOfSelectedDay = endOfDay(date);
+
+      console.log(`Fetching data for ${formattedDateStr} (${startOfSelectedDay.toISOString()} - ${endOfSelectedDay.toISOString()})`);
 
       // Fetch routes for the selected date
       const routesData = await fetchRoutesByDateRange(startOfSelectedDay, endOfSelectedDay);

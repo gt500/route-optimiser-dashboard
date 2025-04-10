@@ -16,11 +16,13 @@ const WeeklyReports = () => {
   // Ensure data is fetched on component mount
   useEffect(() => {
     if (date) {
+      console.log("Initializing weekly reports with date:", format(date, 'yyyy-MM-dd'));
       fetchWeeklyData();
     }
   }, []);
 
   const handleRefresh = () => {
+    console.log("Manually refreshing weekly data");
     fetchWeeklyData();
   };
 

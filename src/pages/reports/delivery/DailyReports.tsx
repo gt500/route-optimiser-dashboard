@@ -17,12 +17,13 @@ const DailyReports = () => {
   
   const { deliveries, isLoading, fetchDeliveryData } = useDeliveryData(date);
   
-  // Ensure the data is fetched on component mount and when date changes
+  // Ensure the data is fetched on component mount
   useEffect(() => {
     if (date) {
+      console.log("Initializing daily reports with date:", format(date, 'yyyy-MM-dd'));
       fetchDeliveryData();
     }
-  }, [date]);
+  }, []);
   
   const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
   const filteredDeliveries = deliveries.filter(
@@ -35,6 +36,7 @@ const DailyReports = () => {
 
   const handleRefresh = () => {
     if (date) {
+      console.log("Manually refreshing daily data for:", format(date, 'yyyy-MM-dd'));
       toast.info(`Refreshing data for ${format(date, 'MMM dd, yyyy')}`);
       fetchDeliveryData();
     }

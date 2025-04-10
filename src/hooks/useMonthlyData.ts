@@ -54,13 +54,13 @@ export const useMonthlyData = (date: Date | undefined) => {
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
       
-      // Make monthEnd include the entire day
+      // Make monthEnd include the entire day (23:59:59.999)
       const adjustedMonthEnd = new Date(monthEnd);
       adjustedMonthEnd.setHours(23, 59, 59, 999);
       
-      console.log('Fetching routes for month between:', monthStart.toISOString(), 'and', adjustedMonthEnd.toISOString());
+      console.log('Fetching routes for month between:', format(monthStart, 'yyyy-MM-dd'), 'and', format(adjustedMonthEnd, 'yyyy-MM-dd'));
       
-      // Fetch routes with precise date range filtering
+      // Fetch routes with precise date range filtering using ISO strings
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
@@ -89,6 +89,8 @@ export const useMonthlyData = (date: Date | undefined) => {
         const weekStartFormatted = format(weekStart, 'yyyy-MM-dd');
         const weekEndFormatted = format(weekEnd, 'yyyy-MM-dd');
         
+        console.log(`Processing week ${index + 1}: ${weekStartFormatted} to ${weekEndFormatted}`);
+        
         // Filter routes for current week with more precise date comparison
         const weekRoutes = routesData?.filter(route => {
           if (!route.date) return false;
@@ -107,8 +109,16 @@ export const useMonthlyData = (date: Date | undefined) => {
           const routeDateFormatted = format(routeDate, 'yyyy-MM-dd');
           
           // Check if the route date is within the week
-          return routeDateFormatted >= weekStartFormatted && routeDateFormatted <= weekEndFormatted;
+          const isInWeek = routeDateFormatted >= weekStartFormatted && routeDateFormatted <= weekEndFormatted;
+          
+          if (isInWeek) {
+            console.log(`Route ${route.id} from ${routeDateFormatted} is in week ${index + 1}`);
+          }
+          
+          return isInWeek;
         }) || [];
+        
+        console.log(`Week ${index + 1} has ${weekRoutes.length} routes`);
         
         // Calculate totals for the week
         const deliveriesCount = weekRoutes.length;

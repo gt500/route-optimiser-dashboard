@@ -7,7 +7,7 @@ import { toast } from 'sonner';
  * Fetches route data for a specific date range
  */
 export const fetchRoutesByDateRange = async (startDate: Date, endDate: Date) => {
-  console.log('Fetching routes between:', startDate.toISOString(), 'and', endDate.toISOString());
+  console.log('Fetching routes between:', format(startDate, 'yyyy-MM-dd'), 'and', format(endDate, 'yyyy-MM-dd'));
   
   const { data: routesData, error: routesError } = await supabase
     .from('routes')
@@ -21,6 +21,7 @@ export const fetchRoutesByDateRange = async (startDate: Date, endDate: Date) => 
     throw routesError;
   }
   
+  console.log('Found routes:', routesData?.length || 0);
   return routesData || [];
 };
 

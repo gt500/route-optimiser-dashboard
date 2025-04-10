@@ -46,13 +46,13 @@ export const useWeeklyData = (date: Date | undefined) => {
       const weekStart = startOfWeek(date, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
       
-      // Make weekEnd include the entire day
+      // Make weekEnd include the entire day (23:59:59.999)
       const adjustedWeekEnd = new Date(weekEnd);
       adjustedWeekEnd.setHours(23, 59, 59, 999);
       
-      console.log('Fetching routes for week between:', weekStart.toISOString(), 'and', adjustedWeekEnd.toISOString());
+      console.log('Fetching routes for week between:', format(weekStart, 'yyyy-MM-dd'), 'and', format(adjustedWeekEnd, 'yyyy-MM-dd'));
       
-      // Use a more precise date range filtering
+      // Use a more precise date range filtering with ISO strings
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
@@ -65,7 +65,7 @@ export const useWeeklyData = (date: Date | undefined) => {
         throw routesError;
       }
       
-      console.log('Found routes for week:', routesData?.length || 0);
+      console.log('Found routes for week:', routesData?.length || 0, routesData);
       
       // Create daily summary data structure with consistent date handling
       const weekData: WeeklyDataSummary[] = Array.from({ length: 7 }, (_, i) => {
@@ -77,11 +77,13 @@ export const useWeeklyData = (date: Date | undefined) => {
           if (!route.date) return false;
           
           // Parse the route date and format it to yyyy-MM-dd for comparison
-          const routeDate = typeof route.date === 'string' ? new Date(route.date) : route.date;
+          const routeDate = typeof route.date === 'string' ? parseISO(route.date) : new Date(route.date);
           const routeDateStr = format(routeDate, 'yyyy-MM-dd');
           
           return routeDateStr === formattedDateStr;
         }) || [];
+        
+        console.log(`Date ${formattedDateStr} has ${dayRoutes.length} routes`);
         
         // Calculate totals for the day
         const deliveriesCount = dayRoutes.length;

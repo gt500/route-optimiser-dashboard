@@ -16,11 +16,13 @@ const MonthlyReports = () => {
   // Ensure data is fetched on component mount
   useEffect(() => {
     if (date) {
+      console.log("Initializing monthly reports with date:", format(date, 'yyyy-MM-dd'));
       fetchMonthlyData();
     }
   }, []);
 
   const handleRefresh = () => {
+    console.log("Manually refreshing monthly data");
     fetchMonthlyData();
   };
 
