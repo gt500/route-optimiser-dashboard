@@ -1,17 +1,6 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
-interface DeliveryData {
-  id: string;
-  siteName: string;
-  cylinders: number;
-  kms: number;
-  fuelCost: number;
-  date: string;
-  latitude?: number;
-  longitude?: number;
-}
+import { DeliveryData } from '@/hooks/delivery/types';
 
 interface DailyDeliveriesTableProps {
   deliveries: DeliveryData[];

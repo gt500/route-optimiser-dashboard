@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 import { toast } from 'sonner';
-import { DeliveryData } from '@/hooks/useDeliveryData';
+import { DeliveryData } from '@/hooks/delivery/types';
 
 interface DailyCalendarCardProps {
   date: Date | undefined;

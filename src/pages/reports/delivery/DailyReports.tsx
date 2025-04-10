@@ -8,7 +8,7 @@ import DailyDeliveriesTable from '@/components/reports/DailyDeliveriesTable';
 import RouteMap from '@/components/routes/RouteMap';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { Truck, MapPin, Fuel } from 'lucide-react';
-import { useDeliveryData } from '@/hooks/useDeliveryData';
+import { useDeliveryData } from '@/hooks/delivery/useDeliveryData';
 import { toast } from 'sonner';
 
 const DailyReports = () => {
