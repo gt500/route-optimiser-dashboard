@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   BarChart,
@@ -13,10 +13,11 @@ import {
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Info, Route } from 'lucide-react';
+import { Info, Route, RefreshCw } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
 
 // Define full load threshold consistently across components
 const FULL_LOAD_THRESHOLD = 20;
@@ -32,21 +33,78 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
 }) => {
   const [routeDetailOpen, setRouteDetailOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { fetchRouteData } = useRouteData();
+
+  useEffect(() => {
+    const loadRouteData = async () => {
+      setLoading(true);
+      try {
+        // Fetch actual route data from database
+        const routesData = await fetchRouteData();
+        
+        if (!routesData.length) {
+          console.log('No routes data available');
+          setChartData([]);
+          setLoading(false);
+          return;
+        }
+
+        // Map the raw data to the format needed for the chart
+        // Focus on the route names mentioned in routeLegendData
+        const routeNames = routeLegendData.map(route => route.name);
+        
+        // Filter and summarize route data by route name
+        const routeSummaries = routeNames.map(routeName => {
+          // Find all routes that match this name
+          const matchingRoutes = routesData.filter(route => 
+            route.name.toLowerCase().includes(routeName.toLowerCase())
+          );
+          
+          if (matchingRoutes.length === 0) {
+            // Return empty data for routes with no data
+            return {
+              name: routeName,
+              time: 0,
+              distance: 0,
+              cost: 0,
+              cylinders: 0
+            };
+          }
+          
+          // Calculate averages for this route type
+          const totalDistance = matchingRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
+          const totalDuration = matchingRoutes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
+          const totalCost = matchingRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
+          const totalCylinders = matchingRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
+          
+          return {
+            name: routeName,
+            time: Math.round(totalDuration / 60 / matchingRoutes.length), // Convert seconds to minutes and average
+            distance: Math.round(totalDistance / matchingRoutes.length * 10) / 10, // Average with 1 decimal precision
+            cost: Math.round(totalCost / matchingRoutes.length),
+            cylinders: Math.round(totalCylinders / matchingRoutes.length)
+          };
+        });
+        
+        console.log('Generated route summaries:', routeSummaries);
+        setChartData(routeSummaries);
+      } catch (error) {
+        console.error('Error loading route data for chart:', error);
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRouteData();
+  }, [fetchRouteData]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
     setRouteDetailOpen(true);
   };
-
-  // Chart data with cylinders data included to help with full/partial load analysis
-  const chartData = [
-    { name: 'Route 1', time: 45, distance: 32, cost: 280, cylinders: 24 }, // Full load
-    { name: 'Route 2', time: 38, distance: 27, cost: 230, cylinders: 18 }, // Partial load
-    { name: 'Route 3', time: 52, distance: 40, cost: 320, cylinders: 32 }, // Full load
-    { name: 'Route 4', time: 32, distance: 22, cost: 180, cylinders: 15 }, // Partial load
-    { name: 'Route 5', time: 42, distance: 30, cost: 260, cylinders: 22 }, // Full load
-    { name: 'Route 6', time: 60, distance: 48, cost: 350, cylinders: 28 }, // Full load
-  ];
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-300">
@@ -75,40 +133,50 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         </HoverCard>
       </CardHeader>
       <CardContent>
-        <div className="h-96">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" />
-              <YAxis yAxisId="left" orientation="left" stroke="#0088FE" />
-              <YAxis yAxisId="right" orientation="right" stroke="#00C49F" />
-              <Tooltip 
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: 'none', 
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)'
-                }} 
-                formatter={(value, name) => {
-                  if (name === 'cylinders') {
-                    // Convert value to number before comparing with FULL_LOAD_THRESHOLD
-                    const numValue = Number(value);
-                    return [`${value} (${numValue >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
-                  }
-                  return [`${value}`, name];
-                }}
-              />
-              <Legend />
-              <Bar yAxisId="left" dataKey="time" name="Time (min)" fill="#0088FE" radius={[4, 4, 0, 0]} />
-              <Bar yAxisId="left" dataKey="distance" name="Distance (km)" fill="#00C49F" radius={[4, 4, 0, 0]} />
-              <Bar yAxisId="right" dataKey="cost" name="Cost (R)" fill="#FFBB28" radius={[4, 4, 0, 0]} />
-              <Bar yAxisId="left" dataKey="cylinders" name="Cylinders" fill="#FF8042" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {loading || isLoading ? (
+          <div className="h-96 flex items-center justify-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : chartData.length > 0 ? (
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="name" />
+                <YAxis yAxisId="left" orientation="left" stroke="#0088FE" />
+                <YAxis yAxisId="right" orientation="right" stroke="#00C49F" />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)'
+                  }} 
+                  formatter={(value, name) => {
+                    if (name === 'cylinders') {
+                      // Convert value to number before comparing with FULL_LOAD_THRESHOLD
+                      const numValue = Number(value);
+                      return [`${value} (${numValue >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
+                    }
+                    return [`${value}`, name];
+                  }}
+                />
+                <Legend />
+                <Bar yAxisId="left" dataKey="time" name="Time (min)" fill="#0088FE" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="distance" name="Distance (km)" fill="#00C49F" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="right" dataKey="cost" name="Cost (R)" fill="#FFBB28" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="cylinders" name="Cylinders" fill="#FF8042" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-96 flex items-center justify-center">
+            <p className="text-muted-foreground">No route data available</p>
+          </div>
+        )}
         
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {routeLegendData.map((route) => (

@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 export interface RouteData {
   id: string;
@@ -33,10 +34,74 @@ export const useRouteData = () => {
         !route.name?.toLowerCase().includes('food lovers sunningdale')
       ) || [];
       
-      return filteredData;
+      // Sort by date (most recent first)
+      return filteredData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
       console.error('Error fetching route data:', error);
       toast.error('Failed to load route data');
+      return [];
+    }
+  };
+
+  // Fetch route data for a specific period
+  const fetchRouteDataForPeriod = async (days: number): Promise<RouteData[]> => {
+    try {
+      const endDate = new Date();
+      const startDate = subDays(endDate, days);
+      
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status, vehicle_id, total_duration')
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString())
+        .order('date', { ascending: false });
+      
+      if (error) {
+        console.error(`Error fetching route data for last ${days} days:`, error);
+        toast.error('Failed to load period-specific route data');
+        return [];
+      }
+      
+      const filteredData = data?.filter(route => 
+        !route.name?.toLowerCase().includes('food lovers sunningdale')
+      ) || [];
+      
+      return filteredData;
+    } catch (error) {
+      console.error(`Error fetching route data for last ${days} days:`, error);
+      toast.error('Failed to load period-specific route data');
+      return [];
+    }
+  };
+
+  // Fetch route data for today
+  const fetchTodayRouteData = async (): Promise<RouteData[]> => {
+    try {
+      const today = new Date();
+      const startOfToday = startOfDay(today);
+      const endOfToday = endOfDay(today);
+      
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, name, total_distance, total_cylinders, estimated_cost, date, status, vehicle_id, total_duration')
+        .gte('date', startOfToday.toISOString())
+        .lte('date', endOfToday.toISOString())
+        .order('date', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching today\'s route data:', error);
+        toast.error('Failed to load today\'s route data');
+        return [];
+      }
+      
+      const filteredData = data?.filter(route => 
+        !route.name?.toLowerCase().includes('food lovers sunningdale')
+      ) || [];
+      
+      return filteredData;
+    } catch (error) {
+      console.error('Error fetching today\'s route data:', error);
+      toast.error('Failed to load today\'s route data');
       return [];
     }
   };
@@ -112,7 +177,7 @@ export const useRouteData = () => {
       }
       
       // In a real system, you would have a column indicating if a route was optimized
-      // For now, we'll consider routes with lower estimated cost as "optimized"
+      // For now, we'll consider routes with status 'completed' or 'in_progress' as optimized
       const totalRoutes = routeData.length;
       
       // Consider routes with status 'completed' or 'in_progress' as optimized
@@ -188,11 +253,32 @@ export const useRouteData = () => {
     }
   };
 
+  // Fetch route data for a specific route name
+  const fetchRouteDataByName = async (routeName: string): Promise<RouteData[]> => {
+    try {
+      const allRoutes = await fetchRouteData();
+      
+      // Filter routes by name (case insensitive partial match)
+      const matchingRoutes = allRoutes.filter(route => 
+        route.name.toLowerCase().includes(routeName.toLowerCase())
+      );
+      
+      return matchingRoutes;
+    } catch (error) {
+      console.error(`Error fetching route data for route ${routeName}:`, error);
+      toast.error(`Failed to load data for route ${routeName}`);
+      return [];
+    }
+  };
+
   return {
     fetchRouteData,
+    fetchRouteDataForPeriod,
+    fetchTodayRouteData,
     fetchActiveRoutes,
     fetchRouteHistory,
     getOptimizationStats,
-    getWeeklyDeliveryData
+    getWeeklyDeliveryData,
+    fetchRouteDataByName
   };
 };
