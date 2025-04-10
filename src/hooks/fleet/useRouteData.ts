@@ -34,6 +34,8 @@ export const useRouteData = () => {
         !route.name?.toLowerCase().includes('food lovers sunningdale')
       ) || [];
       
+      console.log(`useRouteData - Fetched ${filteredData.length} routes`);
+      
       // Sort by date (most recent first)
       return filteredData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
@@ -48,6 +50,8 @@ export const useRouteData = () => {
     try {
       const endDate = new Date();
       const startDate = subDays(endDate, days);
+      
+      console.log(`useRouteData - Fetching route data from ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
       
       const { data, error } = await supabase
         .from('routes')
@@ -65,6 +69,8 @@ export const useRouteData = () => {
       const filteredData = data?.filter(route => 
         !route.name?.toLowerCase().includes('food lovers sunningdale')
       ) || [];
+      
+      console.log(`useRouteData - Fetched ${filteredData.length} routes for the last ${days} days`);
       
       return filteredData;
     } catch (error) {
@@ -256,12 +262,16 @@ export const useRouteData = () => {
   // Fetch route data for a specific route name
   const fetchRouteDataByName = async (routeName: string): Promise<RouteData[]> => {
     try {
+      console.log(`useRouteData - Fetching routes for name: "${routeName}"`);
+      
       const allRoutes = await fetchRouteData();
       
       // Filter routes by name (case insensitive partial match)
       const matchingRoutes = allRoutes.filter(route => 
-        route.name.toLowerCase().includes(routeName.toLowerCase())
+        route.name && route.name.toLowerCase().includes(routeName.toLowerCase())
       );
+      
+      console.log(`useRouteData - Found ${matchingRoutes.length} routes matching "${routeName}"`);
       
       return matchingRoutes;
     } catch (error) {

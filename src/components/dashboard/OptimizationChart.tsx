@@ -38,6 +38,8 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           // Fetch actual route data
           const routesData = await fetchRouteData();
           
+          console.log('OptimizationChart - Fetched routes data:', routesData.length, 'routes');
+          
           if (!routesData.length) {
             console.log('No routes data available for OptimizationChart');
             setLoading(false);
@@ -49,6 +51,11 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           
           // Calculate load distribution (full vs partial loads)
           const loadStats = calculateLoadDistribution(routesData);
+          
+          console.log('OptimizationChart - Calculated stats:', { 
+            optimization: optimizationStats,
+            loadDistribution: loadStats
+          });
           
           setChartData({
             optimizationData: [

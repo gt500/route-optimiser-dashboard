@@ -44,8 +44,11 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
       const loadRouteData = async () => {
         setLoading(true);
         try {
+          console.log('RouteEfficiencyChart - Starting to fetch route data');
           // Fetch actual route data from database
           const routesData = await fetchRouteData();
+          
+          console.log('RouteEfficiencyChart - Fetched routes data:', routesData.length, 'routes');
           
           if (!routesData.length) {
             console.log('No routes data available');
@@ -63,8 +66,10 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
           const routeSummaries = routeNames.map(routeName => {
             // Find all routes that match this name
             const matchingRoutes = routesData.filter(route => 
-              route.name.toLowerCase().includes(routeName.toLowerCase())
+              route.name && route.name.toLowerCase().includes(routeName.toLowerCase())
             );
+            
+            console.log(`RouteEfficiencyChart - Found ${matchingRoutes.length} routes matching "${routeName}"`);
             
             if (matchingRoutes.length === 0) {
               // Return empty data for routes with no data
@@ -92,7 +97,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
             };
           });
           
-          console.log('Generated route summaries once:', routeSummaries);
+          console.log('RouteEfficiencyChart - Generated route summaries:', routeSummaries);
           setChartData(routeSummaries);
           setDataLoaded(true);
         } catch (error) {
