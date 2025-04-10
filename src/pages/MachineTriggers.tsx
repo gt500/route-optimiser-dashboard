@@ -38,6 +38,7 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
 const MachineTriggers = () => {
   const [lowStockAlert, setLowStockAlert] = useState<MachineData | null>(null);
   const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<Record<string, { time: string, user: string }>>({});
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: machineData, isLoading, error } = useQuery({
@@ -54,11 +55,12 @@ const MachineTriggers = () => {
         !acknowledgedAlerts[`${machine.site_name}-${machine.machine_name}`]
       );
       
-      if (lowStockMachine) {
+      if (lowStockMachine && !isAlertOpen) {
         setLowStockAlert(lowStockMachine);
+        setIsAlertOpen(true);
       }
     }
-  }, [machineData, acknowledgedAlerts]);
+  }, [machineData, acknowledgedAlerts, isAlertOpen]);
 
   const handleAcknowledgeAlert = () => {
     if (lowStockAlert) {
@@ -77,7 +79,13 @@ const MachineTriggers = () => {
       });
       
       setLowStockAlert(null);
+      setIsAlertOpen(false);
     }
+  };
+
+  const closeAlert = () => {
+    setIsAlertOpen(false);
+    setLowStockAlert(null);
   };
 
   return (
@@ -150,7 +158,7 @@ const MachineTriggers = () => {
       )}
 
       {/* Low Stock Alert Dialog */}
-      <AlertDialog open={!!lowStockAlert} onOpenChange={(open) => !open && setLowStockAlert(null)}>
+      <AlertDialog open={isAlertOpen} onOpenChange={closeAlert}>
         <AlertDialogContent className="border-destructive animate-pulse">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive flex items-center gap-2">
