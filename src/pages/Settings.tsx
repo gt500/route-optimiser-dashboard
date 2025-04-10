@@ -647,6 +647,8 @@ const SettingsPage = () => {
               </form>
             </Form>
           </Card>
+          
+          {user && <TestNotifications />}
         </TabsContent>
         
         <TabsContent value="appearance" className="space-y-4">
