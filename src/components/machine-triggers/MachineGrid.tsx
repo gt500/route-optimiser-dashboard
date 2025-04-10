@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AlertTriangle, Package } from "lucide-react";
 import MachineCard from './MachineCard';
-import { MachineData } from './types';
+import { MachineData, CountryRegion } from './types';
 import { Toggle } from "@/components/ui/toggle";
+import RegionSelector from './RegionSelector';
+import AddRegionDialog from './AddRegionDialog';
 
 interface MachineGridProps {
   machineData: MachineData[] | undefined;
@@ -13,21 +15,78 @@ interface MachineGridProps {
   acknowledgedAlerts: Record<string, { time: string, user: string }>;
 }
 
+// Define initial country-region structure
+const initialCountryRegions: CountryRegion[] = [
+  {
+    country: "South Africa",
+    regions: ["Western Cape", "Gauteng", "Eastern Cape", "KZN"]
+  },
+  {
+    country: "USA",
+    regions: ["Florida", "Oklahoma", "Texas", "Georgia"]
+  }
+];
+
 const MachineGrid = ({ 
   machineData, 
   isLoading, 
   error, 
   acknowledgedAlerts 
 }: MachineGridProps) => {
-  const [showLowStockOnly, setShowLowStockOnly] = React.useState(false);
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [countryRegions, setCountryRegions] = useState<CountryRegion[]>(initialCountryRegions);
+  const [isAddRegionOpen, setIsAddRegionOpen] = useState(false);
+  const [selectedCountryForRegion, setSelectedCountryForRegion] = useState("");
   
-  // Filter machines with low stock if the filter is active
-  const filteredMachines = React.useMemo(() => {
+  // Set all current machines to Western Cape region if no region specified
+  const processedMachineData = useMemo(() => {
     if (!machineData) return [];
-    return showLowStockOnly 
-      ? machineData.filter(machine => machine.cylinder_stock <= 7)
-      : machineData;
-  }, [machineData, showLowStockOnly]);
+    
+    return machineData.map(machine => ({
+      ...machine,
+      country: machine.country || "South Africa",
+      region: machine.region || "Western Cape"
+    }));
+  }, [machineData]);
+  
+  // Filter machines by low stock and selected region
+  const filteredMachines = useMemo(() => {
+    if (!processedMachineData) return [];
+    
+    return processedMachineData.filter(machine => {
+      // Filter by stock level
+      const passesStockFilter = !showLowStockOnly || machine.cylinder_stock <= 7;
+      
+      // Filter by region
+      const passesRegionFilter = !selectedCountry || 
+        (machine.country === selectedCountry && 
+        (!selectedRegion || machine.region === selectedRegion));
+      
+      return passesStockFilter && passesRegionFilter;
+    });
+  }, [processedMachineData, showLowStockOnly, selectedCountry, selectedRegion]);
+
+  const handleSelectCountryRegion = (country: string, region: string) => {
+    setSelectedCountry(country || null);
+    setSelectedRegion(region || null);
+  };
+
+  const handleAddRegionClick = (country: string) => {
+    setSelectedCountryForRegion(country);
+    setIsAddRegionOpen(true);
+  };
+
+  const handleAddRegion = (country: string, newRegion: string) => {
+    setCountryRegions(prevRegions => 
+      prevRegions.map(item => 
+        item.country === country 
+          ? { ...item, regions: [...item.regions, newRegion] } 
+          : item
+      )
+    );
+  };
 
   if (isLoading) {
     return (
@@ -57,12 +116,20 @@ const MachineGrid = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <RegionSelector
+          selectedCountry={selectedCountry}
+          selectedRegion={selectedRegion}
+          onSelectCountryRegion={handleSelectCountryRegion}
+          countryRegions={countryRegions}
+          onAddRegion={handleAddRegionClick}
+        />
+        
         <Toggle
           variant="outline"
           pressed={showLowStockOnly}
           onPressedChange={setShowLowStockOnly}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 h-10"
           aria-label="Show only machines with low stock"
         >
           <Package className="h-4 w-4" />
@@ -85,6 +152,13 @@ const MachineGrid = ({
           </div>
         )}
       </div>
+      
+      <AddRegionDialog
+        open={isAddRegionOpen}
+        country={selectedCountryForRegion}
+        onClose={() => setIsAddRegionOpen(false)}
+        onAddRegion={handleAddRegion}
+      />
     </div>
   );
 };

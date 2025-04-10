@@ -6,4 +6,11 @@ export interface MachineData {
   merchant_id: string;
   cylinder_stock: number;
   last_update: string;
+  country?: string;
+  region?: string;
+}
+
+export interface CountryRegion {
+  country: string;
+  regions: string[];
 }

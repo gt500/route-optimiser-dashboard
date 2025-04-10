@@ -56,7 +56,7 @@ const MachineTriggers = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Machine Triggers</h1>
         <p className="text-muted-foreground">
-          Monitor machine status and automation triggers for your fleet.
+          Monitor machine status and automation triggers for your fleet by country and region.
         </p>
       </div>
 
