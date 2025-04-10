@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { COLORS } from '@/components/analytics/data/routeLegendData';
@@ -27,90 +27,95 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
   });
   
   const { fetchRouteData } = useRouteData();
+  const dataFetchedRef = useRef(false);
   
   useEffect(() => {
-    const calculateChartData = async () => {
-      setLoading(true);
-      try {
-        // Fetch actual route data
-        const routesData = await fetchRouteData();
-        
-        if (!routesData.length) {
-          console.log('No routes data available for OptimizationChart');
+    // Only fetch data once when the component mounts
+    if (!dataFetchedRef.current) {
+      const calculateChartData = async () => {
+        setLoading(true);
+        try {
+          // Fetch actual route data
+          const routesData = await fetchRouteData();
+          
+          if (!routesData.length) {
+            console.log('No routes data available for OptimizationChart');
+            setLoading(false);
+            return;
+          }
+          
+          // Calculate optimization data (optimized vs standard routes)
+          const optimizationStats = calculateOptimizationStats(routesData);
+          
+          // Calculate load distribution (full vs partial loads)
+          const loadStats = calculateLoadDistribution(routesData);
+          
+          setChartData({
+            optimizationData: [
+              { name: 'Optimized Routes', value: optimizationStats.optimized },
+              { name: 'Standard Routes', value: optimizationStats.standard }
+            ],
+            loadDistributionData: [
+              { name: 'Full Loads', value: loadStats.fullLoads },
+              { name: 'Partial Loads', value: loadStats.partialLoads }
+            ],
+            optimizationPercentage: optimizationStats.percentage
+          });
+        } catch (error) {
+          console.error('Error calculating chart data:', error);
+        } finally {
           setLoading(false);
-          return;
+          dataFetchedRef.current = true;
         }
-        
-        // Calculate optimization data (optimized vs standard routes)
-        const optimizationStats = await calculateOptimizationStats(routesData);
-        
-        // Calculate load distribution (full vs partial loads)
-        const loadStats = calculateLoadDistribution(routesData);
-        
-        setChartData({
-          optimizationData: [
-            { name: 'Optimized Routes', value: optimizationStats.optimized },
-            { name: 'Standard Routes', value: optimizationStats.standard }
-          ],
-          loadDistributionData: [
-            { name: 'Full Loads', value: loadStats.fullLoads },
-            { name: 'Partial Loads', value: loadStats.partialLoads }
-          ],
-          optimizationPercentage: optimizationStats.percentage
-        });
-      } catch (error) {
-        console.error('Error calculating chart data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Function to calculate optimization stats
-    const calculateOptimizationStats = async (routesData: any[]) => {
-      const totalRoutes = routesData.length;
-      
-      if (totalRoutes === 0) {
-        return { optimized: 0, standard: 0, percentage: 0 };
-      }
-      
-      // Consider routes with status 'completed' or 'in_progress' as optimized
-      const optimizedRoutes = routesData.filter(
-        route => route.status === 'completed' || route.status === 'in_progress'
-      ).length;
-      
-      // Calculate standard routes (not optimized)
-      const standardRoutes = totalRoutes - optimizedRoutes;
-      
-      // Calculate percentage of optimized routes
-      const optimizationPercentage = Math.round((optimizedRoutes / totalRoutes) * 100);
-      
-      return {
-        optimized: optimizedRoutes,
-        standard: standardRoutes,
-        percentage: optimizationPercentage
       };
-    };
-    
-    // Function to calculate load distribution
-    const calculateLoadDistribution = (routesData: any[]) => {
-      // Define threshold for full load (20+ cylinders)
-      const FULL_LOAD_THRESHOLD = 20;
       
-      // Count full and partial loads
-      const fullLoads = routesData.filter(route => 
-        (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD
-      ).length;
-      
-      const partialLoads = routesData.length - fullLoads;
-      
-      return {
-        fullLoads,
-        partialLoads
-      };
-    };
-    
-    calculateChartData();
+      calculateChartData();
+    }
   }, [fetchRouteData]);
+  
+  // Function to calculate optimization stats
+  const calculateOptimizationStats = (routesData: any[]) => {
+    const totalRoutes = routesData.length;
+    
+    if (totalRoutes === 0) {
+      return { optimized: 0, standard: 0, percentage: 0 };
+    }
+    
+    // Consider routes with status 'completed' or 'in_progress' as optimized
+    const optimizedRoutes = routesData.filter(
+      route => route.status === 'completed' || route.status === 'in_progress'
+    ).length;
+    
+    // Calculate standard routes (not optimized)
+    const standardRoutes = totalRoutes - optimizedRoutes;
+    
+    // Calculate percentage of optimized routes
+    const optimizationPercentage = Math.round((optimizedRoutes / totalRoutes) * 100);
+    
+    return {
+      optimized: optimizedRoutes,
+      standard: standardRoutes,
+      percentage: optimizationPercentage
+    };
+  };
+  
+  // Function to calculate load distribution
+  const calculateLoadDistribution = (routesData: any[]) => {
+    // Define threshold for full load (20+ cylinders)
+    const FULL_LOAD_THRESHOLD = 20;
+    
+    // Count full and partial loads
+    const fullLoads = routesData.filter(route => 
+      (route.total_cylinders || 0) >= FULL_LOAD_THRESHOLD
+    ).length;
+    
+    const partialLoads = routesData.length - fullLoads;
+    
+    return {
+      fullLoads,
+      partialLoads
+    };
+  };
   
   // Use the most recent data (either from props or calculated from real data)
   const displayData = loading ? 

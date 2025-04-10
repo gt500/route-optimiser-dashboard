@@ -35,71 +35,77 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const { fetchRouteData } = useRouteData();
 
   useEffect(() => {
-    const loadRouteData = async () => {
-      setLoading(true);
-      try {
-        // Fetch actual route data from database
-        const routesData = await fetchRouteData();
-        
-        if (!routesData.length) {
-          console.log('No routes data available');
-          setChartData([]);
-          setLoading(false);
-          return;
-        }
-
-        // Map the raw data to the format needed for the chart
-        // Focus on the route names mentioned in routeLegendData
-        const routeNames = routeLegendData.map(route => route.name);
-        
-        // Filter and summarize route data by route name
-        const routeSummaries = routeNames.map(routeName => {
-          // Find all routes that match this name
-          const matchingRoutes = routesData.filter(route => 
-            route.name.toLowerCase().includes(routeName.toLowerCase())
-          );
+    // Only load data if it hasn't been loaded yet or if isLoading prop changes from true to false
+    if (!dataLoaded || isLoading) {
+      const loadRouteData = async () => {
+        setLoading(true);
+        try {
+          // Fetch actual route data from database
+          const routesData = await fetchRouteData();
           
-          if (matchingRoutes.length === 0) {
-            // Return empty data for routes with no data
+          if (!routesData.length) {
+            console.log('No routes data available');
+            setChartData([]);
+            setLoading(false);
+            setDataLoaded(true);
+            return;
+          }
+
+          // Map the raw data to the format needed for the chart
+          // Focus on the route names mentioned in routeLegendData
+          const routeNames = routeLegendData.map(route => route.name);
+          
+          // Filter and summarize route data by route name
+          const routeSummaries = routeNames.map(routeName => {
+            // Find all routes that match this name
+            const matchingRoutes = routesData.filter(route => 
+              route.name.toLowerCase().includes(routeName.toLowerCase())
+            );
+            
+            if (matchingRoutes.length === 0) {
+              // Return empty data for routes with no data
+              return {
+                name: routeName,
+                time: 0,
+                distance: 0,
+                cost: 0,
+                cylinders: 0
+              };
+            }
+            
+            // Calculate averages for this route type
+            const totalDistance = matchingRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
+            const totalDuration = matchingRoutes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
+            const totalCost = matchingRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
+            const totalCylinders = matchingRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
+            
             return {
               name: routeName,
-              time: 0,
-              distance: 0,
-              cost: 0,
-              cylinders: 0
+              time: Math.round(totalDuration / 60 / matchingRoutes.length), // Convert seconds to minutes and average
+              distance: Math.round(totalDistance / matchingRoutes.length * 10) / 10, // Average with 1 decimal precision
+              cost: Math.round(totalCost / matchingRoutes.length),
+              cylinders: Math.round(totalCylinders / matchingRoutes.length)
             };
-          }
+          });
           
-          // Calculate averages for this route type
-          const totalDistance = matchingRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
-          const totalDuration = matchingRoutes.reduce((sum, route) => sum + (route.total_duration || 0), 0);
-          const totalCost = matchingRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
-          const totalCylinders = matchingRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
-          
-          return {
-            name: routeName,
-            time: Math.round(totalDuration / 60 / matchingRoutes.length), // Convert seconds to minutes and average
-            distance: Math.round(totalDistance / matchingRoutes.length * 10) / 10, // Average with 1 decimal precision
-            cost: Math.round(totalCost / matchingRoutes.length),
-            cylinders: Math.round(totalCylinders / matchingRoutes.length)
-          };
-        });
-        
-        console.log('Generated route summaries:', routeSummaries);
-        setChartData(routeSummaries);
-      } catch (error) {
-        console.error('Error loading route data for chart:', error);
-        setChartData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+          console.log('Generated route summaries once:', routeSummaries);
+          setChartData(routeSummaries);
+          setDataLoaded(true);
+        } catch (error) {
+          console.error('Error loading route data for chart:', error);
+          setChartData([]);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadRouteData();
-  }, [fetchRouteData]);
+      loadRouteData();
+    }
+  }, [fetchRouteData, isLoading, dataLoaded]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
