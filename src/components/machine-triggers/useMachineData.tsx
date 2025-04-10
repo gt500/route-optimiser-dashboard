@@ -13,16 +13,34 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
     const data = await response.json();
     return data.response.results
       .filter((item: any) => !item.SITE_NAME.includes('Food Emporium')) // Enhanced filtering to exclude any Food Emporium
-      .map((item: any) => ({
-        site_name: item.SITE_NAME || 'Unknown Site',
-        machine_name: item.M_CODE || 'Unknown Machine',
-        terminal_id: item.TERMINAL_ID || item.M_CODE || item.SITE_NAME || 'Unknown Terminal', // Use site name as fallback
-        merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
-        cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
-        last_update: item.Modified_Date || new Date().toISOString(),
-        country: item.COUNTRY || 'South Africa', // Add country info
-        region: item.REGION || 'Western Cape', // Add region info
-      }));
+      .map((item: any) => {
+        // Process region and country information
+        const country = item.COUNTRY || 'South Africa';
+        let region = item.REGION;
+        
+        // Set default region based on country if not provided
+        if (!region) {
+          if (country === 'South Africa') {
+            region = 'Western Cape';
+          } else if (country === 'USA') {
+            region = 'Florida';
+          } else {
+            // Default for any other country
+            region = 'Default Region';
+          }
+        }
+        
+        return {
+          site_name: item.SITE_NAME || 'Unknown Site',
+          machine_name: item.M_CODE || 'Unknown Machine',
+          terminal_id: item.TERMINAL_ID || item.M_CODE || item.SITE_NAME || 'Unknown Terminal',
+          merchant_id: item.MERCHANT_ID || 'Unknown Merchant',
+          cylinder_stock: parseInt(item.EMPTY_CYLINDERS || '0', 10),
+          last_update: item.Modified_Date || new Date().toISOString(),
+          country: country,
+          region: region,
+        };
+      });
   } catch (error) {
     console.error('Error fetching machine data:', error);
     throw error;

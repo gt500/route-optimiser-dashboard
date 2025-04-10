@@ -54,20 +54,26 @@ export const useMonthlyData = (date: Date | undefined) => {
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
       
-      console.log('Fetching routes for month between:', monthStart.toISOString(), 'and', monthEnd.toISOString());
+      // Make monthEnd include the entire day
+      const adjustedMonthEnd = new Date(monthEnd);
+      adjustedMonthEnd.setHours(23, 59, 59, 999);
       
-      // Fetch routes for the entire month
+      console.log('Fetching routes for month between:', monthStart.toISOString(), 'and', adjustedMonthEnd.toISOString());
+      
+      // Fetch routes for the entire month with improved date range filtering
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
         .gte('date', monthStart.toISOString())
-        .lt('date', addDays(monthEnd, 1).toISOString())
+        .lte('date', adjustedMonthEnd.toISOString())
         .order('date', { ascending: true });
       
       if (routesError) {
         console.error('Error fetching routes:', routesError);
         throw routesError;
       }
+      
+      console.log('Found routes for month:', routesData?.length || 0);
       
       // Get all weeks in the month
       const weeksInMonth = eachWeekOfInterval(

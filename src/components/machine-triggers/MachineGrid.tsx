@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AlertTriangle, Package } from "lucide-react";
 import MachineCard from './MachineCard';
@@ -90,17 +90,17 @@ const MachineGrid = ({
     });
   }, [processedMachineData, showLowStockOnly, selectedCountry, selectedRegion]);
 
-  const handleSelectCountryRegion = (country: string, region: string) => {
+  const handleSelectCountryRegion = useCallback((country: string, region: string) => {
     setSelectedCountry(country || null);
     setSelectedRegion(region || null);
-  };
+  }, []);
 
-  const handleAddRegionClick = (country: string) => {
+  const handleAddRegionClick = useCallback((country: string) => {
     setSelectedCountryForRegion(country);
     setIsAddRegionOpen(true);
-  };
+  }, []);
 
-  const handleAddRegion = (country: string, newRegion: string) => {
+  const handleAddRegion = useCallback((country: string, newRegion: string) => {
     // Validate inputs before proceeding
     if (!country || !newRegion) {
       toast({
@@ -147,15 +147,12 @@ const MachineGrid = ({
     // Update state with the new regions
     setCountryRegions(updatedRegions);
     
-    // Close dialog after successful addition
-    setIsAddRegionOpen(false);
-    
     console.log(`Added region "${newRegion}" to ${country}:`, updatedRegions);
-  };
+  }, [countryRegions, toast]);
 
-  const handleCloseRegionDialog = () => {
+  const handleCloseRegionDialog = useCallback(() => {
     setIsAddRegionOpen(false);
-  };
+  }, []);
 
   if (isLoading) {
     return (

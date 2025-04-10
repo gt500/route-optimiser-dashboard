@@ -78,14 +78,10 @@ const AddRegionDialog = ({
     }
   };
   
-  // Handle dialog close properly
-  const handleDialogClose = () => {
-    setIsSubmitting(false);
-    onClose();
-  };
-  
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
+    <Dialog open={open} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Region to {country}</DialogTitle>
@@ -108,7 +104,7 @@ const AddRegionDialog = ({
             <Button 
               type="button" 
               variant="outline" 
-              onClick={handleDialogClose}
+              onClick={onClose}
               disabled={isSubmitting}
             >
               Cancel

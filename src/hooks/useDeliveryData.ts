@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,25 +32,27 @@ export const useDeliveryData = (date: Date | undefined) => {
     const formattedDateStr = format(date, 'yyyy-MM-dd');
     
     try {
-      // Use a more reliable approach to filter date values in Supabase
-      // Instead of using the 'like' operator, we'll use 'gte' and 'lt' to define a date range
+      // Improved date range handling for better accuracy
       const startOfDay = new Date(formattedDateStr);
       const endOfDay = new Date(formattedDateStr);
-      endOfDay.setDate(endOfDay.getDate() + 1);
+      endOfDay.setHours(23, 59, 59, 999);
 
       console.log('Fetching routes between:', startOfDay.toISOString(), 'and', endOfDay.toISOString());
       
+      // Update the query to use explicit timestamps for better accuracy
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
-        .select('id, name, date, total_distance, total_duration, estimated_cost, status')
+        .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
         .gte('date', startOfDay.toISOString())
-        .lt('date', endOfDay.toISOString())
+        .lte('date', endOfDay.toISOString()) // Changed to lte to include the end of day
         .order('created_at', { ascending: false });
       
       if (routesError) {
         console.error('Error fetching routes:', routesError);
         throw routesError;
       }
+      
+      console.log('Found routes for date', formattedDateStr, ':', routesData?.length || 0);
       
       if (!routesData || routesData.length === 0) {
         setDeliveries([]);
@@ -68,6 +70,14 @@ export const useDeliveryData = (date: Date | undefined) => {
       if (deliveriesError) {
         console.error('Error fetching deliveries:', deliveriesError);
         throw deliveriesError;
+      }
+      
+      console.log('Found deliveries:', deliveriesData?.length || 0);
+      
+      if (!deliveriesData || deliveriesData.length === 0) {
+        setDeliveries([]);
+        setIsLoading(false);
+        return;
       }
       
       const locationIds = deliveriesData.map(delivery => delivery.location_id);
@@ -110,9 +120,12 @@ export const useDeliveryData = (date: Date | undefined) => {
           totalDistance: route.total_distance || 0,
           totalDuration: route.total_duration || 0,
           estimatedCost: route.estimated_cost || 0,
-          deliveries: routeDeliveries
+          deliveries: routeDeliveries,
+          totalCylinders: route.total_cylinders || 0
         };
       });
+      
+      console.log('Processed route deliveries:', routeDeliveries.length);
       
       const transformedData: DeliveryData[] = [];
       
@@ -135,6 +148,7 @@ export const useDeliveryData = (date: Date | undefined) => {
         });
       });
       
+      console.log('Final transformed data:', transformedData.length);
       setDeliveries(transformedData);
       
       if (transformedData.length > 0) {

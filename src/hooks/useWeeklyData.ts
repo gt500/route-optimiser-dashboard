@@ -46,20 +46,26 @@ export const useWeeklyData = (date: Date | undefined) => {
       const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Monday
       const weekEnd = endOfWeek(date, { weekStartsOn: 1 }); // Sunday
       
-      console.log('Fetching routes for week between:', weekStart.toISOString(), 'and', weekEnd.toISOString());
+      // Make weekEnd include the entire day
+      const adjustedWeekEnd = new Date(weekEnd);
+      adjustedWeekEnd.setHours(23, 59, 59, 999);
       
-      // Fetch routes for the entire week
+      console.log('Fetching routes for week between:', weekStart.toISOString(), 'and', adjustedWeekEnd.toISOString());
+      
+      // Fetch routes for the entire week with improved date range filtering
       const { data: routesData, error: routesError } = await supabase
         .from('routes')
         .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
         .gte('date', weekStart.toISOString())
-        .lt('date', addDays(weekEnd, 1).toISOString())
+        .lte('date', adjustedWeekEnd.toISOString())
         .order('date', { ascending: true });
       
       if (routesError) {
         console.error('Error fetching routes:', routesError);
         throw routesError;
       }
+      
+      console.log('Found routes for week:', routesData?.length || 0);
       
       // Create daily summary data structure
       const weekData: WeeklyDataSummary[] = Array.from({ length: 7 }, (_, i) => {
