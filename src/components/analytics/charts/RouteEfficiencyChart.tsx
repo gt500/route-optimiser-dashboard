@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,11 +17,10 @@ import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
+import { toast } from 'sonner';
 
-// Define full load threshold consistently across components
 const FULL_LOAD_THRESHOLD = 20;
 
-// Dummy data for the chart
 const dummyChartData = [
   { name: 'Cape Town CBD', routeId: 'Route 1', time: 45, distance: 12.5, cost: 210, cylinders: 25 },
   { name: 'Gas Depot - Southern Suburbs', routeId: 'Route 2', time: 60, distance: 18.3, cost: 280, cylinders: 32 },
@@ -49,35 +47,60 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [loading, setLoading] = useState(true);
   const { fetchRouteDataByName } = useRouteData();
   const [realWestCoastData, setRealWestCoastData] = useState<any | null>(null);
+  const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
 
   useEffect(() => {
-    // Use dummy data instead of trying to process route data
-    console.log('RouteEfficiencyChart - Using dummy data for chart');
-    // Add routeId to the data if it doesn't exist
-    const processedData = dummyChartData.map((route, index) => ({
-      ...route,
-      routeId: route.routeId || `Route ${index + 1}`
-    }));
-    setChartData(processedData);
-    setLoading(false);
-    
-    // Fetch real data for West Coast
     const fetchWestCoastData = async () => {
       try {
+        console.log('Fetching West Coast route data...');
+        setDataFetchAttempted(true);
         const westCoastData = await fetchRouteDataByName('West Coast');
+        
         if (westCoastData && westCoastData.length > 0) {
-          console.log('Found West Coast route data:', westCoastData);
+          console.log('Found West Coast route data:', westCoastData[0]);
           setRealWestCoastData(westCoastData[0]);
+          toast.success('Real data loaded for West Coast route');
         } else {
-          console.log('No West Coast route data found');
+          console.log('No West Coast route data found in database');
+          setRealWestCoastData(null);
         }
       } catch (error) {
         console.error('Error fetching West Coast route data:', error);
+        setRealWestCoastData(null);
+      } finally {
+        updateChartData();
       }
     };
     
-    fetchWestCoastData();
-  }, [fetchRouteDataByName]);
+    const updateChartData = () => {
+      const processedData = dummyChartData.map((route, index) => {
+        if (route.name === 'West Coast' && realWestCoastData) {
+          return {
+            name: realWestCoastData.name || 'West Coast',
+            routeId: 'Route 6',
+            time: Math.round(realWestCoastData.total_duration / 60) || 65,
+            distance: realWestCoastData.total_distance || 22.4,
+            cost: realWestCoastData.estimated_cost || 310,
+            cylinders: realWestCoastData.total_cylinders || 15
+          };
+        }
+        
+        return {
+          ...route,
+          routeId: route.routeId || `Route ${index + 1}`
+        };
+      });
+      
+      setChartData(processedData);
+      setLoading(false);
+    };
+    
+    updateChartData();
+    
+    if (!dataFetchAttempted) {
+      fetchWestCoastData();
+    }
+  }, [fetchRouteDataByName, dataFetchAttempted, realWestCoastData]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
@@ -135,14 +158,12 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                   }} 
                   formatter={(value, name) => {
                     if (name === 'cylinders') {
-                      // Convert value to number before comparing with FULL_LOAD_THRESHOLD
                       const numValue = Number(value);
                       return [`${value} (${numValue >= FULL_LOAD_THRESHOLD ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
                     }
                     return [`${value}`, name];
                   }}
                   labelFormatter={(label) => {
-                    // Find the full name for the route ID
                     const routeItem = chartData.find(item => item.routeId === label);
                     return routeItem ? `${label}: ${routeItem.name}` : label;
                   }}
@@ -163,7 +184,6 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {routeLegendData.map((route) => {
-            // Special handling for West Coast to use real data if available
             const isWestCoast = route.name.includes('West Coast');
             const routeMetrics = isWestCoast && realWestCoastData 
               ? {
