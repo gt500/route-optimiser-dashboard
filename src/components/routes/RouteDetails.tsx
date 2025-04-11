@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Fuel, AlertTriangle, Truck } from 'lucide-react';
 import FuelCostEditor from './FuelCostEditor';
 import RouteMetricsGrid from './metrics/RouteMetricsGrid';
-import { LocationType } from '@/components/locations/LocationEditDialog';
+import { LocationType } from '@/types/location';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
@@ -88,8 +87,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     stops: route.locations.map(location => ({
       siteName: location.name,
       cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
-      kms: location.distance || 0, // Use optional chaining to avoid errors
-      fuelCost: location.fuel_cost || 0 // Use optional chaining to avoid errors
+      kms: location.distance !== undefined ? location.distance : 0,
+      fuelCost: location.fuel_cost !== undefined ? location.fuel_cost : 0
     }))
   };
 
