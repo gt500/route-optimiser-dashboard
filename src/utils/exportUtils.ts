@@ -35,8 +35,8 @@ export const exportToExcel = (data: ExportableData[], filename: string) => {
       { siteName: 'TOTALS', cylinders: totalCylinders, kms: totalKms, fuelCost: totalFuelCost }
     ], { skipHeader: true, origin: -1 });
     
-    // Generate Excel file
-    XLSX.writeFile(workbook, `${filename}.xlsx`);
+    // Generate Excel file with newer security-enhanced method
+    XLSX.writeFile(workbook, `${filename}.xlsx`, { bookType: 'xlsx', bookSST: false, type: 'binary' });
   } catch (error) {
     console.error('Error exporting to Excel:', error);
     throw new Error('Failed to export data to Excel');
