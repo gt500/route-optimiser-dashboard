@@ -16,6 +16,7 @@ import { Info, Route, RefreshCw } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
+import RouteAnalysisDialog from '../RouteAnalysisDialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
@@ -43,6 +44,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   routeData
 }) => {
   const [routeDetailOpen, setRouteDetailOpen] = useState(false);
+  const [routeAnalysisOpen, setRouteAnalysisOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +117,11 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
+    setRouteAnalysisOpen(true);
+  };
+
+  const handleViewDetails = (route: {id: string; name: string; color: string}) => {
+    setSelectedRoute(route);
     setRouteDetailOpen(true);
   };
 
@@ -140,6 +147,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
             <p className="text-sm">
               Click for detailed explanation of each route in the performance chart. 
               Routes with {FULL_LOAD_PER_SITE}+ cylinders per site are considered full loads.
+              AI analysis is now available by clicking on route cards.
             </p>
           </HoverCardContent>
         </HoverCard>
@@ -201,15 +209,69 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                   title: `Route 6 (Real Data)`,
                   value: realWestCoastData.name || 'West Coast',
                   subtitle: (
-                    <span className="text-xs">
-                      {`Distance: ${realWestCoastData.total_distance?.toFixed(1) || '0'} km • Cylinders: ${realWestCoastData.total_cylinders || '0'}`}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs">
+                        {`Distance: ${realWestCoastData.total_distance?.toFixed(1) || '0'} km • Cylinders: ${realWestCoastData.total_cylinders || '0'}`}
+                      </span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(route);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRouteCardClick(route);
+                          }}
+                        >
+                          AI Analysis
+                        </Button>
+                      </div>
+                    </div>
                   )
                 }
               : {
                   title: route.id,
                   value: route.name,
-                  subtitle: <span className="text-xs">{route.description}</span>
+                  subtitle: (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs">{route.description}</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(route);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRouteCardClick(route);
+                          }}
+                        >
+                          AI Analysis
+                        </Button>
+                      </div>
+                    </div>
+                  )
                 };
                 
             return (
@@ -228,13 +290,22 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
       </CardContent>
 
       {selectedRoute && (
-        <RouteDetailDialog
-          open={routeDetailOpen}
-          onOpenChange={setRouteDetailOpen}
-          routeId={selectedRoute.id}
-          routeName={selectedRoute.name}
-          routeColor={getColorClass(selectedRoute.color)}
-        />
+        <>
+          <RouteDetailDialog
+            open={routeDetailOpen}
+            onOpenChange={setRouteDetailOpen}
+            routeId={selectedRoute.id}
+            routeName={selectedRoute.name}
+            routeColor={getColorClass(selectedRoute.color)}
+          />
+          <RouteAnalysisDialog
+            open={routeAnalysisOpen}
+            onOpenChange={setRouteAnalysisOpen}
+            routeId={selectedRoute.id}
+            routeName={selectedRoute.name}
+            routeColor={getColorClass(selectedRoute.color)}
+          />
+        </>
       )}
     </Card>
   );
