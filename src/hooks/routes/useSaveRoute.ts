@@ -76,7 +76,18 @@ export const useSaveRoute = (
       const routeName = `Route ${new Date().toLocaleDateString()}`;
       const routeId = crypto.randomUUID();
       
-      const routeData = {
+      // Check if the routes table has region and country columns before including them
+      const { data: routeColumns, error: columnsError } = await supabase
+        .from('routes')
+        .select('*')
+        .limit(1);
+        
+      if (columnsError) {
+        console.error('Error checking routes table structure:', columnsError);
+      }
+      
+      // Create base route data without region/country
+      const routeData: any = {
         id: routeId,
         name: routeName,
         date: new Date().toISOString(),
@@ -85,10 +96,21 @@ export const useSaveRoute = (
         total_duration: route.estimatedDuration || 0,
         status: 'scheduled',
         estimated_cost: route.fuelCost,
-        vehicle_id: selectedVehicle && selectedVehicle !== 'none' ? selectedVehicle : null,
-        region: route.region,
-        country: route.country
+        vehicle_id: selectedVehicle && selectedVehicle !== 'none' ? selectedVehicle : null
       };
+      
+      // Only add region/country if they exist in the database schema
+      const routeColumnNames = routeColumns && routeColumns.length > 0 
+        ? Object.keys(routeColumns[0])
+        : [];
+        
+      if (routeColumnNames.includes('region') && route.region) {
+        routeData.region = route.region;
+      }
+      
+      if (routeColumnNames.includes('country') && route.country) {
+        routeData.country = route.country;
+      }
       
       console.log("Saving route data:", routeData);
       
@@ -109,15 +131,40 @@ export const useSaveRoute = (
         console.log(`Vehicle ${selectedVehicle} status would be updated to On Route with load ${route.cylinders}`);
       }
       
-      const deliveries = route.locations.map((location, index) => ({
-        id: crypto.randomUUID(),
-        route_id: routeId,
-        location_id: location.id.toString(),
-        cylinders: location.emptyCylinders || 0,
-        sequence: index,
-        region: location.region || route.region || '',
-        country: location.country || route.country || ''
-      }));
+      // Check if the deliveries table has region and country columns
+      const { data: deliveryColumns, error: deliveryColumnsError } = await supabase
+        .from('deliveries')
+        .select('*')
+        .limit(1);
+        
+      if (deliveryColumnsError) {
+        console.error('Error checking deliveries table structure:', deliveryColumnsError);
+      }
+      
+      const deliveryColumnNames = deliveryColumns && deliveryColumns.length > 0 
+        ? Object.keys(deliveryColumns[0])
+        : [];
+      
+      const deliveries = route.locations.map((location, index) => {
+        const delivery: any = {
+          id: crypto.randomUUID(),
+          route_id: routeId,
+          location_id: location.id.toString(),
+          cylinders: location.emptyCylinders || 0,
+          sequence: index
+        };
+        
+        // Only add region/country if they exist in the database schema
+        if (deliveryColumnNames.includes('region')) {
+          delivery.region = location.region || route.region || '';
+        }
+        
+        if (deliveryColumnNames.includes('country')) {
+          delivery.country = location.country || route.country || '';
+        }
+        
+        return delivery;
+      });
       
       console.log("Saving deliveries:", deliveries);
       
