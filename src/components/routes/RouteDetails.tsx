@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,7 +88,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       siteName: location.name,
       cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
       kms: location.distance || 0,
-      fuelCost: location.fuelCost || 0
+      fuelCost: location.fuel_cost || 0
     }))
   };
 

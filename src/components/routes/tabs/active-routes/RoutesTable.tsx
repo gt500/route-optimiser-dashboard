@@ -39,7 +39,7 @@ const RoutesTable = ({
     // Transform the route data into the format expected by RouteActions
     return {
       name: selectedRoute.name || `Route ${formatDate(selectedRoute.date)}`,
-      stops: selectedRoute.stops?.map(stop => ({
+      stops: (selectedRoute.stops || []).map(stop => ({
         siteName: stop.location_name || 'Unknown',
         cylinders: stop.cylinders || 0,
         kms: stop.distance || 0,
@@ -96,7 +96,7 @@ const RoutesTable = ({
               <TableCell>
                 <RouteStatusBadge status={route.status} />
               </TableCell>
-              <TableCell>{route.stops?.length || 0}</TableCell>
+              <TableCell>{(route.stops || []).length}</TableCell>
               <TableCell>{route.total_distance?.toFixed(1)} km</TableCell>
               <TableCell>{route.total_cylinders}</TableCell>
               <TableCell>{route.vehicle_name || 'Not assigned'}</TableCell>

@@ -59,12 +59,12 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     
     return {
       name: selectedRoute.name || `Route ${formatDate(selectedRoute.date)}`,
-      stops: selectedRoute.stops?.map(stop => ({
+      stops: (selectedRoute.stops || []).map(stop => ({
         siteName: stop.location_name || 'Unknown',
         cylinders: stop.cylinders || 0,
         kms: stop.distance || 0,
         fuelCost: stop.fuel_cost || 0
-      })) || []
+      }))
     };
   };
 

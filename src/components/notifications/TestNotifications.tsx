@@ -1,13 +1,7 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { sendNotification, sendWeeklyReport, sendRouteUpdate, sendDeliveryUpdate } from "@/utils/notificationUtils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Mail, FileBarChart, MapPin, Truck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { 
   Tabs, 
@@ -16,7 +10,12 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { sendNotification, sendWeeklyReport, sendRouteUpdate, sendDeliveryUpdate } from "@/utils/notificationUtils";
+import EmailForm from './forms/EmailForm';
+import WeeklyReportForm from './forms/WeeklyReportForm';
+import RouteUpdateForm from './forms/RouteUpdateForm';
+import DeliveryUpdateForm from './forms/DeliveryUpdateForm';
+import NotificationWarning from './NotificationWarning';
 
 const TestNotifications = () => {
   const { user } = useAuth();
@@ -162,14 +161,7 @@ const TestNotifications = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Alert className="mb-6" variant="warning">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Resend API Testing Limitation</AlertTitle>
-          <AlertDescription>
-            During testing, Resend only allows sending emails to the account owner's email address. 
-            To send to other recipients, verify a domain at <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline">resend.com/domains</a>.
-          </AlertDescription>
-        </Alert>
+        <NotificationWarning />
         
         <Tabs defaultValue="general">
           <TabsList className="grid grid-cols-4 mb-4">
@@ -179,206 +171,46 @@ const TestNotifications = () => {
             <TabsTrigger value="delivery">Delivery</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input
-                id="subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Notification subject"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Notification message"
-                rows={4}
-              />
-            </div>
-            <Button 
-              onClick={handleSendTestEmail} 
-              disabled={loading || !user?.email}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Test Email
-                </>
-              )}
-            </Button>
+          <TabsContent value="general">
+            <EmailForm
+              subject={subject}
+              setSubject={setSubject}
+              message={message}
+              setMessage={setMessage}
+              onSubmit={handleSendTestEmail}
+              loading={loading}
+              disabled={!user?.email}
+            />
           </TabsContent>
           
-          <TabsContent value="weeklyReport" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="deliveries">Deliveries</Label>
-                <Input
-                  id="deliveries"
-                  type="number"
-                  value={reportData.deliveries}
-                  onChange={(e) => setReportData({...reportData, deliveries: parseInt(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cylinders">Cylinders</Label>
-                <Input
-                  id="cylinders"
-                  type="number"
-                  value={reportData.cylinders}
-                  onChange={(e) => setReportData({...reportData, cylinders: parseInt(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="kms">Distance (km)</Label>
-                <Input
-                  id="kms"
-                  type="number"
-                  step="0.1"
-                  value={reportData.kms}
-                  onChange={(e) => setReportData({...reportData, kms: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fuelCost">Fuel Cost (R)</Label>
-                <Input
-                  id="fuelCost"
-                  type="number"
-                  step="0.01"
-                  value={reportData.fuelCost}
-                  onChange={(e) => setReportData({...reportData, fuelCost: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-            </div>
-            <Button 
-              onClick={handleSendWeeklyReport} 
-              disabled={loading || !user?.email || !user?.id}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <FileBarChart className="mr-2 h-4 w-4" />
-                  Send Test Weekly Report
-                </>
-              )}
-            </Button>
+          <TabsContent value="weeklyReport">
+            <WeeklyReportForm
+              reportData={reportData}
+              setReportData={setReportData}
+              onSubmit={handleSendWeeklyReport}
+              loading={loading}
+              disabled={!user?.email || !user?.id}
+            />
           </TabsContent>
           
-          <TabsContent value="route" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="routeName">Route Name</Label>
-              <Input
-                id="routeName"
-                value={routeData.routeName}
-                onChange={(e) => setRouteData({...routeData, routeName: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="updateType">Update Type</Label>
-              <select
-                id="updateType"
-                value={routeData.updateType}
-                onChange={(e) => setRouteData({...routeData, updateType: e.target.value as any})}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="created">Created</option>
-                <option value="updated">Updated</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="optimized">Optimized</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="routeDetails">Details</Label>
-              <Textarea
-                id="routeDetails"
-                value={routeData.details}
-                onChange={(e) => setRouteData({...routeData, details: e.target.value})}
-                rows={2}
-              />
-            </div>
-            <Button 
-              onClick={handleSendRouteUpdate} 
-              disabled={loading || !user?.email || !user?.id}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Send Test Route Notification
-                </>
-              )}
-            </Button>
+          <TabsContent value="route">
+            <RouteUpdateForm
+              routeData={routeData}
+              setRouteData={setRouteData}
+              onSubmit={handleSendRouteUpdate}
+              loading={loading}
+              disabled={!user?.email || !user?.id}
+            />
           </TabsContent>
           
-          <TabsContent value="delivery" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="locationName">Location Name</Label>
-              <Input
-                id="locationName"
-                value={deliveryData.locationName}
-                onChange={(e) => setDeliveryData({...deliveryData, locationName: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                value={deliveryData.status}
-                onChange={(e) => setDeliveryData({...deliveryData, status: e.target.value as any})}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="scheduled">Scheduled</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="deliveryDetails">Details</Label>
-              <Textarea
-                id="deliveryDetails"
-                value={deliveryData.details}
-                onChange={(e) => setDeliveryData({...deliveryData, details: e.target.value})}
-                rows={2}
-              />
-            </div>
-            <Button 
-              onClick={handleSendDeliveryUpdate} 
-              disabled={loading || !user?.email || !user?.id}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Truck className="mr-2 h-4 w-4" />
-                  Send Test Delivery Update
-                </>
-              )}
-            </Button>
+          <TabsContent value="delivery">
+            <DeliveryUpdateForm
+              deliveryData={deliveryData}
+              setDeliveryData={setDeliveryData}
+              onSubmit={handleSendDeliveryUpdate}
+              loading={loading}
+              disabled={!user?.email || !user?.id}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
