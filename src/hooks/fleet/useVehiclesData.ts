@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types/fleet';
@@ -7,6 +6,7 @@ import { format, subDays } from 'date-fns';
 
 // Get today's date
 const today = new Date();
+const oneYearAgo = subDays(today, 365); // Default start date one year ago
 
 // Initial vehicles data used when no database records exist
 const initialVehicles: Vehicle[] = [
@@ -20,9 +20,11 @@ const initialVehicles: Vehicle[] = [
     fuelLevel: 78, 
     location: 'Cape Town CBD', 
     lastService: format(subDays(today, 100), 'yyyy-MM-dd'), // About 3 months ago
+    startDate: format(oneYearAgo, 'yyyy-MM-dd'), // Default start date one year ago
     country: 'South Africa',
     region: 'Western Cape',
-    maxPayload: 1760 // 1760 kg payload capacity (80 cylinders)
+    maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
+    odometer: 25840 // Example: ~7,040 km/month for ~3.7 months
   },
   { 
     id: 'TRK-002', 
@@ -34,9 +36,11 @@ const initialVehicles: Vehicle[] = [
     fuelLevel: 92, 
     location: 'Afrox Epping Depot', 
     lastService: format(subDays(today, 30), 'yyyy-MM-dd'), // 1 month ago
+    startDate: format(subDays(oneYearAgo, 90), 'yyyy-MM-dd'), // 3 months before the other truck
     country: 'South Africa',
     region: 'Western Cape',
-    maxPayload: 1760 // 1760 kg payload capacity (80 cylinders)
+    maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
+    odometer: 11500 // Example: Lower mileage for newer vehicle
   },
 ];
 
@@ -123,6 +127,11 @@ export const useVehiclesData = () => {
         ...vehicle,
         region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
       };
+      
+      // Ensure startDate is set if not provided
+      if (!updatedVehicle.startDate) {
+        updatedVehicle.startDate = format(new Date(), 'yyyy-MM-dd');
+      }
       
       // Update existing vehicle
       if (updatedVehicle.id) {

@@ -1,15 +1,15 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit, RefreshCw } from 'lucide-react';
+import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit, RefreshCw, CalendarDays } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 import { useFleetData } from '@/hooks/useFleetData';
 import MaintenanceScheduleTable from '@/components/fleet/MaintenanceScheduleTable';
+import { format, differenceInDays, parseISO } from 'date-fns';
 
 // Variable costs data
 const variableCosts = [
@@ -111,6 +111,12 @@ const Fleet = () => {
     setIsDialogOpen(true);
   };
 
+  // Calculate days in service for each vehicle
+  const calculateDaysInService = (startDate) => {
+    if (!startDate) return 0;
+    return differenceInDays(new Date(), parseISO(startDate));
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -162,6 +168,8 @@ const Fleet = () => {
                         <TableHead>Status</TableHead>
                         <TableHead>Country</TableHead>
                         <TableHead>Region</TableHead>
+                        <TableHead>Start Date</TableHead>
+                        <TableHead>Days in Service</TableHead>
                         <TableHead>Load</TableHead>
                         <TableHead>Fuel</TableHead>
                         <TableHead>Location</TableHead>
@@ -191,6 +199,15 @@ const Fleet = () => {
                           </TableCell>
                           <TableCell>{vehicle.country}</TableCell>
                           <TableCell>{vehicle.region}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                              {vehicle.startDate || 'Not set'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {vehicle.startDate ? calculateDaysInService(vehicle.startDate) : '-'}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Progress value={(vehicle.load / vehicle.capacity) * 100} className="h-2 w-16" />

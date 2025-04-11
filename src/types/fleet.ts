@@ -1,4 +1,3 @@
-
 export interface Vehicle {
   id: string;
   name: string;
@@ -14,6 +13,7 @@ export interface Vehicle {
   maxPayload?: number;
   odometer?: number;
   lastServiceKm?: number;
+  startDate?: string; // New field for tracking when the vehicle began service
 }
 
 export interface MaintenanceItem {

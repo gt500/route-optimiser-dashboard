@@ -47,6 +47,7 @@ const formSchema = z.object({
   fuelLevel: z.coerce.number().min(0, { message: "Fuel level must be between 0 and 100." }).max(100),
   location: z.string(),
   lastService: z.string(),
+  startDate: z.string().optional(),
   country: z.string().min(1, { message: "Country is required." }),
   region: z.string().min(1, { message: "Region is required." }),
 });
@@ -73,6 +74,7 @@ export function VehicleEditDialog({ isOpen, onClose, vehicle, onSave }: VehicleE
       fuelLevel: 100,
       location: '',
       lastService: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split('T')[0],
       country: 'South Africa',
       region: ''
     },
@@ -284,19 +286,35 @@ export function VehicleEditDialog({ isOpen, onClose, vehicle, onSave }: VehicleE
               />
             </div>
             
-            <FormField
-              control={form.control}
-              name="lastService"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Service Date</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="date" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="lastService"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Service Date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Service Start Date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>

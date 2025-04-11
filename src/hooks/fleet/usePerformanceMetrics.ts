@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle, FleetPerformanceMetrics } from '@/types/fleet';
+import { differenceInDays, parseISO } from 'date-fns';
 
 // Default initial metrics
 const defaultMetrics: FleetPerformanceMetrics = {
@@ -47,16 +47,44 @@ export const usePerformanceMetrics = () => {
     }
     
     // Calculate fleet utilization
-    const activeVehicles = vehicleData.filter(v => v.status === 'On Route').length;
-    const utilizationRate = (vehicleData.length > 0) 
-      ? (activeVehicles / vehicleData.length) * 100 
+    // Only include vehicles that have been in service for at least 7 days
+    const activeVehicles = vehicleData.filter(v => {
+      // Consider vehicle active if it's on route
+      if (v.status === 'On Route') return true;
+      
+      // Check if vehicle has a start date and has been in service for at least 7 days
+      if (v.startDate) {
+        const daysInService = differenceInDays(new Date(), parseISO(v.startDate));
+        // Only count vehicles that have been in service for at least 7 days
+        return daysInService >= 7;
+      }
+      
+      // If no start date, default to including it (backwards compatibility)
+      return true;
+    }).length;
+    
+    const servicedVehicles = vehicleData.filter(v => v.startDate).length;
+    const utilizationRate = (servicedVehicles > 0) 
+      ? (activeVehicles / servicedVehicles) * 100 
       : 0;
 
     // Calculate maintenance compliance
-    // Ideally would be based on scheduled vs. completed maintenance records
-    // For now using a fairly high percentage, adjusted slightly by vehicles in 'Maintenance' status
+    // Consider maintenance history in relation to vehicle start date
+    const vehiclesNeedingMaintenance = vehicleData.filter(v => {
+      if (!v.startDate || !v.lastService) return false;
+      
+      const daysSinceStart = differenceInDays(new Date(), parseISO(v.startDate));
+      const daysSinceService = differenceInDays(new Date(), parseISO(v.lastService));
+      
+      // Vehicle needs maintenance if it's been more than 90 days since last service
+      // and has been in service for at least 90 days
+      return daysSinceService > 90 && daysSinceStart > 90;
+    }).length;
+    
     const vehiclesInMaintenance = vehicleData.filter(v => v.status === 'Maintenance').length;
-    const maintenanceCompliance = 92 - (vehiclesInMaintenance > 0 ? 2 : 0); // Lower if vehicles are in maintenance
+    const maintenanceCompliance = servicedVehicles > 0 
+      ? 100 - ((vehiclesNeedingMaintenance - vehiclesInMaintenance) / servicedVehicles * 100)
+      : 95; // Default if no vehicles with start date
     
     // Set fuel efficiency (km/L)
     const fuelEfficiency = totalDistance > 0 && totalFuelConsumption > 0
@@ -80,7 +108,7 @@ export const usePerformanceMetrics = () => {
         unit: '%' 
       },
       maintenanceCompliance: { 
-        value: maintenanceCompliance, 
+        value: Math.max(0, Math.min(100, Math.round(maintenanceCompliance))), // Ensure between 0-100%
         target: 95, 
         unit: '%' 
       },
