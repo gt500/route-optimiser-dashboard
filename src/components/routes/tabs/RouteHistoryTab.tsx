@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,9 +58,12 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     const selectedRoute = routes.find(route => route.id === selectedRouteId);
     if (!selectedRoute) return null;
     
+    // Create stops array if it doesn't exist in the route
+    const stops = selectedRoute.stops || [];
+    
     return {
       name: selectedRoute.name || `Route ${formatDate(selectedRoute.date)}`,
-      stops: (selectedRoute.stops || []).map(stop => ({
+      stops: stops.map(stop => ({
         siteName: stop.location_name || 'Unknown',
         cylinders: stop.cylinders || 0,
         kms: stop.distance || 0,

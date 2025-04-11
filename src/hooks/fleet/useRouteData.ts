@@ -3,6 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
+export interface RouteStop {
+  location_name: string;
+  cylinders: number;
+  distance: number;
+  fuel_cost: number;
+}
+
 export interface RouteData {
   id: string;
   name: string;
@@ -12,8 +19,10 @@ export interface RouteData {
   estimated_cost: number;
   status: string;
   vehicle_id?: string;
+  vehicle_name?: string;
   total_duration?: number;
   route_type?: string;
+  stops?: RouteStop[];
 }
 
 export const useRouteData = () => {

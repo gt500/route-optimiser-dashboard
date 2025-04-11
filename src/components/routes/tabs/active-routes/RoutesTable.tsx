@@ -36,10 +36,13 @@ const RoutesTable = ({
     const selectedRoute = routes.find(route => route.id === selectedRouteId);
     if (!selectedRoute) return null;
     
+    // Create a default stops array if route.stops doesn't exist
+    const stops = selectedRoute.stops || [];
+    
     // Transform the route data into the format expected by RouteActions
     return {
       name: selectedRoute.name || `Route ${formatDate(selectedRoute.date)}`,
-      stops: (selectedRoute.stops || []).map(stop => ({
+      stops: stops.map(stop => ({
         siteName: stop.location_name || 'Unknown',
         cylinders: stop.cylinders || 0,
         kms: stop.distance || 0,

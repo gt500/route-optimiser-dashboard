@@ -1,4 +1,3 @@
-
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
@@ -15,6 +14,8 @@ export interface LocationType {
   close_time?: string;
   region?: string;
   country?: string;
+  distance?: number;
+  fuel_cost?: number;
 }
 
 export interface LocationInfo {
