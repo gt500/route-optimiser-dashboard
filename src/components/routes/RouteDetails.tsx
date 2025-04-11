@@ -9,6 +9,7 @@ import { LocationType } from '@/components/locations/LocationEditDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
+import RouteActions from './RouteActions';
 
 // Constants for accurate weight calculations
 const EMPTY_CYLINDER_WEIGHT_KG = 14; // Weight of an empty cylinder in kg
@@ -24,6 +25,7 @@ interface RouteDetailsProps {
     locations: LocationType[];
     estimatedDuration?: number;
     trafficConditions?: 'light' | 'moderate' | 'heavy'; 
+    name?: string;
   };
   isLoadConfirmed?: boolean;
   isOverweight?: boolean;
@@ -80,6 +82,17 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     vehicles.find(v => v.id === selectedVehicle) : 
     null;
 
+  // Prepare route data for the RouteActions component
+  const routeData = {
+    name: route.name || "Route Report",
+    stops: route.locations.map(location => ({
+      siteName: location.name,
+      cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
+      kms: location.distance || 0,
+      fuelCost: location.fuelCost || 0
+    }))
+  };
+
   return (
     <Card className="border shadow-sm p-4">
       <div className="space-y-4">
@@ -87,10 +100,15 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           <h3 className="font-medium text-lg">Route Summary</h3>
           <div className="flex items-center gap-2">
             {isLoadConfirmed ? (
-              <Button disabled variant="outline" className="gap-1">
-                <Check className="h-4 w-4 text-green-500" />
-                Saved
-              </Button>
+              <div className="flex gap-2">
+                <RouteActions 
+                  onSave={onSave}
+                  onOptimize={onOptimize}
+                  usingRealTimeData={false}
+                  disabled={false}
+                  routeData={routeData}
+                />
+              </div>
             ) : (
               <Button 
                 onClick={onSave} 

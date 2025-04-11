@@ -32,6 +32,7 @@ interface CreateRouteTabProps {
     usingRealTimeData?: boolean;
     country?: string;
     region?: string;
+    name?: string;
   };
   isSyncingLocations: boolean;
   isLoadConfirmed: boolean;
@@ -101,6 +102,17 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
       return;
     }
     onAddLocationToRoute(location);
+  };
+
+  // Generate a route name if one doesn't exist, using the start and end location names
+  const routeName = route.name || (startLocation && endLocation 
+    ? `${startLocation.name} to ${endLocation.name}` 
+    : "New Route");
+
+  // Update the route with the generated name
+  const routeWithName = {
+    ...route,
+    name: routeName
   };
 
   return (
@@ -188,7 +200,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             onReplaceLocation={onReplaceLocation}
           />
           <RouteDetails
-            route={route}
+            route={routeWithName}
             onRemoveLocation={onRemoveLocation}
             onFuelCostUpdate={onFuelCostUpdate}
             onRouteDataUpdate={onRouteDataUpdate}

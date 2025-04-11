@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,10 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertCircle, CalendarIcon, CheckCircle, XCircle } from 'lucide-react';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { Badge } from '@/components/ui/badge';
+import RouteActions from '@/components/routes/RouteActions';
 
 const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const { fetchRouteHistory } = useRouteData();
 
   const loadRoutes = async () => {
@@ -48,6 +49,23 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       return <XCircle className="h-4 w-4 text-red-500" />;
     }
     return null;
+  };
+
+  const getSelectedRouteData = () => {
+    if (!selectedRouteId) return null;
+    
+    const selectedRoute = routes.find(route => route.id === selectedRouteId);
+    if (!selectedRoute) return null;
+    
+    return {
+      name: selectedRoute.name || `Route ${formatDate(selectedRoute.date)}`,
+      stops: selectedRoute.stops?.map(stop => ({
+        siteName: stop.location_name || 'Unknown',
+        cylinders: stop.cylinders || 0,
+        kms: stop.distance || 0,
+        fuelCost: stop.fuel_cost || 0
+      })) || []
+    };
   };
 
   if (isLoading) {
@@ -88,16 +106,27 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     );
   }
 
+  const selectedRouteData = getSelectedRouteData();
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Route History</CardTitle>
-        <CardDescription>Previously completed routes</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Route History</CardTitle>
+          <CardDescription>Previously completed routes</CardDescription>
+        </div>
+        {selectedRouteData && (
+          <RouteActions 
+            routeData={selectedRouteData}
+            disabled={false}
+          />
+        )}
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead></TableHead>
               <TableHead>Route Name</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Cylinders</TableHead>
@@ -108,7 +137,19 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
           </TableHeader>
           <TableBody>
             {routes.map((route) => (
-              <TableRow key={route.id}>
+              <TableRow 
+                key={route.id} 
+                className={selectedRouteId === route.id ? "bg-blue-50" : ""}
+                onClick={() => setSelectedRouteId(route.id === selectedRouteId ? null : route.id)}
+              >
+                <TableCell>
+                  <input 
+                    type="radio" 
+                    checked={selectedRouteId === route.id}
+                    onChange={() => {}}
+                    className="rounded-full"
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{route.name || `Route ${formatDate(route.date)}`}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
