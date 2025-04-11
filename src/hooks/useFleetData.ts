@@ -11,7 +11,15 @@ export const useFleetData = () => {
   
   // Import individual hooks
   const { vehicles, fetchVehicles, saveVehicle } = useVehiclesData();
-  const { maintenanceItems, fetchMaintenanceItems } = useMaintenanceData();
+  const { 
+    maintenanceItems, 
+    fetchMaintenanceItems, 
+    monthlyTasks, 
+    quarterlyTasks, 
+    fixedCosts, 
+    budgetSummary, 
+    sampleTimeline 
+  } = useMaintenanceData();
   const { performanceMetrics, calculateFleetPerformance } = usePerformanceMetrics();
   const { fetchRouteData } = useRouteData();
 
@@ -81,7 +89,13 @@ export const useFleetData = () => {
     performanceMetrics,
     isLoading,
     saveVehicle,
-    refreshData
+    refreshData,
+    // Export the maintenance schedule data
+    monthlyTasks,
+    quarterlyTasks,
+    fixedCosts,
+    budgetSummary,
+    sampleTimeline
   };
 };
 

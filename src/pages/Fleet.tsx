@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit, RefreshCw }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 import { useFleetData } from '@/hooks/useFleetData';
+import MaintenanceScheduleTable from '@/components/fleet/MaintenanceScheduleTable';
 
 // Variable costs data
 const variableCosts = [
@@ -130,6 +132,7 @@ const Fleet = () => {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance Schedule</TabsTrigger>
           <TabsTrigger value="costs">Cost Analysis</TabsTrigger>
         </TabsList>
         
@@ -231,14 +234,14 @@ const Fleet = () => {
             <Card className="hover:shadow-md transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
-                  <CardTitle>Maintenance Schedule</CardTitle>
-                  <CardDescription>Upcoming service and maintenance</CardDescription>
+                  <CardTitle>Upcoming Maintenance</CardTitle>
+                  <CardDescription>Next scheduled services</CardDescription>
                 </div>
                 <Wrench className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {maintenanceItems.map((item, i) => (
+                  {maintenanceItems.slice(0, 3).map((item, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                       <div>
                         <div className="font-medium">{item.vehicle}</div>
@@ -259,6 +262,11 @@ const Fleet = () => {
                       </div>
                     </div>
                   ))}
+                  {maintenanceItems.length === 0 && (
+                    <div className="p-3 text-center text-muted-foreground">
+                      No upcoming maintenance scheduled
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -332,6 +340,17 @@ const Fleet = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="maintenance" className="space-y-6">
+          <MaintenanceScheduleTable 
+            maintenanceItems={maintenanceItems}
+            monthlyTasks={useFleetData().monthlyTasks}
+            quarterlyTasks={useFleetData().quarterlyTasks}
+            fixedCosts={useFleetData().fixedCosts}
+            budgetSummary={useFleetData().budgetSummary}
+            sampleTimeline={useFleetData().sampleTimeline}
+          />
         </TabsContent>
         
         <TabsContent value="costs" className="space-y-6">
