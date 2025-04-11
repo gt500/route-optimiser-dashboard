@@ -14,8 +14,6 @@ const ReportsLayout = () => {
       return 'Weekly Delivery Reports';
     } else if (location.pathname.includes('/delivery/monthly')) {
       return 'Monthly Delivery Reports';
-    } else if (location.pathname.includes('/maintenance/schedule')) {
-      return 'Maintenance Schedule Reports';
     }
     return 'Reports';
   };

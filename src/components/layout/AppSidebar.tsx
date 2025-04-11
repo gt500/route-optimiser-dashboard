@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Sidebar,
@@ -71,14 +70,6 @@ const menuItems = [
           { title: "Daily Reports", path: "/reports/delivery/daily" },
           { title: "Weekly Reports", path: "/reports/delivery/weekly" },
           { title: "Monthly Reports", path: "/reports/delivery/monthly" },
-        ]
-      },
-      {
-        title: "Maintenance Reports",
-        path: "/reports/maintenance",
-        isSubmenu: true,
-        subItems: [
-          { title: "Maintenance Schedule", path: "/reports/maintenance/schedule" },
         ]
       }
     ]

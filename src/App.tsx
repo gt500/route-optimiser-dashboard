@@ -52,9 +52,6 @@ const App = () => (
                     <Route path="weekly" element={<WeeklyReports />} />
                     <Route path="monthly" element={<MonthlyReports />} />
                   </Route>
-                  <Route path="maintenance">
-                    <Route path="schedule" element={<DailyReports />} />
-                  </Route>
                 </Route>
               </Route>
             </Route>
