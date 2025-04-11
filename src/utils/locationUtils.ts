@@ -16,9 +16,12 @@ export const fetchLocationsFromAPI = async (): Promise<LocationInfo[]> => {
     }
 
     if (data) {
-      // Ensure Food Lovers Sunningdale is completely excluded from the data
+      // Filter out Food Emporium and KZN locations
       const filteredData = data.filter(item => 
-        !item.name?.toLowerCase().includes('food lovers sunningdale'));
+        !item.name?.toLowerCase().includes('food lovers sunningdale') &&
+        !item.name?.toLowerCase().includes('food emporium') &&
+        !(item.region === 'KZN' && item.country === 'South Africa')
+      );
       
       const mappedLocations = filteredData.map(item => {
         let locationType = item.type || 'Customer';

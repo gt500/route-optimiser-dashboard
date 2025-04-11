@@ -12,7 +12,11 @@ const fetchMachineData = async (): Promise<MachineData[]> => {
     
     const data = await response.json();
     return data.response.results
-      .filter((item: any) => !item.SITE_NAME.includes('Food Emporium')) // Enhanced filtering to exclude any Food Emporium
+      .filter((item: any) => 
+        !item.SITE_NAME.includes('Food Emporium') && 
+        !item.SITE_NAME.includes('Food Lovers Sunningdale') &&
+        !(item.REGION === 'KZN' && item.COUNTRY === 'South Africa')
+      )
       .map((item: any) => {
         // Process region and country information
         const country = item.COUNTRY || 'South Africa';

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
@@ -121,7 +122,8 @@ export const useRouteData = () => {
       }
       
       const filteredData = data?.filter(route => 
-        !route.name?.toLowerCase().includes('food lovers sunningdale')
+        !route.name?.toLowerCase().includes('food lovers sunningdale') &&
+        !route.name?.toLowerCase().includes('food emporium')
       ) || [];
       
       console.log(`useRouteData - Fetched ${filteredData.length} routes for the last ${days} days`);
@@ -210,9 +212,10 @@ export const useRouteData = () => {
         return [];
       }
       
-      // Filter out any routes with "Food Lovers Sunningdale" in the name
+      // Filter out any routes with "Food Lovers Sunningdale" or "Food Emporium" in the name
       const filteredData = data?.filter(route => 
-        !route.name?.toLowerCase().includes('food lovers sunningdale')
+        !route.name?.toLowerCase().includes('food lovers sunningdale') &&
+        !route.name?.toLowerCase().includes('food emporium')
       ) || [];
       
       return filteredData;
