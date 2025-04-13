@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -12,7 +13,7 @@ import {
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Info, Route, RefreshCw } from 'lucide-react';
+import { Info, Route, RefreshCw, Download, Printer } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
@@ -20,17 +21,10 @@ import RouteAnalysisDialog from '../RouteAnalysisDialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
+import { exportToPDF, printData, emailData } from '@/utils/exportUtils';
+import { format } from 'date-fns';
 
 const FULL_LOAD_THRESHOLD = 20;
-
-const dummyChartData = [
-  { name: 'Cape Town CBD', routeId: 'Route 1', time: 45, distance: 12.5, cost: 210, cylinders: 25 },
-  { name: 'Gas Depot - Southern Suburbs', routeId: 'Route 2', time: 60, distance: 18.3, cost: 280, cylinders: 32 },
-  { name: 'Northern Distribution Line', routeId: 'Route 3', time: 75, distance: 24.7, cost: 350, cylinders: 18 },
-  { name: 'Atlantic Seaboard', routeId: 'Route 4', time: 50, distance: 15.6, cost: 240, cylinders: 22 },
-  { name: 'Stellenbosch Distribution', routeId: 'Route 5', time: 90, distance: 28.2, cost: 420, cylinders: 28 },
-  { name: 'West Coast', routeId: 'Route 6', time: 65, distance: 22.4, cost: 310, cylinders: 15 },
-];
 
 interface RouteEfficiencyChartProps {
   isLoading: boolean;
@@ -48,72 +42,100 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { fetchRouteHistory } = useRouteData();
-  const [realWestCoastData, setRealWestCoastData] = useState<any | null>(null);
+  const { fetchRouteHistory, fetchRouteData, fetchRouteDataByName } = useRouteData();
+  const [routesData, setRoutesData] = useState<Record<string, any>>({});
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
 
   useEffect(() => {
-    const fetchWestCoastData = async () => {
+    const fetchAllRoutesData = async () => {
+      setLoading(true);
       try {
-        console.log('Fetching completed West Coast route data...');
+        console.log('Fetching data for all routes...');
         setDataFetchAttempted(true);
         
+        // First, get all completed routes
         const completedRoutes = await fetchRouteHistory();
         console.log('Completed routes:', completedRoutes);
         
-        const westCoastRoutes = completedRoutes.filter(route => 
-          route.name.toLowerCase().includes('west coast') || 
-          route.route_type === 'West Coast'
-        );
+        // Get the latest route data
+        const allRoutes = await fetchRouteData();
+        console.log('All routes:', allRoutes);
         
-        if (westCoastRoutes && westCoastRoutes.length > 0) {
-          westCoastRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          const mostRecentRoute = westCoastRoutes[0];
-          
-          console.log('Found completed West Coast route data:', mostRecentRoute);
-          setRealWestCoastData(mostRecentRoute);
-          toast.success('Real data loaded for completed West Coast route');
-        } else {
-          console.log('No completed West Coast route data found in database');
-          setRealWestCoastData(null);
+        // Create a collection of routes by type/name
+        const routesByType: Record<string, any[]> = {};
+        
+        [...completedRoutes, ...allRoutes].forEach(route => {
+          const routeType = route.route_type || 'Unknown';
+          if (!routesByType[routeType]) {
+            routesByType[routeType] = [];
+          }
+          routesByType[routeType].push(route);
+        });
+        
+        const processedRouteData: Record<string, any> = {};
+        
+        // Process routes data for each route type
+        for (const [routeType, routes] of Object.entries(routesByType)) {
+          if (routes.length > 0) {
+            // Sort by date, newest first
+            routes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
+            // Get the most recent route
+            const recentRoute = routes[0];
+            
+            processedRouteData[routeType] = {
+              name: recentRoute.name || routeType,
+              time: Math.round((recentRoute.total_duration || 3600) / 60), // Convert seconds to minutes
+              distance: recentRoute.total_distance || 0,
+              cost: recentRoute.estimated_cost || 0,
+              cylinders: recentRoute.total_cylinders || 0,
+              routeId: `Route ${Object.keys(processedRouteData).length + 1}`
+            };
+          }
         }
+        
+        // Make sure we have data for all route legends
+        routeLegendData.forEach((route, index) => {
+          const routeType = route.name;
+          if (!processedRouteData[routeType]) {
+            // If we don't have real data for this route, use the dummy data
+            const dummyRoute = routeData[index] || {
+              name: routeType,
+              time: 60, 
+              distance: 20,
+              cost: 300,
+              cylinders: 25,
+              routeId: `Route ${index + 1}`
+            };
+            
+            processedRouteData[routeType] = dummyRoute;
+          }
+        });
+        
+        setRoutesData(processedRouteData);
+        
+        // Convert to array format for the chart
+        const chartDataArray = Object.values(processedRouteData);
+        setChartData(chartDataArray);
+        
+        toast.success('Route efficiency data loaded');
       } catch (error) {
-        console.error('Error fetching West Coast route data:', error);
-        setRealWestCoastData(null);
+        console.error('Error fetching route data:', error);
+        // Fall back to dummy data if there's an error
+        setChartData(routeData);
       } finally {
-        updateChartData();
+        setLoading(false);
       }
     };
     
-    const updateChartData = () => {
-      const processedData = dummyChartData.map((route, index) => {
-        if (route.name === 'West Coast' && realWestCoastData) {
-          return {
-            name: realWestCoastData.name || 'West Coast',
-            routeId: 'Route 6',
-            time: Math.round((realWestCoastData.total_duration || 3900) / 60),
-            distance: realWestCoastData.total_distance || 22.4,
-            cost: realWestCoastData.estimated_cost || 310,
-            cylinders: realWestCoastData.total_cylinders || 15
-          };
-        }
-        
-        return {
-          ...route,
-          routeId: route.routeId || `Route ${index + 1}`
-        };
-      });
-      
-      setChartData(processedData);
-      setLoading(false);
-    };
-    
-    updateChartData();
-    
     if (!dataFetchAttempted) {
-      fetchWestCoastData();
+      fetchAllRoutesData();
+    } else if (routeData.length > 0 && chartData.length === 0) {
+      // Fall back to dummy data if we've attempted to fetch but have no data
+      setChartData(routeData);
+      setLoading(false);
     }
-  }, [fetchRouteHistory, dataFetchAttempted, realWestCoastData]);
+  }, [fetchRouteHistory, fetchRouteData, dataFetchAttempted, routeData]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);
@@ -124,6 +146,52 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
     setSelectedRoute(route);
     setRouteDetailOpen(true);
   };
+  
+  const handlePrintChart = () => {
+    try {
+      const formattedDate = format(new Date(), 'yyyy-MM-dd');
+      
+      // Convert chart data to a format suitable for printing
+      const printableData = chartData.map(item => ({
+        siteName: item.name,
+        cylinders: item.cylinders || 0,
+        kms: item.distance || 0,
+        fuelCost: item.cost || 0
+      }));
+      
+      printData(printableData, 'Route Efficiency Comparison', new Date());
+      toast.success('Print view opened in new window');
+    } catch (error) {
+      toast.error('Failed to generate print view');
+      console.error(error);
+    }
+  };
+  
+  const handleExportPDF = () => {
+    try {
+      const formattedDate = format(new Date(), 'yyyy-MM-dd');
+      
+      // Convert chart data to a format suitable for PDF export
+      const exportableData = chartData.map(item => ({
+        siteName: item.name,
+        cylinders: item.cylinders || 0,
+        kms: item.distance || 0,
+        fuelCost: item.cost || 0
+      }));
+      
+      exportToPDF(
+        exportableData,
+        `route-efficiency-${formattedDate}`,
+        'Route Efficiency Comparison',
+        new Date()
+      );
+      
+      toast.success('PDF download started');
+    } catch (error) {
+      toast.error('Failed to generate PDF');
+      console.error(error);
+    }
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-300">
@@ -132,25 +200,45 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
           <CardTitle>Route Efficiency</CardTitle>
           <CardDescription>Performance metrics for routes</CardDescription>
         </div>
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={onRouteLegendOpen}
-              className="rounded-full h-8 w-8"
-            >
-              <Info className="h-4 w-4" />
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent side="left" className="w-64">
-            <p className="text-sm">
-              Click for detailed explanation of each route in the performance chart. 
-              Routes with {FULL_LOAD_PER_SITE}+ cylinders per site are considered full loads.
-              AI analysis is now available by clicking on route cards.
-            </p>
-          </HoverCardContent>
-        </HoverCard>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrintChart}
+            className="h-8"
+          >
+            <Printer className="h-4 w-4 mr-1" />
+            Print
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPDF}
+            className="h-8"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            PDF
+          </Button>
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onRouteLegendOpen}
+                className="rounded-full h-8 w-8"
+              >
+                <Info className="h-4 w-4" />
+              </Button>
+            </HoverCardTrigger>
+            <HoverCardContent side="left" className="w-64">
+              <p className="text-sm">
+                Click for detailed explanation of each route in the performance chart. 
+                Routes with {FULL_LOAD_PER_SITE}+ cylinders per site are considered full loads.
+                AI analysis is now available by clicking on route cards.
+              </p>
+            </HoverCardContent>
+          </HoverCard>
+        </div>
       </CardHeader>
       <CardContent>
         {loading || isLoading ? (
@@ -203,15 +291,17 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {routeLegendData.map((route) => {
-            const isWestCoast = route.name.includes('West Coast');
-            const routeMetrics = isWestCoast && realWestCoastData 
+            const routeTypeData = routesData[route.name];
+            const isRealData = !!routeTypeData;
+            
+            const routeMetrics = isRealData 
               ? {
-                  title: `Route 6 (Real Data)`,
-                  value: realWestCoastData.name || 'West Coast',
+                  title: routeTypeData.routeId || route.id,
+                  value: routeTypeData.name || route.name,
                   subtitle: (
                     <div className="flex flex-col gap-1">
                       <span className="text-xs">
-                        {`Distance: ${realWestCoastData.total_distance?.toFixed(1) || '0'} km • Cylinders: ${realWestCoastData.total_cylinders || '0'}`}
+                        {`Distance: ${routeTypeData.distance?.toFixed(1) || '0'} km • Cylinders: ${routeTypeData.cylinders || '0'}`}
                       </span>
                       <div className="flex items-center gap-1 mt-1">
                         <Button 

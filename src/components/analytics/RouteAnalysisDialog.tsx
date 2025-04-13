@@ -11,10 +11,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { RefreshCw, Info, AlertTriangle, CheckCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  RefreshCw, 
+  Info, 
+  AlertTriangle, 
+  CheckCircle, 
+  TrendingUp, 
+  TrendingDown,
+  Download,
+  Printer 
+} from 'lucide-react';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { format, subDays, subWeeks, subMonths } from 'date-fns';
+import { printData, emailData } from '@/utils/exportUtils';
 
 interface RouteAnalysisDialogProps {
   open: boolean;
@@ -70,7 +81,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
   const [period, setPeriod] = useState<AnalysisPeriod>('week');
   const [isLoading, setIsLoading] = useState(true);
   const [analysis, setAnalysis] = useState<RouteAnalysisMetrics | null>(null);
-  const { fetchRouteData, fetchRouteDataByName } = useRouteData();
+  const { fetchRouteData, fetchRouteDataByName, fetchRouteHistory } = useRouteData();
 
   useEffect(() => {
     if (open) {
@@ -82,15 +93,34 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     setIsLoading(true);
     
     try {
-      // Fetch route data
+      // First, get all routes to establish baseline metrics
       const allRoutes = await fetchRouteData();
-      const specificRoutes = await fetchRouteDataByName(routeName);
+      
+      // Next, attempt to get routes specifically matching our route name
+      let specificRoutes = await fetchRouteDataByName(routeName);
+      
+      // If we don't have specific route data, try to find something similar
+      if (!specificRoutes.length) {
+        console.log(`No exact route data for "${routeName}", trying to find similar routes`);
+        
+        // Try to get routes from history that might match
+        const historyRoutes = await fetchRouteHistory();
+        
+        // Try to find similar route names based on keywords
+        const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+        specificRoutes = historyRoutes.filter(route => {
+          const name = (route.name || '').toLowerCase();
+          return routeKeywords.some(keyword => name.includes(keyword));
+        });
+      }
       
       if (!specificRoutes.length) {
         toast.error(`No data available for route: ${routeName}`);
         setIsLoading(false);
         return;
       }
+
+      console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
 
       // Get date ranges based on period
       const now = new Date();
@@ -110,17 +140,26 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       
       // Filter routes by period
       const periodSpecificRoutes = specificRoutes.filter(
-        route => new Date(route.date) >= startDate && new Date(route.date) <= now
+        route => {
+          const routeDate = new Date(route.date);
+          return routeDate >= startDate && routeDate <= now;
+        }
       );
       
       const periodAllRoutes = allRoutes.filter(
-        route => new Date(route.date) >= startDate && new Date(route.date) <= now
+        route => {
+          const routeDate = new Date(route.date);
+          return routeDate >= startDate && routeDate <= now;
+        }
       );
       
+      // If no routes in period, use the most recent route
+      let routesForAnalysis = periodSpecificRoutes;
       if (!periodSpecificRoutes.length) {
-        // If no routes in period, use the most recent route
+        // Sort by date (most recent first)
         specificRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        periodSpecificRoutes.push(specificRoutes[0]);
+        routesForAnalysis = [specificRoutes[0]];
+        console.log("No routes in selected period, using most recent route:", specificRoutes[0]);
       }
       
       if (!periodAllRoutes.length) {
@@ -129,33 +168,41 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         return;
       }
       
-      // Calculate metrics
-      const routeDistances = periodSpecificRoutes.map(r => r.total_distance || 0);
-      const routeDurations = periodSpecificRoutes.map(r => (r.total_duration || 0) / 60); // Convert to minutes
-      const routeCosts = periodSpecificRoutes.map(r => r.estimated_cost || 0);
-      const routeCylinders = periodSpecificRoutes.map(r => r.total_cylinders || 0);
+      console.log("Routes for analysis:", routesForAnalysis);
+      console.log("All routes for the period:", periodAllRoutes);
       
-      const avgDistance = routeDistances.reduce((a, b) => a + b, 0) / routeDistances.length;
-      const avgDuration = routeDurations.reduce((a, b) => a + b, 0) / routeDurations.length;
-      const avgCost = routeCosts.reduce((a, b) => a + b, 0) / routeCosts.length;
-      const avgCylinders = routeCylinders.reduce((a, b) => a + b, 0) / routeCylinders.length;
+      // Calculate metrics
+      const routeDistances = routesForAnalysis.map(r => r.total_distance || 0);
+      const routeDurations = routesForAnalysis.map(r => (r.total_duration || 0) / 60); // Convert to minutes
+      const routeCosts = routesForAnalysis.map(r => r.estimated_cost || 0);
+      const routeCylinders = routesForAnalysis.map(r => r.total_cylinders || 0);
+      
+      const avgDistance = routeDistances.reduce((a, b) => a + b, 0) / routeDistances.length || 0;
+      const avgDuration = routeDurations.reduce((a, b) => a + b, 0) / routeDurations.length || 0;
+      const avgCost = routeCosts.reduce((a, b) => a + b, 0) / routeCosts.length || 0;
+      const avgCylinders = routeCylinders.reduce((a, b) => a + b, 0) / routeCylinders.length || 0;
       
       // Calculate averages across all routes
-      const allDistances = periodAllRoutes.map(r => r.total_distance || 0);
-      const allDurations = periodAllRoutes.map(r => (r.total_duration || 0) / 60);
-      const allCosts = periodAllRoutes.map(r => r.estimated_cost || 0);
-      const allCylinders = periodAllRoutes.map(r => r.total_cylinders || 0);
+      const allDistances = periodAllRoutes.map(r => r.total_distance || 0).filter(Boolean);
+      const allDurations = periodAllRoutes.map(r => (r.total_duration || 0) / 60).filter(Boolean);
+      const allCosts = periodAllRoutes.map(r => r.estimated_cost || 0).filter(Boolean);
+      const allCylinders = periodAllRoutes.map(r => r.total_cylinders || 0).filter(Boolean);
       
-      const allAvgDistance = allDistances.reduce((a, b) => a + b, 0) / allDistances.length;
-      const allAvgDuration = allDurations.reduce((a, b) => a + b, 0) / allDurations.length;
-      const allAvgCost = allCosts.reduce((a, b) => a + b, 0) / allCosts.length;
-      const allAvgCylinders = allCylinders.reduce((a, b) => a + b, 0) / allCylinders.length;
+      const allAvgDistance = allDistances.reduce((a, b) => a + b, 0) / allDistances.length || 0;
+      const allAvgDuration = allDurations.reduce((a, b) => a + b, 0) / allDurations.length || 0;
+      const allAvgCost = allCosts.reduce((a, b) => a + b, 0) / allCosts.length || 0;
+      const allAvgCylinders = allCylinders.reduce((a, b) => a + b, 0) / allCylinders.length || 0;
       
-      // Find best values
+      console.log("Route averages:", { avgDistance, avgDuration, avgCost, avgCylinders });
+      console.log("Fleet averages:", { allAvgDistance, allAvgDuration, allAvgCost, allAvgCylinders });
+      
+      // Find best values (min for costs, distance, duration; max for cylinders)
       const bestDistance = Math.min(...allDistances.filter(v => v > 0));
       const bestDuration = Math.min(...allDurations.filter(v => v > 0));
       const bestCost = Math.min(...allCosts.filter(v => v > 0));
       const bestCylinders = Math.max(...allCylinders);
+      
+      console.log("Best values:", { bestDistance, bestDuration, bestCost, bestCylinders });
       
       // Calculate efficiency scores based on comparison with average and best
       const distanceScore = calculateEfficiencyScore(avgDistance, allAvgDistance, bestDistance, false);
@@ -199,6 +246,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         overallScore
       });
       
+      toast.success(`Analysis complete for ${routeName}`);
     } catch (error) {
       console.error('Error generating route analysis:', error);
       toast.error('Failed to generate route analysis');
@@ -218,6 +266,16 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     let label: string;
     let recommendation: string;
     
+    // Handle edge cases
+    if (isNaN(value) || isNaN(average) || isNaN(best)) {
+      console.warn("Received NaN values in efficiency calculation", { value, average, best });
+      return {
+        score: 50,
+        label: "Unknown",
+        recommendation: "Insufficient data to provide accurate recommendations."
+      };
+    }
+    
     // For metrics where lower is better (distance, duration, cost)
     if (!higherIsBetter) {
       if (value <= best * 1.05) {
@@ -227,19 +285,21 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         recommendation = "This route is performing at optimal efficiency. Maintain current strategy.";
       } else if (value <= average) {
         // Better than average but not excellent
-        score = 75 + 20 * ((average - value) / (average - best));
+        const ratio = (average - value) / (average - best);
+        score = 75 + 20 * (ratio > 0 ? ratio : 0);
         label = "Good";
-        recommendation = "This route performs well, but could be further optimized.";
+        recommendation = "This route performs well, but could be further optimized by adjusting stop order or delivery timing.";
       } else if (value <= average * 1.25) {
         // Worse than average but within 25%
-        score = 50 + 25 * ((average * 1.25 - value) / (average * 0.25));
+        const ratio = (average * 1.25 - value) / (average * 0.25);
+        score = 50 + 25 * (ratio > 0 ? ratio : 0);
         label = "Average";
-        recommendation = "Consider route adjustments to reduce distance/time/cost.";
+        recommendation = "Consider route adjustments to reduce distance/time/cost. Try consolidating nearby stops or reordering the sequence.";
       } else {
         // Significantly worse than average
         score = Math.max(30, 50 - 20 * ((value - average * 1.25) / average));
         label = "Below Average";
-        recommendation = "This route needs significant optimization. Consider complete redesign.";
+        recommendation = "This route needs significant optimization. Consider complete redesign, different sequencing, or merging with another route.";
       }
     } 
     // For metrics where higher is better (cylinders)
@@ -248,24 +308,29 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         // Within 5% of best value
         score = 95;
         label = "Excellent";
-        recommendation = "This route delivers optimal cylinder volume. Maintain current strategy.";
+        recommendation = "This route delivers optimal cylinder volume. Maintain current strategy and customer relationships.";
       } else if (value >= average) {
         // Better than average but not excellent
-        score = 75 + 20 * ((value - average) / (best - average));
+        const ratio = (value - average) / (best - average);
+        score = 75 + 20 * (ratio > 0 ? ratio : 0);
         label = "Good";
-        recommendation = "This route delivers good volume, but could be further optimized.";
+        recommendation = "This route delivers good volume, but could be further optimized by adjusting delivery schedules or adding strategic customers.";
       } else if (value >= average * 0.75) {
         // Worse than average but within 25%
-        score = 50 + 25 * ((value - average * 0.75) / (average * 0.25));
+        const ratio = (value - average * 0.75) / (average * 0.25);
+        score = 50 + 25 * (ratio > 0 ? ratio : 0);
         label = "Average";
-        recommendation = "Consider adding more delivery points or increasing volumes.";
+        recommendation = "Consider adding more delivery points or increasing volumes at existing stops to improve efficiency.";
       } else {
         // Significantly worse than average
         score = Math.max(30, 50 - 20 * ((average * 0.75 - value) / average));
         label = "Below Average";
-        recommendation = "This route has low delivery volume. Consider merging with another route.";
+        recommendation = "This route has low delivery volume. Consider merging with another route or expanding customer base in this area.";
       }
     }
+    
+    // Ensure score is within 0-100 range
+    score = Math.max(0, Math.min(100, score));
     
     return { score, label, recommendation };
   };
@@ -290,6 +355,123 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     if (score >= 60) return 'bg-amber-500';
     if (score >= 40) return 'bg-orange-500';
     return 'bg-red-500';
+  };
+  
+  const handlePrintAnalysis = () => {
+    if (!analysis) return;
+    
+    try {
+      const formattedDate = format(new Date(), 'yyyy-MM-dd');
+      
+      const analyticsData = [
+        {
+          siteName: 'Distance Efficiency',
+          cylinders: 0,
+          kms: analysis.distance.value,
+          fuelCost: 0,
+          score: Math.round(analysis.distance.efficiency.score),
+          fleetAverage: analysis.distance.average.toFixed(1),
+          recommendation: analysis.distance.efficiency.recommendation
+        },
+        {
+          siteName: 'Time Efficiency',
+          cylinders: 0,
+          kms: 0,
+          fuelCost: 0,
+          score: Math.round(analysis.duration.efficiency.score),
+          fleetAverage: `${Math.round(analysis.duration.average)} minutes`,
+          recommendation: analysis.duration.efficiency.recommendation
+        },
+        {
+          siteName: 'Cost Efficiency',
+          cylinders: 0,
+          kms: 0,
+          fuelCost: analysis.cost.value,
+          score: Math.round(analysis.cost.efficiency.score),
+          fleetAverage: `R${analysis.cost.average.toFixed(2)}`,
+          recommendation: analysis.cost.efficiency.recommendation
+        },
+        {
+          siteName: 'Delivery Volume',
+          cylinders: analysis.cylinders.value,
+          kms: 0,
+          fuelCost: 0,
+          score: Math.round(analysis.cylinders.efficiency.score),
+          fleetAverage: `${Math.round(analysis.cylinders.average)} cylinders`,
+          recommendation: analysis.cylinders.efficiency.recommendation
+        }
+      ];
+      
+      printData(
+        analyticsData,
+        `Route Analysis: ${routeName} (${period === 'day' ? 'Daily' : period === 'week' ? 'Weekly' : 'Monthly'})`,
+        new Date()
+      );
+      
+      toast.success("Print view opened in new window");
+    } catch (error) {
+      toast.error("Failed to generate print view");
+      console.error(error);
+    }
+  };
+  
+  const handleEmailAnalysis = () => {
+    if (!analysis) return;
+    
+    try {
+      const formattedDate = format(new Date(), 'yyyy-MM-dd');
+      
+      const analyticsData = [
+        {
+          siteName: 'Distance Efficiency',
+          cylinders: 0,
+          kms: analysis.distance.value,
+          fuelCost: 0,
+          score: Math.round(analysis.distance.efficiency.score),
+          fleetAverage: analysis.distance.average.toFixed(1),
+          recommendation: analysis.distance.efficiency.recommendation
+        },
+        {
+          siteName: 'Time Efficiency',
+          cylinders: 0,
+          kms: 0,
+          fuelCost: 0,
+          score: Math.round(analysis.duration.efficiency.score),
+          fleetAverage: `${Math.round(analysis.duration.average)} minutes`,
+          recommendation: analysis.duration.efficiency.recommendation
+        },
+        {
+          siteName: 'Cost Efficiency',
+          cylinders: 0,
+          kms: 0,
+          fuelCost: analysis.cost.value,
+          score: Math.round(analysis.cost.efficiency.score),
+          fleetAverage: `R${analysis.cost.average.toFixed(2)}`,
+          recommendation: analysis.cost.efficiency.recommendation
+        },
+        {
+          siteName: 'Delivery Volume',
+          cylinders: analysis.cylinders.value,
+          kms: 0,
+          fuelCost: 0,
+          score: Math.round(analysis.cylinders.efficiency.score),
+          fleetAverage: `${Math.round(analysis.cylinders.average)} cylinders`,
+          recommendation: analysis.cylinders.efficiency.recommendation
+        }
+      ];
+      
+      emailData(
+        analyticsData,
+        `Route Analysis: ${routeName} (${period === 'day' ? 'Daily' : period === 'week' ? 'Weekly' : 'Monthly'})`,
+        `Route Efficiency Analysis - ${routeName} - ${formattedDate}`,
+        new Date()
+      );
+      
+      toast.success("Email client opened");
+    } catch (error) {
+      toast.error("Failed to open email client");
+      console.error(error);
+    }
   };
 
   return (
@@ -325,13 +507,33 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         ) : analysis ? (
           <div className="space-y-6">
             <Card className="border-t-4 border-primary">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex justify-between items-center">
                   <span>Overall Efficiency Score</span>
                   <span className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>
                     {Math.round(analysis.overallScore)}%
                   </span>
                 </CardTitle>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handlePrintAnalysis}
+                    className="flex items-center gap-1"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Print
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleEmailAnalysis}
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-4 w-4" />
+                    Email
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Progress 
@@ -491,18 +693,18 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
                   </h4>
                   <p className="text-sm text-muted-foreground">
                     {routeName} {period === 'day' ? 'today' : period === 'week' ? 'this week' : 'this month'} is 
-                    {analysis.overallScore >= analysis.distance.average ? ' outperforming ' : ' underperforming compared to '}
+                    {analysis.overallScore >= 70 ? ' outperforming ' : ' underperforming compared to '}
                     the fleet average. 
                     {analysis.distance.value < analysis.distance.average ? 
-                      ` The route's distance is ${(((analysis.distance.average - analysis.distance.value) / analysis.distance.average) * 100).toFixed(0)}% shorter than average, ` : 
-                      ` The route's distance is ${(((analysis.distance.value - analysis.distance.average) / analysis.distance.average) * 100).toFixed(0)}% longer than average, `}
+                      ` The route's distance is ${((analysis.distance.average - analysis.distance.value) / analysis.distance.average * 100).toFixed(0)}% shorter than average, ` : 
+                      ` The route's distance is ${((analysis.distance.value - analysis.distance.average) / analysis.distance.average * 100).toFixed(0)}% longer than average, `}
                     {analysis.cost.value < analysis.cost.average ? 
-                      `costs are ${(((analysis.cost.average - analysis.cost.value) / analysis.cost.average) * 100).toFixed(0)}% lower, ` : 
-                      `costs are ${(((analysis.cost.value - analysis.cost.average) / analysis.cost.average) * 100).toFixed(0)}% higher, `}
+                      `costs are ${((analysis.cost.average - analysis.cost.value) / analysis.cost.average * 100).toFixed(0)}% lower, ` : 
+                      `costs are ${((analysis.cost.value - analysis.cost.average) / analysis.cost.average * 100).toFixed(0)}% higher, `}
                     and 
                     {analysis.cylinders.value > analysis.cylinders.average ? 
-                      ` delivers ${(((analysis.cylinders.value - analysis.cylinders.average) / analysis.cylinders.average) * 100).toFixed(0)}% more cylinders than the average route.` : 
-                      ` delivers ${(((analysis.cylinders.average - analysis.cylinders.value) / analysis.cylinders.average) * 100).toFixed(0)}% fewer cylinders than the average route.`}
+                      ` delivers ${((analysis.cylinders.value - analysis.cylinders.average) / analysis.cylinders.average * 100).toFixed(0)}% more cylinders than the average route.` : 
+                      ` delivers ${((analysis.cylinders.average - analysis.cylinders.value) / analysis.cylinders.average * 100).toFixed(0)}% fewer cylinders than the average route.`}
                   </p>
                 </div>
 

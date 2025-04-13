@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RotateCw, Save, Printer, Mail, RefreshCw } from 'lucide-react';
+import { RotateCw, Save, Printer, Mail, RefreshCw, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { printData, emailData } from '@/utils/exportUtils';
+import { printData, emailData, exportToPDF } from '@/utils/exportUtils';
 import { format } from 'date-fns';
 
 interface RouteActionsProps {
@@ -71,6 +71,27 @@ const RouteActions: React.FC<RouteActionsProps> = ({
     }
   };
   
+  const handleDownloadPDF = () => {
+    if (!routeData || !routeData.stops || routeData.stops.length === 0) {
+      toast.error("No route data available to download");
+      return;
+    }
+    
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      exportToPDF(
+        routeData.stops,
+        `${routeData.name}-${today}`,
+        `Route Report: ${routeData.name}`,
+        new Date()
+      );
+      toast.success("PDF download started");
+    } catch (error) {
+      toast.error("Failed to generate PDF");
+      console.error(error);
+    }
+  };
+  
   return (
     <div className="flex justify-end gap-2">
       {routeData && (
@@ -92,6 +113,15 @@ const RouteActions: React.FC<RouteActionsProps> = ({
           >
             <Mail className="h-4 w-4" />
             Email
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadPDF}
+            disabled={disabled || !routeData.stops || routeData.stops.length === 0}
+            className="gap-1"
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
           </Button>
         </>
       )}
