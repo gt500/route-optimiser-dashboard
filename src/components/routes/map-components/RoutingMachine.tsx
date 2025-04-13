@@ -70,8 +70,12 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         console.log("Creating route with valid waypoints:", validWaypoints);
         
-        // Configure real-time data settings based on user options
+        // Always enable real-time traffic data by default for maximum efficiency
         const useRealTimeTraffic = routeOptions.useRealTimeData !== false;
+        
+        if (useRealTimeTraffic) {
+          toast.info("Using real-time traffic data for optimal routing");
+        }
         
         // Configure options with real-time traffic preferences
         const routerOptions: L.Routing.RoutingControlOptions = {
@@ -81,13 +85,13 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
             useHints: false, // Disable hints for more accurate real-time routing
             suppressDemoServerWarning: true,
             urlParameters: {
-              // Optimize for traffic avoidance if enabled
+              // Always optimize for traffic avoidance
               alternatives: routeOptions.alternateRoutes ? 'true' : 'false',
               steps: 'true',
               geometries: 'geojson',
               overview: 'full',
               annotations: 'true',
-              // Use real-time traffic data when available
+              // Always use real-time traffic data when available
               traffic: useRealTimeTraffic ? 'true' : 'false'
             }
           }),
@@ -132,7 +136,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
             }
             
             if (useRealTimeTraffic) {
-              toast.info(`Using real traffic data: ${trafficDensity} traffic conditions detected`);
+              toast.info(`Traffic analysis: ${trafficDensity} traffic conditions detected`);
             }
             
             // Extract the coordinates from the route

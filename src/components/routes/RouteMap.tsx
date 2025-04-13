@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -67,7 +66,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [routeInitialized, setRouteInitialized] = useState(false);
 
-  // Calculate center based on all markers if not provided
   const calculateCenter = () => {
     if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
       return center;
@@ -97,7 +95,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
       return center;
     }
 
-    // Filter out any invalid coordinates (NaN values or zeros)
     const validPoints = points.filter(point => 
       !isNaN(point[0]) && !isNaN(point[1]) && 
       point[0] !== 0 && point[1] !== 0
@@ -107,7 +104,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
       return center;
     }
 
-    // Calculate the center of all points
     const lat = validPoints.reduce((sum, point) => sum + point[0], 0) / validPoints.length;
     const lng = validPoints.reduce((sum, point) => sum + point[1], 0) / validPoints.length;
     return [lat, lng] as [number, number];
@@ -119,7 +115,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   useEffect(() => {
     if (mapRef.current && showRouting) {
-      // Ensure the map is fully loaded
       if (!mapRef.current._leaflet_id) {
         return;
       }
@@ -133,12 +128,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
     const routeWaypoints: L.LatLng[] = [];
 
-    // Add start location
     if (startLocation) {
       routeWaypoints.push(L.latLng(startLocation.coords[0], startLocation.coords[1]));
     }
 
-    // Add intermediate waypoints
     if (waypoints && waypoints.length > 0) {
       waypoints.forEach((wp) => {
         if (!isNaN(wp.coords[0]) && !isNaN(wp.coords[1]) && 
@@ -148,12 +141,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
       });
     }
 
-    // Add end location
     if (endLocation) {
       routeWaypoints.push(L.latLng(endLocation.coords[0], endLocation.coords[1]));
     }
 
-    // Update waypoints state
     setAllWaypoints(routeWaypoints);
     
     if (routeWaypoints.length >= 2 && !routeInitialized) {
@@ -182,7 +173,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
   };
 
-  // Extract valid coordinates from locations for SetViewOnChange
   const allCoordinates = React.useMemo(() => {
     const coords: [number, number][] = [];
     
@@ -207,12 +197,13 @@ const RouteMap: React.FC<RouteMapProps> = ({
     return coords;
   }, [startLocation, endLocation, waypoints, locations]);
 
-  // Map traffic conditions to routing options
   const getTrafficAvoidanceOption = () => {
+    if (useRealTimeTraffic) return true;
+    
     switch (trafficConditions) {
-      case 'light': return false; // No need to avoid traffic
-      case 'heavy': return true;  // Always avoid traffic
-      default: return true;       // Moderate - safer to avoid
+      case 'light': return false;
+      case 'heavy': return true;
+      default: return true;
     }
   };
 
@@ -268,7 +259,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           name={wp.name}
           position={wp.coords}
           index={index + 1}
-          stopNumber={index + 1} // Sequential stop number for delivery order
+          stopNumber={index + 1}
         />
       ))}
 
@@ -281,7 +272,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             name={loc.name}
             position={[loc.latitude, loc.longitude]}
             address={loc.address}
-            stopNumber={index + 1} // Sequential stop number for delivery order
+            stopNumber={index + 1}
           />
         );
       })}

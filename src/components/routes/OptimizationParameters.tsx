@@ -61,11 +61,11 @@ const OptimizationParameters = ({ onOptimize = () => {} }: OptimizationParameter
         
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <div className="flex gap-2 items-center">
-            <WifiIcon className="h-4 w-4 text-gray-400" />
+            <WifiIcon className="h-4 w-4 text-emerald-400" />
             <div>
               <div className="font-medium text-white">Use Real-Time Traffic Data</div>
-              <div className="text-xs text-gray-400">
-                <span className={useRealTimeData ? "text-emerald-500 font-medium" : ""}>
+              <div className="text-xs">
+                <span className={useRealTimeData ? "text-emerald-500 font-medium" : "text-gray-400"}>
                   {useRealTimeData ? "Live traffic updates enabled" : "Static routing"}
                 </span>
               </div>
@@ -76,9 +76,9 @@ const OptimizationParameters = ({ onOptimize = () => {} }: OptimizationParameter
             onCheckedChange={(checked) => {
               setUseRealTimeData(checked);
               if (checked) {
-                toast.success("Enabled real-time traffic data");
+                toast.success("Enabled real-time traffic data for maximum efficiency");
               } else {
-                toast.info("Disabled real-time traffic data");
+                toast.warning("Real-time traffic disabled - routes may be less efficient");
               }
             }}
             aria-label="Toggle real-time data"

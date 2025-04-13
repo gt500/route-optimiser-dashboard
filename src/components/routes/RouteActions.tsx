@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RotateCw, Save, Printer, Mail } from 'lucide-react';
+import { RotateCw, Save, Printer, Mail, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { printData, emailData } from '@/utils/exportUtils';
 import { format } from 'date-fns';
@@ -10,6 +10,7 @@ interface RouteActionsProps {
   usingRealTimeData?: boolean;
   onSave?: () => void;
   onOptimize?: () => void;
+  onRefreshTraffic?: () => void;
   disabled?: boolean;
   routeData?: {
     name: string;
@@ -26,6 +27,7 @@ const RouteActions: React.FC<RouteActionsProps> = ({
   usingRealTimeData,
   onSave,
   onOptimize,
+  onRefreshTraffic,
   disabled = false,
   routeData
 }) => {
@@ -93,6 +95,24 @@ const RouteActions: React.FC<RouteActionsProps> = ({
           </Button>
         </>
       )}
+      
+      {usingRealTimeData && onRefreshTraffic && (
+        <Button 
+          variant="secondary" 
+          onClick={() => {
+            if (onRefreshTraffic) {
+              onRefreshTraffic();
+              toast.success("Traffic data refreshed");
+            }
+          }}
+          disabled={disabled}
+          className="gap-1"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh Traffic
+        </Button>
+      )}
+      
       <Button 
         variant="outline" 
         onClick={() => {
@@ -116,14 +136,14 @@ const RouteActions: React.FC<RouteActionsProps> = ({
           
           toast.success(
             usingRealTimeData 
-              ? "Route re-optimized with latest traffic data" 
+              ? "Route optimized with latest traffic data for maximum efficiency" 
               : "Route successfully optimized"
           );
         }}
         disabled={disabled}
       >
         <RotateCw className="h-4 w-4" />
-        Re-optimize
+        Optimize Route
       </Button>
     </div>
   );

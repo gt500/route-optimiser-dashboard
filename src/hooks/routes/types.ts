@@ -42,6 +42,6 @@ export const CYLINDER_WEIGHT_KG = 22;
 export const routeOptimizationDefaultParams: OptimizationParams = {
   prioritizeFuel: true,
   avoidTraffic: true,
-  useRealTimeData: false,
+  useRealTimeData: true, // Set this to true by default for maximum efficiency
   optimizeForDistance: false
 };
