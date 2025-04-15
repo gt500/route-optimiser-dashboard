@@ -11,7 +11,6 @@ import { useFleetData } from '@/hooks/useFleetData';
 import MaintenanceScheduleTable from '@/components/fleet/MaintenanceScheduleTable';
 import { format, differenceInDays, parseISO } from 'date-fns';
 
-// Variable costs data
 const variableCosts = [
   { type: '15inch Tyres', description: '4 Tyres', cost: 2115, notes: 'lasts 4-5 months' },
   { type: 'Minor Services', description: 'Every 15 000km @ R5000', cost: 1667 },
@@ -20,7 +19,6 @@ const variableCosts = [
   { type: 'Miscellaneous', description: 'Car wash etc.', cost: 800 },
 ];
 
-// Fixed costs data
 const fixedCosts = [
   { type: 'Tracker', description: 'Vehicle', cost: 200 },
   { type: 'Insurance', description: 'Vehicle', cost: 2000 },
@@ -35,7 +33,6 @@ const fixedCosts = [
   { type: 'Registration', description: 'Vehicle', cost: 125 },
 ];
 
-// Cost summaries
 const costSummary = {
   variableTotal: 21320,
   fixedTotal: 31244,
@@ -47,16 +44,16 @@ const costSummary = {
 
 const VehicleStatusCard = ({ status, count, icon: Icon, color }) => {
   return (
-    <Card className="hover:shadow-md transition-shadow duration-300">
+    <Card className="hover:shadow-md transition-shadow duration-300 bg-black/70 border-white/10">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium">{status}</CardTitle>
-        <div className={`text-${color}-500`}>
+        <CardTitle className="text-sm font-medium text-white/90">{status}</CardTitle>
+        <div className={`text-${color}-400`}>
           <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{count}</div>
-        <p className="text-xs text-muted-foreground">vehicles</p>
+        <div className="text-2xl font-bold text-white">{count}</div>
+        <p className="text-xs text-white/60">vehicles</p>
       </CardContent>
     </Card>
   );
@@ -75,7 +72,6 @@ const Fleet = () => {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Counts for status cards
   const statusCounts = {
     available: vehicles.filter(v => v.status === 'Available').length,
     onRoute: vehicles.filter(v => v.status === 'On Route').length,
@@ -111,14 +107,13 @@ const Fleet = () => {
     setIsDialogOpen(true);
   };
 
-  // Calculate days in service for each vehicle
   const calculateDaysInService = (startDate) => {
     if (!startDate) return 0;
     return differenceInDays(new Date(), parseISO(startDate));
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in bg-black text-white">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Fleet Management</h1>
@@ -136,7 +131,7 @@ const Fleet = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
+        <TabsList className="bg-black/50 border-white/10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance Schedule</TabsTrigger>
           <TabsTrigger value="costs">Cost Analysis</TabsTrigger>
@@ -149,20 +144,20 @@ const Fleet = () => {
             <VehicleStatusCard status="In Maintenance" count={statusCounts.maintenance} icon={Wrench} color="amber" />
           </div>
 
-          <Card className="hover:shadow-md transition-shadow duration-300">
+          <Card className="hover:shadow-md transition-shadow duration-300 bg-black/70 border-white/10">
             <CardHeader>
-              <CardTitle>Vehicle Fleet</CardTitle>
-              <CardDescription>Status and details of all vehicles</CardDescription>
+              <CardTitle className="text-white">Vehicle Fleet</CardTitle>
+              <CardDescription className="text-white/60">Status and details of all vehicles</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {isLoading ? (
-                <div className="py-4 text-center text-muted-foreground">Loading vehicle data...</div>
+                <div className="py-4 text-center text-white/60">Loading vehicle data...</div>
               ) : (
                 <div className="border rounded-lg overflow-hidden">
-                  <Table>
+                  <Table className="text-white">
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
+                      <TableRow className="border-white/10">
+                        <TableHead className="text-white/80">ID</TableHead>
                         <TableHead>Vehicle</TableHead>
                         <TableHead>License Plate</TableHead>
                         <TableHead>Status</TableHead>
@@ -248,13 +243,13 @@ const Fleet = () => {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="hover:shadow-md transition-shadow duration-300">
+            <Card className="hover:shadow-md transition-shadow duration-300 bg-black/70 border-white/10">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
-                  <CardTitle>Upcoming Maintenance</CardTitle>
-                  <CardDescription>Next scheduled services</CardDescription>
+                  <CardTitle className="text-white">Upcoming Maintenance</CardTitle>
+                  <CardDescription className="text-white/60">Next scheduled services</CardDescription>
                 </div>
-                <Wrench className="h-4 w-4 text-muted-foreground" />
+                <Wrench className="h-4 w-4 text-white/60" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -262,7 +257,7 @@ const Fleet = () => {
                     <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                       <div>
                         <div className="font-medium">{item.vehicle}</div>
-                        <div className="text-sm text-muted-foreground">{item.type}</div>
+                        <div className="text-sm text-white/60">{item.type}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm">{item.date}</div>
@@ -280,7 +275,7 @@ const Fleet = () => {
                     </div>
                   ))}
                   {maintenanceItems.length === 0 && (
-                    <div className="p-3 text-center text-muted-foreground">
+                    <div className="p-3 text-center text-white/60">
                       No upcoming maintenance scheduled
                     </div>
                   )}
@@ -288,13 +283,13 @@ const Fleet = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow duration-300">
+            <Card className="hover:shadow-md transition-shadow duration-300 bg-black/70 border-white/10">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
-                  <CardTitle>Fleet Performance</CardTitle>
-                  <CardDescription>Efficiency and utilization metrics</CardDescription>
+                  <CardTitle className="text-white">Fleet Performance</CardTitle>
+                  <CardDescription className="text-white/60">Efficiency and utilization metrics</CardDescription>
                 </div>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <Activity className="h-4 w-4 text-white/60" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -307,7 +302,7 @@ const Fleet = () => {
                       value={(performanceMetrics.fuelEfficiency.value / performanceMetrics.fuelEfficiency.target) * 100}
                       className="h-2" 
                     />
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-white/60 mt-1">
                       {performanceMetrics.fuelEfficiency.value} km/L (target: {performanceMetrics.fuelEfficiency.target} km/L)
                     </div>
                   </div>
@@ -321,7 +316,7 @@ const Fleet = () => {
                       value={performanceMetrics.fleetUtilization.value} 
                       className="h-2" 
                     />
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-white/60 mt-1">
                       {performanceMetrics.fleetUtilization.value}% (target: {performanceMetrics.fleetUtilization.target}%)
                     </div>
                   </div>
@@ -335,7 +330,7 @@ const Fleet = () => {
                       value={performanceMetrics.maintenanceCompliance.value} 
                       className="h-2" 
                     />
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-white/60 mt-1">
                       {performanceMetrics.maintenanceCompliance.value}% (target: {performanceMetrics.maintenanceCompliance.target}%)
                     </div>
                   </div>
@@ -349,7 +344,7 @@ const Fleet = () => {
                       value={performanceMetrics.onTimeDeliveries.value} 
                       className="h-2" 
                     />
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-white/60 mt-1">
                       {performanceMetrics.onTimeDeliveries.value}% (target: {performanceMetrics.onTimeDeliveries.target}%)
                     </div>
                   </div>
@@ -372,7 +367,6 @@ const Fleet = () => {
         
         <TabsContent value="costs" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Variable Costs Card */}
             <Card>
               <CardHeader className="bg-slate-100">
                 <CardTitle className="flex items-center gap-2">
@@ -412,7 +406,6 @@ const Fleet = () => {
               </CardContent>
             </Card>
             
-            {/* Fixed Costs Card */}
             <Card>
               <CardHeader className="bg-slate-100">
                 <CardTitle className="flex items-center gap-2">
@@ -450,7 +443,6 @@ const Fleet = () => {
             </Card>
           </div>
           
-          {/* Cost Summary */}
           <Card>
             <CardHeader className="bg-black text-white">
               <CardTitle>Cost Summary</CardTitle>
