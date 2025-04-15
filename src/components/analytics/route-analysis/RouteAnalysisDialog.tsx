@@ -53,6 +53,12 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       console.log(`Analyzing route: ${routeName} (${routeId})`);
       const allRoutes = await routeDataHook.fetchRouteData();
       
+      if (!allRoutes || allRoutes.length === 0) {
+        toast.error('No route data available for analysis');
+        setIsLoading(false);
+        return;
+      }
+      
       let specificRoutes = [];
       
       // First try: Exact name match
@@ -79,65 +85,21 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         });
       }
       
-      // Fallback: Use simulated data
       if (!specificRoutes.length) {
-        console.log(`No data available for route simulation: ${routeName}`);
-        specificRoutes = [{
-          id: routeId,
-          name: routeName,
-          date: new Date().toISOString(),
-          status: 'completed',
-          total_cylinders: Math.floor(Math.random() * 30) + 10,
-          total_distance: Math.floor(Math.random() * 20) + 10,
-          total_duration: (Math.floor(Math.random() * 60) + 30) * 60,
-          estimated_cost: Math.floor(Math.random() * 300) + 150,
-        }];
-        toast.info(`Using simulated data for ${routeName} analysis`);
-      } else {
-        console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
+        toast.warning(`No matching routes found for "${routeName}"`);
+        setIsLoading(false);
+        return;
       }
 
-      // Process routes based on selected time period
-      const now = new Date();
-      
-      const periodSpecificRoutes = specificRoutes;
-      const periodAllRoutes = allRoutes;
-      
-      let routesForAnalysis = periodSpecificRoutes;
-      if (!periodSpecificRoutes.length) {
-        specificRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        routesForAnalysis = [specificRoutes[0]];
-        console.log("No routes in selected period, using most recent route:", specificRoutes[0]);
-      }
-      
-      // Generate analytics metrics
+      console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
+
+      // Generate analytics metrics using real data
       const analyticsData = generateRouteAnalytics(
         routeName,
         routeId,
         period,
-        routesForAnalysis,
-        allRoutes.length > 0 ? allRoutes : [
-          {
-            id: 'sim-1',
-            name: 'Simulated Route 1',
-            date: new Date().toISOString(),
-            status: 'completed',
-            total_cylinders: Math.floor(Math.random() * 30) + 10,
-            total_distance: Math.floor(Math.random() * 20) + 10,
-            total_duration: (Math.floor(Math.random() * 60) + 30) * 60,
-            estimated_cost: Math.floor(Math.random() * 300) + 150,
-          },
-          {
-            id: 'sim-2',
-            name: 'Simulated Route 2',
-            date: new Date().toISOString(),
-            status: 'completed',
-            total_cylinders: Math.floor(Math.random() * 30) + 10,
-            total_distance: Math.floor(Math.random() * 20) + 10,
-            total_duration: (Math.floor(Math.random() * 60) + 30) * 60,
-            estimated_cost: Math.floor(Math.random() * 300) + 150,
-          }
-        ]
+        specificRoutes,
+        allRoutes
       );
       
       setAnalysis(analyticsData);

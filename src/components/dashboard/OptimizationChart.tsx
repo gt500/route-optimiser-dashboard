@@ -1,42 +1,90 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { COLORS } from '@/components/analytics/data/routeLegendData';
 import { Button } from '@/components/ui/button';
 import { Route, Package } from 'lucide-react';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
 
 interface OptimizationChartProps {
-  data: { name: string; value: number }[];
-  percentage: number;
-  loadDistribution: { name: string; value: number }[];
+  data?: { name: string; value: number }[];
+  percentage?: number;
+  loadDistribution?: { name: string; value: number }[];
 }
 
 const OptimizationChart: React.FC<OptimizationChartProps> = ({ 
-  data, 
-  percentage,
-  loadDistribution 
+  data: initialData, 
+  percentage: initialPercentage,
+  loadDistribution: initialLoadDistribution 
 }) => {
   const [activeChart, setActiveChart] = useState<'optimization' | 'distribution'>('optimization');
+  const [optimizationData, setOptimizationData] = useState<{ name: string; value: number }[]>([]);
+  const [distributionData, setDistributionData] = useState<{ name: string; value: number }[]>([]);
+  const [optimizationPercentage, setOptimizationPercentage] = useState(0);
+  const routeDataHook = useRouteData();
 
-  // Dummy data - using the data passed as props
-  const optimizationData = data || [
-    { name: 'Optimized Routes', value: 65 },
-    { name: 'Standard Routes', value: 35 }
-  ];
-  
-  const distributionData = loadDistribution || [
-    { name: 'Full Loads', value: 70 },
-    { name: 'Partial Loads', value: 30 }
-  ];
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        // Fetch actual route data
+        const routes = await routeDataHook.fetchRouteData();
+        
+        // Calculate optimization data
+        // Count optimized vs standard routes
+        // Assuming optimized routes are ones with estimated_cost that shows fuel savings
+        const optimizedRoutes = routes.filter(route => route.estimated_cost && route.total_distance && (route.estimated_cost / route.total_distance < 5));
+        const standardRoutes = routes.filter(route => !optimizedRoutes.includes(route));
+        
+        const optData = [
+          { name: 'Optimized Routes', value: optimizedRoutes.length },
+          { name: 'Standard Routes', value: standardRoutes.length }
+        ];
+        
+        // Calculate load distribution
+        // Count full loads vs partial loads
+        const fullLoads = routes.filter(route => route.total_cylinders >= FULL_LOAD_PER_SITE).length;
+        const partialLoads = routes.length - fullLoads;
+        
+        const loadData = [
+          { name: 'Full Loads', value: fullLoads },
+          { name: 'Partial Loads', value: partialLoads }
+        ];
+        
+        // Calculate optimization percentage
+        const percent = optimizedRoutes.length > 0 
+          ? Math.round((optimizedRoutes.length / routes.length) * 100) 
+          : 0;
+        
+        // Update state with real data
+        setOptimizationData(optData);
+        setDistributionData(loadData);
+        setOptimizationPercentage(percent);
+      } catch (error) {
+        console.error("Error fetching chart data:", error);
+        // If there's an error, use provided data or defaults
+        setOptimizationData(initialData || [
+          { name: 'Optimized Routes', value: 65 },
+          { name: 'Standard Routes', value: 35 }
+        ]);
+        setDistributionData(initialLoadDistribution || [
+          { name: 'Full Loads', value: 70 },
+          { name: 'Partial Loads', value: 30 }
+        ]);
+        setOptimizationPercentage(initialPercentage || 65);
+      }
+    };
+
+    fetchChartData();
+  }, [initialData, initialPercentage, initialLoadDistribution]);
   
   // Display data based on active chart
   const displayData = activeChart === 'optimization' ? optimizationData : distributionData;
   
   // Display percentage based on active chart
   const displayPercentage = activeChart === 'optimization' ? 
-    percentage : 
+    optimizationPercentage : 
     calculateDistributionPercentage(distributionData);
   
   // Calculate percentage for distribution

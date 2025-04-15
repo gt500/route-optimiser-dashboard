@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import RouteEfficiencyChart from '../charts/RouteEfficiencyChart';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
 
 interface RoutesTabProps {
   isLoading: boolean;
@@ -9,22 +10,46 @@ interface RoutesTabProps {
 }
 
 const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) => {
-  // Use dummy data for now since we're reverting to that approach
-  const dummyRouteData = [
-    { name: 'Cape Town CBD', routeId: 'Route 1', time: 45, distance: 12.5, cost: 210, cylinders: 25 },
-    { name: 'Gas Depot - Southern Suburbs', routeId: 'Route 2', time: 60, distance: 18.3, cost: 280, cylinders: 32 },
-    { name: 'Northern Distribution Line', routeId: 'Route 3', time: 75, distance: 24.7, cost: 350, cylinders: 18 },
-    { name: 'Atlantic Seaboard', routeId: 'Route 4', time: 50, distance: 15.6, cost: 240, cylinders: 22 },
-    { name: 'Stellenbosch Distribution', routeId: 'Route 5', time: 90, distance: 28.2, cost: 420, cylinders: 28 },
-    { name: 'West Coast', routeId: 'Route 6', time: 65, distance: 22.4, cost: 310, cylinders: 15 },
-  ];
+  const [routeData, setRouteData] = useState<any[]>([]);
+  const routeDataHook = useRouteData();
+
+  useEffect(() => {
+    const fetchRouteEfficiencyData = async () => {
+      try {
+        // Fetch actual route data
+        const routes = await routeDataHook.fetchRouteData();
+        
+        // Format data for chart display
+        const formattedData = routes.map(route => ({
+          name: route.name,
+          routeId: route.id,
+          time: Math.round((route.total_duration || 0) / 60), // Convert seconds to minutes
+          distance: route.total_distance || 0,
+          cost: route.estimated_cost || 0,
+          cylinders: route.total_cylinders || 0
+        }));
+        
+        // Take the most recent 6 routes or all if less than 6
+        const recentRoutes = formattedData.slice(0, 6);
+        setRouteData(recentRoutes);
+      } catch (error) {
+        console.error("Error fetching route efficiency data:", error);
+        // If there's an error, use empty array
+        setRouteData([]);
+      }
+    };
+
+    if (!isLoading) {
+      fetchRouteEfficiencyData();
+    }
+  }, [isLoading]);
 
   return (
     <TabsContent value="routes" className="space-y-4">
       <RouteEfficiencyChart 
         isLoading={isLoading}
         onRouteLegendOpen={onRouteLegendOpen}
-        routeData={dummyRouteData}
+        routeData={routeData}
       />
     </TabsContent>
   );
