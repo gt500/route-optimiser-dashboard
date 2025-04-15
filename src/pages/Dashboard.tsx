@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,8 @@ import {
   LinearScale,
   BarElement,
   Title,
-  Tooltip,
-  Legend,
+  Tooltip as ChartTooltip,
+  Legend
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useFleetData } from '@/hooks/useFleetData';
@@ -27,7 +28,7 @@ ChartJS.register(
   LinearScale,
   BarElement,
   Title,
-  Tooltip,
+  ChartTooltip,
   Legend
 );
 
@@ -88,9 +89,9 @@ const Dashboard = () => {
       const maintenanceData = fleetData?.maintenanceItems || [];
     
       // Get route optimization stats and weekly delivery data
-      const { getOptimizationStats, getWeeklyDeliveryData } = useRouteData();
-      const optimizationStats = await getOptimizationStats();
-      const weeklyData = await getWeeklyDeliveryData();
+      const routeDataHook = useRouteData();
+      const optimizationStats = await routeDataHook.getOptimizationStats();
+      const weeklyData = await routeDataHook.getWeeklyDeliveryData();
     
       // Set the state with fetched data
       setFleetData(fleetData);
