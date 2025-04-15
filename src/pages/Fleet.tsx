@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit, RefreshCw, CalendarDays } from 'lucide-react';
+import { Plus, TruckIcon, MapPin, Wrench, Activity, Clipboard, Edit, RefreshCw, CalendarDays, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 import { useFleetData } from '@/hooks/useFleetData';
@@ -102,7 +102,8 @@ const Fleet = () => {
       location: '',
       lastService: new Date().toISOString().split('T')[0],
       country: 'South Africa',
-      region: ''
+      region: '',
+      startDate: '2025-04-16'
     });
     setIsDialogOpen(true);
   };
@@ -110,6 +111,14 @@ const Fleet = () => {
   const calculateDaysInService = (startDate) => {
     if (!startDate) return 0;
     return differenceInDays(new Date(), parseISO(startDate));
+  };
+
+  const getUpcomingMaintenanceByVehicle = (vehicleId) => {
+    const vehicleMaintenance = maintenanceItems.filter(item => item.vehicleId === vehicleId);
+    if (vehicleMaintenance.length === 0) return "No upcoming maintenance";
+    
+    vehicleMaintenance.sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+    return `${vehicleMaintenance[0].type}: ${vehicleMaintenance[0].date}`;
   };
 
   return (
@@ -169,6 +178,7 @@ const Fleet = () => {
                         <TableHead>Fuel</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Last Service</TableHead>
+                        <TableHead>Next Maintenance</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -197,11 +207,11 @@ const Fleet = () => {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                              {vehicle.startDate || 'Not set'}
+                              {vehicle.startDate || '2025-04-16'}
                             </div>
                           </TableCell>
                           <TableCell>
-                            {vehicle.startDate ? calculateDaysInService(vehicle.startDate) : '-'}
+                            {vehicle.startDate ? calculateDaysInService(vehicle.startDate) : '0'}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -223,6 +233,12 @@ const Fleet = () => {
                           </TableCell>
                           <TableCell>{vehicle.location}</TableCell>
                           <TableCell>{vehicle.lastService}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-xs whitespace-nowrap">{getUpcomingMaintenanceByVehicle(vehicle.id)}</span>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Button 
                               variant="ghost" 
@@ -271,6 +287,7 @@ const Fleet = () => {
                         >
                           {item.status}
                         </Badge>
+                        {item.notes && <div className="text-xs text-muted-foreground mt-1">{item.notes}</div>}
                       </div>
                     </div>
                   ))}

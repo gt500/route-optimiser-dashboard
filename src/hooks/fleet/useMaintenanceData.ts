@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { MaintenanceItem, MaintenanceTask, FixedCost, MaintenanceBudget, MaintenanceTimeline, Vehicle } from '@/types/fleet';
 import { toast } from 'sonner';
 import { useVehiclesData } from './useVehiclesData';
-import { format, addDays, addMonths } from 'date-fns';
+import { format, addDays, addMonths, differenceInDays, parseISO } from 'date-fns';
 
 // Maintenance tasks data from the provided template
 const monthlyTasks: MaintenanceTask[] = [
@@ -83,9 +83,63 @@ const sampleTimeline: MaintenanceTimeline[] = [
   { month: 6, tasks: ['Major Service', 'Tyres', 'Fixed Costs'], estimatedCost: 38359 }
 ];
 
+// Fixed start date: April 16, 2025
+const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
+
 export const useMaintenanceData = () => {
   const [maintenanceItems, setMaintenanceItems] = useState<MaintenanceItem[]>([]);
   const { vehicles } = useVehiclesData();
+  
+  // Helper function to predict maintenance dates based on reference date
+  const predictMaintenanceDate = (vehicle: Vehicle, taskType: string): Date => {
+    // Use either the vehicle's start date or our reference date
+    const startDate = vehicle.startDate ? parseISO(vehicle.startDate) : REFERENCE_START_DATE;
+    const today = new Date();
+    const daysInService = differenceInDays(today, startDate);
+    
+    // Calculate average daily kilometers based on the typical monthly distance
+    const AVG_MONTHLY_KM = 7040; // As specified in the data
+    const AVG_DAILY_KM = AVG_MONTHLY_KM / 30;
+    
+    // Assuming odometer at 0 on start date, calculate current expected odometer
+    const estimatedCurrentKm = (vehicle.odometer || 0) + (daysInService * AVG_DAILY_KM);
+    
+    switch(taskType) {
+      case 'Tyres':
+        // Tyres every 5 months
+        return addDays(startDate, 150); // Approx 5 months
+        
+      case 'Minor Service':
+        // Every 15,000 km, approx every 2.1 months
+        const minorServiceIntervalDays = Math.floor(15000 / AVG_DAILY_KM);
+        const lastMinorServiceKm = Math.floor(estimatedCurrentKm / 15000) * 15000;
+        const kmSinceLastMinor = estimatedCurrentKm - lastMinorServiceKm;
+        const daysToNextMinor = Math.floor((15000 - kmSinceLastMinor) / AVG_DAILY_KM);
+        return addDays(today, daysToNextMinor);
+        
+      case 'Major Service':
+        // Every 45,000 km, approx every 6.4 months
+        const majorServiceIntervalDays = Math.floor(45000 / AVG_DAILY_KM);
+        const lastMajorServiceKm = Math.floor(estimatedCurrentKm / 45000) * 45000;
+        const kmSinceLastMajor = estimatedCurrentKm - lastMajorServiceKm;
+        const daysToNextMajor = Math.floor((45000 - kmSinceLastMajor) / AVG_DAILY_KM);
+        return addDays(today, daysToNextMajor);
+        
+      case 'Diesel Refuel':
+        // Assuming weekly refueling
+        return addDays(today, 7);
+        
+      default:
+        // Default to monthly tasks
+        return addMonths(today, 1);
+    }
+  };
+  
+  // Calculate days until next maintenance
+  const getDaysUntilMaintenance = (date: Date): number => {
+    const today = new Date();
+    return differenceInDays(date, today);
+  };
   
   // Fetch maintenance data with the new structure
   const fetchMaintenanceItems = async () => {
@@ -96,70 +150,64 @@ export const useMaintenanceData = () => {
       
       // Use actual vehicle data to create maintenance schedules
       vehicles.forEach(vehicle => {
-        // Get last service date
-        const lastServiceDate = new Date(vehicle.lastService);
-        const daysSinceLastService = Math.floor((today.getTime() - lastServiceDate.getTime()) / (1000 * 60 * 60 * 24));
+        // For each vehicle, generate the next date for each maintenance type
         
-        // Add monthly tasks for this vehicle
-        monthlyTasks.forEach(task => {
-          maintenanceSchedule.push({
-            vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
-            vehicleId: vehicle.id,
-            type: task.task,
-            category: task.category,
-            date: format(today, 'yyyy-MM-dd'),
-            status: 'Scheduled',
-            cost: task.cost,
-            notes: task.notes
-          });
+        // Add tire replacement
+        const nextTyreDate = predictMaintenanceDate(vehicle, 'Tyres');
+        maintenanceSchedule.push({
+          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicleId: vehicle.id,
+          type: 'Tyres',
+          category: 'Quarterly',
+          date: format(nextTyreDate, 'yyyy-MM-dd'),
+          status: 'Scheduled',
+          cost: 2115,
+          notes: `Due in ${getDaysUntilMaintenance(nextTyreDate)} days`
         });
         
-        // Add tire replacement (every 5 months)
-        if (daysSinceLastService > 140) { // ~5 months
-          maintenanceSchedule.push({
-            vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
-            vehicleId: vehicle.id,
-            type: 'Tyres',
-            category: 'Quarterly',
-            date: format(addDays(today, 14), 'yyyy-MM-dd'),
-            status: 'Scheduled',
-            cost: 2115,
-            notes: 'Time-based replacement'
-          });
-        }
+        // Add minor service
+        const nextMinorServiceDate = predictMaintenanceDate(vehicle, 'Minor Service');
+        maintenanceSchedule.push({
+          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicleId: vehicle.id,
+          type: 'Minor Service',
+          category: 'Distance',
+          date: format(nextMinorServiceDate, 'yyyy-MM-dd'),
+          status: vehicle.status === 'Maintenance' ? 'In Progress' : 'Scheduled',
+          cost: 5000,
+          notes: `Due in ${getDaysUntilMaintenance(nextMinorServiceDate)} days`
+        });
         
-        // Add minor service (every 15,000 km)
-        // Assuming average 7,040 km per month
-        const estimatedKm = vehicle.odometer || 0;
-        const lastServiceKm = vehicle.lastServiceKm || 0;
-        const kmSinceLastService = estimatedKm - lastServiceKm;
+        // Add major service
+        const nextMajorServiceDate = predictMaintenanceDate(vehicle, 'Major Service');
+        maintenanceSchedule.push({
+          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicleId: vehicle.id,
+          type: 'Major Service',
+          category: 'Distance',
+          date: format(nextMajorServiceDate, 'yyyy-MM-dd'),
+          status: 'Scheduled',
+          cost: 5000,
+          notes: `Due in ${getDaysUntilMaintenance(nextMajorServiceDate)} days`
+        });
         
-        if (kmSinceLastService > 12000 || daysSinceLastService > 60) { // ~2 months
-          maintenanceSchedule.push({
-            vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
-            vehicleId: vehicle.id,
-            type: 'Minor Service',
-            category: 'Distance',
-            date: format(addDays(today, 7), 'yyyy-MM-dd'),
-            status: vehicle.status === 'Maintenance' ? 'In Progress' : 'Scheduled',
-            cost: 5000,
-            triggerPoint: 'Every 15,000 km'
-          });
-        }
-        
-        // Add major service (every 45,000 km)
-        if (kmSinceLastService > 40000 || daysSinceLastService > 180) { // ~6 months
-          maintenanceSchedule.push({
-            vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
-            vehicleId: vehicle.id,
-            type: 'Major Service',
-            category: 'Distance',
-            date: format(addDays(today, 21), 'yyyy-MM-dd'),
-            status: 'Scheduled',
-            cost: 5000,
-            triggerPoint: 'Every 45,000 km'
-          });
-        }
+        // Add next refueling
+        const nextRefuelDate = predictMaintenanceDate(vehicle, 'Diesel Refuel');
+        maintenanceSchedule.push({
+          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicleId: vehicle.id,
+          type: 'Diesel Refuel',
+          category: 'Monthly',
+          date: format(nextRefuelDate, 'yyyy-MM-dd'),
+          status: 'Scheduled',
+          cost: 15488 / 4, // Assuming weekly refueling (monthly cost / 4)
+          notes: `Due in ${getDaysUntilMaintenance(nextRefuelDate)} days`
+        });
+      });
+      
+      // Sort by date (soonest first)
+      maintenanceSchedule.sort((a, b) => {
+        return parseISO(a.date).getTime() - parseISO(b.date).getTime();
       });
       
       setMaintenanceItems(maintenanceSchedule);

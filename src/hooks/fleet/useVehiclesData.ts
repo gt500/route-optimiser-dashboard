@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types/fleet';
@@ -6,7 +7,9 @@ import { format, subDays } from 'date-fns';
 
 // Get today's date
 const today = new Date();
-const oneYearAgo = subDays(today, 365); // Default start date one year ago
+// Fixed reference date: April 16, 2025
+const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
+const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 
 // Initial vehicles data used when no database records exist
 const initialVehicles: Vehicle[] = [
@@ -20,7 +23,7 @@ const initialVehicles: Vehicle[] = [
     fuelLevel: 78, 
     location: 'Cape Town CBD', 
     lastService: format(subDays(today, 100), 'yyyy-MM-dd'), // About 3 months ago
-    startDate: format(oneYearAgo, 'yyyy-MM-dd'), // Default start date one year ago
+    startDate: formattedReferenceDate, // Use the reference date
     country: 'South Africa',
     region: 'Western Cape',
     maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
@@ -36,7 +39,7 @@ const initialVehicles: Vehicle[] = [
     fuelLevel: 92, 
     location: 'Afrox Epping Depot', 
     lastService: format(subDays(today, 30), 'yyyy-MM-dd'), // 1 month ago
-    startDate: format(subDays(oneYearAgo, 90), 'yyyy-MM-dd'), // 3 months before the other truck
+    startDate: formattedReferenceDate, // Use the reference date
     country: 'South Africa',
     region: 'Western Cape',
     maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
