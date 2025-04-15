@@ -61,6 +61,7 @@ interface CreateRouteTabProps {
   onRegionChange?: (country: string, region: string) => void;
 }
 
+// Use a consistent weight value
 const CYLINDER_WEIGHT_KG = 22;
 const MAX_PAYLOAD_KG = FULL_TRUCK_LOAD * CYLINDER_WEIGHT_KG; // 80 cylinders * 22kg
 

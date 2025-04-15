@@ -11,10 +11,9 @@ import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
 
-// Constants for accurate weight calculations
-const EMPTY_CYLINDER_WEIGHT_KG = 14; // Weight of an empty cylinder in kg
-const FULL_CYLINDER_WEIGHT_KG = 28;  // Weight of a full cylinder in kg
-const CYLINDER_GAS_WEIGHT_KG = 14;   // Weight of the gas in a cylinder
+// Constants for weight calculations - using consistent values
+const EMPTY_CYLINDER_WEIGHT_KG = 22; // Weight of an empty cylinder in kg
+const FULL_CYLINDER_WEIGHT_KG = 22;  // Weight of a full cylinder in kg
 
 interface RouteDetailsProps {
   route: {
@@ -55,29 +54,17 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const [totalWeight, setTotalWeight] = useState<number>(0);
   const [isAlertAcknowledged, setIsAlertAcknowledged] = useState<boolean>(false);
 
-  // Calculate total weight of all cylinders more accurately
+  // Calculate total weight of all cylinders with consistent weight values
   useEffect(() => {
-    let weight = 0;
-    
-    route.locations.forEach(location => {
-      // For customer locations, count empty cylinders weight
-      if (location.type === 'Customer' && location.emptyCylinders) {
-        weight += location.emptyCylinders * EMPTY_CYLINDER_WEIGHT_KG;
-      }
-      
-      // For storage locations, count full cylinders weight
-      if ((location.type === 'Storage' || location.type === 'Distribution') && location.fullCylinders) {
-        weight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
-      }
-    });
-    
+    // Use a consistent cylinder weight of 22kg for all cylinders
+    const weight = route.cylinders * EMPTY_CYLINDER_WEIGHT_KG;
     setTotalWeight(weight);
     
     // Reset acknowledgment when weight changes
     if (isOverweight) {
       setIsAlertAcknowledged(false);
     }
-  }, [route.locations, isOverweight]);
+  }, [route.locations, route.cylinders, isOverweight]);
 
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);

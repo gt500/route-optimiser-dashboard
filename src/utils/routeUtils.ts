@@ -1,10 +1,10 @@
 
 import { LocationType } from "@/components/locations/LocationEditDialog";
 
-// Constants for accurate weight and fuel calculations
-const EMPTY_CYLINDER_WEIGHT_KG = 14; // Weight of an empty cylinder in kg
-const FULL_CYLINDER_WEIGHT_KG = 28;  // Weight of a full cylinder in kg
-const CYLINDER_GAS_WEIGHT_KG = 14;   // Weight of the gas in a cylinder
+// Constants for accurate weight and fuel calculations - using consistent values
+const EMPTY_CYLINDER_WEIGHT_KG = 22; // Weight of an empty cylinder in kg
+const FULL_CYLINDER_WEIGHT_KG = 22;  // Weight of a full cylinder in kg
+const CYLINDER_GAS_WEIGHT_KG = 0;   // No longer using different weights for gas content
 
 // Average fuel consumption based on vehicle type and load (L/100km)
 const BASE_FUEL_CONSUMPTION = 12; // 12L/100km for an average delivery truck
