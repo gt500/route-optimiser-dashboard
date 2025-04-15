@@ -21,10 +21,10 @@ const CostBreakdownChart: React.FC<CostBreakdownChartProps> = ({
   isLoading
 }) => {
   return (
-    <Card className="hover:shadow-md transition-shadow duration-300">
+    <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
       <CardHeader>
-        <CardTitle>Cost Breakdown</CardTitle>
-        <CardDescription>Distribution of operational costs</CardDescription>
+        <CardTitle className="text-white">Cost Breakdown</CardTitle>
+        <CardDescription className="text-gray-400">Distribution of operational costs</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-96">
@@ -49,16 +49,19 @@ const CostBreakdownChart: React.FC<CostBreakdownChartProps> = ({
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: 'none', 
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)'
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    color: 'white'
                   }} 
                 />
-                <Legend />
+                <Legend 
+                  wrapperStyle={{ color: 'white' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">
+              <p className="text-gray-400">
                 {isLoading ? "Loading data..." : "No cost breakdown data available for this period"}
               </p>
             </div>
