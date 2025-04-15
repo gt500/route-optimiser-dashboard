@@ -16,7 +16,6 @@ import {
   Legend
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { useFleetData } from '@/hooks/useFleetData';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { FleetPerformanceMetrics } from '@/types/fleet';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
