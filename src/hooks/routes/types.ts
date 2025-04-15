@@ -26,10 +26,14 @@ export interface RouteState {
 
 export interface VehicleConfigProps {
   fuelPrice: number;
+  baseConsumption: number;
+  maintenanceCostPerKm: number;
 }
 
 export const defaultVehicleConfig: VehicleConfigProps = {
-  fuelPrice: 21.95
+  fuelPrice: 21.95,
+  baseConsumption: 0.25, // L/km
+  maintenanceCostPerKm: 1.2 // Rand per km
 };
 
 export interface OptimizationParams {

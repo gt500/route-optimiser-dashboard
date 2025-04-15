@@ -4,9 +4,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Edit, CalendarDays, Clock } from 'lucide-react';
+import { Edit, CalendarDays, Clock, Tool, AlertTriangle } from 'lucide-react';
 import { Vehicle } from '@/types/fleet';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, format, addDays } from 'date-fns';
 
 interface VehicleTableProps {
   vehicles: Vehicle[];
@@ -26,6 +26,41 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
     return differenceInDays(new Date(), parseISO(startDate));
   };
 
+  // For better display of maintenance info
+  const renderMaintenanceInfo = (vehicleId: string) => {
+    const maintenanceInfo = getUpcomingMaintenanceByVehicle(vehicleId);
+    
+    // If it contains a date, extract and format it
+    if (maintenanceInfo.includes(':')) {
+      const [taskType, dateStr] = maintenanceInfo.split(': ');
+      try {
+        const date = parseISO(dateStr);
+        const daysUntil = differenceInDays(date, new Date());
+        
+        return (
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
+              <Tool className="h-3.5 w-3.5 text-amber-500" />
+              <span className="font-medium">{taskType}</span>
+            </div>
+            <div className="text-xs flex items-center gap-1 mt-0.5">
+              <span>{format(date, 'MMM d, yyyy')}</span>
+              {daysUntil < 14 && (
+                <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200 ml-1 px-1 py-0">
+                  {daysUntil <= 0 ? 'Overdue' : `${daysUntil}d`}
+                </Badge>
+              )}
+            </div>
+          </div>
+        );
+      } catch (e) {
+        return maintenanceInfo;
+      }
+    }
+    
+    return maintenanceInfo;
+  };
+
   return (
     <div className="border rounded-lg overflow-hidden">
       <Table className="text-white">
@@ -35,13 +70,11 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
             <TableHead>Vehicle</TableHead>
             <TableHead>License Plate</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Country</TableHead>
-            <TableHead>Region</TableHead>
             <TableHead>Start Date</TableHead>
+            <TableHead>Region</TableHead>
             <TableHead>Days in Service</TableHead>
             <TableHead>Load</TableHead>
             <TableHead>Fuel</TableHead>
-            <TableHead>Location</TableHead>
             <TableHead>Last Service</TableHead>
             <TableHead>Next Maintenance</TableHead>
             <TableHead>Actions</TableHead>
@@ -50,13 +83,13 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={14} className="text-center py-4 text-white/60">
+              <TableCell colSpan={12} className="text-center py-4 text-white/60">
                 Loading vehicle data...
               </TableCell>
             </TableRow>
           ) : vehicles.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={14} className="text-center py-4 text-white/60">
+              <TableCell colSpan={12} className="text-center py-4 text-white/60">
                 No vehicles found
               </TableCell>
             </TableRow>
@@ -80,14 +113,13 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                     {vehicle.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{vehicle.country}</TableCell>
-                <TableCell>{vehicle.region}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <CalendarDays className="h-4 w-4 text-muted-foreground" />
                     {vehicle.startDate || '2025-04-16'}
                   </div>
                 </TableCell>
+                <TableCell>{vehicle.region}</TableCell>
                 <TableCell>
                   {vehicle.startDate ? calculateDaysInService(vehicle.startDate) : '0'}
                 </TableCell>
@@ -109,13 +141,9 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
                     <span className="text-xs">{vehicle.fuelLevel}%</span>
                   </div>
                 </TableCell>
-                <TableCell>{vehicle.location}</TableCell>
                 <TableCell>{vehicle.lastService}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs whitespace-nowrap">{getUpcomingMaintenanceByVehicle(vehicle.id)}</span>
-                  </div>
+                  {renderMaintenanceInfo(vehicle.id)}
                 </TableCell>
                 <TableCell>
                   <Button 

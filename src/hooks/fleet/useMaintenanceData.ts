@@ -94,43 +94,42 @@ export const useMaintenanceData = () => {
     // Always use April 16, 2025 as the start date for consistent maintenance scheduling
     const startDate = REFERENCE_START_DATE;
     const today = new Date();
-    const daysInService = differenceInDays(today, startDate);
+    
+    // Calculate days in service relative to the reference date
+    // For simulation purposes, we'll use a fixed period based on the reference
+    // This allows us to generate future maintenance dates in a consistent way
+    const simulatedDaysInService = differenceInDays(
+      addDays(startDate, 30), // Simulate being 30 days from start date
+      startDate
+    );
     
     // Calculate average daily kilometers based on the typical monthly distance
     const AVG_MONTHLY_KM = 7040; // As specified in the data
     const AVG_DAILY_KM = AVG_MONTHLY_KM / 30;
     
-    // Assuming odometer at 0 on start date, calculate current expected odometer
-    const estimatedCurrentKm = (vehicle.odometer || 0) + (daysInService * AVG_DAILY_KM);
+    // Calculate estimated odometer based on simulated days in service
+    const estimatedCurrentKm = (vehicle.odometer || 0) + (simulatedDaysInService * AVG_DAILY_KM);
     
     switch(taskType) {
       case 'Tyres':
-        // Tyres every 5 months
-        return addDays(startDate, 150); // Approx 5 months
+        // Tyres every 5 months (150 days from reference start)
+        return addDays(startDate, 150);
         
       case 'Minor Service':
-        // Every 15,000 km, approx every 2.1 months
-        const minorServiceIntervalDays = Math.floor(15000 / AVG_DAILY_KM);
-        const lastMinorServiceKm = Math.floor(estimatedCurrentKm / 15000) * 15000;
-        const kmSinceLastMinor = estimatedCurrentKm - lastMinorServiceKm;
-        const daysToNextMinor = Math.floor((15000 - kmSinceLastMinor) / AVG_DAILY_KM);
-        return addDays(today, daysToNextMinor);
+        // Every 15,000 km, approx every 2.1 months (64 days from reference start)
+        return addDays(startDate, 64);
         
       case 'Major Service':
-        // Every 45,000 km, approx every 6.4 months
-        const majorServiceIntervalDays = Math.floor(45000 / AVG_DAILY_KM);
-        const lastMajorServiceKm = Math.floor(estimatedCurrentKm / 45000) * 45000;
-        const kmSinceLastMajor = estimatedCurrentKm - lastMajorServiceKm;
-        const daysToNextMajor = Math.floor((45000 - kmSinceLastMajor) / AVG_DAILY_KM);
-        return addDays(today, daysToNextMajor);
+        // Every 45,000 km, approx every 6.4 months (192 days from reference start)
+        return addDays(startDate, 192);
         
       case 'Diesel Refuel':
-        // Assuming weekly refueling
-        return addDays(today, 7);
+        // Weekly refueling (7 days from reference start, then every 7 days)
+        return addDays(startDate, 7);
         
       default:
-        // Default to monthly tasks
-        return addMonths(today, 1);
+        // Default to monthly tasks (30 days from reference start)
+        return addMonths(startDate, 1);
     }
   };
   
@@ -144,7 +143,6 @@ export const useMaintenanceData = () => {
   const fetchMaintenanceItems = async () => {
     try {
       // Generate maintenance schedule based on vehicle data and the provided template
-      const today = new Date();
       const maintenanceSchedule: MaintenanceItem[] = [];
       
       // Use actual vehicle data to create maintenance schedules
