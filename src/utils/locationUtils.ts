@@ -16,8 +16,11 @@ export const fetchLocationsFromAPI = async (): Promise<LocationInfo[]> => {
     }
 
     if (data) {
-      // Filter out Food Emporium and KZN locations
+      // Enhanced filtering to remove specific locations completely
       const filteredData = data.filter(item => 
+        !item.name?.toLowerCase().includes('shell constantia') &&
+        !item.name?.toLowerCase().includes('foodlovers market kzn') &&
+        !item.name?.toLowerCase().includes('birkenhead') &&
         !item.name?.toLowerCase().includes('food lovers sunningdale') &&
         !item.name?.toLowerCase().includes('food emporium') &&
         !(item.region === 'KZN' && item.country === 'South Africa')
