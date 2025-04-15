@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Edit, CalendarDays, Clock, Tool, AlertTriangle } from 'lucide-react';
+import { Edit, CalendarDays, Clock, Wrench, AlertTriangle } from 'lucide-react';
 import { Vehicle } from '@/types/fleet';
 import { differenceInDays, parseISO, format, addDays } from 'date-fns';
 
@@ -26,11 +25,9 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
     return differenceInDays(new Date(), parseISO(startDate));
   };
 
-  // For better display of maintenance info
   const renderMaintenanceInfo = (vehicleId: string) => {
     const maintenanceInfo = getUpcomingMaintenanceByVehicle(vehicleId);
     
-    // If it contains a date, extract and format it
     if (maintenanceInfo.includes(':')) {
       const [taskType, dateStr] = maintenanceInfo.split(': ');
       try {
@@ -40,7 +37,7 @@ const VehicleTable: React.FC<VehicleTableProps> = ({
         return (
           <div className="flex flex-col">
             <div className="flex items-center gap-1">
-              <Tool className="h-3.5 w-3.5 text-amber-500" />
+              <Wrench className="h-3.5 w-3.5 text-amber-500" />
               <span className="font-medium">{taskType}</span>
             </div>
             <div className="text-xs flex items-center gap-1 mt-0.5">
