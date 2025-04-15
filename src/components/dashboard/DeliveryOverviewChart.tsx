@@ -1,8 +1,27 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar } from 'react-chartjs-2';
 import { RefreshCw } from "lucide-react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register the required Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface DeliveryOverviewChartProps {
   isLoading: boolean;
@@ -13,6 +32,17 @@ const DeliveryOverviewChart: React.FC<DeliveryOverviewChartProps> = ({
   isLoading, 
   weeklyDeliveryData 
 }) => {
+  const chartRef = useRef<ChartJS>(null);
+
+  // Clear chart instance on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
+  }, []);
+
   // Chart options
   const options = {
     responsive: true,
@@ -23,6 +53,14 @@ const DeliveryOverviewChart: React.FC<DeliveryOverviewChartProps> = ({
       title: {
         display: true,
         text: 'Weekly Delivery Overview'
+      }
+    },
+    scales: {
+      x: {
+        type: 'category' as const,
+      },
+      y: {
+        beginAtZero: true,
       }
     }
   };
@@ -56,7 +94,13 @@ const DeliveryOverviewChart: React.FC<DeliveryOverviewChartProps> = ({
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <Bar options={options} data={data} height={300} />
+          <div style={{ position: 'relative', height: '300px', width: '100%' }}>
+            <Bar 
+              options={options} 
+              data={data} 
+              ref={chartRef}
+            />
+          </div>
         )}
       </CardContent>
     </Card>
