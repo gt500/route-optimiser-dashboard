@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types/fleet';
@@ -55,7 +56,7 @@ export const useVehiclesData = () => {
     try {
       setIsLoading(true);
 
-      // Always initialize with our 2 vehicles
+      // Always initialize with only our 2 vehicles
       let updatedVehicles = [...initialVehicles];
       
       // Check for active routes to update vehicle statuses
@@ -108,9 +109,10 @@ export const useVehiclesData = () => {
         });
       }
       
-      // Set the updated vehicles in state
-      setVehicles(updatedVehicles);
-      return updatedVehicles;
+      // Set the updated vehicles in state (but ensure we only have 2 vehicles)
+      // Slice to only take the first two vehicles, in case there are more
+      setVehicles(updatedVehicles.slice(0, 2));
+      return updatedVehicles.slice(0, 2);
     } catch (error) {
       console.error('Error fetching vehicle data:', error);
       toast.error('Failed to load fleet data');
@@ -141,13 +143,21 @@ export const useVehiclesData = () => {
         
         toast.success(`Vehicle ${updatedVehicle.name} (${updatedVehicle.licensePlate}) updated successfully`);
       } else {
-        // Add new vehicle
+        // We shouldn't add new vehicles as we're limited to 2
+        // This logic is kept but will not be used
         const newVehicle = {
           ...updatedVehicle,
           id: `TRK-${String(vehicles.length + 1).padStart(3, '0')}`,
           startDate: formattedReferenceDate // Ensure April 16th start date
         };
-        setVehicles(prev => [...prev, newVehicle]);
+        
+        // Only add the new vehicle if we would still have at most 2 vehicles
+        if (vehicles.length < 2) {
+          setVehicles(prev => [...prev, newVehicle]);
+        } else {
+          toast.error("Maximum of 2 vehicles allowed in the fleet");
+          return false;
+        }
       }
       
       return true;

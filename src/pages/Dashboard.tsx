@@ -67,6 +67,11 @@ const Dashboard = () => {
       // Fetch all the data we need
       const fleetData = await fleetApi.fetchFleetData();
       
+      // Ensure we only count the first 2 vehicles (TRK-001 and TRK-002)
+      if (fleetData && fleetData.vehicles && fleetData.vehicles.length > 2) {
+        fleetData.vehicles = fleetData.vehicles.slice(0, 2);
+      }
+      
       // Get optimization stats and weekly delivery data
       const optimizationStats = await routeDataHook.getOptimizationStats();
       const weeklyData = await routeDataHook.getWeeklyDeliveryData();
