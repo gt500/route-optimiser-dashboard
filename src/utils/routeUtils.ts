@@ -15,8 +15,17 @@ const AVG_SPEED_URBAN_KM_H = 35; // Average speed in urban areas
 const AVG_SPEED_RURAL_KM_H = 60; // Average speed in rural areas
 const MIN_STOP_TIME_MINUTES = 15; // Minimum time at each stop
 
+// Route distance correction factors based on road types
+const ROUTE_DISTANCE_CORRECTION = {
+  URBAN: 1.4,    // Urban areas have more turns and traffic lights
+  SUBURBAN: 1.3, // Suburban areas have some turns and lights
+  RURAL: 1.15,   // Rural areas have fewer turns but may be winding
+  HIGHWAY: 1.1   // Highways are mostly straight
+};
+
 /**
  * Calculate distance between two sets of coordinates using the Haversine formula
+ * This is an "as the crow flies" distance and will be used as a fallback
  */
 export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371; // Earth's radius in km
@@ -26,7 +35,21 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
             Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
             Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  const directDistance = R * c;
+
+  // Apply a road distance correction factor based on the direct distance
+  // Shorter distances tend to have more variance from direct path
+  let correctionFactor = ROUTE_DISTANCE_CORRECTION.URBAN;
+  
+  if (directDistance > 20) {
+    correctionFactor = ROUTE_DISTANCE_CORRECTION.HIGHWAY;
+  } else if (directDistance > 10) {
+    correctionFactor = ROUTE_DISTANCE_CORRECTION.RURAL;
+  } else if (directDistance > 5) {
+    correctionFactor = ROUTE_DISTANCE_CORRECTION.SUBURBAN;
+  }
+  
+  return directDistance * correctionFactor;
 };
 
 /**
@@ -159,16 +182,30 @@ export interface OptimizationParams {
 
 /**
  * Calculate route metrics based on locations and optimization parameters
- * with support for custom fuel cost
+ * with support for custom fuel cost and detailed waypoint data
  */
 export const calculateRouteMetrics = (
   locations: LocationType[],
   params: OptimizationParams,
-  fuelCostPerLiter: number = 21.95 // Add fuel cost parameter with default value
+  fuelCostPerLiter: number = 21.95, // Add fuel cost parameter with default value
+  routingMachineData?: {
+    totalDistance?: number,
+    totalDuration?: number,
+    waypointData?: { distance: number, duration: number }[]
+  }
 ) => {
   let calculatedDistance = 0;
+  let calculatedDuration = 0;
+  let useRoutingMachineData = false;
   
-  if (locations.length > 1) {
+  // First check if we have accurate routing machine data
+  if (routingMachineData && routingMachineData.totalDistance && routingMachineData.totalDistance > 0) {
+    calculatedDistance = routingMachineData.totalDistance;
+    calculatedDuration = routingMachineData.totalDuration || 0;
+    useRoutingMachineData = true;
+  } 
+  // Fallback to Haversine distance calculation if no routing machine data
+  else if (locations.length > 1) {
     for (let i = 0; i < locations.length - 1; i++) {
       const lat1 = locations[i].lat || 0;
       const lon1 = locations[i].long || 0;
@@ -176,19 +213,13 @@ export const calculateRouteMetrics = (
       const lon2 = locations[i + 1].long || 0;
       
       const distance = calculateDistance(lat1, lon1, lat2, lon2);
-      
-      // Road curvature factor:
-      // - Mountains/hills: 1.4-1.6 (more winding roads)
-      // - Suburbs: 1.2-1.3 (grid street patterns)
-      // - Highways: 1.1-1.2 (mostly straight)
-      let curvatureFactor = 1.3; // Default suburban roads
-      
-      // Simple heuristic - if long distance, assume more highway portions
-      if (distance > 20) curvatureFactor = 1.15;
-      else if (distance > 5) curvatureFactor = 1.25;
-      
-      calculatedDistance += distance * curvatureFactor;
+      calculatedDistance += distance;
     }
+  }
+  
+  // If we still don't have a valid distance, use a default
+  if (calculatedDistance <= 0) {
+    calculatedDistance = 45.7; // Default distance if calculation fails
   }
   
   // Calculate the total weight for fuel consumption calculation
@@ -208,26 +239,28 @@ export const calculateRouteMetrics = (
   
   let newDistance = calculatedDistance > 0 ? calculatedDistance : 45.7;
   
-  // Completely revamp duration calculation to be realistic
-  // Base calculation: time = distance / average speed + time per stop
-  let avgSpeed = AVG_SPEED_URBAN_KM_H; // Default to urban speed
-  
-  // If route is longer, assume more rural/highway portions
-  if (newDistance > 50) {
-    avgSpeed = (AVG_SPEED_URBAN_KM_H + AVG_SPEED_RURAL_KM_H) / 2; // Mix of urban and rural
-  } else if (newDistance > 100) {
-    avgSpeed = AVG_SPEED_RURAL_KM_H; // Mostly rural/highway
+  // If we don't have duration from routing machine, calculate it
+  if (!useRoutingMachineData || calculatedDuration <= 0) {
+    // Base calculation: time = distance / average speed + time per stop
+    let avgSpeed = AVG_SPEED_URBAN_KM_H; // Default to urban speed
+    
+    // If route is longer, assume more rural/highway portions
+    if (newDistance > 50) {
+      avgSpeed = (AVG_SPEED_URBAN_KM_H + AVG_SPEED_RURAL_KM_H) / 2; // Mix of urban and rural
+    } else if (newDistance > 100) {
+      avgSpeed = AVG_SPEED_RURAL_KM_H; // Mostly rural/highway
+    }
+    
+    // Calculate driving time in minutes
+    const drivingTimeMinutes = (newDistance / avgSpeed) * 60;
+    
+    // Add stop time for each location (minimum 15 minutes per stop)
+    const numStops = locations.length;
+    const stopTimeMinutes = numStops * MIN_STOP_TIME_MINUTES;
+    
+    // Total duration in minutes
+    calculatedDuration = drivingTimeMinutes + stopTimeMinutes;
   }
-  
-  // Calculate driving time in minutes
-  const drivingTimeMinutes = (newDistance / avgSpeed) * 60;
-  
-  // Add stop time for each location (minimum 15 minutes per stop)
-  const numStops = locations.length;
-  const stopTimeMinutes = numStops * MIN_STOP_TIME_MINUTES;
-  
-  // Total duration in minutes
-  let newDuration = drivingTimeMinutes + stopTimeMinutes;
   
   // Apply traffic conditions
   let trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
@@ -253,15 +286,17 @@ export const calculateRouteMetrics = (
       trafficConditions = 'light';
     }
     
-    // Apply traffic factor to duration
-    newDuration = newDuration * realTimeTrafficFactor;
+    // Apply traffic factor to duration if not using routing machine data
+    if (!useRoutingMachineData) {
+      calculatedDuration = calculatedDuration * realTimeTrafficFactor;
+    }
     
     // Apply distance optimization
     newDistance = newDistance * distanceMultiplier;
   }
   
   // Ensure minimum duration - a route should never take less than 15 minutes per stop
-  newDuration = Math.max(newDuration, numStops * MIN_STOP_TIME_MINUTES);
+  calculatedDuration = Math.max(calculatedDuration, locations.length * MIN_STOP_TIME_MINUTES);
   
   // Calculate fuel consumption based on distance and load weight
   const fuelConsumption = calculateFuelConsumption(newDistance, totalWeight) * fuelMultiplier;
@@ -274,13 +309,14 @@ export const calculateRouteMetrics = (
   
   return {
     distance: Math.round(newDistance * 10) / 10,
-    duration: Math.round(newDuration),
+    duration: Math.round(calculatedDuration),
     fuelConsumption: Math.round(fuelConsumption * 100) / 100,
     fuelCost, // Now calculated with the provided fuel cost
     maintenanceCost: Math.round(maintenanceCost * 100) / 100,
     totalCost: Math.round((fuelCost + maintenanceCost) * 100) / 100,
     trafficConditions,
     usingRealTimeData: params.useRealTimeData,
-    totalWeight: Math.round(totalWeight)
+    totalWeight: Math.round(totalWeight),
+    waypointData: routingMachineData?.waypointData
   };
 };

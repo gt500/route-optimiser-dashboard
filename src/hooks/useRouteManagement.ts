@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
@@ -45,10 +44,10 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     estimatedDuration: 0,
     usingRealTimeData: false,
     country: '',
-    region: ''
+    region: '',
+    waypointData: []
   });
 
-  // Operations on the route
   const { 
     addLocationToRoute, 
     removeLocationFromRoute, 
@@ -65,10 +64,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     vehicleConfig
   );
 
-  // Save route functionality
   const { handleConfirmLoad } = useSaveRoute(route, setIsLoadConfirmed, selectedVehicle);
 
-  // Update route when start or end location changes
   useEffect(() => {
     if (startLocation) {
       console.log("Start location set:", startLocation);
@@ -99,7 +96,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     }
   }, [startLocation, endLocation]);
   
-  // Update available locations for the route
   useEffect(() => {
     setRoute(prev => {
       const routeLocationIds = prev.locations.map(loc => loc.id);
@@ -163,12 +159,29 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     toast.success(`Fuel cost updated to R${newCost.toFixed(2)}/L`);
   };
 
-  const handleRouteDataUpdate = (distance: number, duration: number) => {
+  const handleRouteDataUpdate = (
+    distance: number, 
+    duration: number, 
+    trafficConditions?: 'light' | 'moderate' | 'heavy',
+    coordinates?: [number, number][],
+    waypointData?: { distance: number, duration: number }[]
+  ) => {
+    console.log("Received route data update:", { 
+      distance, duration, 
+      trafficInfo: trafficConditions,
+      waypoints: waypointData?.length
+    });
+    
+    if (distance <= 0 || isNaN(distance)) {
+      console.warn("Invalid distance received:", distance);
+      return;
+    }
+    
     setRoute(prev => {
-      const consumption = distance * 0.12;
+      const consumption = (distance * vehicleConfig.fuelPrice * 0.12) / 21.95;
       const cost = consumption * vehicleConfig.fuelPrice;
       
-      console.log(`Route data updated: distance=${distance}, duration=${duration}, consumption=${consumption}, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
+      console.log(`Route data updated: distance=${distance}km, duration=${duration}mins, consumption=${consumption}L, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
       
       return {
         ...prev,
@@ -176,6 +189,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
         estimatedDuration: duration,
         fuelConsumption: consumption,
         fuelCost: cost,
+        trafficConditions: trafficConditions || prev.trafficConditions,
+        waypointData: waypointData || []
       };
     });
   };

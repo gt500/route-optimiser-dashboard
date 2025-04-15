@@ -9,8 +9,17 @@ interface RoutesTabProps {
   onRouteLegendOpen: () => void;
 }
 
+interface RouteDataPoint {
+  name: string;
+  routeId: string;
+  time: number;
+  distance: number;
+  cost: number;
+  cylinders: number;
+}
+
 const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) => {
-  const [routeData, setRouteData] = useState<any[]>([]);
+  const [routeData, setRouteData] = useState<RouteDataPoint[]>([]);
   const routeDataHook = useRouteData();
 
   useEffect(() => {
@@ -19,29 +28,44 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) =
         // Fetch actual route data
         const routes = await routeDataHook.fetchRouteData();
         
-        // Format data for chart display with realistic time calculations
+        // Format data for chart display with accurate time calculations
         const formattedData = routes.map(route => {
-          // Ensure realistic time values by calculating based on distance
-          // Average speed of 40 km/h = 2/3 km per minute
-          // Plus 15 minutes per stop (assuming average of 3 stops)
+          // Use route's actual distance or set a default
           const distance = route.total_distance || 0;
-          const estimatedStops = 3; // Default assumption if we don't have actual data
           
-          // Calculate time: driving time + stop time
-          const drivingTimeMinutes = (distance / 40) * 60; // Time in minutes at 40km/h
+          // Calculate estimated stops based on cylinders (roughly 1 stop per 5-10 cylinders)
+          const estimatedStops = Math.max(3, Math.ceil(route.total_cylinders / 8));
+          
+          // Calculate accurate time: driving time + stop time
+          // For driving time, use standard speeds: 35km/h for urban, 60km/h for highway
+          // Average speed calculation based on distance (longer routes likely have more highway portions)
+          const avgSpeed = distance < 20 ? 35 : distance < 50 ? 45 : 60; // km/h
+          const drivingTimeMinutes = (distance / avgSpeed) * 60; // Time in minutes
           const stopTimeMinutes = estimatedStops * 15; // 15 minutes per stop
-          const calculatedTime = Math.max(15, Math.round(drivingTimeMinutes + stopTimeMinutes));
           
-          // Use calculated time if the existing one is unrealistic
-          const timeInMinutes = route.total_duration ? 
-            Math.max(calculatedTime, Math.round(route.total_duration / 60)) : 
-            calculatedTime;
+          // If we have actual duration data, use it with validation
+          let timeInMinutes = 0;
+          
+          if (route.total_duration && route.total_duration > 0) {
+            // Convert seconds to minutes
+            const durationInMinutes = Math.round(route.total_duration / 60);
+            
+            // Validate the duration - it should be at least as long as our calculated minimum
+            const calculatedMinimum = drivingTimeMinutes + stopTimeMinutes;
+            timeInMinutes = Math.max(durationInMinutes, calculatedMinimum);
+          } else {
+            // Use calculated time if no actual duration data
+            timeInMinutes = Math.round(drivingTimeMinutes + stopTimeMinutes);
+          }
+          
+          // Ensure a minimum reasonable time - at least 15 minutes per stop
+          timeInMinutes = Math.max(timeInMinutes, estimatedStops * 15);
           
           return {
             name: route.name,
             routeId: route.id,
-            time: timeInMinutes, // Convert seconds to minutes or use calculated time
-            distance: route.total_distance || 0,
+            time: timeInMinutes,
+            distance: distance,
             cost: route.estimated_cost || 0,
             cylinders: route.total_cylinders || 0
           };

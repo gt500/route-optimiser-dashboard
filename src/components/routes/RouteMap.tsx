@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -27,6 +28,11 @@ interface NamedCoords {
   coords: [number, number];
 }
 
+interface WaypointData {
+  distance: number;
+  duration: number;
+}
+
 interface RouteMapProps {
   center?: [number, number];
   zoom?: number;
@@ -41,7 +47,13 @@ interface RouteMapProps {
   trafficConditions?: 'light' | 'moderate' | 'heavy';
   showAlternateRoutes?: boolean;
   useRealTimeTraffic?: boolean;
-  onRouteDataUpdate?: (distance: number, duration: number, trafficConditions?: 'light' | 'moderate' | 'heavy', coordinates?: [number, number][]) => void;
+  onRouteDataUpdate?: (
+    distance: number, 
+    duration: number, 
+    trafficConditions?: 'light' | 'moderate' | 'heavy', 
+    coordinates?: [number, number][],
+    waypointData?: WaypointData[]
+  ) => void;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -162,13 +174,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
     duration: number; 
     coordinates: [number, number][];
     trafficDensity?: 'light' | 'moderate' | 'heavy';
+    waypoints?: WaypointData[];
   }) => {
     if (onRouteDataUpdate) {
       onRouteDataUpdate(
         route.distance, 
         route.duration, 
         route.trafficDensity || trafficConditions,
-        route.coordinates
+        route.coordinates,
+        route.waypoints
       );
     }
   };

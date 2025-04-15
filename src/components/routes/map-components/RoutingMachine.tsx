@@ -13,6 +13,7 @@ interface RoutingMachineProps {
     duration: number; 
     coordinates: [number, number][]; 
     trafficDensity?: 'light' | 'moderate' | 'heavy';
+    waypoints?: { distance: number; duration: number }[];
   }) => void;
   routeOptions?: {
     avoidTraffic?: boolean;
@@ -125,6 +126,18 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
             
             console.log(`Route found with actual data: ${totalDistance.toFixed(2)} km, ${totalTime.toFixed(0)} minutes`);
             
+            // Extract detailed waypoint information
+            const waypointData = route.waypoints.map((wp, index) => {
+              // Get leg distance if available (distance between this waypoint and the next one)
+              const legDistance = index < route.legs.length ? route.legs[index].distance / 1000 : 0;
+              const legDuration = index < route.legs.length ? route.legs[index].time / 60 : 0;
+              
+              return {
+                distance: legDistance, // in km
+                duration: legDuration // in minutes
+              };
+            });
+            
             // Analyze traffic conditions based on actual data
             const trafficFactor = totalTime / (totalDistance * 1.2); // minutes per km, with baseline of 1.2 min/km
             let trafficDensity: 'light' | 'moderate' | 'heavy' = 'moderate';
@@ -150,7 +163,8 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
                 distance: totalDistance,
                 duration: totalTime,
                 coordinates,
-                trafficDensity
+                trafficDensity,
+                waypoints: waypointData
               });
             }
           }

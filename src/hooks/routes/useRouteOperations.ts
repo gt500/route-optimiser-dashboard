@@ -97,7 +97,19 @@ export const useRouteOperations = (
       endLoc
     ];
     
-    const metrics = calculateRouteMetrics(optimizedLocations, params, vehicleConfig.fuelPrice);
+    // Use accurate waypoint data if available
+    const routingData = route.waypointData && route.waypointData.length > 0 ? {
+      totalDistance: route.distance,
+      totalDuration: route.estimatedDuration,
+      waypointData: route.waypointData
+    } : undefined;
+    
+    const metrics = calculateRouteMetrics(
+      optimizedLocations, 
+      params, 
+      vehicleConfig.fuelPrice,
+      routingData
+    );
     
     setRoute(prev => ({
       ...prev,
@@ -107,7 +119,8 @@ export const useRouteOperations = (
       fuelConsumption: metrics.fuelConsumption,
       fuelCost: metrics.fuelCost,
       trafficConditions: metrics.trafficConditions,
-      usingRealTimeData: params.useRealTimeData
+      usingRealTimeData: params.useRealTimeData,
+      waypointData: metrics.waypointData || prev.waypointData
     }));
     
     toast.success(params.prioritizeFuel ? 
@@ -120,9 +133,12 @@ export const useRouteOperations = (
 
   const updateRouteCosts = (distance: number, fuelPrice?: number) => {
     const priceToUse = fuelPrice !== undefined ? fuelPrice : vehicleConfig.fuelPrice;
-    const fuelConsumption = (distance * vehicleConfig.fuelPrice) / 100;
+    
+    // Calculate fuel consumption more accurately based on distance
+    // Average truck fuel consumption is 12L/100km
+    const fuelConsumption = (distance * 12) / 100; // Liters of fuel
     const fuelCost = fuelConsumption * priceToUse;
-    const maintenanceCost = distance * 0.5; // Default value
+    const maintenanceCost = distance * 0.85; // R0.85 per km for maintenance
     const totalCost = fuelCost + maintenanceCost;
     
     console.log(`Updating route costs with: distance=${distance}, fuelPrice=${priceToUse}, consumption=${fuelConsumption}, cost=${fuelCost}`);
