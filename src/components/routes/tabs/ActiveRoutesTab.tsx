@@ -15,34 +15,41 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const { fetchActiveRoutes } = useRouteData();
   const { vehicles, saveVehicle, fetchVehicles } = useVehiclesData();
 
+  // Load routes when component mounts
   useEffect(() => {
     loadRoutes();
   }, []);
 
   const loadRoutes = async () => {
     setIsLoading(true);
-    const activeRoutes = await fetchActiveRoutes();
-    
-    // Ensure that each route with a vehicle_id also has a vehicle_name
-    const routesWithVehicleInfo = activeRoutes.map(route => {
-      if (route.vehicle_id && !route.vehicle_name) {
-        const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-        if (vehicle) {
-          return {
-            ...route,
-            vehicle_name: `${vehicle.name} (${vehicle.licensePlate})`
-          };
+    try {
+      const activeRoutes = await fetchActiveRoutes();
+      console.log('Loaded active routes:', activeRoutes);
+      
+      // Ensure that each route with a vehicle_id also has a vehicle_name
+      const routesWithVehicleInfo = activeRoutes.map(route => {
+        if (route.vehicle_id && !route.vehicle_name) {
+          const vehicle = vehicles.find(v => v.id === route.vehicle_id);
+          if (vehicle) {
+            return {
+              ...route,
+              vehicle_name: `${vehicle.name} (${vehicle.licensePlate})`
+            };
+          }
         }
-      }
-      return route;
-    });
-    
-    setRoutes(routesWithVehicleInfo);
-    
-    // Refresh vehicle data to ensure statuses are in sync with routes
-    await fetchVehicles();
-    
-    setIsLoading(false);
+        return route;
+      });
+      
+      setRoutes(routesWithVehicleInfo);
+      
+      // Refresh vehicle data to ensure statuses are in sync with routes
+      await fetchVehicles();
+    } catch (error) {
+      console.error('Error loading routes:', error);
+      toast.error('Failed to load active routes');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const startRoute = async (routeId: string) => {
@@ -57,6 +64,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       console.log(`Starting route ${routeId}, vehicle assignment: ${route.vehicle_id || 'none'}`);
       
+      // Update route status to 'in_progress'
       const { error } = await supabase
         .from('routes')
         .update({ status: 'in_progress' })
@@ -64,6 +72,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         .eq('status', 'scheduled'); // Only update if currently scheduled
       
       if (error) {
+        console.error('Error updating route status:', error);
         throw error;
       }
       
@@ -101,9 +110,9 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         }
       }
       
-      toast.success('Route started');
+      toast.success('Route started successfully');
       
-      // Ensure we wait for the routes to be reloaded before updating the UI
+      // Reload routes to ensure everything is up-to-date
       await loadRoutes();
     } catch (error) {
       console.error('Error starting route:', error);
@@ -123,18 +132,13 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       // Get the route to find assigned vehicle
       const routeToComplete = routes.find(r => r.id === routeId);
-      console.log(`Marking route ${routeId} as completed, assigned vehicle: ${routeToComplete?.vehicle_id || 'none'}`);
+      if (!routeToComplete) {
+        throw new Error('Route not found');
+      }
       
-      // First, directly update the local state to show immediate feedback
-      setRoutes(prev => 
-        prev.map(route => 
-          route.id === routeId 
-            ? { ...route, status: 'completed' } 
-            : route
-        )
-      );
+      console.log(`Marking route ${routeId} as completed, assigned vehicle: ${routeToComplete.vehicle_id || 'none'}`);
       
-      // Update in database
+      // Update route status to 'completed'
       const { error } = await supabase
         .from('routes')
         .update({ status: 'completed' })
@@ -146,7 +150,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       }
       
       // If the route has an assigned vehicle, update that vehicle specifically
-      if (routeToComplete?.vehicle_id) {
+      if (routeToComplete.vehicle_id) {
         const assignedVehicle = vehicles.find(v => v.id === routeToComplete.vehicle_id);
         if (assignedVehicle) {
           console.log(`Setting assigned vehicle ${assignedVehicle.id} from "On Route" to "Available"`);
@@ -175,15 +179,22 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
       
       toast.success('Route marked as completed');
       
-      // Run complete data reload to ensure everything is in sync
-      await loadRoutes();
+      // First, update the local state for immediate feedback
+      setRoutes(prev => 
+        prev.map(route => 
+          route.id === routeId 
+            ? { ...route, status: 'completed' } 
+            : route
+        )
+      );
       
-      // One more explicit vehicle data refresh to ensure statuses are updated
-      await fetchVehicles();
+      // Then reload all routes data for full synchronization
+      await loadRoutes();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
-      // Roll back the optimistic update if there was an error
+      
+      // Rollback the optimistic update if there was an error
       await loadRoutes();
     } finally {
       setProcessingRoutes(prev => {

@@ -28,7 +28,7 @@ export interface RouteData {
   stops?: RouteStop[];
   region?: string;
   country?: string;
-  route_type?: string; // Added to fix the type error
+  route_type?: string;
 }
 
 export const useRouteData = () => {
