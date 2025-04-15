@@ -17,7 +17,7 @@ import { Info, Route, RefreshCw, Download, Printer } from 'lucide-react';
 import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
-import RouteAnalysisDialog from '../RouteAnalysisDialog';
+import RouteAnalysisDialog from '../route-analysis/RouteAnalysisDialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
