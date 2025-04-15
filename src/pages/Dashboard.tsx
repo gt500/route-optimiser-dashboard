@@ -118,7 +118,8 @@ const Dashboard = () => {
     <DashboardShell>
       <DashboardHeader 
         heading="Dashboard" 
-        text="Overview of your fleet operations." 
+        text="Overview of your fleet operations."
+        logo="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png"
       />
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
