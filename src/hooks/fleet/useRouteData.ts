@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays } from 'date-fns';
@@ -26,9 +25,9 @@ export interface RouteData {
   vehicle_id?: string;
   vehicle_name?: string;
   stops?: RouteStop[];
-  region?: string;
-  country?: string;
   route_type?: string;
+  // Note: region and country might not exist in the actual table
+  // but we'll keep them in the interface for future compatibility
 }
 
 export const useRouteData = () => {
@@ -44,7 +43,7 @@ export const useRouteData = () => {
           id, name, date, status, 
           total_distance, total_cylinders, 
           total_duration, estimated_cost, 
-          vehicle_id, region, country
+          vehicle_id
         `)
         .or('status.eq.completed,status.eq.cancelled')
         .order('date', { ascending: false });
@@ -100,7 +99,7 @@ export const useRouteData = () => {
           id, name, date, status, 
           total_distance, total_cylinders, 
           total_duration, estimated_cost, 
-          vehicle_id, region, country
+          vehicle_id
         `)
         .or('status.eq.scheduled,status.eq.in_progress')
         .order('date', { ascending: true });
@@ -200,7 +199,7 @@ export const useRouteData = () => {
           id, name, date, status, 
           total_distance, total_cylinders, 
           total_duration, estimated_cost, 
-          vehicle_id, region, country
+          vehicle_id
         `)
         .order('date', { ascending: false });
         
@@ -252,7 +251,7 @@ export const useRouteData = () => {
           id, name, date, status, 
           total_distance, total_cylinders, 
           total_duration, estimated_cost, 
-          vehicle_id, region, country
+          vehicle_id
         `)
         .ilike('name', `%${routeName}%`)
         .order('date', { ascending: false });

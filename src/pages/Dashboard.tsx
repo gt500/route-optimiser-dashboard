@@ -10,6 +10,8 @@ import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { FleetApi } from '@/api/fleet.api';
+import RecentRoutes from '@/components/dashboard/RecentRoutes';
+import UpcomingDeliveries from '@/components/dashboard/UpcomingDeliveries';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, ChartTooltip, Legend);
@@ -21,7 +23,10 @@ const Dashboard = () => {
   const [fleetData, setFleetData] = useState<any>(null);
   const [routeOptimizationStats, setRouteOptimizationStats] = useState<any>(null);
   const [weeklyDeliveryData, setWeeklyDeliveryData] = useState<any>(null);
+  const [recentRoutes, setRecentRoutes] = useState<any[]>([]);
+  const [upcomingDeliveries, setUpcomingDeliveries] = useState<any[]>([]);
   const { toast } = useToast();
+  const routeDataHook = useRouteData();
 
   // Chart options
   const options = {
@@ -62,20 +67,37 @@ const Dashboard = () => {
       // Fetch all the data we need
       const fleetData = await fleetApi.fetchFleetData();
       
-      // Get route optimization stats and weekly delivery data
-      const routeDataHook = useRouteData();
+      // Get optimization stats and weekly delivery data
       const optimizationStats = await routeDataHook.getOptimizationStats();
       const weeklyData = await routeDataHook.getWeeklyDeliveryData();
+      
+      // Get recent and upcoming routes
+      const routeHistory = await routeDataHook.fetchRouteHistory();
+      const activeRoutes = await routeDataHook.fetchActiveRoutes();
+      
+      // Set recent routes (last 3 completed routes)
+      const recentRoutesData = routeHistory
+        .filter(route => route.status === 'completed')
+        .slice(0, 3);
+      
+      // Set upcoming deliveries (next 3 scheduled routes)
+      const upcomingDeliveriesData = activeRoutes
+        .filter(route => route.status === 'scheduled' || route.status === 'in_progress')
+        .slice(0, 3);
       
       // Set the state with fetched data
       setFleetData(fleetData);
       setRouteOptimizationStats(optimizationStats);
       setWeeklyDeliveryData(weeklyData);
+      setRecentRoutes(recentRoutesData);
+      setUpcomingDeliveries(upcomingDeliveriesData);
       
       // Log the fetched data
       console.log("Fetched fleet data:", fleetData);
       console.log("Fetched route optimization stats:", optimizationStats);
       console.log("Fetched weekly delivery data:", weeklyData);
+      console.log("Recent routes:", recentRoutesData);
+      console.log("Upcoming deliveries:", upcomingDeliveriesData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast({
@@ -164,22 +186,31 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      <div className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly Delivery Overview</CardTitle>
-            <CardDescription>A summary of deliveries completed and scheduled each day.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center py-24">
-                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <Bar options={options} data={data} />
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 mt-6 grid-cols-1 lg:grid-cols-2">
+        <div className="space-y-6">
+          <div className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Delivery Overview</CardTitle>
+                <CardDescription>A summary of deliveries completed and scheduled each day.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-24">
+                    <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <Bar options={options} data={data} height={300} />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        <div className="space-y-6">
+          <RecentRoutes routes={recentRoutes} />
+          <UpcomingDeliveries deliveries={upcomingDeliveries} />
+        </div>
       </div>
     </DashboardShell>
   );
