@@ -17,7 +17,7 @@ import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
 import RouteAnalysisDialog from '../RouteAnalysisDialog';
-import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
 import { exportToPDF, printData, emailData } from '@/utils/exportUtils';
@@ -41,7 +41,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { fetchRouteHistory, fetchRouteData } = useRouteData();
+  const routeDataHook = useRouteData();
   const [routesData, setRoutesData] = useState<Record<string, any>>({});
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
 
@@ -52,14 +52,12 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         console.log('Fetching data for all routes...');
         setDataFetchAttempted(true);
         
-        const { fetchRouteHistory, fetchRouteData } = useRouteData();
-        
-        // First, get all completed routes
-        const completedRoutes = await fetchRouteHistory();
+        // Get all completed routes
+        const completedRoutes = await routeDataHook.fetchRouteHistory();
         console.log('Completed routes:', completedRoutes);
         
         // Get the latest route data
-        const allRoutes = await fetchRouteData();
+        const allRoutes = await routeDataHook.fetchRouteData();
         console.log('All routes:', allRoutes);
         
         // Create a collection of routes by type/name
@@ -145,7 +143,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
       setChartData(routeData);
       setLoading(false);
     }
-  }, [fetchRouteHistory, fetchRouteData, dataFetchAttempted, routeData]);
+  }, [routeDataHook, dataFetchAttempted, routeData]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
     setSelectedRoute(route);

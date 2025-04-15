@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -80,6 +81,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
   const [period, setPeriod] = useState<AnalysisPeriod>('week');
   const [isLoading, setIsLoading] = useState(true);
   const [analysis, setAnalysis] = useState<RouteAnalysisMetrics | null>(null);
+  const routeDataHook = useRouteData(); // Properly initialize the hook inside the component
 
   useEffect(() => {
     if (open) {
@@ -91,8 +93,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     setIsLoading(true);
     
     try {
-      const { fetchRouteData, fetchRouteHistory } = useRouteData();
-      const allRoutes = await fetchRouteData();
+      const allRoutes = await routeDataHook.fetchRouteData();
       
       let specificRoutes: RouteData[] = [];
       
@@ -103,7 +104,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       if (!specificRoutes.length) {
         console.log(`No exact route data for "${routeName}", trying to find similar routes`);
         
-        const historyRoutes = await fetchRouteHistory();
+        const historyRoutes = await routeDataHook.fetchRouteHistory();
         
         const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
         specificRoutes = historyRoutes.filter(route => {
@@ -188,10 +189,10 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       console.log("Route averages:", { avgDistance, avgDuration, avgCost, avgCylinders });
       console.log("Fleet averages:", { allAvgDistance, allAvgDuration, allAvgCost, allAvgCylinders });
       
-      const bestDistance = Math.min(...allDistances.filter(v => v > 0));
-      const bestDuration = Math.min(...allDurations.filter(v => v > 0));
-      const bestCost = Math.min(...allCosts.filter(v => v > 0));
-      const bestCylinders = Math.max(...allCylinders);
+      const bestDistance = Math.min(...allDistances.filter(v => v > 0)) || 1;
+      const bestDuration = Math.min(...allDurations.filter(v => v > 0)) || 1;
+      const bestCost = Math.min(...allCosts.filter(v => v > 0)) || 1;
+      const bestCylinders = Math.max(...allCylinders) || 1;
       
       const distanceScore = calculateEfficiencyScore(avgDistance, allAvgDistance, bestDistance, false);
       const durationScore = calculateEfficiencyScore(avgDuration, allAvgDuration, bestDuration, false);
