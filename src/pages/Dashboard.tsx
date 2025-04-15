@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -145,7 +144,7 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Total Maintenance Tasks</CardTitle>
+            <CardTitle>Maintenance Tasks</CardTitle>
             <CardDescription>Scheduled maintenance tasks</CardDescription>
           </CardHeader>
           <CardContent>
