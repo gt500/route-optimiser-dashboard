@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -146,6 +147,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   }, [routeDataHook, dataFetchAttempted, routeData]);
 
   const handleRouteCardClick = (route: {id: string; name: string; color: string}) => {
+    console.log("Route card clicked:", route);
     setSelectedRoute(route);
     setRouteAnalysisOpen(true);
   };
