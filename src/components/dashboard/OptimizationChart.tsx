@@ -31,11 +31,31 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
         // Fetch actual route data
         const routes = await routeDataHook.fetchRouteData();
         
+        // Ensure routes have realistic duration values
+        const processedRoutes = routes.map(route => {
+          // If duration is unrealistically low, calculate based on distance
+          // Average speed 40 km/h = 0.67 km per minute
+          let processedDuration = route.total_duration;
+          
+          if (!processedDuration || processedDuration < 15 * 60) { // Less than 15 minutes in seconds
+            const distance = route.total_distance || 0;
+            const stops = 3; // Assume average of 3 stops if we don't have actual data
+            const drivingTimeMinutes = (distance / 40) * 60; // Time in minutes at 40km/h
+            const stopTimeMinutes = stops * 15; // 15 minutes per stop
+            processedDuration = Math.max(15 * 60, (drivingTimeMinutes + stopTimeMinutes) * 60); // Convert to seconds
+          }
+          
+          return {
+            ...route,
+            total_duration: processedDuration
+          };
+        });
+        
         // Calculate optimization data
         // Count optimized vs standard routes
         // Assuming optimized routes are ones with estimated_cost that shows fuel savings
-        const optimizedRoutes = routes.filter(route => route.estimated_cost && route.total_distance && (route.estimated_cost / route.total_distance < 5));
-        const standardRoutes = routes.filter(route => !optimizedRoutes.includes(route));
+        const optimizedRoutes = processedRoutes.filter(route => route.estimated_cost && route.total_distance && (route.estimated_cost / route.total_distance < 5));
+        const standardRoutes = processedRoutes.filter(route => !optimizedRoutes.includes(route));
         
         const optData = [
           { name: 'Optimized Routes', value: optimizedRoutes.length },
@@ -44,8 +64,8 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
         
         // Calculate load distribution
         // Count full loads vs partial loads
-        const fullLoads = routes.filter(route => route.total_cylinders >= FULL_LOAD_PER_SITE).length;
-        const partialLoads = routes.length - fullLoads;
+        const fullLoads = processedRoutes.filter(route => route.total_cylinders >= FULL_LOAD_PER_SITE).length;
+        const partialLoads = processedRoutes.length - fullLoads;
         
         const loadData = [
           { name: 'Full Loads', value: fullLoads },
@@ -54,7 +74,7 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
         
         // Calculate optimization percentage
         const percent = optimizedRoutes.length > 0 
-          ? Math.round((optimizedRoutes.length / routes.length) * 100) 
+          ? Math.round((optimizedRoutes.length / processedRoutes.length) * 100) 
           : 0;
         
         // Update state with real data

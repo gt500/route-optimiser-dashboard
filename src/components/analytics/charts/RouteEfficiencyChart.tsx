@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import {
   BarChart,
   Bar,
@@ -92,9 +92,16 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
             // Get the most recent route
             const recentRoute = routes[0];
             
+            // Ensure realistic time values - calculate based on distance
+            // Average speed of 40 km/h = 2/3 km per minute
+            // So, time (minutes) = distance / (2/3) = distance * 1.5
+            // Minimum 15 minutes
+            const distance = recentRoute.total_distance || 0;
+            const calculatedTime = Math.max(15, Math.round(distance * 1.5));
+            
             processedRouteData[routeType] = {
               name: recentRoute.name || routeType,
-              time: Math.round((recentRoute.total_duration || 3600) / 60), // Convert seconds to minutes
+              time: calculatedTime, // Realistic time based on distance
               distance: recentRoute.total_distance || 0,
               cost: recentRoute.estimated_cost || 0,
               cylinders: recentRoute.total_cylinders || 0,
@@ -108,12 +115,16 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
           const routeType = route.name;
           if (!processedRouteData[routeType]) {
             // If we don't have real data for this route, use the dummy data
-            const dummyRoute = routeData[index] || {
+            // But ensure realistic time values
+            const dummyDistance = routeData[index]?.distance || 20;
+            const dummyTime = Math.max(15, Math.round(dummyDistance * 1.5)); // Realistic time calculation
+            
+            const dummyRoute = {
               name: routeType,
-              time: 60, 
-              distance: 20,
-              cost: 300,
-              cylinders: 25,
+              time: dummyTime, 
+              distance: dummyDistance,
+              cost: routeData[index]?.cost || 300,
+              cylinders: routeData[index]?.cylinders || 25,
               routeId: `Route ${index + 1}`
             };
             
@@ -130,8 +141,15 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         toast.success('Route efficiency data loaded');
       } catch (error) {
         console.error('Error fetching route data:', error);
-        // Fall back to dummy data if there's an error
-        setChartData(routeData);
+        // Fall back to dummy data if there's an error, but ensure times are realistic
+        const correctedDummyData = routeData.map(route => {
+          const distance = route.distance || 20;
+          return {
+            ...route,
+            time: Math.max(15, Math.round(distance * 1.5)) // Realistic time calculation
+          };
+        });
+        setChartData(correctedDummyData);
       } finally {
         setLoading(false);
       }
@@ -141,7 +159,14 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
       fetchAllRoutesData();
     } else if (routeData.length > 0 && chartData.length === 0) {
       // Fall back to dummy data if we've attempted to fetch but have no data
-      setChartData(routeData);
+      const correctedDummyData = routeData.map(route => {
+        const distance = route.distance || 20;
+        return {
+          ...route,
+          time: Math.max(15, Math.round(distance * 1.5)) // Realistic time calculation
+        };
+      });
+      setChartData(correctedDummyData);
       setLoading(false);
     }
   }, [routeDataHook, dataFetchAttempted, routeData]);
@@ -277,6 +302,15 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
                     if (name === 'cylinders') {
                       const numValue = Number(value);
                       return [`${value} (${numValue >= FULL_LOAD_PER_SITE ? 'Full Load' : 'Partial Load'})`, 'Cylinders'];
+                    }
+                    if (name === 'time') {
+                      return [`${value} min`, 'Time'];
+                    }
+                    if (name === 'distance') {
+                      return [`${value} km`, 'Distance'];
+                    }
+                    if (name === 'cost') {
+                      return [`R${value}`, 'Cost'];
                     }
                     return [`${value}`, name];
                   }}

@@ -10,6 +10,11 @@ const CYLINDER_GAS_WEIGHT_KG = 0;   // No longer using different weights for gas
 const BASE_FUEL_CONSUMPTION = 12; // 12L/100km for an average delivery truck
 const LOAD_FACTOR = 0.02; // 2% increase in consumption per 100kg of load
 
+// Constants for time calculation
+const AVG_SPEED_URBAN_KM_H = 35; // Average speed in urban areas
+const AVG_SPEED_RURAL_KM_H = 60; // Average speed in rural areas
+const MIN_STOP_TIME_MINUTES = 15; // Minimum time at each stop
+
 /**
  * Calculate distance between two sets of coordinates using the Haversine formula
  */
@@ -202,7 +207,29 @@ export const calculateRouteMetrics = (
   const distanceMultiplier = params.optimizeForDistance ? 0.9 : 1.05;
   
   let newDistance = calculatedDistance > 0 ? calculatedDistance : 45.7;
-  let newDuration = calculatedDistance * 1.5; // Base calculation: 1.5 minutes per km
+  
+  // Completely revamp duration calculation to be realistic
+  // Base calculation: time = distance / average speed + time per stop
+  let avgSpeed = AVG_SPEED_URBAN_KM_H; // Default to urban speed
+  
+  // If route is longer, assume more rural/highway portions
+  if (newDistance > 50) {
+    avgSpeed = (AVG_SPEED_URBAN_KM_H + AVG_SPEED_RURAL_KM_H) / 2; // Mix of urban and rural
+  } else if (newDistance > 100) {
+    avgSpeed = AVG_SPEED_RURAL_KM_H; // Mostly rural/highway
+  }
+  
+  // Calculate driving time in minutes
+  const drivingTimeMinutes = (newDistance / avgSpeed) * 60;
+  
+  // Add stop time for each location (minimum 15 minutes per stop)
+  const numStops = locations.length;
+  const stopTimeMinutes = numStops * MIN_STOP_TIME_MINUTES;
+  
+  // Total duration in minutes
+  let newDuration = drivingTimeMinutes + stopTimeMinutes;
+  
+  // Apply traffic conditions
   let trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
   
   if (params.useRealTimeData) {
@@ -226,10 +253,15 @@ export const calculateRouteMetrics = (
       trafficConditions = 'light';
     }
     
-    // Apply the traffic factor to distance and duration
+    // Apply traffic factor to duration
+    newDuration = newDuration * realTimeTrafficFactor;
+    
+    // Apply distance optimization
     newDistance = newDistance * distanceMultiplier;
-    newDuration = newDuration * realTimeTrafficFactor * (1/distanceMultiplier);
   }
+  
+  // Ensure minimum duration - a route should never take less than 15 minutes per stop
+  newDuration = Math.max(newDuration, numStops * MIN_STOP_TIME_MINUTES);
   
   // Calculate fuel consumption based on distance and load weight
   const fuelConsumption = calculateFuelConsumption(newDistance, totalWeight) * fuelMultiplier;
