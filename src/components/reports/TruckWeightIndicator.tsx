@@ -2,6 +2,7 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Weight, AlertTriangle } from 'lucide-react';
 import { ReportMetricsCard } from '@/components/reports/ReportMetricsCard';
 import { FULL_TRUCK_LOAD } from '@/hooks/delivery/types';
@@ -40,7 +41,14 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
       />
 
       {isOverweight && (
-        <Alert variant="destructive" className="mt-2 py-2 border-2 border-red-500">
+        <Alert 
+          variant="destructive" 
+          className="mt-2 py-2 border-2 border-red-500 animate-pulse"
+          style={{
+            animation: 'pulse 0.8s infinite alternate',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          }}
+        >
           <AlertTriangle className="h-4 w-4 text-red-500" />
           <AlertTitle className="text-red-600 font-bold">Weight limit exceeded!</AlertTitle>
           <AlertDescription className="text-red-600 font-bold">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   vehicles = []
 }) => {
   const [totalWeight, setTotalWeight] = useState<number>(0);
+  const [isAlertAcknowledged, setIsAlertAcknowledged] = useState<boolean>(false);
 
   // Calculate total weight of all cylinders more accurately
   useEffect(() => {
@@ -70,7 +72,12 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     });
     
     setTotalWeight(weight);
-  }, [route.locations]);
+    
+    // Reset acknowledgment when weight changes
+    if (isOverweight) {
+      setIsAlertAcknowledged(false);
+    }
+  }, [route.locations, isOverweight]);
 
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);
@@ -90,6 +97,10 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       kms: location.distance !== undefined ? location.distance : 0,
       fuelCost: location.fuel_cost !== undefined ? location.fuel_cost : 0
     }))
+  };
+
+  const handleAcknowledgeAlert = () => {
+    setIsAlertAcknowledged(true);
   };
 
   return (
@@ -121,10 +132,27 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </div>
         
         {isOverweight && (
-          <Alert variant="destructive" className="mb-2 py-2 border-2 border-red-500">
+          <Alert 
+            variant="destructive" 
+            className={`mb-2 py-2 border-2 border-red-500 ${!isAlertAcknowledged ? 'animate-pulse' : ''}`}
+            style={{
+              animation: !isAlertAcknowledged ? 'pulse 0.8s infinite alternate' : 'none',
+              backgroundColor: !isAlertAcknowledged ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+            }}
+          >
             <AlertTriangle className="h-4 w-4 text-red-500" />
             <AlertDescription className="font-bold text-red-600">
               Weight limit exceeded! You cannot confirm this load until you reduce the number of cylinders.
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleAcknowledgeAlert}
+                  className="border-red-500 text-red-600 hover:bg-red-50 mt-1"
+                >
+                  Acknowledge
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
