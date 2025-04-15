@@ -7,7 +7,7 @@ import FuelCostEditor from './FuelCostEditor';
 import RouteMetricsGrid from './metrics/RouteMetricsGrid';
 import { LocationType } from '@/types/location';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { VehicleConfigProps } from '@/hooks/useRouteManagement';
+import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
 

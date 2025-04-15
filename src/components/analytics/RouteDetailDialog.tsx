@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
-import { format, subDays, subWeeks, subMonths } from 'date-fns';
+import React from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -8,23 +7,6 @@ import {
   DialogTitle,
   DialogDescription
 } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell 
-} from 'recharts';
 import { 
   ArrowDown, 
   ArrowUp, 
@@ -41,15 +23,6 @@ import {
   FileSpreadsheet,
   FileText as FilePdfIcon 
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { COLORS } from './data/routeLegendData';
-import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
-import { Separator } from '@/components/ui/separator';
-import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
-import { toast } from 'sonner';
-
-const FULL_LOAD_THRESHOLD = 20;
 
 interface RouteDetailDialogProps {
   open: boolean;
@@ -59,7 +32,6 @@ interface RouteDetailDialogProps {
   routeColor: string;
 }
 
-// Simplified empty component to ensure no JSX closing tag issues
 const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
   open,
   onOpenChange,
