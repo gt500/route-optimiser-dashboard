@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types/fleet';
@@ -11,7 +10,7 @@ const today = new Date();
 const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
 const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 
-// Initial vehicles data used when no database records exist
+// Initial vehicles data - ensure we only have 2 vehicles
 const initialVehicles: Vehicle[] = [
   { 
     id: 'TRK-001', 
@@ -23,7 +22,7 @@ const initialVehicles: Vehicle[] = [
     fuelLevel: 78, 
     location: 'Cape Town CBD', 
     lastService: format(subDays(today, 100), 'yyyy-MM-dd'), // About 3 months ago
-    startDate: formattedReferenceDate, // Use the reference date
+    startDate: formattedReferenceDate, // April 16, 2025
     country: 'South Africa',
     region: 'Western Cape',
     maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
@@ -39,7 +38,7 @@ const initialVehicles: Vehicle[] = [
     fuelLevel: 92, 
     location: 'Afrox Epping Depot', 
     lastService: format(subDays(today, 30), 'yyyy-MM-dd'), // 1 month ago
-    startDate: formattedReferenceDate, // Use the reference date
+    startDate: formattedReferenceDate, // April 16, 2025
     country: 'South Africa',
     region: 'Western Cape',
     maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
@@ -56,7 +55,7 @@ export const useVehiclesData = () => {
     try {
       setIsLoading(true);
 
-      // Initialize with our initial vehicles
+      // Always initialize with our 2 vehicles
       let updatedVehicles = [...initialVehicles];
       
       // Check for active routes to update vehicle statuses
@@ -92,7 +91,8 @@ export const useVehiclesData = () => {
           // Always ensure TRK-001 has Western Cape region
           const updatedVehicle = {
             ...vehicle,
-            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
+            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region,
+            startDate: formattedReferenceDate // Ensure April 16th start date
           };
           
           if (updatedVehicle.status === 'On Route') {
@@ -128,13 +128,9 @@ export const useVehiclesData = () => {
       // Always enforce Western Cape region for TRK-001
       let updatedVehicle = {
         ...vehicle,
-        region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
+        region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region,
+        startDate: formattedReferenceDate // Always ensure April 16th start date
       };
-      
-      // Ensure startDate is set if not provided
-      if (!updatedVehicle.startDate) {
-        updatedVehicle.startDate = format(new Date(), 'yyyy-MM-dd');
-      }
       
       // Update existing vehicle
       if (updatedVehicle.id) {
@@ -149,6 +145,7 @@ export const useVehiclesData = () => {
         const newVehicle = {
           ...updatedVehicle,
           id: `TRK-${String(vehicles.length + 1).padStart(3, '0')}`,
+          startDate: formattedReferenceDate // Ensure April 16th start date
         };
         setVehicles(prev => [...prev, newVehicle]);
       }

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MaintenanceItem, MaintenanceTask, FixedCost, MaintenanceBudget, MaintenanceTimeline, Vehicle } from '@/types/fleet';
 import { toast } from 'sonner';
@@ -92,8 +91,8 @@ export const useMaintenanceData = () => {
   
   // Helper function to predict maintenance dates based on reference date
   const predictMaintenanceDate = (vehicle: Vehicle, taskType: string): Date => {
-    // Use either the vehicle's start date or our reference date
-    const startDate = vehicle.startDate ? parseISO(vehicle.startDate) : REFERENCE_START_DATE;
+    // Always use April 16, 2025 as the start date for consistent maintenance scheduling
+    const startDate = REFERENCE_START_DATE;
     const today = new Date();
     const daysInService = differenceInDays(today, startDate);
     
@@ -150,10 +149,16 @@ export const useMaintenanceData = () => {
       
       // Use actual vehicle data to create maintenance schedules
       vehicles.forEach(vehicle => {
+        // Set the vehicle start date to April 16, 2025 for maintenance calculations
+        const vehicleWithFixedDate = {
+          ...vehicle,
+          startDate: format(REFERENCE_START_DATE, 'yyyy-MM-dd')
+        };
+        
         // For each vehicle, generate the next date for each maintenance type
         
         // Add tire replacement
-        const nextTyreDate = predictMaintenanceDate(vehicle, 'Tyres');
+        const nextTyreDate = predictMaintenanceDate(vehicleWithFixedDate, 'Tyres');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -166,7 +171,7 @@ export const useMaintenanceData = () => {
         });
         
         // Add minor service
-        const nextMinorServiceDate = predictMaintenanceDate(vehicle, 'Minor Service');
+        const nextMinorServiceDate = predictMaintenanceDate(vehicleWithFixedDate, 'Minor Service');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -179,7 +184,7 @@ export const useMaintenanceData = () => {
         });
         
         // Add major service
-        const nextMajorServiceDate = predictMaintenanceDate(vehicle, 'Major Service');
+        const nextMajorServiceDate = predictMaintenanceDate(vehicleWithFixedDate, 'Major Service');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -192,7 +197,7 @@ export const useMaintenanceData = () => {
         });
         
         // Add next refueling
-        const nextRefuelDate = predictMaintenanceDate(vehicle, 'Diesel Refuel');
+        const nextRefuelDate = predictMaintenanceDate(vehicleWithFixedDate, 'Diesel Refuel');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
