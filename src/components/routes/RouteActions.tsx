@@ -20,6 +20,7 @@ interface RouteActionsProps {
       kms: number;
       fuelCost: number;
     }>;
+    vehicleName?: string;
   };
 }
 
@@ -40,7 +41,7 @@ const RouteActions: React.FC<RouteActionsProps> = ({
     try {
       printData(
         routeData.stops,
-        `Route Report: ${routeData.name}`,
+        `Route Report: ${routeData.name}${routeData.vehicleName ? ` - ${routeData.vehicleName}` : ''}`,
         new Date()
       );
       toast.success("Print view opened in new window");
@@ -60,7 +61,7 @@ const RouteActions: React.FC<RouteActionsProps> = ({
       const today = format(new Date(), 'yyyy-MM-dd');
       emailData(
         routeData.stops,
-        `Route Report: ${routeData.name}`,
+        `Route Report: ${routeData.name}${routeData.vehicleName ? ` - ${routeData.vehicleName}` : ''}`,
         `Route Report - ${routeData.name} - ${today}`,
         new Date()
       );
@@ -82,7 +83,7 @@ const RouteActions: React.FC<RouteActionsProps> = ({
       exportToPDF(
         routeData.stops,
         `${routeData.name}-${today}`,
-        `Route Report: ${routeData.name}`,
+        `Route Report: ${routeData.name}${routeData.vehicleName ? ` - ${routeData.vehicleName}` : ''}`,
         new Date()
       );
       toast.success("PDF download started");

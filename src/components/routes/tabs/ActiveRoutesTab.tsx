@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
@@ -21,7 +22,22 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
   const loadRoutes = async () => {
     setIsLoading(true);
     const activeRoutes = await fetchActiveRoutes();
-    setRoutes(activeRoutes);
+    
+    // Ensure that each route with a vehicle_id also has a vehicle_name
+    const routesWithVehicleInfo = activeRoutes.map(route => {
+      if (route.vehicle_id && !route.vehicle_name) {
+        const vehicle = vehicles.find(v => v.id === route.vehicle_id);
+        if (vehicle) {
+          return {
+            ...route,
+            vehicle_name: `${vehicle.name} (${vehicle.licensePlate})`
+          };
+        }
+      }
+      return route;
+    });
+    
+    setRoutes(routesWithVehicleInfo);
     
     // Refresh vehicle data to ensure statuses are in sync with routes
     await fetchVehicles();

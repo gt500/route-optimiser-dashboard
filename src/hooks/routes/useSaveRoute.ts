@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RouteState, MAX_CYLINDERS } from './types';
@@ -76,7 +75,6 @@ export const useSaveRoute = (
       const routeName = `Route ${new Date().toLocaleDateString()}`;
       const routeId = crypto.randomUUID();
       
-      // Check if the routes table has region and country columns before including them
       const { data: routeColumns, error: columnsError } = await supabase
         .from('routes')
         .select('*')
@@ -86,7 +84,6 @@ export const useSaveRoute = (
         console.error('Error checking routes table structure:', columnsError);
       }
       
-      // Create base route data without region/country
       const routeData: any = {
         id: routeId,
         name: routeName,
@@ -99,7 +96,6 @@ export const useSaveRoute = (
         vehicle_id: selectedVehicle && selectedVehicle !== 'none' ? selectedVehicle : null
       };
       
-      // Only add region/country if they exist in the database schema
       const routeColumnNames = routeColumns && routeColumns.length > 0 
         ? Object.keys(routeColumns[0])
         : [];
@@ -131,7 +127,6 @@ export const useSaveRoute = (
         console.log(`Vehicle ${selectedVehicle} status would be updated to On Route with load ${route.cylinders}`);
       }
       
-      // Check if the deliveries table has region and country columns
       const { data: deliveryColumns, error: deliveryColumnsError } = await supabase
         .from('deliveries')
         .select('*')
@@ -154,7 +149,6 @@ export const useSaveRoute = (
           sequence: index
         };
         
-        // Only add region/country if they exist in the database schema
         if (deliveryColumnNames.includes('region')) {
           delivery.region = location.region || route.region || '';
         }

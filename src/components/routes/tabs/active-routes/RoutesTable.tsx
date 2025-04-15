@@ -102,7 +102,9 @@ const RoutesTable = ({
               <TableCell>{(route.stops || []).length}</TableCell>
               <TableCell>{route.total_distance?.toFixed(1)} km</TableCell>
               <TableCell>{route.total_cylinders}</TableCell>
-              <TableCell>{route.vehicle_name || 'Not assigned'}</TableCell>
+              <TableCell>
+                {route.vehicle_name || (route.vehicle_id ? route.vehicle_id : 'Not assigned')}
+              </TableCell>
               <TableCell className="text-right">
                 <RouteActionButtons
                   routeId={route.id}
