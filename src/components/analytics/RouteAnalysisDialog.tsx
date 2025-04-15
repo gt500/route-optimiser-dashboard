@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -22,7 +21,7 @@ import {
   Download,
   Printer 
 } from 'lucide-react';
-import { useRouteData } from '@/hooks/fleet/useRouteData';
+import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { format, subDays, subWeeks, subMonths } from 'date-fns';
 import { printData, emailData } from '@/utils/exportUtils';
@@ -81,7 +80,6 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
   const [period, setPeriod] = useState<AnalysisPeriod>('week');
   const [isLoading, setIsLoading] = useState(true);
   const [analysis, setAnalysis] = useState<RouteAnalysisMetrics | null>(null);
-  const { fetchRouteData, fetchRouteDataByName, fetchRouteHistory } = useRouteData();
 
   useEffect(() => {
     if (open) {
@@ -93,20 +91,20 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     setIsLoading(true);
     
     try {
-      // First, get all routes to establish baseline metrics
+      const { fetchRouteData, fetchRouteHistory } = useRouteData();
       const allRoutes = await fetchRouteData();
       
-      // Next, attempt to get routes specifically matching our route name
-      let specificRoutes = await fetchRouteDataByName(routeName);
+      let specificRoutes: RouteData[] = [];
       
-      // If we don't have specific route data, try to find something similar
+      specificRoutes = allRoutes.filter(route => 
+        (route.name || '').toLowerCase().includes(routeName.toLowerCase())
+      );
+      
       if (!specificRoutes.length) {
         console.log(`No exact route data for "${routeName}", trying to find similar routes`);
         
-        // Try to get routes from history that might match
         const historyRoutes = await fetchRouteHistory();
         
-        // Try to find similar route names based on keywords
         const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
         specificRoutes = historyRoutes.filter(route => {
           const name = (route.name || '').toLowerCase();
@@ -122,7 +120,6 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
 
       console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
 
-      // Get date ranges based on period
       const now = new Date();
       let startDate;
       
@@ -138,7 +135,6 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           break;
       }
       
-      // Filter routes by period
       const periodSpecificRoutes = specificRoutes.filter(
         route => {
           const routeDate = new Date(route.date);
@@ -153,10 +149,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         }
       );
       
-      // If no routes in period, use the most recent route
       let routesForAnalysis = periodSpecificRoutes;
       if (!periodSpecificRoutes.length) {
-        // Sort by date (most recent first)
         specificRoutes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         routesForAnalysis = [specificRoutes[0]];
         console.log("No routes in selected period, using most recent route:", specificRoutes[0]);
@@ -171,9 +165,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       console.log("Routes for analysis:", routesForAnalysis);
       console.log("All routes for the period:", periodAllRoutes);
       
-      // Calculate metrics
       const routeDistances = routesForAnalysis.map(r => r.total_distance || 0);
-      const routeDurations = routesForAnalysis.map(r => (r.total_duration || 0) / 60); // Convert to minutes
+      const routeDurations = routesForAnalysis.map(r => (r.total_duration || 0) / 60);
       const routeCosts = routesForAnalysis.map(r => r.estimated_cost || 0);
       const routeCylinders = routesForAnalysis.map(r => r.total_cylinders || 0);
       
@@ -182,7 +175,6 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       const avgCost = routeCosts.reduce((a, b) => a + b, 0) / routeCosts.length || 0;
       const avgCylinders = routeCylinders.reduce((a, b) => a + b, 0) / routeCylinders.length || 0;
       
-      // Calculate averages across all routes
       const allDistances = periodAllRoutes.map(r => r.total_distance || 0).filter(Boolean);
       const allDurations = periodAllRoutes.map(r => (r.total_duration || 0) / 60).filter(Boolean);
       const allCosts = periodAllRoutes.map(r => r.estimated_cost || 0).filter(Boolean);
@@ -196,21 +188,16 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       console.log("Route averages:", { avgDistance, avgDuration, avgCost, avgCylinders });
       console.log("Fleet averages:", { allAvgDistance, allAvgDuration, allAvgCost, allAvgCylinders });
       
-      // Find best values (min for costs, distance, duration; max for cylinders)
       const bestDistance = Math.min(...allDistances.filter(v => v > 0));
       const bestDuration = Math.min(...allDurations.filter(v => v > 0));
       const bestCost = Math.min(...allCosts.filter(v => v > 0));
       const bestCylinders = Math.max(...allCylinders);
       
-      console.log("Best values:", { bestDistance, bestDuration, bestCost, bestCylinders });
-      
-      // Calculate efficiency scores based on comparison with average and best
       const distanceScore = calculateEfficiencyScore(avgDistance, allAvgDistance, bestDistance, false);
       const durationScore = calculateEfficiencyScore(avgDuration, allAvgDuration, bestDuration, false);
       const costScore = calculateEfficiencyScore(avgCost, allAvgCost, bestCost, false);
       const cylindersScore = calculateEfficiencyScore(avgCylinders, allAvgCylinders, bestCylinders, true);
       
-      // Overall score (weighted average)
       const overallScore = (
         distanceScore.score * 0.25 +
         durationScore.score * 0.25 +
@@ -255,7 +242,6 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     }
   };
 
-  // Calculate efficiency score and recommendations
   const calculateEfficiencyScore = (
     value: number, 
     average: number, 
@@ -266,7 +252,6 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     let label: string;
     let recommendation: string;
     
-    // Handle edge cases
     if (isNaN(value) || isNaN(average) || isNaN(best)) {
       console.warn("Received NaN values in efficiency calculation", { value, average, best });
       return {
@@ -276,60 +261,48 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       };
     }
     
-    // For metrics where lower is better (distance, duration, cost)
     if (!higherIsBetter) {
       if (value <= best * 1.05) {
-        // Within 5% of best value
         score = 95;
         label = "Excellent";
         recommendation = "This route is performing at optimal efficiency. Maintain current strategy.";
       } else if (value <= average) {
-        // Better than average but not excellent
         const ratio = (average - value) / (average - best);
         score = 75 + 20 * (ratio > 0 ? ratio : 0);
         label = "Good";
         recommendation = "This route performs well, but could be further optimized by adjusting stop order or delivery timing.";
       } else if (value <= average * 1.25) {
-        // Worse than average but within 25%
         const ratio = (average * 1.25 - value) / (average * 0.25);
         score = 50 + 25 * (ratio > 0 ? ratio : 0);
         label = "Average";
         recommendation = "Consider route adjustments to reduce distance/time/cost. Try consolidating nearby stops or reordering the sequence.";
       } else {
-        // Significantly worse than average
         score = Math.max(30, 50 - 20 * ((value - average * 1.25) / average));
         label = "Below Average";
         recommendation = "This route needs significant optimization. Consider complete redesign, different sequencing, or merging with another route.";
       }
-    } 
-    // For metrics where higher is better (cylinders)
-    else {
+    } else {
       if (value >= best * 0.95) {
-        // Within 5% of best value
         score = 95;
         label = "Excellent";
         recommendation = "This route delivers optimal cylinder volume. Maintain current strategy and customer relationships.";
       } else if (value >= average) {
-        // Better than average but not excellent
         const ratio = (value - average) / (best - average);
         score = 75 + 20 * (ratio > 0 ? ratio : 0);
         label = "Good";
         recommendation = "This route delivers good volume, but could be further optimized by adjusting delivery schedules or adding strategic customers.";
       } else if (value >= average * 0.75) {
-        // Worse than average but within 25%
         const ratio = (value - average * 0.75) / (average * 0.25);
         score = 50 + 25 * (ratio > 0 ? ratio : 0);
         label = "Average";
         recommendation = "Consider adding more delivery points or increasing volumes at existing stops to improve efficiency.";
       } else {
-        // Significantly worse than average
         score = Math.max(30, 50 - 20 * ((average * 0.75 - value) / average));
         label = "Below Average";
         recommendation = "This route has low delivery volume. Consider merging with another route or expanding customer base in this area.";
       }
     }
     
-    // Ensure score is within 0-100 range
     score = Math.max(0, Math.min(100, score));
     
     return { score, label, recommendation };

@@ -43,7 +43,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { COLORS } from './data/routeLegendData';
-import { useRouteData } from '@/hooks/fleet/useRouteData';
+import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { Separator } from '@/components/ui/separator';
 import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 import { toast } from 'sonner';
@@ -132,7 +132,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
   const [routeStats, setRouteStats] = useState<RouteStats | null>(null);
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
   const [allRoutes, setAllRoutes] = useState<any[]>([]);
-  const { fetchRouteData, fetchRouteDataByName } = useRouteData();
+  const { fetchRouteData } = useRouteData();
   const [useRealData, setUseRealData] = useState(false);
   const [realRouteData, setRealRouteData] = useState<any | null>(null);
 
@@ -148,8 +148,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
             const completedRoutes = await fetchRouteHistory();
             
             const westCoastCompletedRoutes = completedRoutes.filter(route => 
-              route.name.toLowerCase().includes('west coast') || 
-              route.route_type === 'West Coast'
+              route.name.toLowerCase().includes('west coast')
             );
             
             if (westCoastCompletedRoutes && westCoastCompletedRoutes.length > 0) {
@@ -160,7 +159,11 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
               setRealRouteData(westCoastCompletedRoutes[0]);
               setUseRealData(true);
             } else {
-              const westCoastData = await fetchRouteDataByName('West Coast');
+              // Use filter directly on the routes we already have
+              const westCoastData = routes.filter(route => 
+                route.name.toLowerCase().includes('west coast')
+              );
+              
               console.log('Fetched West Coast data:', westCoastData);
               if (westCoastData && westCoastData.length > 0) {
                 setRealRouteData(westCoastData[0]);
@@ -179,7 +182,7 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
       
       getAllRoutes();
     }
-  }, [open, fetchRouteData, fetchRouteDataByName, routeName]);
+  }, [open, routeName]);
 
   useEffect(() => {
     if (open && (allRoutes.length > 0 || realRouteData)) {
@@ -812,56 +815,3 @@ const RouteDetailDialog: React.FC<RouteDetailDialogProps> = ({
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div 
                           className={`h-full ${comparison.difference > 0 ? 'bg-blue-500' : 'bg-green-500'}`}
-                          style={{ 
-                            width: `${Math.min(Math.abs(comparison.difference / (comparison.average || 1)) * 100 + 50, 100)}%` 
-                          }}
-                        ></div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {comparison.difference > 0 
-                          ? `${comparison.difference.toFixed(1)} higher than average` 
-                          : `${Math.abs(comparison.difference).toFixed(1)} lower than average`}
-                      </p>
-                      <Separator className="my-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Data
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleExportData('excel')}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    <span>Export to Excel</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportData('pdf')}>
-                    <FilePdfIcon className="h-4 w-4 mr-2" />
-                    <span>Export to PDF</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-center items-center py-12">
-            <p>No data available for this route.</p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-export default RouteDetailDialog;

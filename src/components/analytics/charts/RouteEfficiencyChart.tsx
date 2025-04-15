@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,7 +17,7 @@ import RouteMetricsCard from '@/components/routes/metrics/RouteMetricsCard';
 import { routeLegendData, getColorClass } from '../data/routeLegendData';
 import RouteDetailDialog from '../RouteDetailDialog';
 import RouteAnalysisDialog from '../RouteAnalysisDialog';
-import { useRouteData } from '@/hooks/fleet/useRouteData';
+import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
 import { exportToPDF, printData, emailData } from '@/utils/exportUtils';
@@ -42,7 +41,7 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
   const [selectedRoute, setSelectedRoute] = useState<{id: string; name: string; color: string} | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { fetchRouteHistory, fetchRouteData, fetchRouteDataByName } = useRouteData();
+  const { fetchRouteHistory, fetchRouteData } = useRouteData();
   const [routesData, setRoutesData] = useState<Record<string, any>>({});
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
 
@@ -52,6 +51,8 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
       try {
         console.log('Fetching data for all routes...');
         setDataFetchAttempted(true);
+        
+        const { fetchRouteHistory, fetchRouteData } = useRouteData();
         
         // First, get all completed routes
         const completedRoutes = await fetchRouteHistory();
@@ -65,11 +66,20 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
         const routesByType: Record<string, any[]> = {};
         
         [...completedRoutes, ...allRoutes].forEach(route => {
-          const routeType = route.route_type || 'Unknown';
-          if (!routesByType[routeType]) {
-            routesByType[routeType] = [];
+          // Use the route name as the type if route_type doesn't exist
+          const routeType = route.name.toLowerCase();
+          
+          // Find the best match in routeLegendData
+          const matchedLegend = routeLegendData.find(legend => 
+            routeType.includes(legend.name.toLowerCase())
+          );
+          
+          const typeKey = matchedLegend ? matchedLegend.name : 'Unknown';
+          
+          if (!routesByType[typeKey]) {
+            routesByType[typeKey] = [];
           }
-          routesByType[routeType].push(route);
+          routesByType[typeKey].push(route);
         });
         
         const processedRouteData: Record<string, any> = {};
