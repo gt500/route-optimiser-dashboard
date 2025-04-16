@@ -10,7 +10,8 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ChartType
 } from 'chart.js';
 
 // Register the required Chart.js components
@@ -32,7 +33,8 @@ const DeliveryOverviewChart: React.FC<DeliveryOverviewChartProps> = ({
   isLoading, 
   weeklyDeliveryData 
 }) => {
-  const chartRef = useRef<ChartJS>(null);
+  // Specify the chart type as "bar" to fix the type error
+  const chartRef = useRef<ChartJS<"bar">>(null);
 
   // Clear chart instance on unmount to prevent memory leaks
   useEffect(() => {
