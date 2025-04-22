@@ -107,19 +107,40 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
   const renderCustomLegend = (props: any) => {
     const { payload } = props;
     return (
-      <ul className="flex flex-col gap-1 mt-2" style={{ fontSize: '12px', margin: 0, padding: 0, listStyle: 'none', lineHeight: 1.25 }}>
+      <ul
+        className="flex flex-col gap-1 mt-2"
+        style={{
+          fontSize: '11px',
+          margin: 0,
+          padding: 0,
+          listStyle: 'none',
+          lineHeight: 1.15,
+          maxHeight: 80,
+          overflow: 'auto',
+          color: 'white',
+        }}
+      >
         {payload.map((entry: any, index: number) => (
-          <li key={`item-${index}`} className="flex items-center gap-2 text-white" style={{ color: entry.color }}>
-            <span style={{
-              width: 12,
-              height: 12,
-              borderRadius: 2,
-              display: 'inline-block',
-              backgroundColor: entry.color,
-              marginRight: 4,
-              border: '1px solid #e8e8e8'
-            }} />
-            <span>{entry.value}</span>
+          <li
+            key={`item-${index}`}
+            className="flex items-center gap-2 text-white"
+            style={{
+              color: entry.color,
+              fontWeight: 500,
+            }}
+          >
+            <span
+              style={{
+                width: 11,
+                height: 11,
+                borderRadius: 2,
+                display: 'inline-block',
+                backgroundColor: entry.color,
+                marginRight: 4,
+                border: '1px solid #e8e8e8'
+              }}
+            />
+            <span style={{ fontSize: 'inherit' }}>{entry.value}</span>
           </li>
         ))}
       </ul>

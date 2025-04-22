@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 import { useFleetData } from '@/hooks/useFleetData';
 import MaintenanceScheduleTable from '@/components/fleet/MaintenanceScheduleTable';
 
-// Import our new components
 import VehicleStatusCards from '@/components/fleet/overview/VehicleStatusCards';
 import VehicleTable from '@/components/fleet/overview/VehicleTable';
 import MetricsCards from '@/components/fleet/overview/MetricsCards';
@@ -40,7 +38,11 @@ const Fleet = () => {
     isLoading, 
     saveVehicle, 
     refreshData,
-    fixedCosts
+    fixedCosts,
+    monthlyTasks,
+    quarterlyTasks,
+    budgetSummary,
+    sampleTimeline
   } = useFleetData();
   
   const [editingVehicle, setEditingVehicle] = useState(null);
@@ -82,11 +84,12 @@ const Fleet = () => {
     setIsDialogOpen(true);
   };
 
-  const getUpcomingMaintenanceByVehicle = (vehicleId) => {
-    const vehicleMaintenance = maintenanceItems.filter(item => item.vehicleId === vehicleId);
+  const getUpcomingMaintenanceByVehicle = (vehicle) => {
+    const startDate = "2025-04-15";
+    const vehicleMaintenance = maintenanceItems
+      .filter(item => item.vehicleId === vehicle.id && item.date >= startDate)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     if (vehicleMaintenance.length === 0) return "No upcoming maintenance";
-    
-    vehicleMaintenance.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return `${vehicleMaintenance[0].type}: ${vehicleMaintenance[0].date}`;
   };
 
@@ -139,6 +142,26 @@ const Fleet = () => {
             </CardContent>
           </Card>
 
+          {/* New: List of upcoming maintenance for each vehicle based on start date */}
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Upcoming Maintenance</h2>
+            <div className="space-y-2">
+              {vehicles.map((vehicle) => (
+                <div
+                  key={vehicle.id}
+                  className="border border-white/10 rounded-md p-2 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="font-medium">
+                    {vehicle.name} ({vehicle.licensePlate || "No plate"})
+                  </span>
+                  <span className="text-sm text-amber-300">
+                    {getUpcomingMaintenanceByVehicle(vehicle)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Metrics Cards */}
           <MetricsCards 
             maintenanceItems={maintenanceItems} 
@@ -149,11 +172,11 @@ const Fleet = () => {
         <TabsContent value="maintenance" className="space-y-6">
           <MaintenanceScheduleTable 
             maintenanceItems={maintenanceItems}
-            monthlyTasks={useFleetData().monthlyTasks}
-            quarterlyTasks={useFleetData().quarterlyTasks}
-            fixedCosts={useFleetData().fixedCosts}
-            budgetSummary={useFleetData().budgetSummary}
-            sampleTimeline={useFleetData().sampleTimeline}
+            monthlyTasks={monthlyTasks}
+            quarterlyTasks={quarterlyTasks}
+            fixedCosts={fixedCosts}
+            budgetSummary={budgetSummary}
+            sampleTimeline={sampleTimeline}
           />
         </TabsContent>
         
