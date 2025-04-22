@@ -31,17 +31,36 @@ const useAnalyticsDetailDialog = ({ routeDataHook }: { routeDataHook: any }) => 
 
       recentRoutes.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      const formattedData = recentRoutes.map((route: any) => ({
-        id: route.id,
-        name: route.name,
-        date: format(new Date(route.date), 'MMM d, yyyy'),
-        rawDate: new Date(route.date),
-        distance: route.total_distance || 0,
-        duration: route.total_duration || 0,
-        cost: route.estimated_cost || 0,
-        cylinders: route.total_cylinders || 0,
-        status: route.status
-      }));
+      const formattedData = recentRoutes.map((route: any) => {
+        // Calculate realistic duration based on distance
+        // Using an average speed of 40 km/h = 2/3 km per minute
+        // So time in minutes = distance / (2/3) = distance * 1.5
+        const distance = route.total_distance || 0;
+        
+        // Calculate duration in minutes with a minimum of 15 minutes per route
+        // For longer routes, add extra time for stops (roughly 1 stop per 20 km)
+        const estimatedStops = Math.max(1, Math.ceil(distance / 20));
+        const stopTimeMinutes = estimatedStops * 15; // 15 minutes per stop
+        
+        // Driving time calculation with average speed of 40 km/h
+        const drivingTimeMinutes = (distance / 40) * 60;
+        
+        // Total duration is driving time plus stop time
+        const calculatedDuration = Math.max(15, Math.round(drivingTimeMinutes + stopTimeMinutes));
+        
+        return {
+          id: route.id,
+          name: route.name,
+          date: format(new Date(route.date), 'MMM d, yyyy'),
+          rawDate: new Date(route.date),
+          distance: route.total_distance || 0,
+          // Use calculated duration instead of the database value
+          duration: calculatedDuration,
+          cost: route.estimated_cost || 0,
+          cylinders: route.total_cylinders || 0,
+          status: route.status
+        };
+      });
 
       setDetailData(formattedData);
 
