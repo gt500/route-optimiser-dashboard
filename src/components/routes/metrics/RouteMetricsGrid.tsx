@@ -41,20 +41,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
     }
   }, [fuelCost, fuelCostPerLiter]);
   
-  // Handle fuel cost changes
-  const handleFuelCostChange = (newCostPerLiter: number) => {
-    setLocalFuelCostPerLiter(newCostPerLiter);
-    
-    // Calculate the new total fuel cost based on consumption and new price
-    const newTotalFuelCost = fuelConsumption * newCostPerLiter;
-    setLocalFuelCost(newTotalFuelCost);
-    
-    // Pass the updated cost to the parent component
-    if (onFuelCostChange) {
-      onFuelCostChange(newCostPerLiter);
-    }
-  };
-  
+  // Format utility functions
   const formatDistance = (km: number): string => {
     if (km < 1) return `${Math.round(km * 1000)} m`;
     return `${km.toFixed(1)} km`;
@@ -66,6 +53,22 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
     const mins = Math.round(minutes % 60);
     return `${hours}h ${mins}m`;
   };
+  
+  // Calculate fuel saved compared to non-optimized route (estimated 15% saving from optimization)
+  const calculateFuelSaved = (): number => {
+    // Assume non-optimized route would use ~15% more fuel
+    const nonOptimizedFuel = fuelConsumption / 0.85;
+    return nonOptimizedFuel - fuelConsumption;
+  };
+
+  // Calculate CO2 emissions - about 2.3 kg CO2 per liter of diesel
+  const calculateCO2Emissions = (): number => {
+    return fuelConsumption * 2.3; // kg of CO2
+  };
+
+  const estimatedMaintenanceCost = distance * 0.85; // R0.85 per km for maintenance
+  const totalOperatingCost = localFuelCost + estimatedMaintenanceCost;
+  const fuelSaved = calculateFuelSaved();
   
   const getTrafficIcon = () => {
     switch(trafficConditions) {
@@ -85,45 +88,33 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
       case 'light':
         return (
           <div className="flex items-center gap-1 text-green-500">
-            <ChevronsDown className="h-4 w-4" /> Light traffic
+            <ChevronsDown className="h-4 w-4 flex-shrink-0" /> 
+            <span className="truncate">Light traffic</span>
           </div>
         );
       case 'moderate':
         return (
           <div className="flex items-center gap-1 text-yellow-500">
-            <Clock className="h-4 w-4" /> Moderate traffic
+            <Clock className="h-4 w-4 flex-shrink-0" /> 
+            <span className="truncate">Moderate traffic</span>
           </div>
         );
       case 'heavy':
         return (
           <div className="flex items-center gap-1 text-red-500">
-            <ChevronsUp className="h-4 w-4" /> Heavy traffic
+            <ChevronsUp className="h-4 w-4 flex-shrink-0" /> 
+            <span className="truncate">Heavy traffic</span>
           </div>
         );
       default:
         return (
           <div className="flex items-center gap-1 text-yellow-500">
-            <Clock className="h-4 w-4" /> Moderate traffic
+            <Clock className="h-4 w-4 flex-shrink-0" /> 
+            <span className="truncate">Moderate traffic</span>
           </div>
         );
     }
   };
-  
-  // Calculate CO2 emissions - about 2.3 kg CO2 per liter of diesel
-  const calculateCO2Emissions = (): number => {
-    return fuelConsumption * 2.3; // kg of CO2
-  };
-
-  // Calculate fuel saved compared to non-optimized route (estimated 15% saving from optimization)
-  const calculateFuelSaved = (): number => {
-    // Assume non-optimized route would use ~15% more fuel
-    const nonOptimizedFuel = fuelConsumption / 0.85;
-    return nonOptimizedFuel - fuelConsumption;
-  };
-
-  const estimatedMaintenanceCost = distance * 0.85; // R0.85 per km for maintenance
-  const totalOperatingCost = localFuelCost + estimatedMaintenanceCost;
-  const fuelSaved = calculateFuelSaved();
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -132,9 +123,14 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         value={formatDistance(distance)}
         icon={<MapPin className="h-5 w-5" />}
         color="bg-blue-600"
-        subtitle={usingRealTimeData ? "Based on real-time data" : "Based on map calculation"}
+        subtitle={
+          <div className="truncate">
+            {usingRealTimeData ? "Based on real-time data" : "Based on map calculation"}
+          </div>
+        }
         tooltip="Total distance of the optimized route"
       />
+      
       <RouteMetricsCard 
         title="Estimated Time"
         value={formatTime(duration)}
@@ -143,25 +139,27 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         subtitle={getTrafficStatus()}
         tooltip="Estimated driving time with current traffic conditions"
       />
+      
       <RouteMetricsCard 
         title="Operating Cost"
         value={`R ${totalOperatingCost.toFixed(2)}`}
         icon={<Fuel className="h-5 w-5" />}
         color="bg-green-600"
         subtitle={
-          <div className="space-y-1 text-xs overflow-hidden">
-            <div>Fuel: R{localFuelCost.toFixed(2)} • Maintenance: R{estimatedMaintenanceCost.toFixed(2)}</div>
+          <div className="space-y-1 text-xs">
+            <div className="truncate">Fuel: R{localFuelCost.toFixed(2)} • Maintenance: R{estimatedMaintenanceCost.toFixed(2)}</div>
             <div className="text-green-700 flex items-center gap-1">
-              <CircleCheck className="h-3 w-3" /> 
-              Fuel Saved: {fuelSaved.toFixed(1)}L (R{(fuelSaved * localFuelCostPerLiter).toFixed(2)})
+              <CircleCheck className="h-3 w-3 flex-shrink-0" /> 
+              <span className="truncate">Fuel Saved: {fuelSaved.toFixed(1)}L (R{(fuelSaved * localFuelCostPerLiter).toFixed(2)})</span>
             </div>
-            <div className="text-green-700">
+            <div className="text-green-700 truncate">
               CO₂: {calculateCO2Emissions().toFixed(1)}kg
             </div>
           </div>
         }
         tooltip="Total operating cost including fuel and maintenance"
       />
+      
       <RouteMetricsCard 
         title="Load Details"
         value={cylinders > 0 ? `${cylinders} Cylinders` : "No Load"}
@@ -169,7 +167,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         color="bg-indigo-600"
         subtitle={
           totalWeight > 0 ? 
-          <div className={`${totalWeight > 1000 ? "text-amber-600 font-medium" : ""} overflow-hidden`}>
+          <div className={`${totalWeight > 1000 ? "text-amber-600 font-medium" : ""} truncate`}>
             {totalWeight.toFixed(0)} kg total weight
             {totalWeight > 1000 && <AlertTriangle className="h-3 w-3 inline ml-1" />}
           </div> : 

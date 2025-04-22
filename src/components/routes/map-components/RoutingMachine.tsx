@@ -19,6 +19,8 @@ interface RoutingMachineProps {
     avoidTraffic?: boolean;
     alternateRoutes?: boolean;
     useRealTimeData?: boolean;
+    routeColor?: string;
+    routeWeight?: number;
   };
 }
 
@@ -26,7 +28,13 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
   waypoints = [], 
   forceRouteUpdate, 
   onRouteFound,
-  routeOptions = { avoidTraffic: true, alternateRoutes: false, useRealTimeData: true }
+  routeOptions = { 
+    avoidTraffic: true, 
+    alternateRoutes: false, 
+    useRealTimeData: true,
+    routeColor: '#6366F1',
+    routeWeight: 6
+  }
 }) => {
   const map = useMap();
   
@@ -78,6 +86,10 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
           toast.info("Using real-time traffic data for optimal routing");
         }
         
+        // Extract styling options from routeOptions or use defaults
+        const routeColor = routeOptions.routeColor || '#6366F1';
+        const routeWeight = routeOptions.routeWeight || 6;
+        
         // Configure options with real-time traffic preferences
         const routerOptions: L.Routing.RoutingControlOptions = {
           router: L.Routing.osrm({
@@ -98,7 +110,10 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
           }),
           waypoints: validWaypoints,
           lineOptions: {
-            styles: [{ color: '#6366F1', weight: 4, opacity: 0.7 }],
+            styles: [
+              { color: routeColor, weight: routeWeight, opacity: 0.7 },
+              { color: '#FFFFFF', weight: routeWeight - 2, opacity: 0.5, dashArray: '5,10' } // Add a dashed white line in the middle
+            ],
             extendToWaypoints: true,
             missingRouteTolerance: 0
           },

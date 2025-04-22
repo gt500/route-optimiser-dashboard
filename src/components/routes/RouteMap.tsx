@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -39,6 +38,7 @@ interface RouteMapProps {
   height?: string;
   showRouting?: boolean;
   routeColor?: string;
+  routeWeight?: number;
   locations?: LocationPoint[];
   waypoints?: NamedCoords[];
   startLocation?: NamedCoords;
@@ -62,6 +62,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   height = '400px',
   showRouting = false,
   routeColor = '#3b82f6',
+  routeWeight = 6,
   locations = [],
   waypoints = [],
   startLocation,
@@ -211,6 +212,21 @@ const RouteMap: React.FC<RouteMapProps> = ({
     return coords;
   }, [startLocation, endLocation, waypoints, locations]);
 
+  const getRouteAppearance = () => {
+    let color = routeColor;
+    let weight = routeWeight;
+    
+    if (trafficConditions === 'light') {
+      color = '#22c55e';
+    } else if (trafficConditions === 'moderate') {
+      color = '#f59e0b';
+    } else if (trafficConditions === 'heavy') {
+      color = '#ef4444';
+    }
+    
+    return { routeColor: color, routeWeight: weight };
+  };
+
   const getTrafficAvoidanceOption = () => {
     if (useRealTimeTraffic) return true;
     
@@ -220,6 +236,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
       default: return true;
     }
   };
+
+  const routeAppearance = getRouteAppearance();
 
   return (
     <MapContainer
@@ -245,7 +263,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
           routeOptions={{
             avoidTraffic: getTrafficAvoidanceOption(),
             alternateRoutes: showAlternateRoutes,
-            useRealTimeData: useRealTimeTraffic
+            useRealTimeData: useRealTimeTraffic,
+            routeColor: routeAppearance.routeColor,
+            routeWeight: routeAppearance.routeWeight
           }}
         />
       )}

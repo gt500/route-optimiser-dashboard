@@ -34,11 +34,11 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1 pr-3">
             <div className="flex items-center text-xs font-medium text-muted-foreground mb-1">
-              {title}
+              <span className="truncate mr-1">{title}</span>
               {tooltip && (
                 <HoverCard>
                   <HoverCardTrigger asChild>
-                    <Info className="inline-block ml-1 h-3 w-3 cursor-help text-muted-foreground/70" />
+                    <Info className="inline-block ml-1 h-3 w-3 cursor-help text-muted-foreground/70 flex-shrink-0" />
                   </HoverCardTrigger>
                   <HoverCardContent side="top" className="w-64 text-sm">
                     {tooltip}
@@ -53,7 +53,7 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
           </div>
         </div>
         {subtitle && (
-          <div className="mt-2 text-xs">
+          <div className="mt-2 text-xs overflow-hidden">
             {subtitle}
           </div>
         )}
