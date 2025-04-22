@@ -83,7 +83,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       
       if (!specificRoutes.length) {
         toast.warning(`No matching routes found for "${routeName}". Using sample data.`);
-        // Create sample data based on average fleet values
+        // Create sample data based on average fleet values with the correct status type
         specificRoutes = [
           {
             id: routeId,
@@ -93,7 +93,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
             total_duration: 60,
             estimated_cost: 200,
             total_cylinders: 25,
-            status: 'completed'
+            status: 'completed' as const // Using a type assertion to match the required status type
           }
         ];
       } else {
@@ -103,7 +103,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
 
       // Ensure we have real data for fleet averages
       const fleetData = allRoutes.length > 0 ? allRoutes : [
-        // Sample fleet data if no real data exists
+        // Sample fleet data if no real data exists, with the correct status type
         {
           id: 'sample-1',
           name: 'Sample Route 1',
@@ -112,7 +112,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           total_duration: 55,
           estimated_cost: 180,
           total_cylinders: 22,
-          status: 'completed'
+          status: 'completed' as const
         },
         {
           id: 'sample-2',
@@ -122,7 +122,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           total_duration: 70,
           estimated_cost: 230,
           total_cylinders: 30,
-          status: 'completed'
+          status: 'completed' as const
         }
       ];
 

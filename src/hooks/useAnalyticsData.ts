@@ -21,7 +21,7 @@ export interface AnalyticsData {
   fuelConsumption: { name: string; value: number }[];
   routeDistribution: { name: string; value: number }[];
   costBreakdown: { name: string; value: number }[];
-  // Add the missing properties
+  // Add the missing properties that may be used elsewhere
   optimizationData?: { name: string; value: number }[];
   loadDistribution?: { name: string; value: number }[];
   optimizationPercentage?: number;
