@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { useVehiclesData } from './useVehiclesData';
 import { format, addDays, addMonths, differenceInDays, parseISO } from 'date-fns';
 
-// Maintenance tasks data from the provided template
 const monthlyTasks: MaintenanceTask[] = [
   { 
     task: 'Diesel Refuel', 
@@ -82,81 +81,44 @@ const sampleTimeline: MaintenanceTimeline[] = [
   { month: 6, tasks: ['Major Service', 'Tyres', 'Fixed Costs'], estimatedCost: 38359 }
 ];
 
-// Fixed start date: April 16, 2025
-const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
-
 export const useMaintenanceData = () => {
   const [maintenanceItems, setMaintenanceItems] = useState<MaintenanceItem[]>([]);
   const { vehicles } = useVehiclesData();
-  
-  // Helper function to predict maintenance dates based on reference date
+
   const predictMaintenanceDate = (vehicle: Vehicle, taskType: string): Date => {
-    // Always use April 16, 2025 as the start date for consistent maintenance scheduling
-    const startDate = REFERENCE_START_DATE;
-    const today = new Date();
-    
-    // Calculate days in service relative to the reference date
-    // For simulation purposes, we'll use a fixed period based on the reference
-    // This allows us to generate future maintenance dates in a consistent way
-    const simulatedDaysInService = differenceInDays(
-      addDays(startDate, 30), // Simulate being 30 days from start date
-      startDate
-    );
-    
-    // Calculate average daily kilometers based on the typical monthly distance
-    const AVG_MONTHLY_KM = 7040; // As specified in the data
-    const AVG_DAILY_KM = AVG_MONTHLY_KM / 30;
-    
-    // Calculate estimated odometer based on simulated days in service
-    const estimatedCurrentKm = (vehicle.odometer || 0) + (simulatedDaysInService * AVG_DAILY_KM);
-    
+    const startDateStr = vehicle.startDate || '2025-04-15';
+    const startDate = new Date(startDateStr);
+
     switch(taskType) {
       case 'Tyres':
-        // Tyres every 5 months (150 days from reference start)
         return addDays(startDate, 150);
-        
       case 'Minor Service':
-        // Every 15,000 km, approx every 2.1 months (64 days from reference start)
         return addDays(startDate, 64);
-        
       case 'Major Service':
-        // Every 45,000 km, approx every 6.4 months (192 days from reference start)
         return addDays(startDate, 192);
-        
       case 'Diesel Refuel':
-        // Weekly refueling (7 days from reference start, then every 7 days)
         return addDays(startDate, 7);
-        
       default:
-        // Default to monthly tasks (30 days from reference start)
         return addMonths(startDate, 1);
     }
   };
-  
-  // Calculate days until next maintenance
+
   const getDaysUntilMaintenance = (date: Date): number => {
     const today = new Date();
     return differenceInDays(date, today);
   };
-  
-  // Fetch maintenance data with the new structure
+
   const fetchMaintenanceItems = async () => {
     try {
-      // Generate maintenance schedule based on vehicle data and the provided template
       const maintenanceSchedule: MaintenanceItem[] = [];
-      
-      // Use actual vehicle data to create maintenance schedules
-      vehicles.forEach(vehicle => {
-        // Set the vehicle start date to April 16, 2025 for maintenance calculations
-        const vehicleWithFixedDate = {
-          ...vehicle,
-          startDate: format(REFERENCE_START_DATE, 'yyyy-MM-dd')
-        };
-        
-        // For each vehicle, generate the next date for each maintenance type
-        
-        // Add tire replacement
-        const nextTyreDate = predictMaintenanceDate(vehicleWithFixedDate, 'Tyres');
+
+      const updatedVehicles = vehicles.map(v => ({
+        ...v,
+        startDate: '2025-04-15'
+      }));
+
+      updatedVehicles.forEach(vehicle => {
+        const nextTyreDate = predictMaintenanceDate(vehicle, 'Tyres');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -167,9 +129,8 @@ export const useMaintenanceData = () => {
           cost: 2115,
           notes: `Due in ${getDaysUntilMaintenance(nextTyreDate)} days`
         });
-        
-        // Add minor service
-        const nextMinorServiceDate = predictMaintenanceDate(vehicleWithFixedDate, 'Minor Service');
+
+        const nextMinorServiceDate = predictMaintenanceDate(vehicle, 'Minor Service');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -180,9 +141,8 @@ export const useMaintenanceData = () => {
           cost: 5000,
           notes: `Due in ${getDaysUntilMaintenance(nextMinorServiceDate)} days`
         });
-        
-        // Add major service
-        const nextMajorServiceDate = predictMaintenanceDate(vehicleWithFixedDate, 'Major Service');
+
+        const nextMajorServiceDate = predictMaintenanceDate(vehicle, 'Major Service');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -193,9 +153,8 @@ export const useMaintenanceData = () => {
           cost: 5000,
           notes: `Due in ${getDaysUntilMaintenance(nextMajorServiceDate)} days`
         });
-        
-        // Add next refueling
-        const nextRefuelDate = predictMaintenanceDate(vehicleWithFixedDate, 'Diesel Refuel');
+
+        const nextRefuelDate = predictMaintenanceDate(vehicle, 'Diesel Refuel');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
           vehicleId: vehicle.id,
@@ -203,16 +162,15 @@ export const useMaintenanceData = () => {
           category: 'Monthly',
           date: format(nextRefuelDate, 'yyyy-MM-dd'),
           status: 'Scheduled',
-          cost: 15488 / 4, // Assuming weekly refueling (monthly cost / 4)
+          cost: 15488 / 4,
           notes: `Due in ${getDaysUntilMaintenance(nextRefuelDate)} days`
         });
       });
-      
-      // Sort by date (soonest first)
+
       maintenanceSchedule.sort((a, b) => {
         return parseISO(a.date).getTime() - parseISO(b.date).getTime();
       });
-      
+
       setMaintenanceItems(maintenanceSchedule);
       return maintenanceSchedule;
     } catch (error) {

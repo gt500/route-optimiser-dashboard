@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
@@ -28,21 +27,17 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
   useEffect(() => {
     const fetchChartData = async () => {
       try {
-        // Fetch actual route data
         const routes = await routeDataHook.fetchRouteData();
         
-        // Ensure routes have realistic duration values
         const processedRoutes = routes.map(route => {
-          // If duration is unrealistically low, calculate based on distance
-          // Average speed 40 km/h = 0.67 km per minute
           let processedDuration = route.total_duration;
           
-          if (!processedDuration || processedDuration < 15 * 60) { // Less than 15 minutes in seconds
+          if (!processedDuration || processedDuration < 15 * 60) {
             const distance = route.total_distance || 0;
-            const stops = 3; // Assume average of 3 stops if we don't have actual data
-            const drivingTimeMinutes = (distance / 40) * 60; // Time in minutes at 40km/h
-            const stopTimeMinutes = stops * 15; // 15 minutes per stop
-            processedDuration = Math.max(15 * 60, (drivingTimeMinutes + stopTimeMinutes) * 60); // Convert to seconds
+            const stops = 3;
+            const drivingTimeMinutes = (distance / 40) * 60;
+            const stopTimeMinutes = stops * 15;
+            processedDuration = Math.max(15 * 60, (drivingTimeMinutes + stopTimeMinutes) * 60);
           }
           
           return {
@@ -51,9 +46,6 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           };
         });
         
-        // Calculate optimization data
-        // Count optimized vs standard routes
-        // Assuming optimized routes are ones with estimated_cost that shows fuel savings
         const optimizedRoutes = processedRoutes.filter(route => route.estimated_cost && route.total_distance && (route.estimated_cost / route.total_distance < 5));
         const standardRoutes = processedRoutes.filter(route => !optimizedRoutes.includes(route));
         
@@ -62,8 +54,6 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           { name: 'Standard Routes', value: standardRoutes.length }
         ];
         
-        // Calculate load distribution
-        // Count full loads vs partial loads
         const fullLoads = processedRoutes.filter(route => route.total_cylinders >= FULL_LOAD_PER_SITE).length;
         const partialLoads = processedRoutes.length - fullLoads;
         
@@ -72,18 +62,15 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
           { name: 'Partial Loads', value: partialLoads }
         ];
         
-        // Calculate optimization percentage
         const percent = optimizedRoutes.length > 0 
           ? Math.round((optimizedRoutes.length / processedRoutes.length) * 100) 
           : 0;
         
-        // Update state with real data
         setOptimizationData(optData);
         setDistributionData(loadData);
         setOptimizationPercentage(percent);
       } catch (error) {
         console.error("Error fetching chart data:", error);
-        // If there's an error, use provided data or defaults
         setOptimizationData(initialData || [
           { name: 'Optimized Routes', value: 65 },
           { name: 'Standard Routes', value: 35 }
@@ -99,28 +86,46 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
     fetchChartData();
   }, [initialData, initialPercentage, initialLoadDistribution]);
   
-  // Display data based on active chart
   const displayData = activeChart === 'optimization' ? optimizationData : distributionData;
   
-  // Display percentage based on active chart
   const displayPercentage = activeChart === 'optimization' ? 
     optimizationPercentage : 
     calculateDistributionPercentage(distributionData);
   
-  // Calculate percentage for distribution
   function calculateDistributionPercentage(distributionData: { name: string; value: number }[]) {
     if (!distributionData || distributionData.length < 2 || 
         (distributionData[0].value === 0 && distributionData[1].value === 0)) {
       return 0;
     }
     
-    // Calculate percentage of full loads
     const fullLoads = distributionData[0].value;
     const totalLoads = distributionData[0].value + distributionData[1].value;
     
     return Math.round((fullLoads / totalLoads) * 100);
   }
   
+  const renderCustomLegend = (props: any) => {
+    const { payload } = props;
+    return (
+      <ul className="flex flex-col gap-1 mt-2" style={{ fontSize: '12px', margin: 0, padding: 0, listStyle: 'none', lineHeight: 1.25 }}>
+        {payload.map((entry: any, index: number) => (
+          <li key={`item-${index}`} className="flex items-center gap-2 text-white" style={{ color: entry.color }}>
+            <span style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              display: 'inline-block',
+              backgroundColor: entry.color,
+              marginRight: 4,
+              border: '1px solid #e8e8e8'
+            }} />
+            <span>{entry.value}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
       <CardHeader>
@@ -181,7 +186,7 @@ const OptimizationChart: React.FC<OptimizationChartProps> = ({
                   backgroundColor: 'rgba(255, 255, 255, 0.95)'
                 }} 
               />
-              <Legend />
+              <Legend verticalAlign="bottom" align="center" iconSize={12} content={renderCustomLegend} />
             </PieChart>
           </ResponsiveContainer>
           <div className="text-center mt-2">
