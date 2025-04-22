@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,6 +13,7 @@ import {
 import { exportToExcel, exportToPDF } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import { DeliveryData } from '@/hooks/delivery/types';
+import { cn } from '@/lib/utils';
 
 interface DailyCalendarCardProps {
   date: Date | undefined;
@@ -21,6 +23,7 @@ interface DailyCalendarCardProps {
   onToggleView: () => void;
   viewMode: 'table' | 'map';
   deliveries?: DeliveryData[];
+  className?: string;
 }
 
 const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
@@ -30,7 +33,8 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
   onRefresh,
   onToggleView,
   viewMode,
-  deliveries = []
+  deliveries = [],
+  className
 }) => {
   const handleExportToExcel = () => {
     try {
@@ -69,7 +73,7 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
   };
 
   return (
-    <Card className="col-span-1">
+    <Card className={cn("col-span-1", className)}>
       <CardHeader>
         <CardTitle>Select Date</CardTitle>
       </CardHeader>
@@ -119,3 +123,4 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
 };
 
 export default DailyCalendarCard;
+

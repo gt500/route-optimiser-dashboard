@@ -100,18 +100,21 @@ const DailyReports = () => {
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <DailyCalendarCard 
-          date={date}
-          setDate={setDate}
-          isLoading={isLoading}
-          onRefresh={handleRefresh}
-          onToggleView={toggleViewMode}
-          viewMode={viewMode}
-          deliveries={filteredDeliveries}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-full">
+        <div className="col-span-1 w-full">
+          <DailyCalendarCard 
+            date={date}
+            setDate={setDate}
+            isLoading={isLoading}
+            onRefresh={handleRefresh}
+            onToggleView={toggleViewMode}
+            viewMode={viewMode}
+            deliveries={filteredDeliveries}
+            className="w-full" // Ensure full width within its container
+          />
+        </div>
 
-        <Card className="col-span-1 md:col-span-2">
+        <Card className="col-span-1 md:col-span-2 w-full">
           <CardHeader>
             <CardTitle>Daily Deliveries: {formattedDate}</CardTitle>
           </CardHeader>
@@ -150,3 +153,4 @@ const DailyReports = () => {
 };
 
 export default DailyReports;
+
