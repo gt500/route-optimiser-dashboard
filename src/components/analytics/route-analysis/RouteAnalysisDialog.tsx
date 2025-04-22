@@ -50,7 +50,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
     setIsLoading(true);
     
     try {
-      console.log(`Analyzing route: ${routeName} (${routeId})`);
+      console.log(`Analyzing route: ${routeName} (${routeId}) for period: ${period}`);
       const allRoutes = await routeDataHook.fetchRouteData();
       
       if (!allRoutes || allRoutes.length === 0) {
@@ -59,51 +59,87 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         return;
       }
       
-      let specificRoutes = [];
+      // First try: Use fetchRouteDataByName with the route name
+      let specificRoutes = await routeDataHook.fetchRouteDataByName(routeName);
       
-      // First try: Exact name match
-      specificRoutes = allRoutes.filter(route => 
-        (route.name || '').toLowerCase() === routeName.toLowerCase()
-      );
-      
-      // Second try: Partial name match
+      // If no specific routes found, do fallback searches
       if (!specificRoutes.length) {
         console.log(`No exact route data for "${routeName}", trying to find similar routes`);
+        
+        // Second try: Case-insensitive partial name matching
         specificRoutes = allRoutes.filter(route => 
           (route.name || '').toLowerCase().includes(routeName.toLowerCase())
         );
-      }
-      
-      // Third try: Check historical routes
-      if (!specificRoutes.length) {
-        const historyRoutes = await routeDataHook.fetchRouteHistory();
         
-        const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-        specificRoutes = historyRoutes.filter(route => {
-          const name = (route.name || '').toLowerCase();
-          return routeKeywords.some(keyword => name.includes(keyword));
-        });
+        // Third try: Try substring matching
+        if (!specificRoutes.length) {
+          const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+          specificRoutes = allRoutes.filter(route => {
+            const name = (route.name || '').toLowerCase();
+            return routeKeywords.some(keyword => name.includes(keyword));
+          });
+        }
       }
       
       if (!specificRoutes.length) {
-        toast.warning(`No matching routes found for "${routeName}"`);
-        setIsLoading(false);
-        return;
+        toast.warning(`No matching routes found for "${routeName}". Using sample data.`);
+        // Create sample data based on average fleet values
+        specificRoutes = [
+          {
+            id: routeId,
+            name: routeName,
+            date: new Date().toISOString(),
+            total_distance: 20,
+            total_duration: 60,
+            estimated_cost: 200,
+            total_cylinders: 25,
+            status: 'completed'
+          }
+        ];
+      } else {
+        console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
+        toast.success(`Found ${specificRoutes.length} routes for analysis`);
       }
 
-      console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
+      // Ensure we have real data for fleet averages
+      const fleetData = allRoutes.length > 0 ? allRoutes : [
+        // Sample fleet data if no real data exists
+        {
+          id: 'sample-1',
+          name: 'Sample Route 1',
+          date: new Date().toISOString(),
+          total_distance: 18,
+          total_duration: 55,
+          estimated_cost: 180,
+          total_cylinders: 22,
+          status: 'completed'
+        },
+        {
+          id: 'sample-2',
+          name: 'Sample Route 2',
+          date: new Date().toISOString(),
+          total_distance: 25,
+          total_duration: 70,
+          estimated_cost: 230,
+          total_cylinders: 30,
+          status: 'completed'
+        }
+      ];
 
-      // Generate analytics metrics using real data
+      // Generate analytics metrics using real or sample data
       const analyticsData = generateRouteAnalytics(
         routeName,
         routeId,
         period,
         specificRoutes,
-        allRoutes
+        fleetData
       );
       
       setAnalysis(analyticsData);
-      toast.success(`Analysis complete for ${routeName}`);
+      
+      if (specificRoutes.length > 0) {
+        toast.success(`Analysis complete for ${routeName} using ${specificRoutes.length} routes`);
+      }
     } catch (error) {
       console.error('Error generating route analysis:', error);
       toast.error('Failed to generate route analysis');

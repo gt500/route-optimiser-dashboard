@@ -9,10 +9,14 @@ export type TimePeriod = 'week' | 'month' | 'quarter' | 'year';
 
 export interface AnalyticsData {
   deliveries: number;
+  deliveriesChange: number;
   cylinders: number;
+  cylindersChange: number;
   distance: number;
   fuelCost: number;
+  fuelCostChange: number;
   routeLength: number;
+  routeLengthChange: number;
   monthlyDeliveries: { name: string; value: number }[];
   fuelConsumption: { name: string; value: number }[];
   routeDistribution: { name: string; value: number }[];
@@ -28,10 +32,14 @@ export const useAnalyticsData = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     deliveries: 0,
+    deliveriesChange: 0,
     cylinders: 0,
+    cylindersChange: 0,
     distance: 0,
     fuelCost: 0,
+    fuelCostChange: 0,
     routeLength: 0,
+    routeLengthChange: 0,
     monthlyDeliveries: [],
     fuelConsumption: [],
     routeDistribution: [],
@@ -42,7 +50,7 @@ export const useAnalyticsData = () => {
     setIsLoading(true);
     
     try {
-      let startDate, endDate;
+      let startDate, endDate, previousStartDate, previousEndDate;
       const currentDate = new Date();
       
       // Set start and end dates based on selected time period
@@ -50,18 +58,26 @@ export const useAnalyticsData = () => {
         case 'week':
           startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
           endDate = endOfWeek(currentDate, { weekStartsOn: 1 });
+          previousStartDate = addDays(startDate, -7);
+          previousEndDate = addDays(endDate, -7);
           break;
         case 'month':
           startDate = startOfMonth(currentDate);
           endDate = endOfMonth(currentDate);
+          previousStartDate = startOfMonth(addDays(startDate, -31));
+          previousEndDate = endOfMonth(addDays(startDate, -1));
           break;
         case 'quarter':
           startDate = startOfQuarter(currentDate);
           endDate = endOfQuarter(currentDate);
+          previousStartDate = startOfQuarter(addDays(startDate, -92));
+          previousEndDate = endOfQuarter(addDays(startDate, -1));
           break;
         case 'year':
           startDate = startOfYear(currentDate);
           endDate = endOfYear(currentDate);
+          previousStartDate = startOfYear(addDays(startDate, -366));
+          previousEndDate = endOfYear(addDays(startDate, -1));
           break;
       }
       
@@ -78,6 +94,18 @@ export const useAnalyticsData = () => {
       if (routesError) {
         console.error('Error fetching routes:', routesError);
         throw routesError;
+      }
+
+      // Fetch previous period data for comparison
+      const { data: prevRoutesData, error: prevRoutesError } = await supabase
+        .from('routes')
+        .select('id, name, date, total_distance, total_duration, estimated_cost, status, total_cylinders')
+        .gte('date', previousStartDate.toISOString())
+        .lt('date', addDays(previousEndDate, 1).toISOString());
+        
+      if (prevRoutesError) {
+        console.error('Error fetching previous period routes:', prevRoutesError);
+        // Continue anyway, we'll just have missing change metrics
       }
 
       // Fetch deliveries to get location distribution
@@ -106,6 +134,24 @@ export const useAnalyticsData = () => {
       const totalDistance = routesData?.reduce((sum, route) => sum + (route.total_distance || 0), 0) || 0;
       const totalFuelCost = routesData?.reduce((sum, route) => sum + (route.estimated_cost || 0), 0) || 0;
       const avgRouteLength = totalDistance / (totalDeliveries || 1);
+      
+      // Calculate previous period metrics
+      const prevTotalDeliveries = prevRoutesData?.length || 0;
+      const prevTotalCylinders = prevRoutesData?.reduce((sum, route) => sum + (route.total_cylinders || 0), 0) || 0;
+      const prevTotalDistance = prevRoutesData?.reduce((sum, route) => sum + (route.total_distance || 0), 0) || 0;
+      const prevTotalFuelCost = prevRoutesData?.reduce((sum, route) => sum + (route.estimated_cost || 0), 0) || 0;
+      const prevAvgRouteLength = prevTotalDistance / (prevTotalDeliveries || 1);
+      
+      // Calculate percentage changes
+      const calculatePercentChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / previous) * 100;
+      };
+      
+      const deliveriesChange = calculatePercentChange(totalDeliveries, prevTotalDeliveries);
+      const cylindersChange = calculatePercentChange(totalCylinders, prevTotalCylinders);
+      const fuelCostChange = calculatePercentChange(totalFuelCost, prevTotalFuelCost);
+      const routeLengthChange = calculatePercentChange(avgRouteLength, prevAvgRouteLength);
       
       // Create period breakdown for charts based on selected time period
       const deliveriesByPeriod: Record<string, number> = {};
@@ -196,10 +242,14 @@ export const useAnalyticsData = () => {
       
       setAnalyticsData({
         deliveries: totalDeliveries,
+        deliveriesChange: Math.round(deliveriesChange),
         cylinders: totalCylinders,
+        cylindersChange: Math.round(cylindersChange),
         distance: totalDistance,
         fuelCost: totalFuelCost,
+        fuelCostChange: Math.round(fuelCostChange),
         routeLength: avgRouteLength,
+        routeLengthChange: Math.round(routeLengthChange),
         monthlyDeliveries: monthlyDeliveriesData,
         fuelConsumption: fuelConsumptionData,
         routeDistribution: routeDistributionData,
@@ -208,9 +258,14 @@ export const useAnalyticsData = () => {
       
       console.log('Analytics data loaded:', {
         deliveries: totalDeliveries,
+        deliveriesChange,
         cylinders: totalCylinders,
+        cylindersChange,
         distance: totalDistance,
         fuelCost: totalFuelCost,
+        fuelCostChange,
+        routeLength: avgRouteLength,
+        routeLengthChange,
         monthlyDeliveries: monthlyDeliveriesData,
         routeDistribution: routeDistributionData
       });
