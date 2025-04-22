@@ -73,17 +73,19 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
   };
 
   return (
-    <Card className={cn("col-span-1", className)}>
-      <CardHeader>
+    <Card className={cn("w-full h-full", className)}>
+      <CardHeader className="pb-2">
         <CardTitle>Select Date</CardTitle>
       </CardHeader>
       <CardContent>
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          className="rounded-md border"
-        />
+        <div className="w-full max-w-full overflow-hidden">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className="w-full max-w-full rounded-md border"
+          />
+        </div>
         <div className="mt-4 flex flex-col gap-2">
           <Button onClick={onRefresh} className="w-full" disabled={isLoading}>
             {isLoading ? (
@@ -123,4 +125,3 @@ const DailyCalendarCard: React.FC<DailyCalendarCardProps> = ({
 };
 
 export default DailyCalendarCard;
-

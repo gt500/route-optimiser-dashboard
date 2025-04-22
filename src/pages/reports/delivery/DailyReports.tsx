@@ -100,8 +100,8 @@ const DailyReports = () => {
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-full">
-        <div className="col-span-1 w-full">
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 md:col-span-4 lg:col-span-3">
           <DailyCalendarCard 
             date={date}
             setDate={setDate}
@@ -110,47 +110,47 @@ const DailyReports = () => {
             onToggleView={toggleViewMode}
             viewMode={viewMode}
             deliveries={filteredDeliveries}
-            className="w-full" // Ensure full width within its container
           />
         </div>
 
-        <Card className="col-span-1 md:col-span-2 w-full">
-          <CardHeader>
-            <CardTitle>Daily Deliveries: {formattedDate}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredDeliveries.length > 0 ? (
-              viewMode === 'table' ? (
-                <DailyDeliveriesTable 
-                  deliveries={filteredDeliveries}
-                  totalCylinders={totalCylinders}
-                  totalKms={totalKms}
-                  totalFuelCost={totalFuelCost}
-                />
-              ) : (
-                <div className="h-[400px]">
-                  <RouteMap
-                    locations={mapLocations}
-                    height="100%"
-                    zoom={9}
+        <div className="col-span-12 md:col-span-8 lg:col-span-9">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Daily Deliveries: {formattedDate}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredDeliveries.length > 0 ? (
+                viewMode === 'table' ? (
+                  <DailyDeliveriesTable 
+                    deliveries={filteredDeliveries}
+                    totalCylinders={totalCylinders}
+                    totalKms={totalKms}
+                    totalFuelCost={totalFuelCost}
                   />
+                ) : (
+                  <div className="h-[400px]">
+                    <RouteMap
+                      locations={mapLocations}
+                      height="100%"
+                      zoom={9}
+                    />
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-muted-foreground">
+                    {isLoading 
+                      ? "Loading delivery data..." 
+                      : "No deliveries found for this date. Try selecting a different date or refreshing the data."}
+                  </p>
                 </div>
-              )
-            ) : (
-              <div className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">
-                  {isLoading 
-                    ? "Loading delivery data..." 
-                    : "No deliveries found for this date. Try selecting a different date or refreshing the data."}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
 };
 
 export default DailyReports;
-
