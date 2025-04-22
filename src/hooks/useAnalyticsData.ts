@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { TimePeriod, AnalyticsData } from './analyticsTypes';
+import type { TimePeriod, AnalyticsData } from './analyticsTypes';
 import { getPeriodDates, calculatePercentChange } from './analyticsDateUtils';
 import { formatPeriodKey, sortByPeriod } from './analyticsChartUtils';
 
@@ -195,3 +195,5 @@ export const useAnalyticsData = () => {
     fetchData
   };
 };
+
+export type { AnalyticsData, TimePeriod }; // Fixes export errors for consumers

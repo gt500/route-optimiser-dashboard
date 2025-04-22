@@ -19,3 +19,7 @@ export interface AnalyticsData {
   loadDistribution?: { name: string; value: number }[];
   optimizationPercentage?: number;
 }
+
+// Export explicitly so imports work everywhere.
+export type { AnalyticsData };
+export type { TimePeriod };

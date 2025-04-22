@@ -12,7 +12,8 @@ import ScoreCardsGrid from './components/ScoreCardsGrid';
 import KeyInsightsCard from './components/KeyInsightsCard';
 import AnalysisLoadingState from './components/AnalysisLoadingState';
 import { AnalysisPeriod, RouteAnalysisMetrics } from './types';
-import { generateRouteAnalytics, prepareExportData } from './utils/AnalysisUtils';
+import { generateRouteAnalytics } from './utils/generateRouteAnalytics';
+import { prepareExportData } from './utils/prepareExportData';
 
 interface RouteAnalysisDialogProps {
   open: boolean;

@@ -1,6 +1,6 @@
 
 import React from "react";
-import { OverallScoreCard } from "./OverallScoreCard";
+import OverallScoreCard from "./OverallScoreCard";
 import EfficiencyScoreCard from "./EfficiencyScoreCard";
 import { RouteAnalysisMetrics } from "../types";
 
