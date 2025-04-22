@@ -103,7 +103,17 @@ export const generateRouteAnalytics = (
   );
   
   const routeDistances = routesForAnalysis.map(r => r.total_distance || 0);
-  const routeDurations = routesForAnalysis.map(r => (r.total_duration || 0) / 60);
+  
+  // Calculate more realistic durations based on distance
+  // Using an average speed of 40 km/h = 2/3 km per minute
+  // So time in minutes = distance / (2/3) = distance * 1.5
+  // Minimum 15 minutes per route
+  const routeDurations = routesForAnalysis.map(r => {
+    const distance = r.total_distance || 0;
+    const calculatedTime = Math.max(15, Math.round(distance * 1.5));
+    return calculatedTime;
+  });
+  
   const routeCosts = routesForAnalysis.map(r => r.estimated_cost || 0);
   const routeCylinders = routesForAnalysis.map(r => r.total_cylinders || 0);
   
@@ -115,9 +125,13 @@ export const generateRouteAnalytics = (
   const allDistances = periodAllRoutes.length > 0 
     ? periodAllRoutes.map(r => r.total_distance || 0).filter(Boolean)
     : [10, 12, 15, 18, 20];
-    
+  
+  // Calculate realistic durations for all routes
   const allDurations = periodAllRoutes.length > 0
-    ? periodAllRoutes.map(r => (r.total_duration || 0) / 60).filter(Boolean)
+    ? periodAllRoutes.map(r => {
+        const distance = r.total_distance || 0;
+        return Math.max(15, Math.round(distance * 1.5));
+      }).filter(Boolean)
     : [30, 45, 60, 75, 90];
     
   const allCosts = periodAllRoutes.length > 0
@@ -137,7 +151,7 @@ export const generateRouteAnalytics = (
   console.log("Fleet averages:", { allAvgDistance, allAvgDuration, allAvgCost, allAvgCylinders });
   
   const bestDistance = Math.min(...allDistances.filter(v => v > 0)) || 1;
-  const bestDuration = Math.min(...allDurations.filter(v => v > 0)) || 1;
+  const bestDuration = Math.min(...allDurations.filter(v => v > 0)) || 15; // Minimum realistic duration
   const bestCost = Math.min(...allCosts.filter(v => v > 0)) || 1;
   const bestCylinders = Math.max(...allCylinders) || 1;
   

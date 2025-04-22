@@ -83,14 +83,17 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       
       if (!specificRoutes.length) {
         toast.warning(`No matching routes found for "${routeName}". Using sample data.`);
-        // Create sample data based on average fleet values with the correct status type
+        // Create sample data based on average fleet values with more realistic time values
+        const sampleDistance = 20; // km
+        const sampleDuration = Math.max(15, Math.round(sampleDistance * 1.5)); // Realistic time calculation
+        
         specificRoutes = [
           {
             id: routeId,
             name: routeName,
             date: new Date().toISOString(),
-            total_distance: 20,
-            total_duration: 60,
+            total_distance: sampleDistance,
+            total_duration: sampleDuration * 60, // Convert to seconds
             estimated_cost: 200,
             total_cylinders: 25,
             status: 'completed' as const // Using a type assertion to match the required status type
@@ -103,13 +106,13 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
 
       // Ensure we have real data for fleet averages
       const fleetData = allRoutes.length > 0 ? allRoutes : [
-        // Sample fleet data if no real data exists, with the correct status type
+        // Sample fleet data if no real data exists, with more realistic time values
         {
           id: 'sample-1',
           name: 'Sample Route 1',
           date: new Date().toISOString(),
           total_distance: 18,
-          total_duration: 55,
+          total_duration: Math.max(15, Math.round(18 * 1.5)) * 60, // Convert to seconds
           estimated_cost: 180,
           total_cylinders: 22,
           status: 'completed' as const
@@ -119,7 +122,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           name: 'Sample Route 2',
           date: new Date().toISOString(),
           total_distance: 25,
-          total_duration: 70,
+          total_duration: Math.max(15, Math.round(25 * 1.5)) * 60, // Convert to seconds
           estimated_cost: 230,
           total_cylinders: 30,
           status: 'completed' as const
