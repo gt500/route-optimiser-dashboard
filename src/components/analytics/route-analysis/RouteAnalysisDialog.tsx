@@ -1,22 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog';
-import { RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
 import { printData, emailData } from '@/utils/exportUtils';
 import { format } from 'date-fns';
 
-import EfficiencyScoreCard from './components/EfficiencyScoreCard';
-import OverallScoreCard from './components/OverallScoreCard';
+import HeaderSection from './components/HeaderSection';
 import AnalysisPeriodSelector from './components/AnalysisPeriodSelector';
+import ScoreCardsGrid from './components/ScoreCardsGrid';
 import KeyInsightsCard from './components/KeyInsightsCard';
+import AnalysisLoadingState from './components/AnalysisLoadingState';
 import { AnalysisPeriod, RouteAnalysisMetrics } from './types';
 import { generateRouteAnalytics, prepareExportData } from './utils/AnalysisUtils';
 
@@ -39,7 +33,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [analysis, setAnalysis] = useState<RouteAnalysisMetrics | null>(null);
   const routeDataHook = useRouteData();
-  
+
   useEffect(() => {
     if (open) {
       generateRouteAnalysis();
@@ -48,30 +42,24 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
 
   const generateRouteAnalysis = async () => {
     setIsLoading(true);
-    
+
     try {
       console.log(`Analyzing route: ${routeName} (${routeId}) for period: ${period}`);
       const allRoutes = await routeDataHook.fetchRouteData();
-      
+
       if (!allRoutes || allRoutes.length === 0) {
         toast.error('No route data available for analysis');
         setIsLoading(false);
         return;
       }
-      
-      // First try: Use fetchRouteDataByName with the route name
+
       let specificRoutes = await routeDataHook.fetchRouteDataByName(routeName);
-      
-      // If no specific routes found, do fallback searches
+
       if (!specificRoutes.length) {
         console.log(`No exact route data for "${routeName}", trying to find similar routes`);
-        
-        // Second try: Case-insensitive partial name matching
-        specificRoutes = allRoutes.filter(route => 
+        specificRoutes = allRoutes.filter(route =>
           (route.name || '').toLowerCase().includes(routeName.toLowerCase())
         );
-        
-        // Third try: Try substring matching
         if (!specificRoutes.length) {
           const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
           specificRoutes = allRoutes.filter(route => {
@@ -80,39 +68,35 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           });
         }
       }
-      
+
       if (!specificRoutes.length) {
         toast.warning(`No matching routes found for "${routeName}". Using sample data.`);
-        // Create sample data based on average fleet values with more realistic time values
         const sampleDistance = 20; // km
-        const sampleDuration = Math.max(15, Math.round(sampleDistance * 1.5)); // Realistic time calculation
-        
+        // Use realistic time calculation but not less than 15 minutes per route
+        const sampleDuration = Math.max(15, Math.round((sampleDistance / 40)* 60)); // minutes
         specificRoutes = [
           {
             id: routeId,
             name: routeName,
             date: new Date().toISOString(),
             total_distance: sampleDistance,
-            total_duration: sampleDuration * 60, // Convert to seconds
+            total_duration: sampleDuration * 60, // Convert to seconds (supabase stores as seconds)
             estimated_cost: 200,
             total_cylinders: 25,
-            status: 'completed' as const // Using a type assertion to match the required status type
+            status: 'completed' as const
           }
         ];
       } else {
-        console.log(`Found ${specificRoutes.length} routes for analysis of "${routeName}"`);
         toast.success(`Found ${specificRoutes.length} routes for analysis`);
       }
 
-      // Ensure we have real data for fleet averages
       const fleetData = allRoutes.length > 0 ? allRoutes : [
-        // Sample fleet data if no real data exists, with more realistic time values
         {
           id: 'sample-1',
           name: 'Sample Route 1',
           date: new Date().toISOString(),
           total_distance: 18,
-          total_duration: Math.max(15, Math.round(18 * 1.5)) * 60, // Convert to seconds
+          total_duration: Math.max(15, Math.round((18 / 40)* 60)) * 60,
           estimated_cost: 180,
           total_cylinders: 22,
           status: 'completed' as const
@@ -122,24 +106,39 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           name: 'Sample Route 2',
           date: new Date().toISOString(),
           total_distance: 25,
-          total_duration: Math.max(15, Math.round(25 * 1.5)) * 60, // Convert to seconds
+          total_duration: Math.max(15, Math.round((25 / 40)* 60)) * 60,
           estimated_cost: 230,
           total_cylinders: 30,
           status: 'completed' as const
         }
       ];
 
-      // Generate analytics metrics using real or sample data
+      // Use only real recorded duration if present, fall back to calculated (but minimum 15 mins)
+      specificRoutes = specificRoutes.map(route => ({
+        ...route,
+        total_duration: route.total_duration
+          ? Math.max(15 * 60, +route.total_duration) // seconds
+          : Math.max(15 * 60, Math.round((route.total_distance || 0) / 40 * 60) * 60)
+      }));
+
+      // Likewise for fleetData
+      const normalizedFleet = fleetData.map(route => ({
+        ...route,
+        total_duration: route.total_duration
+          ? Math.max(15 * 60, +route.total_duration)
+          : Math.max(15 * 60, Math.round((route.total_distance || 0) / 40 * 60) * 60)
+      }));
+
       const analyticsData = generateRouteAnalytics(
         routeName,
         routeId,
         period,
         specificRoutes,
-        fleetData
+        normalizedFleet
       );
-      
+
       setAnalysis(analyticsData);
-      
+
       if (specificRoutes.length > 0) {
         toast.success(`Analysis complete for ${routeName} using ${specificRoutes.length} routes`);
       }
@@ -150,40 +149,40 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
       setIsLoading(false);
     }
   };
-  
+
   const handlePrintAnalysis = () => {
     if (!analysis) return;
-    
+
     try {
       const analyticsData = prepareExportData(analysis, routeName, period);
-      
+
       printData(
         analyticsData,
         `Route Analysis: ${routeName} (${period === 'day' ? 'Daily' : period === 'week' ? 'Weekly' : 'Monthly'})`,
         new Date()
       );
-      
+
       toast.success("Print view opened in new window");
     } catch (error) {
       toast.error("Failed to generate print view");
       console.error(error);
     }
   };
-  
+
   const handleEmailAnalysis = () => {
     if (!analysis) return;
-    
+
     try {
       const formattedDate = format(new Date(), 'yyyy-MM-dd');
       const analyticsData = prepareExportData(analysis, routeName, period);
-      
+
       emailData(
         analyticsData,
         `Route Analysis: ${routeName} (${period === 'day' ? 'Daily' : period === 'week' ? 'Weekly' : 'Monthly'})`,
         `Route Efficiency Analysis - ${routeName} - ${formattedDate}`,
         new Date()
       );
-      
+
       toast.success("Email client opened");
     } catch (error) {
       toast.error("Failed to open email client");
@@ -194,78 +193,26 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className={`w-4 h-4 rounded-full ${routeColor}`}></div>
-            <span>AI Analysis: {routeName}</span>
-          </DialogTitle>
-          <DialogDescription>
-            AI-powered efficiency analysis and recommendations
-          </DialogDescription>
-        </DialogHeader>
-
-        <AnalysisPeriodSelector 
-          period={period} 
-          onPeriodChange={setPeriod} 
+        <HeaderSection routeName={routeName} routeColor={routeColor} />
+        <AnalysisPeriodSelector
+          period={period}
+          onPeriodChange={setPeriod}
         />
-
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Analyzing route performance...</span>
-          </div>
-        ) : analysis ? (
-          <div className="space-y-6">
-            <OverallScoreCard 
-              score={analysis.overallScore} 
+        {isLoading || !analysis ? (
+          <AnalysisLoadingState isLoading={isLoading} />
+        ) : (
+          <>
+            <ScoreCardsGrid
+              analysis={analysis}
               onPrint={handlePrintAnalysis}
               onEmail={handleEmailAnalysis}
             />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <EfficiencyScoreCard
-                title="Distance Efficiency"
-                value={analysis.distance.value}
-                average={analysis.distance.average}
-                best={analysis.distance.best}
-                efficiency={analysis.distance.efficiency}
-              />
-              
-              <EfficiencyScoreCard
-                title="Time Efficiency"
-                value={analysis.duration.value}
-                average={analysis.duration.average}
-                best={analysis.duration.best}
-                efficiency={analysis.duration.efficiency}
-              />
-              
-              <EfficiencyScoreCard
-                title="Cost Efficiency"
-                value={analysis.cost.value}
-                average={analysis.cost.average}
-                best={analysis.cost.best}
-                efficiency={analysis.cost.efficiency}
-              />
-              
-              <EfficiencyScoreCard
-                title="Delivery Volume"
-                value={analysis.cylinders.value}
-                average={analysis.cylinders.average}
-                best={analysis.cylinders.best}
-                efficiency={analysis.cylinders.efficiency}
-              />
-            </div>
-
-            <KeyInsightsCard 
-              analysis={analysis} 
-              routeName={routeName} 
-              period={period} 
+            <KeyInsightsCard
+              analysis={analysis}
+              routeName={routeName}
+              period={period}
             />
-          </div>
-        ) : (
-          <div className="flex justify-center items-center py-12">
-            <p>No data available for analysis.</p>
-          </div>
+          </>
         )}
       </DialogContent>
     </Dialog>
