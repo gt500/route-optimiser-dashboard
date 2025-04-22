@@ -27,10 +27,13 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
 }) => {
   return (
     <Card 
-      className="h-full cursor-pointer hover:shadow-md transition-all duration-300 hover:border-primary/50 overflow-hidden"
+      className={`h-full min-h-[112px] shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary/70 border-2 border-transparent flex flex-col justify-between`}
       onClick={onClick}
+      tabIndex={0}
+      role="button"
+      aria-label={title}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 flex flex-col h-full">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1 pr-3">
             <div className="flex items-center text-xs font-medium text-muted-foreground mb-1">
@@ -38,7 +41,7 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
               {tooltip && (
                 <HoverCard>
                   <HoverCardTrigger asChild>
-                    <Info className="inline-block ml-1 h-3 w-3 cursor-help text-muted-foreground/70 flex-shrink-0" />
+                    <Info className="inline-block ml-1 h-3 w-3 cursor-help text-muted-foreground/70" />
                   </HoverCardTrigger>
                   <HoverCardContent side="top" className="w-64 text-sm">
                     {tooltip}
@@ -46,14 +49,15 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
                 </HoverCard>
               )}
             </div>
-            <div className="text-base font-semibold truncate">{value}</div>
+            {/* Always-visible, non-truncated value */}
+            <div className="text-base font-semibold break-words">{value}</div>
           </div>
           <div className={`p-2 rounded-full ${color} bg-opacity-10 ${ringColor ? ringColor : ''} flex-shrink-0 flex items-center justify-center`}>
             {icon}
           </div>
         </div>
         {subtitle && (
-          <div className="mt-2 text-xs overflow-hidden">
+          <div className="mt-2 text-xs leading-tight">
             {subtitle}
           </div>
         )}
