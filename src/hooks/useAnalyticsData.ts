@@ -196,4 +196,5 @@ export const useAnalyticsData = () => {
   };
 };
 
-export type { AnalyticsData, TimePeriod }; // Fixes export errors for consumers
+// Re-export the types for convenience to consumers
+export type { AnalyticsData, TimePeriod };
