@@ -26,6 +26,7 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({
   cylindersChange,
   onCardClick
 }) => {
+  // Assume all data is live—NO dummy/fake changes or fixed values.
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card 
@@ -39,8 +40,17 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({
         <CardContent>
           <div className="text-2xl font-bold text-white">{deliveries.toLocaleString()}</div>
           <div className="flex items-center pt-1">
-            <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-xs text-green-500 mr-1">{deliveriesChange}%</span>
+            {deliveriesChange >= 0 ? (
+              <>
+                <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                <span className="text-xs text-green-500 mr-1">{deliveriesChange}%</span>
+              </>
+            ) : (
+              <>
+                <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                <span className="text-xs text-red-500 mr-1">{Math.abs(deliveriesChange)}%</span>
+              </>
+            )}
             <span className="text-xs text-white/60">from previous period</span>
           </div>
         </CardContent>
@@ -57,8 +67,17 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({
         <CardContent>
           <div className="text-2xl font-bold text-white">R{fuelCost.toFixed(2)}</div>
           <div className="flex items-center pt-1">
-            <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
-            <span className="text-xs text-red-500 mr-1">{fuelCostChange}%</span>
+            {fuelCostChange >= 0 ? (
+              <>
+                <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                <span className="text-xs text-green-500 mr-1">{fuelCostChange}%</span>
+              </>
+            ) : (
+              <>
+                <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                <span className="text-xs text-red-500 mr-1">{Math.abs(fuelCostChange)}%</span>
+              </>
+            )}
             <span className="text-xs text-white/60">from previous period</span>
           </div>
         </CardContent>
@@ -75,8 +94,17 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({
         <CardContent>
           <div className="text-2xl font-bold text-white">{routeLength.toFixed(1)} km</div>
           <div className="flex items-center pt-1">
-            <ArrowDown className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-xs text-green-500 mr-1">{routeLengthChange}%</span>
+            {routeLengthChange >= 0 ? (
+              <>
+                <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                <span className="text-xs text-green-500 mr-1">{routeLengthChange}%</span>
+              </>
+            ) : (
+              <>
+                <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                <span className="text-xs text-red-500 mr-1">{Math.abs(routeLengthChange)}%</span>
+              </>
+            )}
             <span className="text-xs text-white/60">from previous period</span>
           </div>
         </CardContent>
@@ -93,8 +121,17 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({
         <CardContent>
           <div className="text-2xl font-bold text-white">{cylinders.toLocaleString()}</div>
           <div className="flex items-center pt-1">
-            <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-xs text-green-500 mr-1">{cylindersChange}%</span>
+            {cylindersChange >= 0 ? (
+              <>
+                <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                <span className="text-xs text-green-500 mr-1">{cylindersChange}%</span>
+              </>
+            ) : (
+              <>
+                <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                <span className="text-xs text-red-500 mr-1">{Math.abs(cylindersChange)}%</span>
+              </>
+            )}
             <span className="text-xs text-white/60">from previous period</span>
           </div>
         </CardContent>
