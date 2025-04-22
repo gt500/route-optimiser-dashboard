@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TotalVehicles, MaintenanceTasks, RoutesOptimized, FuelSaved } from 'lucide-react';
+import { Truck, Wrench, Route, Fuel } from 'lucide-react';
 
 interface DashboardMetricsProps { 
   isLoading: boolean; 
@@ -21,9 +21,11 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
         <CardHeader>
           <CardTitle className="text-white/90 flex justify-between items-center">
             Total Vehicles
-            <TotalVehicles className="h-5 w-5 text-white/60" />
+            <Truck className="h-5 w-5 text-white/60" />
           </CardTitle>
-          <CardDescription className="text-white/60">Number of vehicles in your fleet</CardDescription>
+          <CardDescription className="text-white/60 text-xs whitespace-nowrap truncate">
+            Number of vehicles in your fleet
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -40,9 +42,11 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
         <CardHeader>
           <CardTitle className="text-white/90 flex justify-between items-center">
             Maintenance Tasks
-            <MaintenanceTasks className="h-5 w-5 text-white/60" />
+            <Wrench className="h-5 w-5 text-white/60" />
           </CardTitle>
-          <CardDescription className="text-white/60">Scheduled maintenance tasks</CardDescription>
+          <CardDescription className="text-white/60 text-xs whitespace-nowrap truncate">
+            Scheduled maintenance tasks
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -59,9 +63,11 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
         <CardHeader>
           <CardTitle className="text-white/90 flex justify-between items-center">
             Routes Optimized
-            <RoutesOptimized className="h-5 w-5 text-white/60" />
+            <Route className="h-5 w-5 text-white/60" />
           </CardTitle>
-          <CardDescription className="text-white/60">Number of routes optimized</CardDescription>
+          <CardDescription className="text-white/60 text-xs whitespace-nowrap truncate">
+            Number of routes optimized
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -78,9 +84,11 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
         <CardHeader>
           <CardTitle className="text-white/90 flex justify-between items-center">
             Fuel Saved
-            <FuelSaved className="h-5 w-5 text-white/60" />
+            <Fuel className="h-5 w-5 text-white/60" />
           </CardTitle>
-          <CardDescription className="text-white/60">Estimated fuel saved</CardDescription>
+          <CardDescription className="text-white/60 text-xs whitespace-nowrap truncate">
+            Estimated fuel saved
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -97,3 +105,4 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
 };
 
 export default DashboardMetrics;
+
