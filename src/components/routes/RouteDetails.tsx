@@ -144,32 +144,36 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           </Alert>
         )}
 
-        <RouteMetricsGrid 
-          distance={route.distance} 
-          duration={route.estimatedDuration || 0} 
-          cylinders={route.cylinders} 
-          fuelConsumption={route.fuelConsumption}
-          fuelCost={route.fuelCost}
-          locations={route.locations.length}
-          fuelCostPerLiter={vehicleConfig.fuelPrice}
-          trafficConditions={route.trafficConditions}
-          totalWeight={totalWeight}
-        />
+        <div className="overflow-hidden">
+          <RouteMetricsGrid 
+            distance={route.distance} 
+            duration={route.estimatedDuration || 0} 
+            cylinders={route.cylinders} 
+            fuelConsumption={route.fuelConsumption}
+            fuelCost={route.fuelCost}
+            locations={route.locations.length}
+            fuelCostPerLiter={vehicleConfig.fuelPrice}
+            trafficConditions={route.trafficConditions}
+            totalWeight={totalWeight}
+          />
+        </div>
         
         {assignedVehicle && (
-          <div className="bg-blue-50 p-3 rounded-md flex items-center gap-2 text-blue-700">
-            <Truck className="h-4 w-4" />
-            <span>
-              Assigned to: <strong>{assignedVehicle.name}</strong> ({assignedVehicle.licensePlate})
+          <div className="bg-blue-50 p-3 rounded-md flex items-center gap-2 text-blue-700 mt-2 overflow-hidden">
+            <Truck className="h-4 w-4 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <span className="block truncate">
+                Assigned to: <strong>{assignedVehicle.name}</strong> ({assignedVehicle.licensePlate})
+              </span>
               {assignedVehicle.maxPayload && 
-                <span className="ml-1 text-sm font-medium">
-                  • Max payload: {assignedVehicle.maxPayload} kg • Current load: {totalWeight} kg
+                <span className="block text-sm truncate">
+                  Max payload: {assignedVehicle.maxPayload} kg • Current load: {totalWeight} kg
                   {totalWeight > (assignedVehicle.maxPayload || 0) && 
                     <span className="text-red-600 ml-1">(Overweight!)</span>
                   }
                 </span>
               }
-            </span>
+            </div>
           </div>
         )}
         

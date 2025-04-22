@@ -27,13 +27,13 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
 }) => {
   return (
     <Card 
-      className="cursor-pointer hover:shadow-md transition-all duration-300 hover:border-primary/50"
+      className="h-full cursor-pointer hover:shadow-md transition-all duration-300 hover:border-primary/50 overflow-hidden"
       onClick={onClick}
     >
-      <CardContent className="py-4">
+      <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs font-medium text-muted-foreground">
+          <div className="min-w-0 flex-1 pr-3">
+            <div className="flex items-center text-xs font-medium text-muted-foreground mb-1">
               {title}
               {tooltip && (
                 <HoverCard>
@@ -46,14 +46,14 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
                 </HoverCard>
               )}
             </div>
-            <div className="text-base font-semibold">{value}</div>
+            <div className="text-base font-semibold truncate">{value}</div>
           </div>
-          <div className={`p-2 rounded-full ${color} bg-opacity-10 ${ringColor ? ringColor : ''} flex items-center justify-center`}>
+          <div className={`p-2 rounded-full ${color} bg-opacity-10 ${ringColor ? ringColor : ''} flex-shrink-0 flex items-center justify-center`}>
             {icon}
           </div>
         </div>
         {subtitle && (
-          <div className="mt-2">
+          <div className="mt-2 text-xs">
             {subtitle}
           </div>
         )}

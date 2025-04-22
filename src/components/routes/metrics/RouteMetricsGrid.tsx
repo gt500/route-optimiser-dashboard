@@ -114,11 +114,19 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
     return fuelConsumption * 2.3; // kg of CO2
   };
 
+  // Calculate fuel saved compared to non-optimized route (estimated 15% saving from optimization)
+  const calculateFuelSaved = (): number => {
+    // Assume non-optimized route would use ~15% more fuel
+    const nonOptimizedFuel = fuelConsumption / 0.85;
+    return nonOptimizedFuel - fuelConsumption;
+  };
+
   const estimatedMaintenanceCost = distance * 0.85; // R0.85 per km for maintenance
   const totalOperatingCost = localFuelCost + estimatedMaintenanceCost;
+  const fuelSaved = calculateFuelSaved();
   
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <RouteMetricsCard 
         title="Total Distance"
         value={formatDistance(distance)}
@@ -141,14 +149,16 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         icon={<Fuel className="h-5 w-5" />}
         color="bg-green-600"
         subtitle={
-          <>
-            <div className="mb-1 text-xs">
-              Fuel: R{localFuelCost.toFixed(2)} • Maintenance: R{estimatedMaintenanceCost.toFixed(2)}
+          <div className="space-y-1 text-xs overflow-hidden">
+            <div>Fuel: R{localFuelCost.toFixed(2)} • Maintenance: R{estimatedMaintenanceCost.toFixed(2)}</div>
+            <div className="text-green-700 flex items-center gap-1">
+              <CircleCheck className="h-3 w-3" /> 
+              Fuel Saved: {fuelSaved.toFixed(1)}L (R{(fuelSaved * localFuelCostPerLiter).toFixed(2)})
             </div>
-            <div className="text-xs text-green-700">
+            <div className="text-green-700">
               CO₂: {calculateCO2Emissions().toFixed(1)}kg
             </div>
-          </>
+          </div>
         }
         tooltip="Total operating cost including fuel and maintenance"
       />
@@ -159,7 +169,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         color="bg-indigo-600"
         subtitle={
           totalWeight > 0 ? 
-          <div className={totalWeight > 1000 ? "text-amber-600 font-medium" : ""}>
+          <div className={`${totalWeight > 1000 ? "text-amber-600 font-medium" : ""} overflow-hidden`}>
             {totalWeight.toFixed(0)} kg total weight
             {totalWeight > 1000 && <AlertTriangle className="h-3 w-3 inline ml-1" />}
           </div> : 
