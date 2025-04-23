@@ -1,28 +1,32 @@
-
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Weight, AlertTriangle } from 'lucide-react';
 import { ReportMetricsCard } from '@/components/reports/ReportMetricsCard';
-import { MAX_CYLINDERS, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
+import { MAX_CYLINDERS, CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 interface TruckWeightIndicatorProps {
   totalCylinders: number;
   maxCylinders?: number;
   cylinderWeight?: number;
+  emptyCylinders?: number;
 }
 
 const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
   totalCylinders,
-  maxCylinders = MAX_CYLINDERS, // Default using our constant
-  cylinderWeight = CYLINDER_WEIGHT_KG // Default to 9kg per cylinder
+  maxCylinders = MAX_CYLINDERS,
+  cylinderWeight = CYLINDER_WEIGHT_KG,
+  emptyCylinders = 0
 }) => {
-  // Only FULL cylinders (delivered) count towards the weight. Empties are 0kg.
-  const currentWeight = totalCylinders * cylinderWeight;
-  const maxWeight = maxCylinders * cylinderWeight;
+  // Reflects max(loadout, collected empties)
+  const fullWeight = totalCylinders * cylinderWeight;
+  const emptyWeight = emptyCylinders * EMPTY_CYLINDER_WEIGHT_KG;
+  const currentWeight = Math.max(fullWeight, emptyWeight);
+
+  const maxWeight = maxCylinders * Math.max(cylinderWeight, EMPTY_CYLINDER_WEIGHT_KG);
   const weightPercentage = (currentWeight / maxWeight) * 100;
-  const isOverweight = totalCylinders > maxCylinders;
+  const isOverweight = currentWeight > maxWeight;
 
   const getWeightStatusColor = () => {
     if (isOverweight) return "bg-gradient-to-br from-red-500 to-red-600";
@@ -38,9 +42,11 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
         value={`${currentWeight} kg`}
         icon={<Weight />}
         color={getWeightStatusColor()}
-        tooltip={`Maximum load: ${maxWeight} kg (${maxCylinders} cylinders of 9kg)`}
+        tooltip={`
+          Max load: ${maxWeight} kg (80 cylinders: full=${cylinderWeight}kg, empty=${EMPTY_CYLINDER_WEIGHT_KG}kg).
+          Shows greater of current fulls or empties on board.
+        `}
       />
-
       {isOverweight && (
         <Alert 
           variant="destructive" 
@@ -53,8 +59,7 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
           <AlertTriangle className="h-4 w-4 text-red-500" />
           <AlertTitle className="text-red-600 font-bold">Weight limit exceeded!</AlertTitle>
           <AlertDescription className="text-red-600 font-bold">
-            Current load ({totalCylinders} cylinders, {currentWeight} kg) exceeds the maximum capacity 
-            ({maxCylinders} cylinders, {maxWeight} kg). Please remove some locations.
+            Current load: {currentWeight} kg. Max allowed: {maxWeight} kg. Please adjust route.
           </AlertDescription>
         </Alert>
       )}

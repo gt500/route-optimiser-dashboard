@@ -1,9 +1,9 @@
 import { LocationType } from "@/components/locations/LocationEditDialog";
+import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 // Constants for accurate weight and fuel calculations - using consistent values
-const EMPTY_CYLINDER_WEIGHT_KG = 0; // Weight of an empty cylinder (i.e., empties after delivery)
-const FULL_CYLINDER_WEIGHT_KG = 9; // Weight of a full cylinder in kg
-const CYLINDER_GAS_WEIGHT_KG = 0;   // No longer using different weights for gas content
+const EMPTY_WEIGHT_KG = EMPTY_CYLINDER_WEIGHT_KG;    // 12kg per empty
+const FULL_CYLINDER_WEIGHT_KG = CYLINDER_WEIGHT_KG;  // 9kg per full
 
 // Average fuel consumption based on vehicle type and load (L/100km)
 const BASE_FUEL_CONSUMPTION = 12; // 12L/100km for an average delivery truck
@@ -52,24 +52,33 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 };
 
 /**
- * Calculate total weight of all cylinders in a route.
- * Payload logic (truck load): Only full cylinders (deliveries) count toward the weight.
- * Empties being collected are 0kg each.
+ * Calculate total payload weight for a truck considering both fulls (before delivery)
+ * and empties (AFTER delivery at each site, empties are now on-board at 12kg each),
+ * respecting the business rule.
  */
 export const calculateTotalWeight = (locations: LocationType[]): number => {
   let totalWeight = 0;
-  locations.forEach(location => {
-    // Count ONLY full cylinders toward the truck's weight
-    if ((location.type === 'Storage' || location.type === 'Distribution') && location.fullCylinders) {
-      totalWeight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
+  let runningFulls = 0;
+  let runningEmpties = 0;
+  
+  locations.forEach((loc, idx) => {
+    // Assume "Customer" sites: Deliver fulls, collect empties (post-delivery).
+    if ((loc.type === 'Customer' || loc.type === 'Distribution' || loc.type === 'Storage')) {
+      if (loc.fullCylinders && loc.fullCylinders > 0) {
+        runningFulls += loc.fullCylinders;
+      }
+      // When dropping off fulls to customer, add empties right after the drop
+      if (loc.emptyCylinders && loc.emptyCylinders > 0) {
+        runningEmpties += loc.emptyCylinders;
+      }
     }
-    // For customer deliveries, if full cylinders are dropped off, count as payload
-    if (location.type === 'Customer' && location.fullCylinders && location.fullCylinders > 0) {
-      totalWeight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
-    }
-    // Empties do not count toward payload
-    // (Optionally for clarity; left as 0 for any logic)
   });
+
+  // The max weight during the trip: Truck is heaviest with all fulls at start,
+  // but as you deliver, fulls are swapped for empties.
+  // For simplicity in indicator, we show max(runningFulls*full, runningEmpties*empty)
+  totalWeight = Math.max(runningFulls * FULL_CYLINDER_WEIGHT_KG, runningEmpties * EMPTY_WEIGHT_KG);
+
   return totalWeight;
 };
 

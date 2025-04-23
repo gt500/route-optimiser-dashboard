@@ -1,8 +1,8 @@
-
 import { LocationType } from '@/components/locations/LocationEditDialog';
 
-// --- Changed: Update CYLINDER_WEIGHT_KG to 9 and MAX_CYLINDERS to 80 ---
+// --- Constants updated: Full = 9kg, Empty = 12kg, Max 80 cylinders ---
 export const CYLINDER_WEIGHT_KG = 9;
+export const EMPTY_CYLINDER_WEIGHT_KG = 12;
 export const MAX_CYLINDERS = 80;
 export const FULL_LOAD_PER_SITE = 20;
 

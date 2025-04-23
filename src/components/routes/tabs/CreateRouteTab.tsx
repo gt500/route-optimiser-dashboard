@@ -17,7 +17,7 @@ import TruckWeightIndicator from '@/components/reports/TruckWeightIndicator';
 import { toast } from 'sonner';
 import { Vehicle } from '@/types/fleet';
 import { MapPin, Globe } from 'lucide-react';
-import { FULL_TRUCK_LOAD, MAX_CYLINDERS, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
+import { MAX_CYLINDERS, CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 interface CreateRouteTabProps {
   route: {
@@ -60,7 +60,7 @@ interface CreateRouteTabProps {
   onRegionChange?: (country: string, region: string) => void;
 }
 
-const MAX_PAYLOAD_KG = MAX_CYLINDERS * CYLINDER_WEIGHT_KG; // 80 cylinders * 9kg
+const MAX_PAYLOAD_KG = MAX_CYLINDERS * Math.max(CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG);
 
 const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   route,
@@ -121,7 +121,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                 <h3 className="font-semibold text-lg">Route Map</h3>
                 <div className="w-56">
                   <TruckWeightIndicator 
-                    totalCylinders={route.cylinders} 
+                    totalCylinders={route.cylinders}
+                    emptyCylinders={
+                      route.locations?.reduce((sum, loc) => sum + (loc.emptyCylinders || 0), 0)
+                    }
                     maxCylinders={MAX_CYLINDERS}
                     cylinderWeight={CYLINDER_WEIGHT_KG}
                   />
