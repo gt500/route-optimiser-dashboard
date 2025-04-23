@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,7 +17,7 @@ import TruckWeightIndicator from '@/components/reports/TruckWeightIndicator';
 import { toast } from 'sonner';
 import { Vehicle } from '@/types/fleet';
 import { MapPin, Globe } from 'lucide-react';
-import { FULL_TRUCK_LOAD } from '@/hooks/delivery/types';
+import { FULL_TRUCK_LOAD, MAX_CYLINDERS, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 interface CreateRouteTabProps {
   route: {
@@ -61,9 +60,7 @@ interface CreateRouteTabProps {
   onRegionChange?: (country: string, region: string) => void;
 }
 
-// Use a consistent weight value
-const CYLINDER_WEIGHT_KG = 22;
-const MAX_PAYLOAD_KG = FULL_TRUCK_LOAD * CYLINDER_WEIGHT_KG; // 80 cylinders * 22kg
+const MAX_PAYLOAD_KG = MAX_CYLINDERS * CYLINDER_WEIGHT_KG; // 80 cylinders * 9kg
 
 const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   route,
@@ -93,11 +90,11 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   selectedRegion,
   onRegionChange
 }) => {
-  const isOverweight = route.cylinders > FULL_TRUCK_LOAD;
+  const isOverweight = route.cylinders > MAX_CYLINDERS;
 
   const handleAddLocationToRoute = (location: LocationType & { cylinders: number }) => {
-    if (route.cylinders + location.cylinders > FULL_TRUCK_LOAD) {
-      toast.error(`Weight limit exceeded! Adding ${location.cylinders} more cylinders would exceed the maximum capacity of ${FULL_TRUCK_LOAD} cylinders (${MAX_PAYLOAD_KG}kg).`, {
+    if (route.cylinders + location.cylinders > MAX_CYLINDERS) {
+      toast.error(`Weight limit exceeded! Adding ${location.cylinders} more cylinders would exceed the maximum capacity of ${MAX_CYLINDERS} cylinders (${MAX_PAYLOAD_KG}kg).`, {
         duration: 5000
       });
       return;
@@ -105,12 +102,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
     onAddLocationToRoute(location);
   };
 
-  // Generate a route name if one doesn't exist, using the start and end location names
   const routeName = route.name || (startLocation && endLocation 
     ? `${startLocation.name} to ${endLocation.name}` 
     : "New Route");
 
-  // Update the route with the generated name
   const routeWithName = {
     ...route,
     name: routeName
@@ -127,7 +122,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                 <div className="w-56">
                   <TruckWeightIndicator 
                     totalCylinders={route.cylinders} 
-                    maxCylinders={FULL_TRUCK_LOAD}
+                    maxCylinders={MAX_CYLINDERS}
                     cylinderWeight={CYLINDER_WEIGHT_KG}
                   />
                 </div>

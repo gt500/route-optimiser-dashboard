@@ -1,10 +1,9 @@
 
-// Update this file to add the waypointData field to the RouteState interface
-
 import { LocationType } from '@/components/locations/LocationEditDialog';
 
-export const CYLINDER_WEIGHT_KG = 22;
-export const MAX_CYLINDERS = 50;
+// --- Changed: Update CYLINDER_WEIGHT_KG to 9 and MAX_CYLINDERS to 80 ---
+export const CYLINDER_WEIGHT_KG = 9;
+export const MAX_CYLINDERS = 80;
 export const FULL_LOAD_PER_SITE = 20;
 
 export interface RouteState {

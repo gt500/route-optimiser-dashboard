@@ -1,9 +1,8 @@
-
 import { LocationType } from "@/components/locations/LocationEditDialog";
 
 // Constants for accurate weight and fuel calculations - using consistent values
-const EMPTY_CYLINDER_WEIGHT_KG = 22; // Weight of an empty cylinder in kg
-const FULL_CYLINDER_WEIGHT_KG = 22;  // Weight of a full cylinder in kg
+const EMPTY_CYLINDER_WEIGHT_KG = 0; // Weight of an empty cylinder (i.e., empties after delivery)
+const FULL_CYLINDER_WEIGHT_KG = 9; // Weight of a full cylinder in kg
 const CYLINDER_GAS_WEIGHT_KG = 0;   // No longer using different weights for gas content
 
 // Average fuel consumption based on vehicle type and load (L/100km)
@@ -53,23 +52,24 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 };
 
 /**
- * Calculate total weight of all cylinders in a route
+ * Calculate total weight of all cylinders in a route.
+ * Payload logic (truck load): Only full cylinders (deliveries) count toward the weight.
+ * Empties being collected are 0kg each.
  */
 export const calculateTotalWeight = (locations: LocationType[]): number => {
   let totalWeight = 0;
-  
   locations.forEach(location => {
-    // For customer locations with empty cylinders
-    if (location.type === 'Customer' && location.emptyCylinders) {
-      totalWeight += location.emptyCylinders * EMPTY_CYLINDER_WEIGHT_KG;
-    }
-    
-    // For storage locations with full cylinders
+    // Count ONLY full cylinders toward the truck's weight
     if ((location.type === 'Storage' || location.type === 'Distribution') && location.fullCylinders) {
       totalWeight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
     }
+    // For customer deliveries, if full cylinders are dropped off, count as payload
+    if (location.type === 'Customer' && location.fullCylinders && location.fullCylinders > 0) {
+      totalWeight += location.fullCylinders * FULL_CYLINDER_WEIGHT_KG;
+    }
+    // Empties do not count toward payload
+    // (Optionally for clarity; left as 0 for any logic)
   });
-  
   return totalWeight;
 };
 

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Weight, AlertTriangle } from 'lucide-react';
 import { ReportMetricsCard } from '@/components/reports/ReportMetricsCard';
-import { FULL_TRUCK_LOAD } from '@/hooks/delivery/types';
+import { MAX_CYLINDERS, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 interface TruckWeightIndicatorProps {
   totalCylinders: number;
@@ -15,9 +15,10 @@ interface TruckWeightIndicatorProps {
 
 const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
   totalCylinders,
-  maxCylinders = FULL_TRUCK_LOAD, // Default using our constant
-  cylinderWeight = 22 // Default weight of 22kg per cylinder
+  maxCylinders = MAX_CYLINDERS, // Default using our constant
+  cylinderWeight = CYLINDER_WEIGHT_KG // Default to 9kg per cylinder
 }) => {
+  // Only FULL cylinders (delivered) count towards the weight. Empties are 0kg.
   const currentWeight = totalCylinders * cylinderWeight;
   const maxWeight = maxCylinders * cylinderWeight;
   const weightPercentage = (currentWeight / maxWeight) * 100;
@@ -37,7 +38,7 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
         value={`${currentWeight} kg`}
         icon={<Weight />}
         color={getWeightStatusColor()}
-        tooltip={`Maximum load: ${maxWeight} kg (${maxCylinders} cylinders)`}
+        tooltip={`Maximum load: ${maxWeight} kg (${maxCylinders} cylinders of 9kg)`}
       />
 
       {isOverweight && (
