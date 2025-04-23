@@ -1,9 +1,8 @@
-import { LocationType } from "@/components/locations/LocationEditDialog";
 import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 // Constants for accurate weight and fuel calculations - using consistent values
 const EMPTY_WEIGHT_KG = EMPTY_CYLINDER_WEIGHT_KG;    // 12kg per empty
-const FULL_CYLINDER_WEIGHT_KG = CYLINDER_WEIGHT_KG;  // 9kg per full
+const FULL_CYLINDER_WEIGHT_KG = CYLINDER_WEIGHT_KG;  // 22kg per full
 
 // Average fuel consumption based on vehicle type and load (L/100km)
 const BASE_FUEL_CONSUMPTION = 12; // 12L/100km for an average delivery truck

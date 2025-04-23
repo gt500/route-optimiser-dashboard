@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,9 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
+import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 // Constants for weight calculations - using consistent values
-const EMPTY_CYLINDER_WEIGHT_KG = 22; // Weight of an empty cylinder in kg
 const FULL_CYLINDER_WEIGHT_KG = 22;  // Weight of a full cylinder in kg
 
 interface RouteDetailsProps {
@@ -56,8 +55,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 
   // Calculate total weight of all cylinders with consistent weight values
   useEffect(() => {
-    // Use a consistent cylinder weight of 22kg for all cylinders
-    const weight = route.cylinders * EMPTY_CYLINDER_WEIGHT_KG;
+    // Use 22kg for full cylinders, 12kg for empty cylinders
+    const weight = route.cylinders * CYLINDER_WEIGHT_KG;
     setTotalWeight(weight);
     
     // Reset acknowledgment when weight changes
