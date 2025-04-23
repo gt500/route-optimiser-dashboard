@@ -1,4 +1,7 @@
+
 import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
+import { LocationType } from '@/components/locations/LocationEditDialog';
+import { OptimizationParams } from '@/hooks/routes/types';
 
 // Constants for accurate weight and fuel calculations - using consistent values
 const EMPTY_WEIGHT_KG = EMPTY_CYLINDER_WEIGHT_KG;    // 12kg per empty

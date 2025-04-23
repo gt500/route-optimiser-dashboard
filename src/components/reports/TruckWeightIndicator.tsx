@@ -1,4 +1,8 @@
+
 import React from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle, Weight } from 'lucide-react';
+import ReportMetricsCard from '@/components/reports/ReportMetricsCard';
 import { MAX_CYLINDERS, CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
 interface TruckWeightIndicatorProps {

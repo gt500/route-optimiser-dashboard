@@ -11,8 +11,8 @@ import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
 import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 
-// Constants for weight calculations - using consistent values
-const FULL_CYLINDER_WEIGHT_KG = 22;  // Weight of a full cylinder in kg
+// Use imported constants instead of redefining
+const FULL_CYLINDER_WEIGHT_KG = CYLINDER_WEIGHT_KG;  // Weight of a full cylinder in kg
 
 interface RouteDetailsProps {
   route: {
