@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -132,6 +133,39 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         // Hide the routing control UI but show the route path
         routingControl.hide();
+        
+        // Define handleRoute function inside the useEffect
+        const handleRoute = (e: L.Routing.RoutingResultEvent) => {
+          const routes = e.routes;
+          if (routes && routes.length > 0 && onRouteFound) {
+            const selectedRoute = routes[0];
+            
+            // Extract coordinates from the route
+            const coordinates: [number, number][] = selectedRoute.coordinates.map(coord => 
+              [coord.lat, coord.lng]
+            );
+            
+            // Extract waypoint data if available
+            const waypoints = selectedRoute.waypoints?.map(wp => ({
+              distance: wp.distance || 0,
+              duration: wp.duration || 0
+            }));
+            
+            // Extract segment durations if enabled and available
+            const segmentDurations = routeOptions.includeSegmentDurations && 
+              selectedRoute.instructions ? 
+              selectedRoute.instructions.map(instr => instr.time || 0) : 
+              undefined;
+            
+            onRouteFound({
+              distance: selectedRoute.summary.totalDistance / 1000,
+              duration: selectedRoute.summary.totalTime / 60,
+              coordinates,
+              waypoints,
+              segmentDurations
+            });
+          }
+        };
         
         // Extract route information when a route is found
         routingControl.on('routesfound', handleRoute);
