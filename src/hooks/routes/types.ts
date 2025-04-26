@@ -1,15 +1,10 @@
-import { LocationType } from '@/components/locations/LocationEditDialog';
 
-// --- Constants updated: Full = 9kg, Empty = 12kg, Max 80 cylinders ---
-export const CYLINDER_WEIGHT_KG = 22;
-export const EMPTY_CYLINDER_WEIGHT_KG = 12;
-export const MAX_CYLINDERS = 80;
-export const FULL_LOAD_PER_SITE = 20;
+import { LocationType } from '@/components/locations/LocationEditDialog';
 
 export interface RouteState {
   distance: number;
   fuelConsumption: number;
-  fuelCost: number; 
+  fuelCost: number;
   maintenanceCost: number;
   totalCost: number;
   cylinders: number;
@@ -20,20 +15,8 @@ export interface RouteState {
   usingRealTimeData: boolean;
   country: string;
   region: string;
-  waypointData?: { distance: number, duration: number }[];
+  waypointData: { distance: number; duration: number }[];
 }
-
-export interface VehicleConfigProps {
-  fuelPrice: number;
-  baseConsumption: number;
-  maintenanceCostPerKm: number;
-}
-
-export const defaultVehicleConfig: VehicleConfigProps = {
-  fuelPrice: 21.95,
-  baseConsumption: 0.25, // L/km
-  maintenanceCostPerKm: 1.2 // Rand per km
-};
 
 export interface OptimizationParams {
   prioritizeFuel: boolean;
@@ -41,6 +24,22 @@ export interface OptimizationParams {
   useRealTimeData: boolean;
   optimizeForDistance: boolean;
 }
+
+export interface VehicleConfigProps {
+  maxWeight: number;
+  fuelPrice: number;
+  maintenanceCost: number;
+}
+
+export const MAX_CYLINDERS = 100;
+export const CYLINDER_WEIGHT_KG = 48;
+export const EMPTY_CYLINDER_WEIGHT_KG = 12;
+
+export const defaultVehicleConfig: VehicleConfigProps = {
+  maxWeight: 3500,
+  fuelPrice: 21.95,
+  maintenanceCost: 0.85
+};
 
 export const routeOptimizationDefaultParams: OptimizationParams = {
   prioritizeFuel: true,
