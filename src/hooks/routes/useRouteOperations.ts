@@ -1,6 +1,6 @@
-
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import { optimizeLocationOrder, calculateRouteMetrics } from '@/utils/routeUtils';
+import { optimizeLocationOrder } from '@/utils/route/optimizationUtils';
+import { calculateRouteMetrics } from '@/utils/route/routeMetrics';
 import { RouteState, OptimizationParams, routeOptimizationDefaultParams, MAX_CYLINDERS } from './types';
 import { toast } from 'sonner';
 

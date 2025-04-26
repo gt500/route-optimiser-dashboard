@@ -8,6 +8,7 @@ import LocationMarker from './map-components/LocationMarker';
 import DepotMarker from './map-components/DepotMarker';
 import RoutingMachine from './map-components/RoutingMachine';
 import { toast } from 'sonner';
+import { getRegionCoordinates } from '@/utils/route/regionUtils';
 
 // Make sure the marker images are available
 import '../../../node_modules/leaflet/dist/images/marker-icon.png';
@@ -54,6 +55,8 @@ interface RouteMapProps {
     coordinates?: [number, number][],
     waypointData?: WaypointData[]
   ) => void;
+  country?: string;
+  region?: string;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -72,6 +75,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   showAlternateRoutes = false,
   useRealTimeTraffic = true,
   onRouteDataUpdate,
+  country,
+  region,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -81,7 +86,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   const calculateCenter = () => {
     if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
-      return center;
+      // If no locations, use region-based coordinates
+      return getRegionCoordinates(country, region).center;
     }
 
     const points: [number, number][] = [];
@@ -95,7 +101,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
 
     waypoints.forEach((wp) => {
-      points.push(wp.coords);
+      if (!isNaN(wp.coords[0]) && !isNaN(wp.coords[1]) && 
+          wp.coords[0] !== 0 && wp.coords[1] !== 0) {
+        points.push(L.latLng(wp.coords[0], wp.coords[1]));
+      }
     });
 
     locations.forEach((loc) => {
@@ -124,7 +133,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   useEffect(() => {
     setMapCenter(calculateCenter());
-  }, [locations, startLocation, endLocation, waypoints]);
+  }, [locations, startLocation, endLocation, waypoints, country, region]);
 
   useEffect(() => {
     if (mapRef.current && showRouting) {
@@ -244,6 +253,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       ref={handleMapInit}
       style={{ height, width: '100%' }}
       className="leaflet-container"
+      zoom={region ? getRegionCoordinates(country, region).zoom : zoom}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

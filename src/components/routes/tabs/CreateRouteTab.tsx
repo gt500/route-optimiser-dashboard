@@ -161,7 +161,12 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
               />
             </div>
             <div className="h-[400px] mt-4 relative">
-              <RouteMap locations={transformedLocations} height="100%" />
+              <RouteMap 
+                locations={transformedLocations} 
+                height="100%" 
+                country={route.country}
+                region={route.region}
+              />
             </div>
             <Separator className="my-4" />
             <LocationSelector
