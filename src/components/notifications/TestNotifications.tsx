@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +56,10 @@ const TestNotifications = () => {
 
     setLoading(true);
     try {
+      toast.info("During testing, emails can only be sent to verified domains in Resend", {
+        duration: 5000
+      });
+      
       const result = await sendNotification({
         email: user.email,
         subject,
@@ -69,7 +72,7 @@ const TestNotifications = () => {
       }
     } catch (error) {
       console.error("Error sending test email:", error);
-      toast.error("Failed to send test email");
+      toast.error("Failed to send test email. Make sure your Resend API key is set up and your domain is verified.");
     } finally {
       setLoading(false);
     }
@@ -158,6 +161,7 @@ const TestNotifications = () => {
         <CardTitle>Test Notifications</CardTitle>
         <CardDescription>
           Send test notifications to verify your notification settings.
+          During development, emails can only be sent to verified domains in Resend.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -1,7 +1,7 @@
 
 import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import { OptimizationParams } from '@/hooks/routes/types';
+// Removed duplicate import of OptimizationParams since it's already defined in this file
 
 // Constants for accurate weight and fuel calculations - using consistent values
 const EMPTY_WEIGHT_KG = EMPTY_CYLINDER_WEIGHT_KG;    // 12kg per empty
@@ -198,7 +198,7 @@ export interface OptimizationParams {
 export const calculateRouteMetrics = (
   locations: LocationType[],
   params: OptimizationParams,
-  fuelCostPerLiter: number = 21.95, // Add fuel cost parameter with default value
+  fuelCostPerLiter: number = 21.95,
   routingMachineData?: {
     totalDistance?: number,
     totalDuration?: number,

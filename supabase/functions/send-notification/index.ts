@@ -1,5 +1,8 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,12 +10,42 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface EmailNotificationRequest {
+interface NotificationRequest {
   email: string;
   subject: string;
   message: string;
   type: "email" | "sms" | "push";
-  category?: "weekly_report" | "route_update" | "delivery_update" | "general";
+}
+
+interface WeeklyReportRequest {
+  userId: string;
+  email: string;
+  reportData: {
+    deliveries: number;
+    cylinders: number;
+    kms: number;
+    fuelCost: number;
+    weekStart: string;
+    weekEnd: string;
+  };
+}
+
+interface RouteUpdateRequest {
+  userId: string;
+  email: string;
+  routeId: string;
+  routeName: string;
+  updateType: "created" | "optimized" | "modified" | "completed";
+  details: string;
+}
+
+interface DeliveryUpdateRequest {
+  userId: string;
+  email: string;
+  deliveryId: string;
+  locationName: string;
+  status: "scheduled" | "in_progress" | "completed" | "delayed";
+  details: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -22,289 +55,203 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Request received in send-notification function");
-    
-    // Get the API key from environment and log its presence (not the actual value)
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    console.log("RESEND_API_KEY present:", resendApiKey ? "Yes" : "No");
-    
-    // Check if RESEND_API_KEY is configured
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY is not configured");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "RESEND_API_KEY is not configured in environment variables",
-          help: "Please add the RESEND_API_KEY to your Supabase edge function secrets" 
-        }),
-        {
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-          status: 500,
-        }
-      );
+    const requestPath = new URL(req.url).pathname;
+    const requestBody = await req.json();
+    let emailResponse;
+
+    console.log(`Processing request for ${requestPath}`);
+
+    if (requestPath.includes("/weekly-report")) {
+      const { userId, email, reportData }: WeeklyReportRequest = requestBody;
+      emailResponse = await sendWeeklyReport(email, reportData);
+    } else if (requestPath.includes("/route-update")) {
+      const { userId, email, routeName, updateType, details }: RouteUpdateRequest = requestBody;
+      emailResponse = await sendRouteUpdate(email, routeName, updateType, details);
+    } else if (requestPath.includes("/delivery-update")) {
+      const { userId, email, locationName, status, details }: DeliveryUpdateRequest = requestBody;
+      emailResponse = await sendDeliveryUpdate(email, locationName, status, details);
+    } else {
+      // Default email notification
+      const { email, subject, message }: NotificationRequest = requestBody;
+      emailResponse = await sendBasicNotification(email, subject, message);
     }
-    
-    try {
-      // Parse the request body
-      let requestBody;
-      try {
-        requestBody = await req.json();
-        console.log("Request body parsed successfully:", requestBody);
-      } catch (parseError) {
-        console.error("Error parsing request body:", parseError);
-        return new Response(
-          JSON.stringify({ success: false, error: "Invalid JSON in request body" }),
-          {
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-            status: 400,
-          }
-        );
-      }
 
-      const { email, subject, message, type, category = "general" }: EmailNotificationRequest = requestBody;
+    console.log("Email sent successfully:", emailResponse);
 
-      console.log(`Processing ${type} notification to ${email} with subject: ${subject}`);
-      
-      // Check if required fields are present
-      if (!email || !subject || !message || !type) {
-        const missingFields = [];
-        if (!email) missingFields.push('email');
-        if (!subject) missingFields.push('subject');
-        if (!message) missingFields.push('message');
-        if (!type) missingFields.push('type');
-        
-        const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
-        console.error(errorMsg);
-        
-        return new Response(
-          JSON.stringify({ success: false, error: errorMsg }),
-          {
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-            status: 400,
-          }
-        );
-      }
-      
-      if (type === "email") {
-        // Get email template based on category
-        let template = "";
-        
-        switch (category) {
-          case "weekly_report":
-            template = getWeeklyReportTemplate(subject, message);
-            break;
-          case "route_update":
-            template = getRouteUpdateTemplate(subject, message);
-            break;
-          case "delivery_update":
-            template = getDeliveryUpdateTemplate(subject, message);
-            break;
-          default:
-            template = getDefaultTemplate(subject, message);
-        }
-        
-        console.log(`Sending email using template for category: ${category}`);
-        
-        try {
-          // Extract domain from the email for better "from" field configuration
-          const userEmailDomain = email.split('@')[1];
-          
-          // Send email notification using Resend API directly
-          const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resendApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: "Route Optimizer <onboarding@resend.dev>", // Default Resend domain
-              to: [email],
-              subject: subject,
-              html: template,
-            }),
-          });
-          
-          // Log the entire response for debugging
-          const responseText = await response.text();
-          console.log("Resend API response status:", response.status);
-          console.log("Resend API response body:", responseText);
-          
-          // Parse the response text back to JSON
-          let responseData;
-          try {
-            responseData = JSON.parse(responseText);
-          } catch (e) {
-            console.error("Error parsing response JSON:", e);
-            responseData = { error: "Failed to parse response" };
-          }
-          
-          if (!response.ok) {
-            console.error("Resend API error:", responseData);
-            
-            // Check if it's the specific error about sending to own email in test mode
-            if (responseData.message && responseData.message.includes("can only send testing emails to your own email address")) {
-              return new Response(
-                JSON.stringify({ 
-                  success: false, 
-                  error: "Resend API restriction: You can only send test emails to the email used to create your Resend account. Please verify a domain at resend.com/domains to send to other recipients.",
-                  details: responseData.message
-                }),
-                {
-                  headers: { "Content-Type": "application/json", ...corsHeaders },
-                  status: 403,
-                }
-              );
-            }
-            
-            throw new Error(`Failed to send email: ${responseData.message || responseData.error || 'Unknown error'}`);
-          }
-          
-          console.log("Email sent successfully:", responseData);
-
-          return new Response(JSON.stringify({ success: true, data: responseData }), {
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-            status: 200,
-          });
-        } catch (emailError) {
-          console.error("Error sending email with Resend:", emailError);
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: emailError instanceof Error ? emailError.message : "Unknown email sending error" 
-            }),
-            {
-              headers: { "Content-Type": "application/json", ...corsHeaders },
-              status: 500,
-            }
-          );
-        }
-      } else if (type === "sms") {
-        // For SMS, we'd integrate with Twilio here
-        // This is a placeholder for the SMS implementation
-        console.log("SMS notification requested but not implemented yet");
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "SMS notifications not yet implemented" 
-          }),
-          {
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-            status: 501,
-          }
-        );
-      } else if (type === "push") {
-        // For push notifications, we'd implement the Web Push API
-        // This is a placeholder for the push implementation
-        console.log("Push notification requested but not implemented yet");
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Push notifications not yet implemented" 
-          }),
-          {
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-            status: 501,
-          }
-        );
-      } else {
-        throw new Error("Invalid notification type");
-      }
-    } catch (resendInitError) {
-      console.error("Error in request processing:", resendInitError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Failed to process request. Check if the API key is valid." 
-        }),
-        {
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-          status: 500,
-        }
-      );
-    }
-  } catch (error) {
-    console.error("Error sending notification:", error.message);
+    return new Response(JSON.stringify(emailResponse), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error in send-notification function:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ error: error.message }),
       {
-        headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
 };
 
-// Email templates for different notification categories
-function getDefaultTemplate(subject: string, message: string): string {
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #0f172a;">${subject}</h1>
-      <p style="white-space: pre-line;">${message}</p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="color: #64748b; font-size: 14px;">
-        You received this email because you enabled email notifications in your Route Optimizer settings.
-        You can change your notification preferences in your account settings.
-      </p>
-    </div>
-  `;
+async function sendBasicNotification(email: string, subject: string, message: string) {
+  return await resend.emails.send({
+    from: "Route Optimizer <onboarding@resend.dev>",
+    to: [email],
+    subject: subject,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #1a56db;">${subject}</h1>
+        <p>${message}</p>
+        <p style="margin-top: 24px; color: #666;">Route Optimizer Team</p>
+      </div>
+    `,
+  });
 }
 
-function getWeeklyReportTemplate(subject: string, message: string): string {
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #0f172a;">${subject}</h1>
-      <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h2 style="color: #334155; margin-top: 0;">Weekly Performance Summary</h2>
-        <p style="white-space: pre-line;">${message}</p>
+async function sendWeeklyReport(email: string, reportData: WeeklyReportRequest["reportData"]) {
+  return await resend.emails.send({
+    from: "Route Optimizer Reports <onboarding@resend.dev>",
+    to: [email],
+    subject: `Weekly Report: ${reportData.weekStart} - ${reportData.weekEnd}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #1a56db;">Weekly Delivery Report</h1>
+        <h2>${reportData.weekStart} - ${reportData.weekEnd}</h2>
+        
+        <div style="margin: 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+          <div style="margin-bottom: 16px;">
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 4px;">Total Deliveries</p>
+            <p style="font-size: 24px; font-weight: bold; margin: 0;">${reportData.deliveries}</p>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 4px;">Cylinders Delivered</p>
+            <p style="font-size: 24px; font-weight: bold; margin: 0;">${reportData.cylinders}</p>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 4px;">Distance Traveled</p>
+            <p style="font-size: 24px; font-weight: bold; margin: 0;">${reportData.kms.toFixed(1)} km</p>
+          </div>
+          
+          <div>
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 4px;">Fuel Cost</p>
+            <p style="font-size: 24px; font-weight: bold; margin: 0;">R${reportData.fuelCost.toFixed(2)}</p>
+          </div>
+        </div>
+        
+        <p>Access your dashboard for more detailed analytics and reports.</p>
+        <p style="margin-top: 24px; color: #666;">Route Optimizer Team</p>
       </div>
-      <p style="color: #0f172a;">
-        Check your <a href="#" style="color: #2563eb; text-decoration: none;">dashboard</a> for more detailed insights.
-      </p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="color: #64748b; font-size: 14px;">
-        You received this email because you subscribed to weekly reports in your Route Optimizer settings.
-        You can change your notification preferences in your account settings.
-      </p>
-    </div>
-  `;
+    `,
+  });
 }
 
-function getRouteUpdateTemplate(subject: string, message: string): string {
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #0f172a;">${subject}</h1>
-      <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
-        <p style="white-space: pre-line;">${message}</p>
+async function sendRouteUpdate(
+  email: string, 
+  routeName: string, 
+  updateType: RouteUpdateRequest["updateType"], 
+  details: string
+) {
+  let subject = "";
+  let statusColor = "";
+  
+  switch (updateType) {
+    case "created":
+      subject = `New Route Created: ${routeName}`;
+      statusColor = "#16a34a"; // green
+      break;
+    case "optimized":
+      subject = `Route Optimized: ${routeName}`;
+      statusColor = "#2563eb"; // blue
+      break;
+    case "modified":
+      subject = `Route Modified: ${routeName}`;
+      statusColor = "#f59e0b"; // amber
+      break;
+    case "completed":
+      subject = `Route Completed: ${routeName}`;
+      statusColor = "#8b5cf6"; // purple
+      break;
+  }
+  
+  return await resend.emails.send({
+    from: "Route Updates <onboarding@resend.dev>",
+    to: [email],
+    subject: subject,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: ${statusColor};">${subject}</h1>
+        
+        <div style="margin: 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+          <p style="font-size: 16px;">${details}</p>
+        </div>
+        
+        <p>View your routes dashboard for more details and actions.</p>
+        <p style="margin-top: 24px; color: #666;">Route Optimizer Team</p>
       </div>
-      <p style="color: #0f172a;">
-        <a href="#" style="color: #2563eb; text-decoration: none;">View route details</a>
-      </p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="color: #64748b; font-size: 14px;">
-        You received this email because you enabled route notifications in your Route Optimizer settings.
-        You can change your notification preferences in your account settings.
-      </p>
-    </div>
-  `;
+    `,
+  });
 }
 
-function getDeliveryUpdateTemplate(subject: string, message: string): string {
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #0f172a;">${subject}</h1>
-      <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0;">
-        <p style="white-space: pre-line;">${message}</p>
+async function sendDeliveryUpdate(
+  email: string, 
+  locationName: string, 
+  status: DeliveryUpdateRequest["status"], 
+  details: string
+) {
+  let subject = "";
+  let statusColor = "";
+  let statusText = "";
+  
+  switch (status) {
+    case "scheduled":
+      subject = `Delivery Scheduled: ${locationName}`;
+      statusColor = "#2563eb"; // blue
+      statusText = "Scheduled";
+      break;
+    case "in_progress":
+      subject = `Delivery In Progress: ${locationName}`;
+      statusColor = "#f59e0b"; // amber
+      statusText = "In Progress";
+      break;
+    case "completed":
+      subject = `Delivery Completed: ${locationName}`;
+      statusColor = "#16a34a"; // green
+      statusText = "Completed";
+      break;
+    case "delayed":
+      subject = `Delivery Delayed: ${locationName}`;
+      statusColor = "#dc2626"; // red
+      statusText = "Delayed";
+      break;
+  }
+  
+  return await resend.emails.send({
+    from: "Delivery Updates <onboarding@resend.dev>",
+    to: [email],
+    subject: subject,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: ${statusColor};">${subject}</h1>
+        
+        <div style="margin: 24px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+          <div style="display: inline-block; padding: 6px 12px; background-color: ${statusColor}; color: white; border-radius: 16px; font-weight: bold; margin-bottom: 16px;">
+            ${statusText}
+          </div>
+          
+          <p style="font-size: 16px;">${details}</p>
+        </div>
+        
+        <p>Check your deliveries dashboard for more information.</p>
+        <p style="margin-top: 24px; color: #666;">Route Optimizer Team</p>
       </div>
-      <p style="color: #0f172a;">
-        <a href="#" style="color: #2563eb; text-decoration: none;">View delivery details</a>
-      </p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="color: #64748b; font-size: 14px;">
-        You received this email because you enabled delivery updates in your Route Optimizer settings.
-        You can change your notification preferences in your account settings.
-      </p>
-    </div>
-  `;
+    `,
+  });
 }
 
 serve(handler);
