@@ -263,8 +263,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
       ref={handleMapInit}
       style={{ height, width: '100%' }}
       className="leaflet-container"
-      center={defaultCenter}
-      zoom={defaultZoom}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
