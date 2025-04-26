@@ -67,7 +67,8 @@ export const useMapState = (
 
   useEffect(() => {
     const newCenter = calculateCenter();
-    setMapCenter(newCenter);
+    // Fix the type error by explicitly setting as [number, number]
+    setMapCenter(newCenter as [number, number]);
     
     if (region) {
       const regionCoords = getRegionCoordinates(country, region);

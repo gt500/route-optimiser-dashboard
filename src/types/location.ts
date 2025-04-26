@@ -1,3 +1,4 @@
+
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
@@ -45,6 +46,19 @@ export interface SupabaseLocation {
   close_time?: string;
   region?: string;
   country?: string;
+}
+
+export interface LocationPoint {
+  id: string;
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface NamedCoords {
+  name: string;
+  coords: [number, number];
 }
 
 export interface LeafletMarkerProps {

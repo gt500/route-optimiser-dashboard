@@ -1,4 +1,3 @@
-
 import React, { useRef, useMemo } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -11,6 +10,36 @@ import RouteMarkers from './map-components/RouteMarkers';
 import { useMapState } from '@/hooks/routes/useMapState';
 import { toast } from 'sonner';
 import { LocationPoint, NamedCoords } from '@/types/location';
+
+// Helper function to analyze traffic from route coordinates and segment durations
+const analyzeTrafficFromCoordinates = (
+  coordinates: [number, number][], 
+  segmentDurations?: number[]
+) => {
+  if (!coordinates || coordinates.length < 2 || !segmentDurations || segmentDurations.length === 0) {
+    return [];
+  }
+  
+  // Create segments with traffic indicators
+  const segments = [];
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const start = coordinates[i];
+    const end = coordinates[i + 1];
+    
+    // Traffic density based on duration of segment relative to distance
+    // This is a simplified model - in reality would need more complex analysis
+    const segmentDuration = segmentDurations[i] || 0;
+    const trafficDensity = segmentDuration > 60 ? 'heavy' : 
+                          segmentDuration > 30 ? 'moderate' : 'light';
+    
+    segments.push({
+      coordinates: [start, end],
+      trafficDensity
+    });
+  }
+  
+  return segments;
+};
 
 interface RouteMapProps {
   height?: string;
@@ -35,6 +64,7 @@ interface RouteMapProps {
   ) => void;
   country?: string;
   region?: string;
+  zoom?: number; // Add zoom property to support DailyReports.tsx
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -54,6 +84,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   onRouteDataUpdate,
   country,
   region,
+  zoom
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const {
