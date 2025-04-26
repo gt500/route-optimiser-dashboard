@@ -1,27 +1,29 @@
-
 import React, { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
 import { toast } from 'sonner';
 
+interface RouteOptions {
+  routeColor?: string;
+  routeWeight?: number;
+  alternateRoutes?: boolean;
+  avoidTraffic?: boolean;
+  useRealTimeData?: boolean;
+  includeSegmentDurations?: boolean;
+}
+
 interface RoutingMachineProps {
-  waypoints?: L.LatLng[];
+  waypoints: L.LatLng[];
   forceRouteUpdate?: boolean;
-  onRouteFound?: (route: { 
-    distance: number; 
-    duration: number; 
-    coordinates: [number, number][]; 
-    trafficDensity?: 'light' | 'moderate' | 'heavy';
+  onRouteFound?: (route: {
+    distance: number;
+    duration: number;
+    coordinates: [number, number][];
     waypoints?: { distance: number; duration: number }[];
+    segmentDurations?: number[];
   }) => void;
-  routeOptions?: {
-    avoidTraffic?: boolean;
-    alternateRoutes?: boolean;
-    useRealTimeData?: boolean;
-    routeColor?: string;
-    routeWeight?: number;
-  };
+  routeOptions?: RouteOptions;
 }
 
 const RoutingMachine: React.FC<RoutingMachineProps> = ({ 
@@ -33,7 +35,8 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
     alternateRoutes: false, 
     useRealTimeData: true,
     routeColor: '#6366F1',
-    routeWeight: 6
+    routeWeight: 6,
+    includeSegmentDurations: false
   }
 }) => {
   const map = useMap();
@@ -131,59 +134,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         routingControl.hide();
         
         // Extract route information when a route is found
-        routingControl.on('routesfound', (e: L.Routing.RoutingResultEvent) => {
-          const routes = e.routes;
-          if (routes && routes.length > 0) {
-            const route = routes[0];
-            // Use actual distance value from routing service
-            const totalDistance = route.summary.totalDistance / 1000; // convert to km
-            const totalTime = route.summary.totalTime / 60; // convert to minutes
-            
-            console.log(`Route found with actual data: ${totalDistance.toFixed(2)} km, ${totalTime.toFixed(0)} minutes`);
-            
-            // Extract detailed waypoint information
-            const waypointData = route.waypoints.map((wp, index) => {
-              // Get leg distance if available (distance between this waypoint and the next one)
-              const legDistance = index < route.legs.length ? route.legs[index].distance / 1000 : 0;
-              const legDuration = index < route.legs.length ? route.legs[index].time / 60 : 0;
-              
-              return {
-                distance: legDistance, // in km
-                duration: legDuration // in minutes
-              };
-            });
-            
-            // Analyze traffic conditions based on actual data
-            const trafficFactor = totalTime / (totalDistance * 1.2); // minutes per km, with baseline of 1.2 min/km
-            let trafficDensity: 'light' | 'moderate' | 'heavy' = 'moderate';
-            
-            if (trafficFactor < 1.0) {
-              trafficDensity = 'light';
-            } else if (trafficFactor > 1.8) {
-              trafficDensity = 'heavy';
-            }
-            
-            if (useRealTimeTraffic) {
-              toast.info(`Traffic analysis: ${trafficDensity} traffic conditions detected`);
-            }
-            
-            // Extract the coordinates from the route
-            const coordinates = route.coordinates.map((coord) => [
-              coord.lat,
-              coord.lng
-            ] as [number, number]);
-            
-            if (onRouteFound) {
-              onRouteFound({
-                distance: totalDistance,
-                duration: totalTime,
-                coordinates,
-                trafficDensity,
-                waypoints: waypointData
-              });
-            }
-          }
-        });
+        routingControl.on('routesfound', handleRoute);
       } catch (error) {
         console.error("Error creating routing control:", error);
         toast.error("Error generating route with traffic data");

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -7,8 +8,10 @@ import SetViewOnChange from './map-components/SetViewOnChange';
 import LocationMarker from './map-components/LocationMarker';
 import DepotMarker from './map-components/DepotMarker';
 import RoutingMachine from './map-components/RoutingMachine';
+import TrafficOverlay from './map-components/TrafficOverlay';
 import { toast } from 'sonner';
 import { getRegionCoordinates } from '@/utils/route/regionUtils';
+import { analyzeTrafficFromCoordinates, TrafficSegment } from '@/utils/route/trafficUtils';
 
 // Make sure the marker images are available
 import '../../../node_modules/leaflet/dist/images/marker-icon.png';
@@ -47,6 +50,7 @@ interface RouteMapProps {
   trafficConditions?: 'light' | 'moderate' | 'heavy';
   showAlternateRoutes?: boolean;
   useRealTimeTraffic?: boolean;
+  showTrafficOverlay?: boolean;
   onRouteDataUpdate?: (
     distance: number, 
     duration: number, 
@@ -73,6 +77,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   trafficConditions = 'moderate',
   showAlternateRoutes = false,
   useRealTimeTraffic = true,
+  showTrafficOverlay = true,
   onRouteDataUpdate,
   country,
   region,
@@ -83,6 +88,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [routeInitialized, setRouteInitialized] = useState(false);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [trafficSegments, setTrafficSegments] = useState<TrafficSegment[]>([]);
   
   const calculateCenter = () => {
     if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
@@ -192,7 +199,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
     coordinates: [number, number][];
     trafficDensity?: 'light' | 'moderate' | 'heavy';
     waypoints?: WaypointData[];
+    segmentDurations?: number[];
   }) => {
+    setRouteCoordinates(route.coordinates);
+    
+    // Generate traffic segments based on route coordinates and segment durations
+    if (route.coordinates.length > 0) {
+      const segments = analyzeTrafficFromCoordinates(route.coordinates, route.segmentDurations);
+      setTrafficSegments(segments);
+    }
+    
     if (onRouteDataUpdate) {
       onRouteDataUpdate(
         route.distance, 
@@ -255,9 +271,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   const routeAppearance = getRouteAppearance();
 
-  const defaultCenter: [number, number] = center;
-  const defaultZoom = 11;
-
   return (
     <MapContainer
       ref={handleMapInit}
@@ -284,8 +297,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
             alternateRoutes: showAlternateRoutes,
             useRealTimeData: useRealTimeTraffic,
             routeColor: routeAppearance.routeColor,
-            routeWeight: routeAppearance.routeWeight
+            routeWeight: routeAppearance.routeWeight,
+            includeSegmentDurations: true
           }}
+        />
+      )}
+      
+      {showTrafficOverlay && trafficSegments.length > 0 && (
+        <TrafficOverlay 
+          trafficSegments={trafficSegments}
+          visible={showTrafficOverlay}
         />
       )}
 

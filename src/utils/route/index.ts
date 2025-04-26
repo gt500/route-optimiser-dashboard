@@ -6,3 +6,4 @@ export * from './optimizationUtils';
 export * from './routeMetrics';
 export * from './constants';
 export * from './regionUtils';
+export * from './trafficUtils';
