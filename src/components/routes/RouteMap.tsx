@@ -1,3 +1,4 @@
+
 import React, { useRef, useMemo } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -156,7 +157,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       <SetViewOnChange 
         center={mapCenter} 
         coordinates={allCoordinates}
-        zoom={mapZoom}
+        zoom={zoom || mapZoom}
       />
 
       {mapReady && showRouting && allCoordinates.length >= 2 && (
