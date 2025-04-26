@@ -146,7 +146,8 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       estimatedDuration: 75,
       usingRealTimeData: false,
       country: route.country,
-      region: route.region
+      region: route.region,
+      waypointData: []
     });
     toast.info("New route created");
   };
@@ -202,7 +203,10 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     
     if (location) {
       console.log("Found location to add:", location);
-      addLocationToRoute({...location, cylinders: location.emptyCylinders || 10});
+      addLocationToRoute({
+        ...location,
+        cylinders: location.emptyCylinders || 10
+      } as LocationType & { cylinders: number });
       toast.success(`Added ${location.name} to route`);
     } else {
       console.error("Could not find location with ID:", locationId);

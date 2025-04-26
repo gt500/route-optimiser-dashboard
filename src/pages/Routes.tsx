@@ -75,7 +75,6 @@ const RoutesList = () => {
   }, []);
 
   useEffect(() => {
-    // Show region selection dialog when creating a new route
     if (activeTab === 'create' && !isLoadConfirmed && !selectedCountry) {
       setRegionSelectionOpen(true);
     }
@@ -142,6 +141,20 @@ const RoutesList = () => {
     setRegionSelectionOpen(true);
   };
 
+  const handleRemoveLocation = (index: number) => {
+    const locationId = route.locations[index]?.id;
+    if (locationId) {
+      removeLocationFromRoute(locationId);
+    }
+  };
+
+  const handleReplaceLocation = (index: number, newLocationId: string) => {
+    const oldLocationId = route.locations[index]?.id;
+    if (oldLocationId) {
+      handleReplaceLocation(oldLocationId, newLocationId);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -198,7 +211,7 @@ const RoutesList = () => {
             onAddLocationToRoute={addLocationToRoute}
             onUpdateLocations={handleUpdateLocations}
             onOptimize={handleOptimizeRoute}
-            onRemoveLocation={removeLocationFromRoute}
+            onRemoveLocation={handleRemoveLocation}
             onAddNewLocation={handleAddNewLocationFromPopover}
             onFuelCostUpdate={handleFuelCostUpdate}
             onRouteDataUpdate={handleRouteDataUpdate}
@@ -240,4 +253,3 @@ const RoutesList = () => {
 };
 
 export default RoutesList;
-

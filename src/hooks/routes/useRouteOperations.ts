@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
@@ -13,7 +12,7 @@ export const useRouteOperations = (
   setAvailableLocations: React.Dispatch<React.SetStateAction<LocationType[]>>,
   vehicleConfig: VehicleConfigProps
 ) => {
-  const addLocationToRoute = (location: LocationType) => {
+  const addLocationToRoute = (location: LocationType & { cylinders?: number }) => {
     setRoute(prev => {
       const existingLocations = prev.locations;
       const updatedLocations = [...existingLocations];
@@ -24,19 +23,30 @@ export const useRouteOperations = (
       } else {
         updatedLocations.push(location);
       }
+
+      // Calculate new cylinders count
+      const newCylinders = prev.cylinders + (location.cylinders || 0);
       
       return {
         ...prev,
-        locations: updatedLocations
+        locations: updatedLocations,
+        cylinders: newCylinders
       };
     });
   };
 
   const removeLocationFromRoute = (locationId: string) => {
-    setRoute(prev => ({
-      ...prev,
-      locations: prev.locations.filter(loc => loc.id !== locationId)
-    }));
+    setRoute(prev => {
+      // Find the location to be removed and its cylinders
+      const locationToRemove = prev.locations.find(loc => loc.id === locationId);
+      const cylindersToRemove = locationToRemove?.cylinders || 0;
+      
+      return {
+        ...prev,
+        locations: prev.locations.filter(loc => loc.id !== locationId),
+        cylinders: Math.max(0, prev.cylinders - cylindersToRemove)
+      };
+    });
   };
 
   const handleReplaceLocation = (oldLocationId: string, newLocationId: string) => {

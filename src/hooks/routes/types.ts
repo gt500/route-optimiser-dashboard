@@ -29,6 +29,7 @@ export interface VehicleConfigProps {
   maxWeight: number;
   fuelPrice: number;
   maintenanceCost: number;
+  baseConsumption?: number; // Added missing property
 }
 
 export const MAX_CYLINDERS = 100;
@@ -38,7 +39,8 @@ export const EMPTY_CYLINDER_WEIGHT_KG = 12;
 export const defaultVehicleConfig: VehicleConfigProps = {
   maxWeight: 3500,
   fuelPrice: 21.95,
-  maintenanceCost: 0.85
+  maintenanceCost: 0.85,
+  baseConsumption: 9.5 // Added default value
 };
 
 export const routeOptimizationDefaultParams: OptimizationParams = {
