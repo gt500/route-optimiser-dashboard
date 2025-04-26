@@ -53,7 +53,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     removeLocationFromRoute, 
     handleOptimize, 
     updateRouteCosts, 
-    handleReplaceLocation 
+    replaceLocation 
   } = useRouteOperations(
     route, 
     setRoute, 
@@ -267,7 +267,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     handleAddNewLocationFromPopover,
     handleConfirmLoad,
     handleUpdateLocations,
-    handleReplaceLocation,
+    replaceLocation,
     setIsLoadConfirmed,
     setAvailableLocations,
     updateVehicleConfig,

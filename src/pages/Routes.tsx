@@ -65,7 +65,7 @@ const RoutesList = () => {
     handleAddNewLocationFromPopover,
     handleConfirmLoad,
     handleUpdateLocations,
-    handleReplaceLocation,
+    replaceLocation,
     setAvailableLocations,
     setRouteRegion
   } = useRouteManagement(initialLocations);
@@ -151,7 +151,7 @@ const RoutesList = () => {
   const handleReplaceLocation = (index: number, newLocationId: string) => {
     const oldLocationId = route.locations[index]?.id;
     if (oldLocationId) {
-      handleReplaceLocation(oldLocationId, newLocationId);
+      replaceLocation(oldLocationId, newLocationId);
     }
   };
 

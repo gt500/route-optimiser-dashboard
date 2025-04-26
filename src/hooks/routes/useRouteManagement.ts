@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
-import { useLocationSync } from './useLocationSync';
-import { useVehicleConfig } from './useVehicleConfig';
-import { useRouteOperations } from './useRouteOperations';
-import { useSaveRoute } from './useSaveRoute';
+import { useLocationSync } from './routes/useLocationSync';
+import { useVehicleConfig } from './routes/useVehicleConfig';
+import { useRouteOperations } from './routes/useRouteOperations';
+import { useSaveRoute } from './routes/useSaveRoute';
 import { 
   RouteState, 
   OptimizationParams, 
@@ -13,18 +12,18 @@ import {
   defaultVehicleConfig, 
   MAX_CYLINDERS, 
   CYLINDER_WEIGHT_KG 
-} from './types';
+} from './routes/types';
 
 export { 
   routeOptimizationDefaultParams, 
   defaultVehicleConfig, 
   MAX_CYLINDERS, 
   CYLINDER_WEIGHT_KG 
-} from './types';
+} from './routes/types';
 
-export type { VehicleConfigProps } from './types';
+export type { VehicleConfigProps } from './routes/types';
 
-const useRouteManagement = (initialLocations: LocationType[] = []) => {
+export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   const { availableLocations, setAvailableLocations, isSyncingLocations } = useLocationSync(initialLocations);
   const [startLocation, setStartLocation] = useState<LocationType | null>(null);
   const [endLocation, setEndLocation] = useState<LocationType | null>(null);
@@ -39,8 +38,8 @@ const useRouteManagement = (initialLocations: LocationType[] = []) => {
     maintenanceCost: 0,
     totalCost: 0,
     cylinders: 0,
-    locations: [],
-    availableLocations: [],
+    locations: [] as LocationType[],
+    availableLocations: [] as LocationType[],
     trafficConditions: 'moderate',
     estimatedDuration: 0,
     usingRealTimeData: false,
@@ -53,19 +52,82 @@ const useRouteManagement = (initialLocations: LocationType[] = []) => {
     addLocationToRoute, 
     removeLocationFromRoute, 
     handleOptimize, 
-    updateRouteCosts,
-    handleReplaceLocation 
+    updateRouteCosts, 
+    replaceLocation
   } = useRouteOperations(
     route, 
     setRoute, 
     startLocation, 
     endLocation, 
     availableLocations, 
-    setAvailableLocations,
+    setAvailableLocations, 
     vehicleConfig
   );
 
   const { handleConfirmLoad } = useSaveRoute(route, setIsLoadConfirmed, selectedVehicle);
+
+  useEffect(() => {
+    if (startLocation) {
+      console.log("Start location set:", startLocation);
+      setRoute(prev => {
+        const existingMiddleLocations = prev.locations.filter(loc => 
+          loc.id !== startLocation.id && 
+          (endLocation ? loc.id !== endLocation.id : true) &&
+          (prev.locations[0] ? loc.id !== prev.locations[0].id : true) && 
+          (prev.locations.length > 1 ? loc.id !== prev.locations[prev.locations.length - 1].id : true)
+        );
+        
+        const newLocations = [
+          startLocation,
+          ...existingMiddleLocations
+        ];
+        
+        if (endLocation) {
+          newLocations.push(endLocation);
+        }
+        
+        console.log("Updated route locations:", newLocations);
+        
+        return {
+          ...prev,
+          locations: newLocations
+        };
+      });
+    }
+  }, [startLocation, endLocation]);
+  
+  useEffect(() => {
+    setRoute(prev => {
+      const routeLocationIds = prev.locations.map(loc => loc.id);
+      const filteredAvailableLocations = availableLocations.filter(loc => 
+        !routeLocationIds.includes(loc.id)
+      );
+      
+      console.log("Filtered available locations:", filteredAvailableLocations.length);
+      
+      return {
+        ...prev,
+        availableLocations: filteredAvailableLocations
+      };
+    });
+  }, [availableLocations, route.locations]);
+
+  const handleStartLocationChange = (locationId: string) => {
+    console.log("Start location selected:", locationId);
+    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
+    if (location) {
+      console.log("Found start location:", location);
+      setStartLocation(location);
+    } else {
+      console.error("Could not find location with ID:", locationId);
+    }
+  };
+
+  const handleEndLocationChange = (locationId: string) => {
+    console.log("End location selected:", locationId);
+    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
+    setEndLocation(location || null);
+  };
 
   const handleCreateNewRoute = () => {
     setStartLocation(null);
@@ -90,6 +152,14 @@ const useRouteManagement = (initialLocations: LocationType[] = []) => {
     toast.info("New route created");
   };
 
+  const handleFuelCostUpdate = (newCost: number) => {
+    console.log("Fuel cost updated to:", newCost);
+    
+    updateVehicleConfig({ fuelPrice: newCost }, updateRouteCosts, route.distance);
+    
+    toast.success(`Fuel cost updated to R${newCost.toFixed(2)}/L`);
+  };
+
   const handleRouteDataUpdate = (
     distance: number, 
     duration: number, 
@@ -97,11 +167,22 @@ const useRouteManagement = (initialLocations: LocationType[] = []) => {
     coordinates?: [number, number][],
     waypointData?: { distance: number, duration: number }[]
   ) => {
-    if (distance <= 0 || isNaN(distance)) return;
+    console.log("Received route data update:", { 
+      distance, duration, 
+      trafficInfo: trafficConditions,
+      waypoints: waypointData?.length
+    });
+    
+    if (distance <= 0 || isNaN(distance)) {
+      console.warn("Invalid distance received:", distance);
+      return;
+    }
     
     setRoute(prev => {
       const consumption = (distance * vehicleConfig.fuelPrice * 0.12) / 21.95;
       const cost = consumption * vehicleConfig.fuelPrice;
+      
+      console.log(`Route data updated: distance=${distance}km, duration=${duration}mins, consumption=${consumption}L, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
       
       return {
         ...prev,
@@ -113,6 +194,24 @@ const useRouteManagement = (initialLocations: LocationType[] = []) => {
         waypointData: waypointData || []
       };
     });
+  };
+
+  const handleAddNewLocationFromPopover = (locationId: string | number) => {
+    console.log("Adding location from popover with ID:", locationId);
+    const stringLocationId = String(locationId);
+    const location = availableLocations.find(loc => loc.id.toString() === stringLocationId);
+    
+    if (location) {
+      console.log("Found location to add:", location);
+      addLocationToRoute({
+        ...location,
+        cylinders: location.emptyCylinders || 10
+      } as LocationType & { cylinders: number });
+      toast.success(`Added ${location.name} to route`);
+    } else {
+      console.error("Could not find location with ID:", locationId);
+      toast.error("Could not find the selected location");
+    }
   };
 
   const handleUpdateLocations = (updatedLocations: LocationType[]) => {
@@ -147,63 +246,28 @@ const useRouteManagement = (initialLocations: LocationType[] = []) => {
     }));
   };
 
-  useEffect(() => {
-    if (startLocation) {
-      setRoute(prev => {
-        const existingMiddleLocations = prev.locations.filter(loc => 
-          loc.id !== startLocation.id && 
-          (endLocation ? loc.id !== endLocation.id : true)
-        );
-        
-        const newLocations = [
-          startLocation,
-          ...existingMiddleLocations
-        ];
-        
-        if (endLocation) {
-          newLocations.push(endLocation);
-        }
-        
-        return {
-          ...prev,
-          locations: newLocations
-        };
-      });
-    }
-  }, [startLocation, endLocation]);
-
-  useEffect(() => {
-    setRoute(prev => {
-      const routeLocationIds = prev.locations.map(loc => loc.id);
-      const filteredAvailableLocations = availableLocations.filter(loc => 
-        !routeLocationIds.includes(loc.id)
-      );
-      
-      return {
-        ...prev,
-        availableLocations: filteredAvailableLocations
-      };
-    });
-  }, [availableLocations, route.locations]);
-
   return {
     route,
     availableLocations,
-    startLocation,
+    startLocation, 
     endLocation,
     vehicleConfig,
     isLoadConfirmed,
     isSyncingLocations,
     setStartLocation,
     setEndLocation,
+    handleStartLocationChange,
+    handleEndLocationChange,
     addLocationToRoute,
     removeLocationFromRoute,
     handleOptimize,
     handleCreateNewRoute,
+    handleFuelCostUpdate,
     handleRouteDataUpdate,
+    handleAddNewLocationFromPopover,
     handleConfirmLoad,
     handleUpdateLocations,
-    handleReplaceLocation,
+    replaceLocation,
     setIsLoadConfirmed,
     setAvailableLocations,
     updateVehicleConfig,

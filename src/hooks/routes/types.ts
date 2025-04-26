@@ -1,5 +1,5 @@
 
-import { LocationType } from '@/components/locations/LocationEditDialog';
+import { LocationType } from '@/types/location';
 
 export interface RouteState {
   distance: number;
@@ -29,7 +29,7 @@ export interface VehicleConfigProps {
   maxWeight: number;
   fuelPrice: number;
   maintenanceCost: number;
-  baseConsumption?: number; // Added missing property
+  baseConsumption: number; // Make this required
 }
 
 export const MAX_CYLINDERS = 100;
@@ -40,7 +40,7 @@ export const defaultVehicleConfig: VehicleConfigProps = {
   maxWeight: 3500,
   fuelPrice: 21.95,
   maintenanceCost: 0.85,
-  baseConsumption: 9.5 // Added default value
+  baseConsumption: 9.5
 };
 
 export const routeOptimizationDefaultParams: OptimizationParams = {

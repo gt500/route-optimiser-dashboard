@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { LocationType } from '@/components/locations/LocationEditDialog';
+import { LocationType } from '@/types/location';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
 import { toast } from 'sonner';
 
@@ -49,7 +50,7 @@ export const useRouteOperations = (
     });
   };
 
-  const handleReplaceLocation = (oldLocationId: string, newLocationId: string) => {
+  const replaceLocation = (oldLocationId: string, newLocationId: string) => {
     const newLocation = availableLocations.find(loc => loc.id === newLocationId);
     if (!newLocation) return;
 
@@ -88,6 +89,6 @@ export const useRouteOperations = (
     removeLocationFromRoute,
     handleOptimize,
     updateRouteCosts,
-    handleReplaceLocation
+    replaceLocation
   };
 };
