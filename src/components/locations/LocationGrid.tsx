@@ -22,12 +22,13 @@ const LocationGrid: React.FC<LocationGridProps> = ({ locations, onEdit, onDelete
   return (
     <CardContent className="bg-black">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {locations.map((location) => (
+        {locations.map((location, index) => (
           <LocationCard 
             key={location.id} 
             location={location} 
             onEdit={onEdit} 
-            onDelete={onDelete} 
+            onDelete={onDelete}
+            index={index}
           />
         ))}
       </div>

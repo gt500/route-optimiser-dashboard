@@ -10,14 +10,20 @@ interface LocationCardProps {
   location: LocationInfo;
   onEdit: (location: LocationInfo) => void;
   onDelete: (id: string) => void;
+  index: number; // Add index prop for numbering
 }
 
-const LocationCard: React.FC<LocationCardProps> = ({ location, onEdit, onDelete }) => {
+const LocationCard: React.FC<LocationCardProps> = ({ location, onEdit, onDelete, index }) => {
   return (
     <Card key={location.id} className="hover:shadow-md transition-shadow bg-black text-white">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg text-white">{location.name}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg text-white">{location.name}</CardTitle>
+            <div className="flex items-center justify-center bg-[#1EAEDB] text-white font-bold rounded-full border-2 border-white h-6 w-6 shadow-md">
+              {index + 1}
+            </div>
+          </div>
           <Badge 
             variant={location.type === 'Storage' ? "secondary" : "outline"} 
             className={location.type === 'Storage' ? "text-black" : "text-white"}
