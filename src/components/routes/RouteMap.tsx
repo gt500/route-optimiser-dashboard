@@ -14,7 +14,6 @@ import { getRegionCoordinates } from '@/utils/route/regionUtils';
 import '../../../node_modules/leaflet/dist/images/marker-icon.png';
 import '../../../node_modules/leaflet/dist/images/marker-shadow.png';
 
-// Define the types for the component props
 interface LocationPoint {
   id: string;
   name: string;
@@ -83,11 +82,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const [allWaypoints, setAllWaypoints] = useState<L.LatLng[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [routeInitialized, setRouteInitialized] = useState(false);
-
+  const [mapZoom, setMapZoom] = useState<number>(zoom);
+  
   const calculateCenter = () => {
     if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
       // If no locations, use region-based coordinates
-      return getRegionCoordinates(country, region).center;
+      const regionCoords = getRegionCoordinates(country, region);
+      setMapZoom(regionCoords.zoom);
+      return regionCoords.center;
     }
 
     const points: [number, number][] = [];
@@ -132,7 +134,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
   };
 
   useEffect(() => {
-    setMapCenter(calculateCenter());
+    const newCenter = calculateCenter();
+    setMapCenter(newCenter);
+    
+    // Update zoom level based on region if available
+    if (region) {
+      const regionCoords = getRegionCoordinates(country, region);
+      setMapZoom(regionCoords.zoom);
+    }
   }, [locations, startLocation, endLocation, waypoints, country, region]);
 
   useEffect(() => {
@@ -253,7 +262,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       ref={handleMapInit}
       style={{ height, width: '100%' }}
       className="leaflet-container"
-      zoom={region ? getRegionCoordinates(country, region).zoom : zoom}
+      center={mapCenter}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -262,7 +271,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       <SetViewOnChange 
         center={mapCenter} 
         coordinates={allCoordinates}
-        zoom={zoom}
+        zoom={mapZoom}
       />
 
       {mapReady && showRouting && allWaypoints.length >= 2 && (
