@@ -86,7 +86,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
   
   const calculateCenter = () => {
     if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
-      // If no locations, use region-based coordinates
       const regionCoords = getRegionCoordinates(country, region);
       setMapZoom(regionCoords.zoom);
       return regionCoords.center;
@@ -137,7 +136,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
     const newCenter = calculateCenter();
     setMapCenter(newCenter);
     
-    // Update zoom level based on region if available
     if (region) {
       const regionCoords = getRegionCoordinates(country, region);
       setMapZoom(regionCoords.zoom);
@@ -257,13 +255,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   const routeAppearance = getRouteAppearance();
 
+  const defaultCenter: [number, number] = center;
+  const defaultZoom = 11;
+
   return (
     <MapContainer
       ref={handleMapInit}
       style={{ height, width: '100%' }}
       className="leaflet-container"
-      zoom={mapZoom}
-      center={center}
+      center={defaultCenter}
+      zoom={defaultZoom}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
