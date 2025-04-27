@@ -48,7 +48,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
     <MapContainer
       style={{ height, width: '100%' }}
       className={`z-0 ${className}`}
-      attributionControl={false}
+      center={center}
+      zoom={zoom}
+      attributionPosition="bottomright"
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
