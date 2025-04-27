@@ -11,8 +11,9 @@ import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
 import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
+import { calculateTotalWeight } from '@/utils/route/weightUtils';
 
-// Use imported constants instead of redefining
+// Use imported constants
 const FULL_CYLINDER_WEIGHT_KG = CYLINDER_WEIGHT_KG;  // Weight of a full cylinder in kg
 
 interface RouteDetailsProps {
@@ -56,8 +57,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 
   // Calculate total weight of all cylinders with consistent weight values
   useEffect(() => {
-    // Use 22kg for full cylinders, 12kg for empty cylinders
-    const weight = route.cylinders * CYLINDER_WEIGHT_KG;
+    // Use the improved weight calculation
+    const weight = calculateTotalWeight(route.locations);
     setTotalWeight(weight);
     
     // Reset acknowledgment when weight changes
@@ -90,6 +91,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     setIsAlertAcknowledged(true);
   };
 
+  const maxAllowedWeight = vehicleConfig.maxWeight || (MAX_CYLINDERS * CYLINDER_WEIGHT_KG);
+  const vehicleIsOverweight = totalWeight > maxAllowedWeight;
+
   return (
     <Card className="border shadow-sm p-4">
       <div className="space-y-4">
@@ -109,7 +113,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             ) : (
               <Button 
                 onClick={onSave} 
-                disabled={route.locations.length < 2 || isOverweight}
+                disabled={route.locations.length < 2 || vehicleIsOverweight}
                 className="gap-1"
               >
                 Confirm Load
@@ -118,7 +122,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           </div>
         </div>
         
-        {isOverweight && (
+        {vehicleIsOverweight && (
           <Alert 
             variant="destructive" 
             className={`mb-2 py-2 border-2 border-red-500 ${!isAlertAcknowledged ? 'animate-pulse' : ''}`}
@@ -167,7 +171,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </span>
               {assignedVehicle.maxPayload && 
                 <span className="block text-sm truncate">
-                  Max payload: {assignedVehicle.maxPayload} kg • Current load: {totalWeight} kg
+                  Max payload: {assignedVehicle.maxPayload} kg • Current load: {Math.round(totalWeight)} kg
                   {totalWeight > (assignedVehicle.maxPayload || 0) && 
                     <span className="text-red-600 ml-1">(Overweight!)</span>
                   }
@@ -187,7 +191,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           <FuelCostEditor 
             currentCost={vehicleConfig.fuelPrice} 
             onChange={handleSetFuelCost}
-            fuelConsumption={vehicleConfig.baseConsumption || 9.5}
+            fuelConsumption={vehicleConfig.baseConsumption}
             isDisabled={isLoadConfirmed}
           />
         </div>

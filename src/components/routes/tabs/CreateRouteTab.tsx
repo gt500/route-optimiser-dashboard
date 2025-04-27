@@ -127,6 +127,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                     }
                     maxCylinders={MAX_CYLINDERS}
                     cylinderWeight={CYLINDER_WEIGHT_KG}
+                    locations={route.locations}
                   />
                 </div>
               </div>
