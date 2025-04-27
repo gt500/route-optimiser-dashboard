@@ -22,10 +22,10 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
   emptyCylinders = 0,
   locations = []
 }) => {
-  // Use smart calculation if locations are provided
-  const currentWeight = locations.length > 0 
+  // Use the correct weight calculation when locations are available
+  const currentWeight = locations && locations.length > 0 
     ? calculateTotalWeight(locations) 
-    : 0; // Default to 0 weight if no locations are set
+    : 0;
 
   const maxWeight = maxCylinders * cylinderWeight;
   const weightPercentage = maxWeight > 0 ? (currentWeight / maxWeight) * 100 : 0;

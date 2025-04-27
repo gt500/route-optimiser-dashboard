@@ -1,196 +1,81 @@
 
-import React, { useRef, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import RouteMarkers from './map-components/RouteMarkers';
 import SetViewOnChange from './map-components/SetViewOnChange';
+import { useMapState } from '@/hooks/routes/useMapState';
 import RoutingMachine from './map-components/RoutingMachine';
 import TrafficOverlay from './map-components/TrafficOverlay';
-import RouteMarkers from './map-components/RouteMarkers';
-import { useMapState } from '@/hooks/routes/useMapState';
-import { toast } from 'sonner';
-import { LocationPoint, NamedCoords } from '@/types/location';
 
-// Helper function to analyze traffic from route coordinates and segment durations
-const analyzeTrafficFromCoordinates = (
-  coordinates: [number, number][], 
-  segmentDurations?: number[]
-) => {
-  if (!coordinates || coordinates.length < 2 || !segmentDurations || segmentDurations.length === 0) {
-    return [];
-  }
-  
-  // Create segments with traffic indicators
-  const segments = [];
-  for (let i = 0; i < coordinates.length - 1; i++) {
-    const start = coordinates[i];
-    const end = coordinates[i + 1];
-    
-    // Traffic density based on duration of segment relative to distance
-    // This is a simplified model - in reality would need more complex analysis
-    const segmentDuration = segmentDurations[i] || 0;
-    const trafficDensity = segmentDuration > 60 ? 'heavy' : 
-                          segmentDuration > 30 ? 'moderate' : 'light';
-    
-    segments.push({
-      coordinates: [start, end],
-      trafficDensity
-    });
-  }
-  
-  return segments;
-};
+interface Location {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+}
 
 interface RouteMapProps {
+  locations: Location[];
+  className?: string;
   height?: string;
-  showRouting?: boolean;
-  routeColor?: string;
-  routeWeight?: number;
-  locations?: LocationPoint[];
-  waypoints?: NamedCoords[];
-  startLocation?: NamedCoords;
-  endLocation?: NamedCoords;
-  forceRouteUpdate?: boolean;
-  trafficConditions?: 'light' | 'moderate' | 'heavy';
-  showAlternateRoutes?: boolean;
-  useRealTimeTraffic?: boolean;
-  showTrafficOverlay?: boolean;
-  onRouteDataUpdate?: (
-    distance: number, 
-    duration: number, 
-    trafficConditions?: 'light' | 'moderate' | 'heavy', 
-    coordinates?: [number, number][],
-    waypointData?: { distance: number, duration: number }[]
-  ) => void;
+  onRouteDataUpdate?: (distance: number, duration: number, trafficConditions?: 'light' | 'moderate' | 'heavy') => void;
+  showTraffic?: boolean;
   country?: string;
   region?: string;
-  zoom?: number; // Add zoom property to support DailyReports.tsx
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
-  height = '400px',
-  showRouting = false,
-  routeColor = '#3b82f6',
-  routeWeight = 6,
   locations = [],
-  waypoints = [],
-  startLocation,
-  endLocation,
-  forceRouteUpdate = false,
-  trafficConditions = 'moderate',
-  showAlternateRoutes = false,
-  useRealTimeTraffic = true,
-  showTrafficOverlay = true,
+  className = '',
+  height = '500px',
   onRouteDataUpdate,
+  showTraffic = false,
   country,
   region,
-  zoom
 }) => {
-  const mapRef = useRef<L.Map | null>(null);
-  const {
-    mapReady,
-    setMapReady,
-    mapCenter,
-    mapZoom,
-    routeInitialized,
-    setRouteInitialized,
-    routeCoordinates,
-    setRouteCoordinates
-  } = useMapState(locations, startLocation, endLocation, waypoints, country, region);
-
-  const [trafficSegments, setTrafficSegments] = React.useState([]);
-
-  const handleMapInit = (mapInstance: L.Map) => {
-    mapRef.current = mapInstance;
-  };
-
-  const handleRouteFound = (route: { 
-    distance: number; 
-    duration: number; 
-    coordinates: [number, number][];
-    trafficDensity?: 'light' | 'moderate' | 'heavy';
-    waypoints?: { distance: number, duration: number }[];
-    segmentDurations?: number[];
-  }) => {
-    setRouteCoordinates(route.coordinates);
-    
-    if (route.coordinates.length > 0) {
-      const segments = analyzeTrafficFromCoordinates(route.coordinates, route.segmentDurations);
-      setTrafficSegments(segments);
-    }
-    
-    if (onRouteDataUpdate) {
-      onRouteDataUpdate(
-        route.distance, 
-        route.duration, 
-        route.trafficDensity || trafficConditions,
-        route.coordinates,
-        route.waypoints
-      );
-    }
-  };
-
-  const allCoordinates = useMemo(() => {
-    const coords: [number, number][] = [];
-    
-    if (startLocation) coords.push(startLocation.coords);
-    waypoints.forEach(wp => coords.push(wp.coords));
-    if (endLocation) coords.push(endLocation.coords);
-    locations.forEach(loc => {
-      if (loc.latitude && loc.longitude) {
-        coords.push([loc.latitude, loc.longitude]);
-      }
-    });
-    
-    return coords;
-  }, [startLocation, endLocation, waypoints, locations]);
-
-  return (
+  // Use the custom hook for map state management
+  const { mapCenter, zoom } = useMapState(locations, country, region);
+  
+  // Setup default map center for South Africa if no specific locations
+  const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
+  const center = (mapCenter[0] !== 0 && mapCenter[1] !== 0) ? mapCenter : defaultCenter;
+  
+  // Map component with memoization to prevent unnecessary re-renders
+  const MapComponent = React.useMemo(() => (
     <MapContainer
-      ref={handleMapInit}
+      center={center}
+      zoom={zoom}
       style={{ height, width: '100%' }}
-      className="leaflet-container"
+      className={`z-0 ${className}`}
+      attributionControl={false}
     >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-      <SetViewOnChange 
-        center={mapCenter} 
-        coordinates={allCoordinates}
-        zoom={zoom || mapZoom}
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-
-      {mapReady && showRouting && allCoordinates.length >= 2 && (
-        <RoutingMachine
-          waypoints={allCoordinates.map(coord => L.latLng(coord[0], coord[1]))}
-          forceRouteUpdate={forceRouteUpdate}
-          onRouteFound={handleRouteFound}
-          routeOptions={{
-            avoidTraffic: useRealTimeTraffic,
-            alternateRoutes: showAlternateRoutes,
-            useRealTimeData: useRealTimeTraffic,
-            routeColor,
-            routeWeight,
-            includeSegmentDurations: true
-          }}
-        />
+      
+      {/* Only render routes and markers if we have locations */}
+      {locations.length > 0 && (
+        <>
+          <RouteMarkers locations={locations} />
+          <RoutingMachine 
+            waypoints={locations.map(loc => ({ lat: loc.latitude, lng: loc.longitude }))} 
+            onRouteCalculated={onRouteDataUpdate}
+          />
+        </>
       )}
       
-      {showTrafficOverlay && trafficSegments.length > 0 && (
-        <TrafficOverlay 
-          trafficSegments={trafficSegments}
-          visible={showTrafficOverlay}
-        />
-      )}
-
-      <RouteMarkers
-        startLocation={startLocation}
-        endLocation={endLocation}
-        waypoints={waypoints}
-        locations={locations}
-      />
+      {showTraffic && <TrafficOverlay />}
+      
+      {/* Update view only when center or zoom changes */}
+      <SetViewOnChange center={center} zoom={zoom} />
     </MapContainer>
-  );
+  ), [locations, center, zoom, height, className, showTraffic, onRouteDataUpdate]);
+
+  return MapComponent;
 };
 
-export default RouteMap;
+export default React.memo(RouteMap);

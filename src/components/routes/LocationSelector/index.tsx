@@ -39,13 +39,20 @@ const LocationSelector = ({
   const handleAdd = () => {
     if (selectedLocation) {
       console.log("Adding location with cylinders:", cylinders, selectedLocation);
-      const locationWithStringId = {
+      
+      // Create a copy with correct properties to avoid mutation issues
+      const locationWithCylinders = {
         ...selectedLocation,
         id: selectedLocation.id.toString(),
         cylinders,
-        emptyCylinders: cylinders
+        emptyCylinders: cylinders, 
+        // Ensure we have the proper type assignment for customer locations
+        fullCylinders: selectedLocation.type === 'Storage' || selectedLocation.type === 'Depot' 
+          ? selectedLocation.fullCylinders || 0 
+          : 0
       };
-      onSelectLocation(locationWithStringId);
+      
+      onSelectLocation(locationWithCylinders);
       toast.success(`Added ${selectedLocation.name} to route`);
     } else {
       toast.error("Please select a location");
@@ -74,7 +81,7 @@ const LocationSelector = ({
       // Pre-select first location if none selected
       setSelectedLocation(availableLocations[0]);
     }
-  }, [availableLocations]);
+  }, [availableLocations, selectedLocation]);
 
   const handleLocationSelect = (value: string) => {
     console.log("Location selected with ID:", value);

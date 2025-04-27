@@ -1,89 +1,103 @@
 
 import { useState, useEffect } from 'react';
-import { LocationPoint, NamedCoords } from '@/types/location';
-import { getRegionCoordinates } from '@/utils/route/regionUtils';
 
-export const useMapState = (
-  locations: LocationPoint[] = [],
-  startLocation?: NamedCoords,
-  endLocation?: NamedCoords,
-  waypoints: NamedCoords[] = [],
-  country?: string,
-  region?: string
-) => {
-  const [mapReady, setMapReady] = useState(false);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-33.918861, 18.423300]);
-  const [mapZoom, setMapZoom] = useState<number>(11);
-  const [routeInitialized, setRouteInitialized] = useState(false);
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+interface Location {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
 
-  const calculateCenter = () => {
-    if (locations.length === 0 && !startLocation && !endLocation && waypoints.length === 0) {
-      const regionCoords = getRegionCoordinates(country, region);
-      setMapZoom(regionCoords.zoom);
-      return regionCoords.center;
-    }
+export const useMapState = (locations: Location[], country?: string, region?: string) => {
+  const [bounds, setBounds] = useState<[[number, number], [number, number]] | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([0, 0]);
+  const [zoom, setZoom] = useState(13);
 
-    const points: [number, number][] = [];
-
-    if (startLocation) {
-      points.push(startLocation.coords);
-    }
-
-    if (endLocation) {
-      points.push(endLocation.coords);
-    }
-
-    waypoints.forEach((wp) => {
-      if (!isNaN(wp.coords[0]) && !isNaN(wp.coords[1]) && 
-          wp.coords[0] !== 0 && wp.coords[1] !== 0) {
-        points.push(wp.coords);
-      }
-    });
-
-    locations.forEach((loc) => {
+  // This function calculates bounds from locations
+  const calculateBounds = (locs: Location[]): [[number, number], [number, number]] | null => {
+    if (!locs || locs.length === 0) return null;
+    
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    
+    locs.forEach(loc => {
       if (loc.latitude && loc.longitude) {
-        points.push([loc.latitude, loc.longitude]);
+        minLat = Math.min(minLat, loc.latitude);
+        maxLat = Math.max(maxLat, loc.latitude);
+        minLng = Math.min(minLng, loc.longitude);
+        maxLng = Math.max(maxLng, loc.longitude);
       }
     });
-
-    if (points.length === 0) {
-      return [-33.918861, 18.423300];
-    }
-
-    const validPoints = points.filter(point => 
-      !isNaN(point[0]) && !isNaN(point[1]) && 
-      point[0] !== 0 && point[1] !== 0
-    );
     
-    if (validPoints.length === 0) {
-      return [-33.918861, 18.423300];
-    }
-
-    const lat = validPoints.reduce((sum, point) => sum + point[0], 0) / validPoints.length;
-    const lng = validPoints.reduce((sum, point) => sum + point[1], 0) / validPoints.length;
-    return [lat, lng] as [number, number];
+    // Only return bounds if we actually found coordinates
+    if (minLat === 90 || maxLat === -90) return null;
+    
+    return [
+      [minLat - 0.05, minLng - 0.05], 
+      [maxLat + 0.05, maxLng + 0.05]
+    ];
   };
-
+  
+  // Calculate initial region-based center if no locations
   useEffect(() => {
-    const newCenter = calculateCenter();
-    // Fix the type error by explicitly setting as [number, number]
-    setMapCenter(newCenter as [number, number]);
-    
-    if (region) {
-      const regionCoords = getRegionCoordinates(country, region);
-      setMapZoom(regionCoords.zoom);
+    // Only run this if there are no locations and we have region data
+    if ((!locations || locations.length === 0) && country && region) {
+      const regionCenters: Record<string, [number, number]> = {
+        // South Africa regions
+        'Western Cape': [-33.9249, 18.4241],
+        'Eastern Cape': [-33.0292, 27.8546],
+        'Northern Cape': [-28.7282, 24.7499],
+        'North West': [-25.8526, 25.6445],
+        'Free State': [-29.0852, 26.1596],
+        'Gauteng': [-26.2041, 28.0473],
+        'Mpumalanga': [-25.4658, 30.9852],
+        'Limpopo': [-23.4013, 29.4179],
+        'KwaZulu-Natal': [-29.8587, 31.0218],
+        // Default to center of South Africa if region not found
+        'Default': [-30.5595, 22.9375]
+      };
+      
+      const center = region && regionCenters[region] 
+        ? regionCenters[region]  
+        : regionCenters['Default'];
+      
+      setMapCenter(center);
+      setZoom(6); // Wider zoom for regional view
     }
-  }, [locations, startLocation, endLocation, waypoints, country, region]);
+  }, [country, region, locations]);
 
-  return {
-    mapReady,
-    setMapReady,
-    mapCenter,
-    mapZoom,
-    routeInitialized,
-    setRouteInitialized,
-    routeCoordinates,
-    setRouteCoordinates
-  };
+  // Calculate bounds and center when locations change
+  useEffect(() => {
+    // Only recalculate if we have locations
+    if (locations && locations.length > 0) {
+      const newBounds = calculateBounds(locations);
+      
+      // Use previous bounds if we can't calculate new ones
+      if (newBounds) {
+        setBounds(newBounds);
+        
+        // Calculate center from bounds
+        const centerLat = (newBounds[0][0] + newBounds[1][0]) / 2;
+        const centerLng = (newBounds[0][1] + newBounds[1][1]) / 2;
+        
+        setMapCenter([centerLat, centerLng]);
+        
+        // Adjust zoom based on bounds size
+        const latDiff = Math.abs(newBounds[1][0] - newBounds[0][0]);
+        const lngDiff = Math.abs(newBounds[1][1] - newBounds[0][1]);
+        const maxDiff = Math.max(latDiff, lngDiff);
+        
+        // Rough calculation for zoom level based on bounding box size
+        if (maxDiff > 2) setZoom(5);
+        else if (maxDiff > 1) setZoom(7);
+        else if (maxDiff > 0.5) setZoom(8);
+        else if (maxDiff > 0.2) setZoom(9);
+        else if (maxDiff > 0.1) setZoom(10);
+        else if (maxDiff > 0.05) setZoom(11);
+        else if (maxDiff > 0.02) setZoom(12);
+        else setZoom(13);
+      }
+    }
+  }, [locations]);
+
+  return { bounds, mapCenter, zoom, setZoom };
 };
