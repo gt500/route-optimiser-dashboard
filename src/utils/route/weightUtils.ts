@@ -15,26 +15,35 @@ export const calculateTotalWeight = (locations: LocationType[]): number => {
     return 0;
   }
   
-  // Initialize with zero cylinders - we'll load at depots and unload at customers
+  // Initial count - starting with no cylinders
   let fullCylindersOnBoard = 0;
   let emptyCylindersOnBoard = 0;
   let maxWeight = 0;
   
-  // Track if this is a start depot or end depot
-  const isStartDepot = (index: number) => index === 0;
-  const isEndDepot = (index: number) => index === locations.length - 1;
-  
-  // Process each location in sequence
-  locations.forEach((loc, index) => {
-    // At depots/storage, we load full cylinders (but don't count weight at starting point)
+  // First load full cylinders from storage/depot locations
+  for (const loc of locations) {
     if (loc.type === 'Storage' || loc.type === 'Depot') {
-      if (loc.fullCylinders && !isStartDepot(index)) {
+      if (loc.fullCylinders) {
         fullCylindersOnBoard += loc.fullCylinders;
       }
     }
-    
-    // At customer locations, we deliver full cylinders and collect empties
-    else if (loc.type === 'Customer' || loc.type === 'Distribution') {
+  }
+  
+  // Calculate initial weight with all full cylinders
+  const initialWeight = fullCylindersOnBoard * CYLINDER_WEIGHT_KG;
+  maxWeight = initialWeight;
+  
+  console.log(`Initial load: ${fullCylindersOnBoard} full cylinders (${initialWeight}kg)`);
+  
+  // Now simulate the route - at each customer location:
+  // 1. Deliver full cylinders (reduce count on board)
+  // 2. Collect empty cylinders (increase empty count)
+  // 3. Calculate current weight after this exchange
+  let currentWeight = initialWeight;
+  
+  for (const loc of locations) {
+    // For customer locations, we deliver fulls and collect empties
+    if (loc.type === 'Customer' || loc.type === 'Distribution') {
       // The number of cylinders being delivered at this stop
       const fullsToDeliver = loc.fullCylinders || 0;
       
@@ -47,20 +56,18 @@ export const calculateTotalWeight = (locations: LocationType[]): number => {
       // Collect empty cylinders
       const emptiesToCollect = loc.emptyCylinders || 0;
       emptyCylindersOnBoard += emptiesToCollect;
-    }
-    
-    // Calculate current weight after this stop (don't count weight at end point)
-    if (!isEndDepot(index)) {
-      const currentWeight = 
+      
+      // Calculate current weight after this stop
+      currentWeight = 
         (fullCylindersOnBoard * CYLINDER_WEIGHT_KG) + 
         (emptyCylindersOnBoard * EMPTY_CYLINDER_WEIGHT_KG);
         
-      console.log(`Stop at ${loc.name}: Carrying ${fullCylindersOnBoard} fulls, ${emptyCylindersOnBoard} empties. Current weight: ${currentWeight}kg`);
+      console.log(`Stop at ${loc.name}: Delivered ${actualFullsDelivered} fulls, collected ${emptiesToCollect} empties. New weight: ${currentWeight}kg`);
       
       // Update max weight if this is higher
       maxWeight = Math.max(maxWeight, currentWeight);
     }
-  });
+  }
   
   console.log(`Maximum weight during route: ${maxWeight}kg`);
   return maxWeight;
