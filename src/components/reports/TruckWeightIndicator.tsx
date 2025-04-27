@@ -25,10 +25,10 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
   // Use smart calculation if locations are provided
   const currentWeight = locations.length > 0 
     ? calculateTotalWeight(locations) 
-    : Math.max(totalCylinders * cylinderWeight, emptyCylinders * EMPTY_CYLINDER_WEIGHT_KG);
+    : 0; // Default to 0 weight if no locations are set
 
   const maxWeight = maxCylinders * cylinderWeight;
-  const weightPercentage = (currentWeight / maxWeight) * 100;
+  const weightPercentage = maxWeight > 0 ? (currentWeight / maxWeight) * 100 : 0;
   const isOverweight = currentWeight > maxWeight;
 
   const getWeightStatusColor = () => {

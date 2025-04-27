@@ -10,6 +10,11 @@ import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/h
  * so we need to calculate the weight at each point of the journey to find the maximum.
  */
 export const calculateTotalWeight = (locations: LocationType[]): number => {
+  // If no locations, return 0 weight
+  if (!locations || locations.length === 0) {
+    return 0;
+  }
+  
   // Initial count - starting with no cylinders
   let fullCylindersOnBoard = 0;
   let emptyCylindersOnBoard = 0;

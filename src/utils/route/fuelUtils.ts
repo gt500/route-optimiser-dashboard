@@ -12,6 +12,11 @@ const LOAD_FACTOR = 0.02; // 2% increase in consumption per 100kg of load
  */
 export const calculateFuelConsumption = (distance: number, totalWeight: number): number => {
   // Base consumption plus adjustment for load weight
+  // If there's no weight or invalid weight, just use base consumption
+  if (!totalWeight || totalWeight <= 0 || isNaN(totalWeight)) {
+    return (distance * BASE_FUEL_CONSUMPTION) / 100;
+  }
+  
   const weightFactor = 1 + (totalWeight / 100) * LOAD_FACTOR;
   return (distance * BASE_FUEL_CONSUMPTION * weightFactor) / 100;
 };
@@ -24,6 +29,9 @@ export const calculateRouteFuelConsumption = (
   distance: number, 
   locations: LocationType[]
 ): number => {
-  const totalWeight = calculateTotalWeight(locations);
+  const totalWeight = locations && locations.length > 0 
+    ? calculateTotalWeight(locations)
+    : 0;
+    
   return calculateFuelConsumption(distance, totalWeight);
 };

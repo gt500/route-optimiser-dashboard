@@ -91,7 +91,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   selectedRegion,
   onRegionChange
 }) => {
-  const routeWeight = calculateTotalWeight(route.locations);
+  const routeWeight = route.locations && route.locations.length > 0 
+    ? calculateTotalWeight(route.locations) 
+    : 0;
+    
   const isOverweight = routeWeight > MAX_CYLINDERS * CYLINDER_WEIGHT_KG;
 
   const handleAddLocationToRoute = (location: LocationType & { cylinders: number }) => {

@@ -57,6 +57,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 
   // Calculate total weight of all cylinders with consistent weight values
   useEffect(() => {
+    if (!route.locations || route.locations.length === 0) {
+      setTotalWeight(0);
+      return;
+    }
+    
     // Use the improved weight calculation
     const weight = calculateTotalWeight(route.locations);
     setTotalWeight(weight);
