@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { Vehicle } from '@/types/fleet';
 import { MapPin, Globe } from 'lucide-react';
 import { MAX_CYLINDERS, CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
+import { calculateTotalWeight, isRouteOverweight } from '@/utils/route/weightUtils';
 
 interface CreateRouteTabProps {
   route: {
@@ -90,15 +91,20 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   selectedRegion,
   onRegionChange
 }) => {
-  const isOverweight = route.cylinders > MAX_CYLINDERS;
+  const routeWeight = calculateTotalWeight(route.locations);
+  const isOverweight = routeWeight > MAX_CYLINDERS * CYLINDER_WEIGHT_KG;
 
   const handleAddLocationToRoute = (location: LocationType & { cylinders: number }) => {
-    if (route.cylinders + location.cylinders > MAX_CYLINDERS) {
-      toast.error(`Weight limit exceeded! Adding ${location.cylinders} more cylinders would exceed the maximum capacity of ${MAX_CYLINDERS} cylinders (${MAX_PAYLOAD_KG}kg).`, {
+    const simulatedLocations = [...route.locations, location];
+    const projectedWeight = calculateTotalWeight(simulatedLocations);
+    
+    if (projectedWeight > (MAX_CYLINDERS * CYLINDER_WEIGHT_KG)) {
+      toast.error(`Weight limit exceeded! Adding this location would exceed the maximum capacity of ${MAX_CYLINDERS * CYLINDER_WEIGHT_KG}kg.`, {
         duration: 5000
       });
       return;
     }
+    
     onAddLocationToRoute(location);
   };
 

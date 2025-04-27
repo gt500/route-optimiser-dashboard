@@ -1,9 +1,8 @@
-
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { OptimizationParams } from '@/hooks/routes/types';
 import { calculateDistance } from './distanceUtils';
 import { calculateTotalWeight } from './weightUtils';
-import { calculateFuelConsumption } from './fuelUtils';
+import { calculateRouteFuelConsumption } from './fuelUtils';
 import { AVG_SPEED_URBAN_KM_H, AVG_SPEED_RURAL_KM_H, MIN_STOP_TIME_MINUTES } from './constants';
 
 /**
@@ -94,7 +93,7 @@ export const calculateRouteMetrics = (
   
   calculatedDuration = Math.max(calculatedDuration, locations.length * MIN_STOP_TIME_MINUTES);
   
-  const fuelConsumption = calculateFuelConsumption(newDistance, totalWeight) * fuelMultiplier;
+  const fuelConsumption = calculateRouteFuelConsumption(newDistance, locations) * fuelMultiplier;
   const fuelCost = Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100;
   const maintenanceCost = newDistance * 0.85;
   

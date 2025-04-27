@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
-import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
+import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/hooks/routes/types';
 import { calculateTotalWeight } from '@/utils/route/weightUtils';
 
 // Use imported constants

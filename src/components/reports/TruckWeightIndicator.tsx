@@ -47,7 +47,7 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
         color={getWeightStatusColor()}
         tooltip={`
           Max load: ${maxWeight} kg (${maxCylinders} cylinders: full=${cylinderWeight}kg, empty=${EMPTY_CYLINDER_WEIGHT_KG}kg).
-          Shows greater of current fulls or empties on board.
+          Shows maximum weight during route accounting for cylinder exchanges.
         `}
       />
       {isOverweight && (
