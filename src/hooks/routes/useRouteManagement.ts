@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
-import { useLocationSync } from './routes/useLocationSync';
-import { useVehicleConfig } from './routes/useVehicleConfig';
-import { useRouteOperations } from './routes/useRouteOperations';
-import { useSaveRoute } from './routes/useSaveRoute';
+import { useLocationSync } from './useLocationSync';
+import { useVehicleConfig } from './useVehicleConfig';
+import { useRouteOperations } from './useRouteOperations';
+import { useSaveRoute } from './useSaveRoute';
 import { 
   RouteState, 
   OptimizationParams, 
@@ -12,16 +12,16 @@ import {
   defaultVehicleConfig, 
   MAX_CYLINDERS, 
   CYLINDER_WEIGHT_KG 
-} from './routes/types';
+} from './types';
 
 export { 
   routeOptimizationDefaultParams, 
   defaultVehicleConfig, 
   MAX_CYLINDERS, 
   CYLINDER_WEIGHT_KG 
-} from './routes/types';
+} from './types';
 
-export type { VehicleConfigProps } from './routes/types';
+export type { VehicleConfigProps } from './types';
 
 export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   const { availableLocations, setAvailableLocations, isSyncingLocations } = useLocationSync(initialLocations);
