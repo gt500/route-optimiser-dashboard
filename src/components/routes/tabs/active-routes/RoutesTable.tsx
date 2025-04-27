@@ -69,9 +69,9 @@ const RoutesTable = ({
         <div className="flex justify-end mb-4">
           <RouteActions 
             routeData={selectedRouteData}
-            disabled={false}
             onSave={handleSaveRoute}
             onOptimize={handleOptimizeRoute}
+            disabled={false}
           />
         </div>
       )}

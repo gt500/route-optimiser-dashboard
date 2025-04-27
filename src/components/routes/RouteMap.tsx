@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import RouteMarkers from './map-components/RouteMarkers';
@@ -46,15 +46,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Map component with memoization to prevent unnecessary re-renders
   const MapComponent = React.useMemo(() => (
     <MapContainer
-      center={center as any} // Type cast to avoid the center property error
-      zoom={zoom as any} // Type cast to avoid zoom property error
       style={{ height, width: '100%' }}
       className={`z-0 ${className}`}
       attributionControl={false}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       
       {/* Only render routes and markers if we have locations */}
@@ -62,7 +59,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         <>
           <RouteMarkers 
             locations={locations}
-            waypoints={[]} // Add empty waypoints array to satisfy type requirement
+            waypoints={[]} 
             startLocation={undefined}
             endLocation={undefined}
           />
@@ -81,7 +78,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       
       {showTraffic && <TrafficOverlay trafficSegments={[]} />}
       
-      {/* Update view only when center or zoom changes */}
+      {/* Update view when center or zoom changes */}
       <SetViewOnChange center={center} zoom={zoom} />
     </MapContainer>
   ), [locations, center, zoom, height, className, showTraffic, onRouteDataUpdate]);
