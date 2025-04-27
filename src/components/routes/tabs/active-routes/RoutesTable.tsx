@@ -52,6 +52,16 @@ const RoutesTable = ({
   };
 
   const selectedRouteData = getSelectedRouteData();
+  
+  const handleSaveRoute = () => {
+    // Placeholder for save functionality
+    console.log("Save route:", selectedRouteId);
+  };
+  
+  const handleOptimizeRoute = () => {
+    // Placeholder for optimize functionality
+    console.log("Optimize route:", selectedRouteId);
+  };
 
   return (
     <div>
@@ -60,6 +70,8 @@ const RoutesTable = ({
           <RouteActions 
             routeData={selectedRouteData}
             disabled={false}
+            onSave={handleSaveRoute}
+            onOptimize={handleOptimizeRoute}
           />
         </div>
       )}

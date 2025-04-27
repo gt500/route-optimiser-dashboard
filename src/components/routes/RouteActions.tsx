@@ -16,16 +16,16 @@ interface RouteData {
 }
 
 interface RouteActionsProps {
-  onSave: () => void;
-  onOptimize: () => void;
+  onSave?: () => void;
+  onOptimize?: () => void;
   usingRealTimeData?: boolean;
   disabled?: boolean;
   routeData?: RouteData;
 }
 
 const RouteActions: React.FC<RouteActionsProps> = ({ 
-  onSave, 
-  onOptimize, 
+  onSave = () => {}, 
+  onOptimize = () => {}, 
   usingRealTimeData = false, 
   disabled = false,
   routeData

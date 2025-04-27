@@ -132,7 +132,8 @@ const DailyReports = () => {
                     <RouteMap
                       locations={mapLocations}
                       height="100%"
-                      zoom={9}
+                      country="South Africa"
+                      region="Western Cape"
                     />
                   </div>
                 )

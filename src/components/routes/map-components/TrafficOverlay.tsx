@@ -9,7 +9,7 @@ interface TrafficOverlayProps {
   visible?: boolean;
 }
 
-const TrafficOverlay: React.FC<TrafficOverlayProps> = ({ trafficSegments, visible = true }) => {
+const TrafficOverlay: React.FC<TrafficOverlayProps> = ({ trafficSegments = [], visible = true }) => {
   const map = useMap();
   const layerRef = React.useRef<L.LayerGroup | null>(null);
   

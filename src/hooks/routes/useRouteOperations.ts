@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { LocationType } from '@/types/location';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
@@ -90,7 +91,12 @@ export const useRouteOperations = (
     });
   };
 
-  const handleOptimize = (params: OptimizationParams = {}) => {
+  const handleOptimize = (params: OptimizationParams = {
+    prioritizeFuel: true,
+    avoidTraffic: true,
+    useRealTimeData: true,
+    optimizeForDistance: true
+  }) => {
     if (route.locations.length < 3) {
       toast.warning('Add at least 3 locations to optimize the route');
       return;

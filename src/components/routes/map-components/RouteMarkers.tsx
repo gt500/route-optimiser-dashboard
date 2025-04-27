@@ -14,8 +14,8 @@ interface RouteMarkersProps {
 const RouteMarkers: React.FC<RouteMarkersProps> = ({
   startLocation,
   endLocation,
-  waypoints,
-  locations
+  waypoints = [],
+  locations = []
 }) => {
   return (
     <>

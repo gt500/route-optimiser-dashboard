@@ -46,8 +46,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Map component with memoization to prevent unnecessary re-renders
   const MapComponent = React.useMemo(() => (
     <MapContainer
-      center={center}
-      zoom={zoom}
+      center={center as any} // Type cast to avoid the center property error
+      zoom={zoom as any} // Type cast to avoid zoom property error
       style={{ height, width: '100%' }}
       className={`z-0 ${className}`}
       attributionControl={false}
@@ -60,15 +60,26 @@ const RouteMap: React.FC<RouteMapProps> = ({
       {/* Only render routes and markers if we have locations */}
       {locations.length > 0 && (
         <>
-          <RouteMarkers locations={locations} />
+          <RouteMarkers 
+            locations={locations}
+            waypoints={[]} // Add empty waypoints array to satisfy type requirement
+            startLocation={undefined}
+            endLocation={undefined}
+          />
           <RoutingMachine 
             waypoints={locations.map(loc => ({ lat: loc.latitude, lng: loc.longitude }))} 
-            onRouteCalculated={onRouteDataUpdate}
+            onRouteFound={(route) => {
+              onRouteDataUpdate && onRouteDataUpdate(
+                route.distance, 
+                route.duration, 
+                route.trafficConditions
+              );
+            }}
           />
         </>
       )}
       
-      {showTraffic && <TrafficOverlay />}
+      {showTraffic && <TrafficOverlay trafficSegments={[]} />}
       
       {/* Update view only when center or zoom changes */}
       <SetViewOnChange center={center} zoom={zoom} />

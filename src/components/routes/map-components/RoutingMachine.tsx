@@ -23,6 +23,7 @@ interface RoutingMachineProps {
     coordinates: [number, number][];
     waypoints?: { distance: number; duration: number }[];
     segmentDurations?: number[];
+    trafficConditions?: 'light' | 'moderate' | 'heavy';
   }) => void;
   routeOptions?: RouteOptions;
 }
@@ -157,12 +158,24 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
               selectedRoute.instructions.map(instr => instr.time || 0) : 
               undefined;
             
+            // Determine traffic conditions based on average speed
+            let trafficConditions: 'light' | 'moderate' | 'heavy' | undefined = undefined;
+            
+            if (selectedRoute.summary.totalDistance && selectedRoute.summary.totalTime) {
+              const avgSpeedKmh = (selectedRoute.summary.totalDistance / 1000) / (selectedRoute.summary.totalTime / 3600);
+              
+              if (avgSpeedKmh > 70) trafficConditions = 'light';
+              else if (avgSpeedKmh > 40) trafficConditions = 'moderate';
+              else trafficConditions = 'heavy';
+            }
+            
             onRouteFound({
               distance: selectedRoute.summary.totalDistance / 1000,
               duration: selectedRoute.summary.totalTime / 60,
               coordinates,
               waypoints,
-              segmentDurations
+              segmentDurations,
+              trafficConditions
             });
           }
         };

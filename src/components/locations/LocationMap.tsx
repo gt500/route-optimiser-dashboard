@@ -26,6 +26,8 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
               address: loc.address
             }))} 
             height="100%"
+            country="South Africa"
+            region="Western Cape"
           />
         </div>
       </CardContent>
