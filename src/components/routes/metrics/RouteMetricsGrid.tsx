@@ -29,15 +29,8 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   // Ensure we have valid non-zero values for display with more realistic calculations
   const displayDistance = distance > 0 ? distance : 0.1;
   
-  // Calculate a more realistic duration based on distance and number of stops
-  // Average urban speed in South Africa is about 35-45 km/h depending on traffic
-  const avgSpeedKmh = trafficConditions === 'light' ? 45 : (trafficConditions === 'moderate' ? 35 : 25);
-  const stopTimeMinutes = 8; // Average time spent at each stop for loading/unloading
-  
-  const drivingTimeMinutes = (displayDistance / avgSpeedKmh) * 60;
-  const stopsTimeMinutes = locations * stopTimeMinutes;
-  
-  const displayDuration = duration > 0 ? duration : (drivingTimeMinutes + stopsTimeMinutes);
+  // Use the provided duration directly, as it should now be coming from our Waze-like simulation
+  const displayDuration = duration > 0 ? duration : 1;
   
   // Calculate fuel consumption and cost based on actual distance
   const displayFuelConsumption = fuelConsumption > 0 ? fuelConsumption : (displayDistance * 0.12);
@@ -79,7 +72,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         tooltip="Total road distance for all stops in route"
         subtitle={
           <div className="text-xs text-muted-foreground mt-1">
-            Based on real-time routing data
+            Using Waze-like routing estimation
           </div>
         }
       />

@@ -12,6 +12,7 @@ export interface DeliveryData {
   country?: string;
   actualDistance?: number; // Actual road distance from routing calculations
   actualDuration?: number; // Travel time in minutes
+  traffic?: 'light' | 'moderate' | 'heavy'; // Traffic condition at time of calculation
 }
 
 export interface RouteDelivery {
@@ -25,6 +26,7 @@ export interface RouteDelivery {
   country?: string;
   actualDistance?: number; // Actual road distance from routing calculations
   actualDuration?: number; // Actual travel time in minutes
+  traffic?: 'light' | 'moderate' | 'heavy'; // Traffic condition
 }
 
 export interface ProcessedRoute {
@@ -36,6 +38,7 @@ export interface ProcessedRoute {
   estimatedCost: number;
   deliveries: RouteDelivery[];
   totalCylinders: number;
+  trafficCondition?: 'light' | 'moderate' | 'heavy';
 }
 
 export interface DeliveryHookReturn {

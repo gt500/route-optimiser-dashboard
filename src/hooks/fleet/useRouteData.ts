@@ -1,446 +1,154 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { format, subDays } from 'date-fns';
+
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
-export interface RouteStop {
-  id: string;
-  location_id: string;
-  location_name?: string;
-  cylinders: number;
-  sequence: number;
-  distance?: number;
-  fuel_cost?: number;
-}
-
+// Define the RouteData type
 export interface RouteData {
   id: string;
   name: string;
   date: string;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  total_distance?: number;
-  total_cylinders: number;
-  total_duration?: number;
-  estimated_cost?: number;
   vehicle_id?: string;
   vehicle_name?: string;
-  stops?: RouteStop[];
-  route_type?: string;
-  // Note: region and country might not exist in the actual table
-  // but we'll keep them in the interface for future compatibility
+  stops?: {
+    id: string;
+    location_name: string;
+    sequence: number;
+    distance?: number;
+    duration?: number;
+  }[];
+  total_distance?: number;
+  total_duration?: number;
+  total_cylinders?: number;
 }
 
+// Mock data for routes
+const mockRoutes: RouteData[] = [
+  {
+    id: '1',
+    name: 'Cape Town Urban Delivery',
+    date: '2025-04-28',
+    status: 'in_progress',
+    vehicle_id: 'v1',
+    vehicle_name: 'Mercedes Sprinter',
+    stops: [
+      { id: 's1', location_name: 'Afrox Epping Depot', sequence: 1, distance: 0, duration: 0 },
+      { id: 's2', location_name: 'Pick n Pay TableView', sequence: 2, distance: 18.5, duration: 26 },
+      { id: 's3', location_name: 'SUPERSPAR Parklands', sequence: 3, distance: 4.2, duration: 12 },
+      { id: 's4', location_name: 'West Coast Village', sequence: 4, distance: 3.8, duration: 10 },
+    ],
+    total_distance: 26.5,
+    total_duration: 48,
+    total_cylinders: 46
+  },
+  {
+    id: '2',
+    name: 'Northern Suburbs Route',
+    date: '2025-04-29',
+    status: 'scheduled',
+    vehicle_id: 'v2',
+    vehicle_name: 'Isuzu NPR',
+    stops: [
+      { id: 's5', location_name: 'Shell Hugo Street', sequence: 1, distance: 0, duration: 0 },
+      { id: 's6', location_name: 'SUPERSPAR Plattekloof', sequence: 2, distance: 12.7, duration: 19 },
+      { id: 's7', location_name: 'Willowridge Shopping Centre', sequence: 3, distance: 7.8, duration: 15 },
+      { id: 's8', location_name: 'Zevenwacht', sequence: 4, distance: 9.3, duration: 17 },
+    ],
+    total_distance: 29.8,
+    total_duration: 51,
+    total_cylinders: 52
+  },
+  {
+    id: '3',
+    name: 'Winelands Delivery',
+    date: '2025-04-30',
+    status: 'scheduled',
+    vehicle_id: 'v3',
+    vehicle_name: 'Ford Transit',
+    stops: [
+      { id: 's9', location_name: 'Shell Stellenbosch Square', sequence: 1, distance: 0, duration: 0 },
+      { id: 's10', location_name: 'KWIKSPAR Paarl', sequence: 2, distance: 25.6, duration: 34 },
+      { id: 's11', location_name: 'Laborie', sequence: 3, distance: 8.4, duration: 16 },
+      { id: 's12', location_name: 'Simonsrust Shopping Centre', sequence: 4, distance: 22.1, duration: 28 },
+    ],
+    total_distance: 56.1,
+    total_duration: 78,
+    total_cylinders: 42
+  }
+];
+
 export const useRouteData = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [routes, setRoutes] = useState<RouteData[]>(mockRoutes);
+  const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
 
-  // Get historical routes (completed or cancelled)
-  const fetchRouteHistory = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('routes')
-        .select(`
-          id, name, date, status, 
-          total_distance, total_cylinders, 
-          total_duration, estimated_cost, 
-          vehicle_id
-        `)
-        .or('status.eq.completed,status.eq.cancelled')
-        .order('date', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching route history:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        return [];
-      }
-      
-      // Get vehicle information for routes that have vehicles assigned
-      const routesWithVehicleIds = data.filter(route => route.vehicle_id);
-      
-      if (routesWithVehicleIds.length > 0) {
-        const vehicleIds = routesWithVehicleIds.map(route => route.vehicle_id).filter(Boolean) as string[];
-        const vehicles = await getVehicleData(vehicleIds);
-        
-        // Add vehicle_name to routes
-        const routesWithVehicleInfo = data.map(route => {
-          if (route.vehicle_id) {
-            const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-            return {
-              ...route,
-              vehicle_name: vehicle ? `${vehicle.name} (${vehicle.licensePlate})` : route.vehicle_id
-            };
-          }
-          return route;
-        });
-        
-        return routesWithVehicleInfo as RouteData[];
-      }
-      
-      return data as RouteData[];
-    } catch (error) {
-      console.error('Error in fetchRouteHistory:', error);
-      toast.error('Failed to load route history');
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const fetchRoutes = useCallback(async () => {
+    // In a real app, this would fetch from an API
+    return mockRoutes;
+  }, []);
 
-  // Get active routes (scheduled or in_progress)
-  const fetchActiveRoutes = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('routes')
-        .select(`
-          id, name, date, status, 
-          total_distance, total_cylinders, 
-          total_duration, estimated_cost, 
-          vehicle_id
-        `)
-        .or('status.eq.scheduled,status.eq.in_progress')
-        .order('date', { ascending: true });
-        
-      if (error) {
-        console.error('Error fetching active routes:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        return [];
-      }
-      
-      // Get all deliveries for these routes
-      const { data: deliveriesData, error: deliveriesError } = await supabase
-        .from('deliveries')
-        .select(`
-          id, route_id, location_id, cylinders, sequence
-        `)
-        .in('route_id', data.map(route => route.id));
-        
-      if (deliveriesError) {
-        console.error('Error fetching deliveries:', deliveriesError);
-      }
-      
-      // Get all location IDs from deliveries
-      const locationIds = deliveriesData ? 
-        [...new Set(deliveriesData.map(d => d.location_id))] : [];
-      
-      // Get location data for all locations
-      const { data: locationsData, error: locationsError } = await supabase
-        .from('locations')
-        .select(`id, name`)
-        .in('id', locationIds);
-        
-      if (locationsError) {
-        console.error('Error fetching locations:', locationsError);
-      }
-      
-      // Get vehicle information for routes that have vehicles assigned
-      const routesWithVehicleIds = data.filter(route => route.vehicle_id);
-      
-      let vehicles = [];
-      if (routesWithVehicleIds.length > 0) {
-        const vehicleIds = routesWithVehicleIds.map(route => route.vehicle_id).filter(Boolean) as string[];
-        vehicles = await getVehicleData(vehicleIds);
-      }
-      
-      // Map locations to deliveries
-      const deliveriesWithLocationNames = deliveriesData?.map(delivery => {
-        const location = locationsData?.find(loc => loc.id === delivery.location_id);
-        return {
-          ...delivery,
-          location_name: location ? location.name : 'Unknown Location'
-        };
-      });
-      
-      // Group deliveries by route
-      const deliveriesByRoute: Record<string, RouteStop[]> = {};
-      
-      deliveriesWithLocationNames?.forEach(delivery => {
-        if (!deliveriesByRoute[delivery.route_id]) {
-          deliveriesByRoute[delivery.route_id] = [];
-        }
-        deliveriesByRoute[delivery.route_id].push(delivery as RouteStop);
-      });
-      
-      // Add stops and vehicle_name to routes
-      const routesWithStops = data.map(route => {
-        // Find vehicle info if available
-        const vehicle = route.vehicle_id ? 
-          vehicles.find(v => v.id === route.vehicle_id) : null;
-        
-        return {
-          ...route,
-          stops: deliveriesByRoute[route.id] || [],
-          vehicle_name: vehicle ? `${vehicle.name} (${vehicle.licensePlate})` : null
-        };
-      });
-      
-      return routesWithStops as RouteData[];
-    } catch (error) {
-      console.error('Error in fetchActiveRoutes:', error);
-      toast.error('Failed to load active routes');
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Get all route data (regardless of status)
-  const fetchRouteData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('routes')
-        .select(`
-          id, name, date, status, 
-          total_distance, total_cylinders, 
-          total_duration, estimated_cost, 
-          vehicle_id
-        `)
-        .order('date', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching route data:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        return [];
-      }
-      
-      // Get vehicle information for routes that have vehicles assigned
-      const routesWithVehicleIds = data.filter(route => route.vehicle_id);
-      
-      if (routesWithVehicleIds.length > 0) {
-        const vehicleIds = routesWithVehicleIds.map(route => route.vehicle_id).filter(Boolean) as string[];
-        const vehicles = await getVehicleData(vehicleIds);
-        
-        // Add vehicle_name to routes
-        const routesWithVehicleInfo = data.map(route => {
-          if (route.vehicle_id) {
-            const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-            return {
-              ...route,
-              vehicle_name: vehicle ? `${vehicle.name} (${vehicle.licensePlate})` : route.vehicle_id
-            };
-          }
-          return route;
-        });
-        
-        return routesWithVehicleInfo as RouteData[];
-      }
-      
-      return data as RouteData[];
-    } catch (error) {
-      console.error('Error in fetchRouteData:', error);
-      toast.error('Failed to load route data');
-      return [];
-    }
-  };
-
-  // New function to fetch route data by name
-  const fetchRouteDataByName = async (routeName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('routes')
-        .select(`
-          id, name, date, status, 
-          total_distance, total_cylinders, 
-          total_duration, estimated_cost, 
-          vehicle_id
-        `)
-        .ilike('name', `%${routeName}%`)
-        .order('date', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching route data by name:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        return [];
-      }
-      
-      // Get vehicle information for routes that have vehicles assigned
-      const routesWithVehicleIds = data.filter(route => route.vehicle_id);
-      
-      if (routesWithVehicleIds.length > 0) {
-        const vehicleIds = routesWithVehicleIds.map(route => route.vehicle_id).filter(Boolean) as string[];
-        const vehicles = await getVehicleData(vehicleIds);
-        
-        // Add vehicle_name to routes
-        const routesWithVehicleInfo = data.map(route => {
-          if (route.vehicle_id) {
-            const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-            const routeWithVehicle = {
-              ...route,
-              vehicle_name: vehicle ? `${vehicle.name} (${vehicle.licensePlate})` : route.vehicle_id,
-              route_type: routeName // Add route_type for filtering
-            };
-            return routeWithVehicle;
-          }
-          return {
-            ...route,
-            route_type: routeName
-          };
-        });
-        
-        return routesWithVehicleInfo as RouteData[];
-      }
-      
-      // Add route_type to all routes
-      return data.map(route => ({
-        ...route,
-        route_type: routeName
-      })) as RouteData[];
-    } catch (error) {
-      console.error('Error in fetchRouteDataByName:', error);
-      toast.error('Failed to load route data by name');
-      return [];
-    }
-  };
-
-  // Helper functions for Dashboard analytics
-  const getOptimizationStats = async () => {
-    try {
-      const routes = await fetchRouteHistory();
-      
-      // Default stats if no data available
-      const defaultStats = {
-        routesOptimized: 0,
-        fuelSaved: 0,
-        timeSaved: 0,
-        costSaved: 0
-      };
-      
-      if (!routes || routes.length === 0) {
-        return defaultStats;
-      }
-      
-      // Calculate optimization stats (mock data for now)
-      return {
-        routesOptimized: routes.length,
-        fuelSaved: Math.round(routes.reduce((sum, route) => sum + (route.total_distance || 0), 0) * 0.15),
-        timeSaved: Math.round(routes.reduce((sum, route) => sum + (route.total_duration || 0), 0) * 0.2 / 60),
-        costSaved: Math.round(routes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0) * 0.18)
-      };
-    } catch (error) {
-      console.error('Error getting optimization stats:', error);
-      return {
-        routesOptimized: 0,
-        fuelSaved: 0,
-        timeSaved: 0,
-        costSaved: 0
-      };
-    }
-  };
-
-  const getWeeklyDeliveryData = async () => {
-    try {
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      
-      const { data, error } = await supabase
-        .from('routes')
-        .select(`date, total_cylinders, status`)
-        .gte('date', lastWeek.toISOString())
-        .order('date', { ascending: true });
-        
-      if (error) {
-        console.error('Error fetching weekly delivery data:', error);
-        throw error;
-      }
-      
-      if (!data || data.length === 0) {
-        // Return mock data
-        return Array.from({ length: 7 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - 6 + i);
-          return {
-            name: format(date, 'EEE'),
-            completed: Math.floor(Math.random() * 30) + 10,
-            scheduled: Math.floor(Math.random() * 15)
-          };
-        });
-      }
-      
-      // Process real data
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const processedData = days.map(day => {
-        const relevantData = data.filter(route => 
-          format(new Date(route.date), 'EEE') === day
-        );
-        
-        const completed = relevantData
-          .filter(route => route.status === 'completed')
-          .reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
-          
-        const scheduled = relevantData
-          .filter(route => route.status === 'scheduled' || route.status === 'in_progress')
-          .reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
-          
-        return {
-          name: day,
-          completed,
-          scheduled
-        };
-      });
-      
-      return processedData;
-    } catch (error) {
-      console.error('Error getting weekly delivery data:', error);
-      // Return mock data on error
-      return Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - 6 + i);
-        return {
-          name: format(date, 'EEE'),
-          completed: Math.floor(Math.random() * 30) + 10,
-          scheduled: Math.floor(Math.random() * 15)
-        };
-      });
-    }
-  };
-
-  // Helper function to get vehicle data
-  const getVehicleData = async (vehicleIds: string[]) => {
-    if (vehicleIds.length === 0) return [];
+  const startRoute = useCallback(async (routeId: string) => {
+    // Mark route as processing
+    setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
     
     try {
-      // This is a mock function since we don't have direct database access to vehicles
-      // In a real implementation, you would query the database for vehicle data
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
-      const { data: mockVehicles } = await supabase
-        .from('routes')
-        .select('vehicle_id')
-        .in('vehicle_id', vehicleIds)
-        .limit(1);
+      // Update route status
+      setRoutes(prev => 
+        prev.map(route => 
+          route.id === routeId ? { ...route, status: 'in_progress' } : route
+        )
+      );
       
-      // Return mock vehicle data for the IDs
-      return vehicleIds.map(id => ({
-        id,
-        name: id === 'TRK-001' ? 'Leyland Phoenix' : 'Leyland Phoenix',
-        licensePlate: id === 'TRK-001' ? 'CA 123-456' : 'CA 789-012'
-      }));
+      toast.success('Route started successfully');
     } catch (error) {
-      console.error('Error fetching vehicle data:', error);
-      return [];
+      toast.error('Failed to start route');
+      console.error(error);
+    } finally {
+      // Clear processing state
+      setProcessingRoutes(prev => {
+        const updated = { ...prev };
+        delete updated[routeId];
+        return updated;
+      });
     }
-  };
+  }, []);
+
+  const completeRoute = useCallback(async (routeId: string) => {
+    // Mark route as processing
+    setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Update route status
+      setRoutes(prev => 
+        prev.map(route => 
+          route.id === routeId ? { ...route, status: 'completed' } : route
+        )
+      );
+      
+      toast.success('Route completed successfully');
+    } catch (error) {
+      toast.error('Failed to complete route');
+      console.error(error);
+    } finally {
+      // Clear processing state
+      setProcessingRoutes(prev => {
+        const updated = { ...prev };
+        delete updated[routeId];
+        return updated;
+      });
+    }
+  }, []);
 
   return {
-    isLoading,
-    fetchRouteHistory,
-    fetchActiveRoutes,
-    fetchRouteData,
-    fetchRouteDataByName,
-    getOptimizationStats,
-    getWeeklyDeliveryData
+    routes,
+    processingRoutes,
+    fetchRoutes,
+    startRoute,
+    completeRoute
   };
 };
-
-export default useRouteData;
