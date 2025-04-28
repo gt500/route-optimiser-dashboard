@@ -27,8 +27,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   totalWeight
 }) => {
   // Ensure we have valid non-zero values for display with more realistic calculations
-  const minDistancePerLocation = locations > 0 ? 8.0 : 0;
-  const displayDistance = distance > 0 ? distance : minDistancePerLocation * Math.max(1, locations);
+  const displayDistance = distance > 0 ? distance : 0.1;
   
   // Calculate a more realistic duration based on distance and number of stops
   // Average urban speed in South Africa is about 35-45 km/h depending on traffic

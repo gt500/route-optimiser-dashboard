@@ -26,8 +26,8 @@ export const calculateRoadDistances = (
     
     // Skip if we don't have coordinates for either location
     if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
-      // Use different default distances based on location index to make it more realistic
-      const defaultDistances = [8.8, 7.2, 9.4, 6.5, 10.1];
+      // Use each distinct default distance for each segment to make it more realistic
+      const defaultDistances = [8.8, 7.2, 9.4, 6.5, 10.1, 9.2, 7.8, 11.3, 8.1, 12.4];
       const defaultDistance = defaultDistances[i % defaultDistances.length];
       
       distances.push(defaultDistance);
@@ -62,8 +62,12 @@ export const calculateRoadDistances = (
     // Minimum realistic distance between stops (accounts for local roads, one-way streets, etc.)
     const minDistance = Math.max(1.0, roadDistance);
     
-    distances.push(minDistance);
-    totalCalculatedDistance += minDistance;
+    // Add some realistic variation to each segment (±10%)
+    const variation = 1 + ((Math.random() * 0.2) - 0.1);
+    const finalDistance = minDistance * variation;
+    
+    distances.push(finalDistance);
+    totalCalculatedDistance += finalDistance;
   }
   
   // If we have a known total distance, scale all segments proportionally
@@ -124,7 +128,11 @@ export const estimateTravelTime = (
   
   // Add minimum base time for very short trips (traffic lights, loading/unloading)
   const stopTime = 8; // minutes for loading/unloading per stop
-  return Math.max(stopTime, Math.round(timeMinutes));
+  
+  // Add slight randomness to the time (±10%) to simulate real-world conditions
+  const variation = 1 + ((Math.random() * 0.2) - 0.1);
+  
+  return Math.max(stopTime, Math.round((timeMinutes * variation)));
 };
 
 /**
@@ -151,8 +159,8 @@ export const calculateSegmentDistances = (
     const next = locations[i + 1];
     
     if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
-      // Use different default distances based on location index
-      const defaultDistances = [8.8, 7.2, 9.4, 6.5, 10.1];
+      // Use different default distances based on location index for more variation
+      const defaultDistances = [8.8, 7.2, 9.4, 6.5, 10.1, 9.2, 7.8, 11.3, 8.1, 12.4];
       const defaultRoadDistance = defaultDistances[i % defaultDistances.length];
       segments.push({ direct: defaultRoadDistance * 0.7, road: defaultRoadDistance });
       continue;
@@ -165,15 +173,15 @@ export const calculateSegmentDistances = (
       next.longitude
     );
     
-    // Apply road correction factors - adjusted for South Africa
+    // Apply road correction factors - adjusted for South Africa with variation
     let roadFactor = 1.4; // Default Cape Town urban factor
     
     if (directDistance > 15) {
-      roadFactor = 1.6;
+      roadFactor = 1.6 + (Math.random() * 0.2); // Add variance
     } else if (directDistance > 5) {
-      roadFactor = 1.5;
+      roadFactor = 1.5 + (Math.random() * 0.15);
     } else if (directDistance < 1) {
-      roadFactor = 1.8;
+      roadFactor = 1.8 + (Math.random() * 0.25);
     }
     
     const roadDistance = directDistance * roadFactor;
