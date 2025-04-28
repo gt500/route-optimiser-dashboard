@@ -11,11 +11,11 @@ const today = new Date();
 const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
 const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 
-// Initial vehicles data - ensure we only have 2 vehicles
+// Initial vehicles data - ensure we have correct vehicle names
 const initialVehicles: Vehicle[] = [
   { 
     id: 'TRK-001', 
-    name: 'Leyland Phoenix', 
+    name: 'Mercedes Sprinter', 
     licensePlate: 'CA 123-456',
     status: 'Available', 
     capacity: 80, 
@@ -31,7 +31,7 @@ const initialVehicles: Vehicle[] = [
   },
   { 
     id: 'TRK-002', 
-    name: 'Leyland Phoenix', 
+    name: 'Isuzu NPR', 
     licensePlate: 'CA 789-012',
     status: 'Available', 
     capacity: 80, 
@@ -45,6 +45,22 @@ const initialVehicles: Vehicle[] = [
     maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
     odometer: 11500 // Example: Lower mileage for newer vehicle
   },
+  {
+    id: 'TRK-003',
+    name: 'Ford Transit',
+    licensePlate: 'CA 456-789',
+    status: 'Available',
+    capacity: 65,
+    load: 0,
+    fuelLevel: 85,
+    location: 'Stellenbosch Square',
+    lastService: format(subDays(today, 45), 'yyyy-MM-dd'),
+    startDate: formattedReferenceDate,
+    country: 'South Africa',
+    region: 'Western Cape',
+    maxPayload: 1430, // 1430 kg payload capacity (65 cylinders)
+    odometer: 18750
+  }
 ];
 
 export const useVehiclesData = () => {

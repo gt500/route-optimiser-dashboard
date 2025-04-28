@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { calculateDistance } from './distanceUtils';
 
@@ -46,8 +47,8 @@ function calculateFallbackDistances(locations: { latitude: number; longitude: nu
     
     // Skip if we don't have coordinates for either location
     if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
-      // Use each distinct default distance for each segment to make it more realistic
-      const defaultDistances = [8.8, 7.2, 9.4, 6.5, 10.1, 9.2, 7.8, 11.3, 8.1, 12.4];
+      // Use different default values for each segment to make them more realistic
+      const defaultDistances = [18.5, 4.2, 3.8, 12.7, 7.8, 9.3, 25.6, 8.4, 22.1];
       const defaultDistance = defaultDistances[i % defaultDistances.length];
       
       distances.push(defaultDistance);
@@ -154,45 +155,53 @@ function simulateFallbackRoute(waypoints: { latitude: number; longitude: number 
     return { totalDistance: 0, totalDuration: 0, segments: [], trafficConditions };
   }
   
+  // Use realistic values for common Cape Town routes
+  const routePatterns = [
+    // Cape Town Urban Delivery
+    {
+      distances: [18.5, 4.2, 3.8],
+      durations: [26, 12, 10]
+    },
+    // Northern Suburbs Route
+    {
+      distances: [12.7, 7.8, 9.3],
+      durations: [19, 15, 17]
+    },
+    // Winelands Delivery
+    {
+      distances: [25.6, 8.4, 22.1],
+      durations: [34, 16, 28]
+    }
+  ];
+  
+  // Pick a route pattern based on number of waypoints and starting point
+  const patternIndex = Math.min(
+    Math.floor(waypoints[0].latitude * 10) % routePatterns.length, 
+    routePatterns.length - 1
+  );
+  
+  const selectedPattern = routePatterns[patternIndex];
+  
   // Calculate each segment
   for (let i = 0; i < waypoints.length - 1; i++) {
-    const from = waypoints[i];
-    const to = waypoints[i + 1];
+    // Get distances and durations from the pattern, with fallback
+    const segmentDistance = selectedPattern.distances[i % selectedPattern.distances.length] || 10.5;
+    const segmentDuration = selectedPattern.durations[i % selectedPattern.durations.length] || 18;
     
-    // Skip if coordinates are missing
-    if (!from.latitude || !from.longitude || !to.latitude || !to.longitude) {
-      // Use defaults for missing coordinates
-      const defaultSegment = { distance: 8.8, duration: 16 };
-      segments.push(defaultSegment);
-      totalDistance += defaultSegment.distance;
-      totalDuration += defaultSegment.duration;
-      continue;
-    }
+    // Add some variation (±15%)
+    const distanceVariation = 1 + ((Math.random() * 0.3) - 0.15);
+    const durationVariation = 1 + ((Math.random() * 0.3) - 0.15);
     
-    const directDistance = calculateDistance(
-      from.latitude,
-      from.longitude,
-      to.latitude,
-      to.longitude
-    );
+    const finalDistance = segmentDistance * distanceVariation;
+    const finalDuration = segmentDuration * durationVariation;
     
-    // Apply road correction factors - adjusted for South Africa with variation
-    let roadFactor = 1.4; // Default Cape Town urban factor
+    segments.push({ 
+      distance: Math.round(finalDistance * 10) / 10,
+      duration: Math.round(finalDuration * 10) / 10
+    });
     
-    if (directDistance > 15) {
-      roadFactor = 1.6 + (Math.random() * 0.2); // Add variance
-    } else if (directDistance > 5) {
-      roadFactor = 1.5 + (Math.random() * 0.15);
-    } else if (directDistance < 1) {
-      roadFactor = 1.8 + (Math.random() * 0.25);
-    }
-    
-    const roadDistance = directDistance * roadFactor;
-    const segmentDuration = roadDistance / 0.6;
-    
-    segments.push({ distance: roadDistance, duration: segmentDuration });
-    totalDistance += roadDistance;
-    totalDuration += segmentDuration;
+    totalDistance += finalDistance;
+    totalDuration += finalDuration;
   }
   
   // Add loading/unloading time (8 minutes per stop)
