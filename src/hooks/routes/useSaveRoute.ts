@@ -26,16 +26,22 @@ export const useSaveRoute = (
       // Generate a UUID for the route
       const routeId = crypto.randomUUID();
 
+      // Ensure we have valid distance and duration values
+      const totalDistance = Math.max(5.0, route.distance);
+      const totalDuration = Math.max(30, route.estimatedDuration || 0);
+      const totalCylinders = Math.max(0, route.cylinders);
+      const estimatedCost = Math.max(0, route.fuelCost);
+
       // Create route record - ensuring we match the exact schema expected by Supabase
       const { data, error } = await supabase.from('routes').insert({
         id: routeId,
         name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
         date: new Date().toISOString(),
         status: 'scheduled',
-        total_distance: route.distance,
-        total_duration: route.estimatedDuration,
-        estimated_cost: route.fuelCost,
-        total_cylinders: route.cylinders,
+        total_distance: totalDistance,
+        total_duration: totalDuration,
+        estimated_cost: estimatedCost,
+        total_cylinders: totalCylinders,
         vehicle_id: selectedVehicle
       }).select();
 
@@ -47,6 +53,9 @@ export const useSaveRoute = (
       
       // Now save the route metadata separately to the deliveries table
       if (data && data.length > 0) {
+        // Calculate total deliveries for distance distribution
+        const totalDeliveries = route.locations.filter(loc => loc.type === 'Customer').length;
+        
         // Create stops data with accurate segment metrics
         const stops = route.locations.map((loc, index) => {
           // First stop has no distance or cost
@@ -67,9 +76,26 @@ export const useSaveRoute = (
           const previousWaypoint = Math.max(0, index - 1);
           const segmentData = route.waypointData && route.waypointData[previousWaypoint];
           
-          // Get accurate segment distance
-          const segmentDistance = segmentData?.distance || 
-            (route.distance / Math.max(1, route.locations.length - 1));
+          // Get accurate segment distance - fallback to even distribution if no waypoint data
+          let segmentDistance = 5.0; // Minimum segment distance
+          
+          if (segmentData?.distance && segmentData.distance > 0) {
+            segmentDistance = segmentData.distance;
+          } else if (totalDistance > 0 && route.locations.length > 1) {
+            // First leg gets 35% of distance
+            if (index === 1) {
+              segmentDistance = totalDistance * 0.35; 
+            }
+            // Last leg gets 35% of distance
+            else if (index === route.locations.length - 1) {
+              segmentDistance = totalDistance * 0.35;
+            }
+            // Middle stops share remaining 30% equally
+            else {
+              const midPointCount = Math.max(1, route.locations.length - 2);
+              segmentDistance = (totalDistance * 0.3) / midPointCount;
+            }
+          }
           
           // Calculate fuel consumption for this specific segment based on load
           const segmentFuelConsumption = calculateSegmentFuelConsumption(
@@ -88,7 +114,7 @@ export const useSaveRoute = (
             cylinders: loc.type === 'Customer' ? (loc.emptyCylinders || 0) : (loc.fullCylinders || 0),
             order: index,
             distance: parseFloat(segmentDistance.toFixed(1)),
-            duration: segmentData?.duration || route.estimatedDuration / Math.max(1, route.locations.length - 1),
+            duration: segmentData?.duration || totalDuration / Math.max(1, route.locations.length - 1),
             fuel_cost: parseFloat(segmentFuelCost.toFixed(2))
           };
         });

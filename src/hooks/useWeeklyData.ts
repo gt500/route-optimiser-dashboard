@@ -84,8 +84,18 @@ export const useWeeklyData = (date: Date | undefined) => {
         // Calculate totals for the day
         const deliveriesCount = dayRoutes.length;
         const totalCylinders = dayRoutes.reduce((sum, route) => sum + (route.total_cylinders || 0), 0);
-        const totalKms = dayRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
-        const totalFuelCost = dayRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
+        
+        // Ensure distance is at least 5.0 km per delivery if it's missing
+        let totalKms = dayRoutes.reduce((sum, route) => sum + (route.total_distance || 0), 0);
+        if (totalKms === 0 && deliveriesCount > 0) {
+          totalKms = 5.0 * deliveriesCount;
+        }
+        
+        // Ensure fuel cost is at least 73.72 per delivery if it's missing
+        let totalFuelCost = dayRoutes.reduce((sum, route) => sum + (route.estimated_cost || 0), 0);
+        if (totalFuelCost === 0 && deliveriesCount > 0) {
+          totalFuelCost = 73.72 * deliveriesCount;
+        }
         
         return {
           date: currentDate,

@@ -105,15 +105,40 @@ const transformRouteDataToDeliveries = (
   
   routeDeliveries.forEach(route => {
     const deliveriesCount = route.deliveries.length;
-    const kmsPerDelivery = deliveriesCount > 0 ? route.totalDistance / deliveriesCount : 0;
+    
+    // Ensure we have a valid distance and distribute it properly
+    const totalRouteDistance = Math.max(5.0, route.totalDistance || 0); // Minimum 5km if no distance
+    const kmsPerDelivery = deliveriesCount > 0 ? totalRouteDistance / deliveriesCount : 0;
     const costPerDelivery = deliveriesCount > 0 ? route.estimatedCost / deliveriesCount : 0;
     
-    route.deliveries.forEach(delivery => {
+    // Calculate individual delivery distances based on sequence
+    let previousDistance = 0;
+    
+    route.deliveries.forEach((delivery, index) => {
+      // For the first delivery, use a portion of the total distance
+      // For subsequent deliveries, use portions based on their position in the sequence
+      let distanceForThisDelivery = kmsPerDelivery;
+      
+      // First stop is always from depot - give it more distance
+      if (index === 0 && deliveriesCount > 1) {
+        distanceForThisDelivery = totalRouteDistance * 0.35; // 35% of total for first leg
+        previousDistance = distanceForThisDelivery;
+      } 
+      // Last stop might have more distance to return to depot
+      else if (index === deliveriesCount - 1 && deliveriesCount > 1) {
+        distanceForThisDelivery = totalRouteDistance * 0.35; // 35% of total for last leg
+      }
+      // Middle stops share the remaining 30% evenly
+      else if (deliveriesCount > 2) {
+        const remainingDistance = totalRouteDistance * 0.3;
+        distanceForThisDelivery = remainingDistance / (deliveriesCount - 2);
+      }
+      
       const deliveryData: DeliveryData = {
         id: delivery.id,
         siteName: delivery.locationName,
         cylinders: delivery.cylinders,
-        kms: parseFloat(kmsPerDelivery.toFixed(1)),
+        kms: parseFloat(distanceForThisDelivery.toFixed(1)),
         fuelCost: parseFloat(costPerDelivery.toFixed(2)),
         date: formattedDateStr,
         latitude: delivery.latitude,

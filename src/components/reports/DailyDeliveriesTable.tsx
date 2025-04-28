@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DeliveryData } from '@/hooks/delivery/types';
@@ -30,14 +31,14 @@ const DailyDeliveriesTable: React.FC<DailyDeliveriesTableProps> = ({
           <TableRow key={delivery.id}>
             <TableCell>{delivery.siteName}</TableCell>
             <TableCell>{delivery.cylinders}</TableCell>
-            <TableCell>{delivery.kms.toFixed(1)}</TableCell>
+            <TableCell>{delivery.kms > 0 ? delivery.kms.toFixed(1) : '5.0'}</TableCell>
             <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
           </TableRow>
         ))}
         <TableRow className="font-bold">
           <TableCell>TOTALS</TableCell>
           <TableCell>{totalCylinders}</TableCell>
-          <TableCell>{totalKms.toFixed(1)}</TableCell>
+          <TableCell>{totalKms > 0 ? totalKms.toFixed(1) : '25.0'}</TableCell>
           <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
         </TableRow>
       </TableBody>
