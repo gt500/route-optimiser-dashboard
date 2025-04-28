@@ -4,6 +4,17 @@
  */
 
 /**
+ * Type definition for a traffic segment
+ */
+export interface TrafficSegment {
+  start: [number, number]; // Starting lat, lng coordinates
+  end: [number, number];   // Ending lat, lng coordinates
+  level: 'light' | 'moderate' | 'heavy'; // Traffic condition
+  distance?: number;       // Optional distance in kilometers
+  duration?: number;       // Optional duration in minutes
+}
+
+/**
  * Get the current traffic condition based on time of day
  * @returns Traffic condition ('light', 'moderate', 'heavy')
  */
@@ -51,6 +62,24 @@ export function calculateTrafficDelayFactor(trafficCondition: 'light' | 'moderat
       return 1.6; // 60% longer
     default:
       return 1.0;
+  }
+}
+
+/**
+ * Get the appropriate color for a traffic condition
+ * @param trafficLevel Traffic level ('light', 'moderate', 'heavy')
+ * @returns Color code for the traffic level
+ */
+export function getTrafficColor(trafficLevel: 'light' | 'moderate' | 'heavy'): string {
+  switch (trafficLevel) {
+    case 'light':
+      return '#4CAF50'; // Green
+    case 'moderate':
+      return '#FFC107'; // Amber
+    case 'heavy':
+      return '#F44336'; // Red
+    default:
+      return '#4CAF50'; // Default to green
   }
 }
 
