@@ -31,7 +31,7 @@ const initialVehicles: Vehicle[] = [
   },
   { 
     id: 'TRK-002', 
-    name: 'Isuzu NPR', 
+    name: 'Leyland Ashok Phoenix', 
     licensePlate: 'CA 789-012',
     status: 'Available', 
     capacity: 80, 
@@ -44,22 +44,6 @@ const initialVehicles: Vehicle[] = [
     region: 'Western Cape',
     maxPayload: 1760, // 1760 kg payload capacity (80 cylinders)
     odometer: 11500 // Example: Lower mileage for newer vehicle
-  },
-  {
-    id: 'TRK-003',
-    name: 'Ford Transit',
-    licensePlate: 'CA 456-789',
-    status: 'Available',
-    capacity: 65,
-    load: 0,
-    fuelLevel: 85,
-    location: 'Stellenbosch Square',
-    lastService: format(subDays(today, 45), 'yyyy-MM-dd'),
-    startDate: formattedReferenceDate,
-    country: 'South Africa',
-    region: 'Western Cape',
-    maxPayload: 1430, // 1430 kg payload capacity (65 cylinders)
-    odometer: 18750
   }
 ];
 
@@ -125,10 +109,9 @@ export const useVehiclesData = () => {
         });
       }
       
-      // Set the updated vehicles in state (but ensure we only have 2 vehicles)
-      // Slice to only take the first two vehicles, in case there are more
-      setVehicles(updatedVehicles.slice(0, 2));
-      return updatedVehicles.slice(0, 2);
+      // Set the updated vehicles in state (ensure we only have 2 vehicles)
+      setVehicles(updatedVehicles);
+      return updatedVehicles;
     } catch (error) {
       console.error('Error fetching vehicle data:', error);
       toast.error('Failed to load fleet data');

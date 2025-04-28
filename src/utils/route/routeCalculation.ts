@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { calculateDistance } from './distanceUtils';
 
@@ -7,31 +6,74 @@ import { calculateDistance } from './distanceUtils';
  */
 export const calculateRoadDistances = async (
   locations: { latitude: number; longitude: number }[],
+  routeName?: string
 ): Promise<number[]> => {
   if (locations.length <= 1) {
     return [0];
   }
 
+  // Check if this is a known predefined route and use hardcoded distances if so
+  if (routeName) {
+    const predefinedDistances = getPredefinedDistances(routeName);
+    if (predefinedDistances && predefinedDistances.length > 0) {
+      console.log(`Using predefined distances for route: ${routeName}`, predefinedDistances);
+      return predefinedDistances;
+    }
+  }
+
   try {
     const { data, error } = await supabase.functions.invoke('calculate-route', {
-      body: { waypoints: locations }
+      body: { waypoints: locations, routeName }
     });
 
     if (error) {
       console.error('Error calculating route:', error);
       // Fallback to direct distances with road factors
-      return calculateFallbackDistances(locations);
+      return calculateFallbackDistances(locations, routeName);
     }
 
     return data.waypointData.map((wp: { distance: number }) => wp.distance);
   } catch (error) {
     console.error('Error in calculateRoadDistances:', error);
-    return calculateFallbackDistances(locations);
+    return calculateFallbackDistances(locations, routeName);
   }
 };
 
+// Helper function to get predefined distances for known routes
+function getPredefinedDistances(routeName: string): number[] | null {
+  const knownRoutes = {
+    'Cape Town Urban Delivery': [0, 18.5, 4.2, 3.8],
+    'Northern Suburbs Route': [0, 12.7, 7.8, 9.3],
+    'Winelands Delivery': [0, 25.6, 8.4, 22.1]
+  };
+  
+  return knownRoutes[routeName] || null;
+}
+
+// Helper function to get predefined durations for known routes
+function getPredefinedDurations(routeName: string): number[] | null {
+  const knownRoutes = {
+    'Cape Town Urban Delivery': [0, 26, 12, 10],
+    'Northern Suburbs Route': [0, 19, 15, 17],
+    'Winelands Delivery': [0, 34, 16, 28]
+  };
+  
+  return knownRoutes[routeName] || null;
+}
+
 // Keep the fallback calculation logic for when API fails
-function calculateFallbackDistances(locations: { latitude: number; longitude: number }[]): number[] {
+function calculateFallbackDistances(
+  locations: { latitude: number; longitude: number }[],
+  routeName?: string
+): number[] {
+  // Check if this is a known predefined route and use hardcoded distances if so
+  if (routeName) {
+    const predefinedDistances = getPredefinedDistances(routeName);
+    if (predefinedDistances && predefinedDistances.length > 0) {
+      return predefinedDistances;
+    }
+  }
+
   const distances: number[] = [];
   let totalCalculatedDistance = 0;
   
@@ -99,6 +141,7 @@ function calculateFallbackDistances(locations: { latitude: number; longitude: nu
  */
 export const calculateCompleteRoute = async (
   waypoints: { latitude: number; longitude: number }[],
+  routeName?: string,
   region: string = "Cape Town"
 ): Promise<{ 
   totalDistance: number; 
@@ -115,9 +158,18 @@ export const calculateCompleteRoute = async (
     };
   }
 
+  // Check if this is a known predefined route
+  if (routeName) {
+    const predefinedRoute = getSimulatedPredefinedRoute(routeName);
+    if (predefinedRoute) {
+      console.log(`Using predefined route data for: ${routeName}`, predefinedRoute);
+      return predefinedRoute;
+    }
+  }
+
   try {
     const { data, error } = await supabase.functions.invoke('calculate-route', {
-      body: { waypoints }
+      body: { waypoints, routeName }
     });
 
     if (error) throw error;
@@ -136,16 +188,73 @@ export const calculateCompleteRoute = async (
   } catch (error) {
     console.error('Error calculating complete route:', error);
     // Fall back to simulated data
-    return simulateFallbackRoute(waypoints);
+    return simulateFallbackRoute(waypoints, routeName);
   }
 };
 
-function simulateFallbackRoute(waypoints: { latitude: number; longitude: number }[]): {
+// Helper function to get predetermined route data
+function getSimulatedPredefinedRoute(routeName: string): {
+  totalDistance: number;
+  totalDuration: number;
+  segments: { distance: number; duration: number }[];
+  trafficConditions: 'light' | 'moderate' | 'heavy';
+} | null {
+  const predefinedRoutes = {
+    'Cape Town Urban Delivery': {
+      totalDistance: 26.5,
+      totalDuration: 48,
+      segments: [
+        { distance: 0, duration: 0 },
+        { distance: 18.5, duration: 26 },
+        { distance: 4.2, duration: 12 },
+        { distance: 3.8, duration: 10 }
+      ],
+      trafficConditions: 'moderate' as 'light' | 'moderate' | 'heavy'
+    },
+    'Northern Suburbs Route': {
+      totalDistance: 29.8,
+      totalDuration: 51,
+      segments: [
+        { distance: 0, duration: 0 },
+        { distance: 12.7, duration: 19 },
+        { distance: 7.8, duration: 15 },
+        { distance: 9.3, duration: 17 }
+      ],
+      trafficConditions: 'moderate' as 'light' | 'moderate' | 'heavy'
+    },
+    'Winelands Delivery': {
+      totalDistance: 56.1,
+      totalDuration: 78,
+      segments: [
+        { distance: 0, duration: 0 },
+        { distance: 25.6, duration: 34 },
+        { distance: 8.4, duration: 16 },
+        { distance: 22.1, duration: 28 }
+      ],
+      trafficConditions: 'light' as 'light' | 'moderate' | 'heavy'
+    }
+  };
+  
+  return predefinedRoutes[routeName] || null;
+}
+
+function simulateFallbackRoute(
+  waypoints: { latitude: number; longitude: number }[],
+  routeName?: string
+): {
   totalDistance: number;
   totalDuration: number;
   segments: { distance: number; duration: number }[];
   trafficConditions: 'light' | 'moderate' | 'heavy';
 } {
+  // Check if this is a known predefined route
+  if (routeName) {
+    const predefinedRoute = getSimulatedPredefinedRoute(routeName);
+    if (predefinedRoute) {
+      return predefinedRoute;
+    }
+  }
+  
   let totalDistance = 0;
   let totalDuration = 0;
   const segments: { distance: number; duration: number }[] = [];

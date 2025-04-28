@@ -25,14 +25,14 @@ export interface RouteData {
   estimated_cost?: number;
 }
 
-// Mock data for routes - restore original route names
+// Mock data for routes - ensure original route names are preserved
 const mockRoutes: RouteData[] = [
   {
     id: '1',
     name: 'Cape Town Urban Delivery',
     date: '2025-04-28',
     status: 'in_progress',
-    vehicle_id: 'v1',
+    vehicle_id: 'TRK-001',
     vehicle_name: 'Mercedes Sprinter',
     stops: [
       { id: 's1', location_name: 'Afrox Epping Depot', sequence: 1, distance: 0, duration: 0 },
@@ -50,8 +50,8 @@ const mockRoutes: RouteData[] = [
     name: 'Northern Suburbs Route',
     date: '2025-04-29',
     status: 'scheduled',
-    vehicle_id: 'v2',
-    vehicle_name: 'Isuzu NPR',
+    vehicle_id: 'TRK-002',
+    vehicle_name: 'Leyland Ashok Phoenix',
     stops: [
       { id: 's5', location_name: 'Shell Hugo Street', sequence: 1, distance: 0, duration: 0 },
       { id: 's6', location_name: 'SUPERSPAR Plattekloof', sequence: 2, distance: 12.7, duration: 19, cylinders: 14 },
@@ -68,8 +68,8 @@ const mockRoutes: RouteData[] = [
     name: 'Winelands Delivery',
     date: '2025-04-30',
     status: 'scheduled',
-    vehicle_id: 'v3',
-    vehicle_name: 'Ford Transit',
+    vehicle_id: 'TRK-001',
+    vehicle_name: 'Mercedes Sprinter',
     stops: [
       { id: 's9', location_name: 'Shell Stellenbosch Square', sequence: 1, distance: 0, duration: 0 },
       { id: 's10', location_name: 'KWIKSPAR Paarl', sequence: 2, distance: 25.6, duration: 34, cylinders: 10 },
