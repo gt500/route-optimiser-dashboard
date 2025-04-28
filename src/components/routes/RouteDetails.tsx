@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,9 +12,6 @@ import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
 import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/hooks/routes/types';
 import { calculateTotalWeight } from '@/utils/route/weightUtils';
-
-// Use imported constants
-const FULL_CYLINDER_WEIGHT_KG = CYLINDER_WEIGHT_KG;  // Weight of a full cylinder in kg
 
 interface RouteDetailsProps {
   route: {
@@ -87,12 +85,29 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   // Prepare route data for the RouteActions component
   const routeData = {
     name: route.name || "Route Report",
-    stops: route.locations.map(location => ({
-      siteName: location.name,
-      cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
-      kms: location.distance !== undefined ? location.distance : 0,
-      fuelCost: location.fuel_cost !== undefined ? location.fuel_cost : 0
-    }))
+    stops: route.locations.map((location, index) => {
+      // For the first location (start point), don't calculate metrics
+      if (index === 0) {
+        return {
+          siteName: location.name,
+          cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
+          kms: 0,
+          fuelCost: 0
+        };
+      }
+
+      // For segments, calculate approximate metrics
+      const totalSegments = Math.max(1, route.locations.length - 1);
+      const avgDistancePerStop = route.distance / totalSegments;
+      const avgFuelCostPerStop = route.fuelCost / totalSegments;
+
+      return {
+        siteName: location.name,
+        cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
+        kms: avgDistancePerStop,
+        fuelCost: avgFuelCostPerStop
+      };
+    })
   };
 
   const handleAcknowledgeAlert = () => {

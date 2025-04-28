@@ -1,44 +1,68 @@
 
 import { LocationType } from '@/types/location';
+import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG } from '@/hooks/routes/types';
 import { calculateTotalWeight } from './weightUtils';
 
-// Constants for accurate fuel consumption calculation
-const BASE_FUEL_CONSUMPTION = 12; // 12L/100km for an average delivery truck
-const LOAD_FACTOR = 0.02; // 2% increase in consumption per 100kg of load
+// Base fuel consumption rate in liters per 100km
+const BASE_CONSUMPTION_RATE = 9.5;
+
+// Additional consumption per 100kg of load (in liters per 100km)
+const ADDITIONAL_CONSUMPTION_PER_100KG = 0.4;
+
+// Factor for how much city driving impacts consumption
+const CITY_CONSUMPTION_FACTOR = 1.2;
 
 /**
- * Calculate fuel consumption based on distance, vehicle type, and load
- * This takes into account the variable weight during the journey
+ * Calculate fuel consumption based on distance and vehicle load
+ * @param distance Distance in kilometers
+ * @param totalWeight Total weight in kilograms
+ * @param isCityDriving Whether the route is primarily in city/urban areas
+ * @returns Fuel consumption in liters
  */
-export const calculateFuelConsumption = (distance: number, totalWeight: number): number => {
-  // If invalid values provided, return 0
-  if (!distance || distance <= 0 || isNaN(distance)) {
-    return 0;
+export const calculateFuelConsumption = (
+  distance: number,
+  totalWeight: number,
+  isCityDriving: boolean = true
+): number => {
+  // Convert distance to 100km units
+  const distanceIn100km = distance / 100;
+  
+  // Calculate weight-based consumption increase
+  const weightFactor = totalWeight / 100 * ADDITIONAL_CONSUMPTION_PER_100KG;
+  
+  // Calculate base consumption rate
+  let consumptionRate = BASE_CONSUMPTION_RATE + weightFactor;
+  
+  // Apply city driving factor if applicable
+  if (isCityDriving) {
+    consumptionRate *= CITY_CONSUMPTION_FACTOR;
   }
   
-  // Base consumption plus adjustment for load weight
-  // If there's no weight or invalid weight, just use base consumption
-  if (!totalWeight || totalWeight <= 0 || isNaN(totalWeight)) {
-    return (distance * BASE_FUEL_CONSUMPTION) / 100;
-  }
+  // Calculate total consumption
+  const totalConsumption = consumptionRate * distanceIn100km;
   
-  const weightFactor = 1 + (totalWeight / 100) * LOAD_FACTOR;
-  return (distance * BASE_FUEL_CONSUMPTION * weightFactor) / 100;
+  return totalConsumption;
 };
 
 /**
- * Calculate fuel consumption for a route considering changing weight
- * during the journey as cylinders are exchanged
+ * Calculate fuel consumption for an entire route
+ * @param distance Total route distance in kilometers
+ * @param locations Array of location objects in the route
+ * @param isCityDriving Whether the route is primarily in city/urban areas
+ * @returns Fuel consumption in liters
  */
 export const calculateRouteFuelConsumption = (
-  distance: number, 
-  locations: LocationType[]
+  distance: number,
+  locations: LocationType[],
+  isCityDriving: boolean = true
 ): number => {
-  // If we don't have valid inputs, return 0
-  if (!distance || distance <= 0 || !locations || locations.length === 0) {
+  if (distance <= 0 || !locations || locations.length === 0) {
     return 0;
   }
   
+  // Calculate total weight from all cylinders on the route
   const totalWeight = calculateTotalWeight(locations);
-  return calculateFuelConsumption(distance, totalWeight);
+  
+  // Calculate consumption based on weight and distance
+  return calculateFuelConsumption(distance, totalWeight, isCityDriving);
 };

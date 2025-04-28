@@ -179,7 +179,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     }
     
     setRoute(prev => {
-      const consumption = (distance * vehicleConfig.fuelPrice * 0.12) / 21.95;
+      const consumption = (distance * vehicleConfig.baseConsumption) / 100;
       const cost = consumption * vehicleConfig.fuelPrice;
       
       console.log(`Route data updated: distance=${distance}km, duration=${duration}mins, consumption=${consumption}L, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);

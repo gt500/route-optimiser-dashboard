@@ -1,14 +1,11 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TruckIcon, Trash2, ArrowUpDown, Plus, MapPin, Package, Clock, DollarSign, Route, Edit } from 'lucide-react';
-import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { MapPin, Clock, Fuel, CirclePlus, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 interface RouteStopsListProps {
   locations: LocationType[];
@@ -23,306 +20,224 @@ interface RouteStopsListProps {
   onReplaceLocation?: (index: number, newLocationId: string) => void;
 }
 
-const RouteStopsList: React.FC<RouteStopsListProps> = ({ 
-  locations, 
-  availableLocations, 
+const RouteStopsList: React.FC<RouteStopsListProps> = ({
+  locations,
+  availableLocations,
   onRemoveLocation,
   onAddNewLocation,
   routeMetrics,
   onReplaceLocation
 }) => {
-  const [addLocationOpen, setAddLocationOpen] = useState(false);
-  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingLocationIndex, setEditingLocationIndex] = useState<number | null>(null);
-  const [replacementLocationId, setReplacementLocationId] = useState<string>("");
+  const [expandedStop, setExpandedStop] = useState<number | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   
-  const handleLocationChange = (locationId: string) => {
-    console.log("Selected location ID:", locationId);
-    setSelectedLocationId(locationId);
-  };
+  if (!locations || locations.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Route Stops</CardTitle>
+          <CardDescription>No stops added yet</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <Button onClick={() => setIsPickerOpen(true)} variant="outline" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Add a stop
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
   
-  const handleAddLocation = () => {
-    if (selectedLocationId) {
-      console.log("Adding location with ID:", selectedLocationId);
-      onAddNewLocation(selectedLocationId);
-      setAddLocationOpen(false);
-      setSelectedLocationId("");
-      toast.success("Location added to route");
-    } else {
-      toast.error("Please select a location first");
-    }
-  };
-
-  const handleEditLocation = (index: number) => {
-    // Don't allow editing the first stop (start location)
-    if (index === 0) {
-      toast.error("Cannot modify the start location");
-      return;
+  // Calculate segment metrics if waypointData is not provided
+  const calculateSegmentMetrics = (index: number) => {
+    if (!routeMetrics || locations.length < 2 || index === 0) {
+      return { distance: 0, duration: 0, fuelCost: 0 };
     }
     
-    setEditingLocationIndex(index);
-    setReplacementLocationId("");
-    setEditDialogOpen(true);
-  };
-
-  const handleReplaceLocation = () => {
-    if (editingLocationIndex !== null && replacementLocationId && onReplaceLocation) {
-      onReplaceLocation(editingLocationIndex, replacementLocationId);
-      setEditDialogOpen(false);
-      setEditingLocationIndex(null);
-      toast.success("Location replaced successfully");
-    } else {
-      toast.error("Please select a replacement location");
-    }
-  };
-
-  // Calculate metrics per stop if routeMetrics is provided
-  const calculateStopMetrics = () => {
-    if (!routeMetrics || locations.length <= 1) return [];
-    
-    const { distance, duration, fuelCost } = routeMetrics;
-    const stops = locations.length;
-    
-    // Calculate metrics per segment (between consecutive stops)
-    const distancePerSegment = distance / (stops - 1);
-    const durationPerSegment = duration / (stops - 1);
-    const costPerSegment = fuelCost / (stops - 1);
-    
-    let cumulativeDistance = 0;
-    let cumulativeDuration = 0;
-    let cumulativeCost = 0;
-    
-    return locations.map((location, index) => {
-      // First stop doesn't have metrics
-      if (index === 0) {
-        return { 
-          location, 
-          distanceSoFar: 0, 
-          durationSoFar: 0, 
-          costSoFar: 0 
-        };
-      }
-      
-      cumulativeDistance += distancePerSegment;
-      cumulativeDuration += durationPerSegment;
-      cumulativeCost += costPerSegment;
-      
-      return {
-        location,
-        distanceSoFar: cumulativeDistance,
-        durationSoFar: cumulativeDuration,
-        costSoFar: cumulativeCost
-      };
-    });
+    // Simple estimation - divide by number of segments
+    const segments = locations.length - 1;
+    return {
+      distance: routeMetrics.distance / segments,
+      duration: routeMetrics.duration / segments,
+      fuelCost: routeMetrics.fuelCost / segments
+    };
   };
   
-  const stopMetrics = calculateStopMetrics();
+  const handleToggleExpand = (index: number) => {
+    setExpandedStop(expandedStop === index ? null : index);
+  };
   
-  // Format time (minutes) to hours and minutes
-  const formatTime = (minutes: number) => {
-    const hrs = Math.floor(minutes / 60);
+  const formatDistance = (km: number): string => {
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toFixed(1)} km`;
+  };
+  
+  const formatTime = (minutes: number): string => {
+    if (minutes < 60) return `${Math.round(minutes)} min`;
+    const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
-    return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+    return `${hours}h ${mins}m`;
+  };
+  
+  const formatCost = (cost: number): string => {
+    return `R${cost.toFixed(2)}`;
   };
   
   return (
-    <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <TruckIcon className="h-5 w-5" />
-          <div className="font-medium">Route Stops</div>
-          <Badge variant="outline" className="ml-2">
-            {locations.length} stops
-          </Badge>
+    <Card>
+      <CardHeader className="py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            <CardTitle>Route Stops</CardTitle>
+          </div>
+          <div className="text-sm text-muted-foreground bg-muted rounded-md px-3 py-1 flex items-center gap-1.5">
+            {locations.length} {locations.length === 1 ? 'stop' : 'stops'}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Popover open={addLocationOpen} onOpenChange={setAddLocationOpen}>
+        <CardDescription>Route delivery stops</CardDescription>
+      </CardHeader>
+      <CardContent className="px-2 py-0">
+        <div className="divide-y">
+          {locations.map((location, index) => {
+            const isStart = index === 0;
+            const isEnd = index === locations.length - 1;
+            const segmentMetrics = calculateSegmentMetrics(index);
+            
+            // Calculate cylinder info based on location type
+            const cylinderInfo = location.type === 'Customer' || location.type === 'Distribution'
+              ? { type: 'Pickup', count: location.emptyCylinders || 0 }
+              : { type: 'Storage', count: location.fullCylinders || 0 };
+            
+            return (
+              <div key={location.id} className="py-3 px-3">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 mr-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${
+                      isStart ? 'bg-blue-500' : isEnd ? 'bg-green-500' : 'bg-primary'
+                    }`}>
+                      {index + 1}
+                    </div>
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <div className="font-medium">{location.name}</div>
+                    <div className="text-sm text-muted-foreground truncate">{location.address || ''}</div>
+                    <div className="mt-1 flex items-center">
+                      <span className="inline-flex items-center text-sm">
+                        <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        {cylinderInfo.type === 'Pickup' ? 'Pickup:' : 'Storage:'} {cylinderInfo.count} cylinders
+                      </span>
+                    </div>
+                    
+                    {!isStart && segmentMetrics.distance > 0 && (
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span>{formatDistance(segmentMetrics.distance)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{formatTime(segmentMetrics.duration)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Fuel className="h-3.5 w-3.5" />
+                          <span>{formatCost(segmentMetrics.fuelCost)}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {expandedStop === index && (
+                      <div className="mt-2 bg-muted/30 p-2 rounded-md">
+                        <div className="text-sm font-medium mb-1">Actions</div>
+                        <div className="flex gap-2">
+                          {!isStart && !isEnd && (
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => onRemoveLocation(index)}
+                              className="h-8 gap-1"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Remove
+                            </Button>
+                          )}
+                          {onReplaceLocation && !isStart && !isEnd && (
+                            <Select onValueChange={(value) => onReplaceLocation(index, value)}>
+                              <SelectTrigger className="h-8 gap-1">
+                                <Edit2 className="h-3.5 w-3.5 mr-1" />
+                                <SelectValue placeholder="Replace" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableLocations.map((loc) => (
+                                  <SelectItem key={loc.id} value={loc.id.toString()}>
+                                    {loc.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0 ml-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleToggleExpand(index)}
+                    >
+                      {expandedStop === index ? 
+                        <ChevronUp className="h-4 w-4" /> : 
+                        <ChevronDown className="h-4 w-4" />
+                      }
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="p-3">
+          <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1">
-                <Plus className="h-3.5 w-3.5" />
-                <span className="text-xs">Add Stop</span>
+              <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                <CirclePlus className="h-4 w-4" />
+                Add Stop
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="end">
-              <div className="space-y-4">
-                <h4 className="font-medium">Add New Stop</h4>
-                <div className="space-y-2">
-                  <Select
-                    value={selectedLocationId}
-                    onValueChange={handleLocationChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a location" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px] overflow-y-auto">
-                      {availableLocations && availableLocations.length > 0 ? (
-                        availableLocations.map((loc) => (
-                          <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
-                            {loc.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-locations" disabled>No locations available</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleAddLocation} 
-                    className="w-full"
-                    disabled={!selectedLocationId}
-                  >
-                    Add to Route
-                  </Button>
-                </div>
+            <PopoverContent className="w-80">
+              <div className="max-h-64 overflow-auto">
+                <div className="font-medium mb-2">Select a location:</div>
+                {availableLocations.length === 0 ? (
+                  <div className="text-sm text-center py-4 text-muted-foreground">
+                    No available locations
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {availableLocations.map(location => (
+                      <Button
+                        key={location.id}
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          onAddNewLocation(location.id);
+                          setIsPickerOpen(false);
+                        }}
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        {location.name}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             </PopoverContent>
           </Popover>
         </div>
-      </div>
-      
-      <ScrollArea className="h-[500px] pr-2">
-        <div className="space-y-2 relative">
-          {/* Draw vertical route line connecting stops */}
-          {locations.length > 1 && (
-            <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gray-200 dark:bg-gray-700 z-0"></div>
-          )}
-          
-          {locations && locations.length > 0 ? (
-            locations.map((location, index) => {
-              const metrics = stopMetrics[index];
-              // Make sure we're using cylinders consistently - either from cylinders property or emptyCylinders based on location type
-              const cylinders = location.type === 'Storage' 
-                ? location.fullCylinders || 0 
-                : (location.emptyCylinders || 0);
-              
-              return (
-                <div 
-                  key={`route-stop-${location.id}-${index}`}
-                  className="flex items-center gap-3 bg-background rounded-lg p-3 relative border border-border/80 hover:border-border transition-colors shadow-sm"
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold z-10">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{location.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">{location.address}</div>
-                    
-                    {/* Cylinder/Storage info badge */}
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {location.type === 'Customer' && cylinders > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          <Package className="h-3 w-3 mr-1" />
-                          Pickup: {cylinders} cylinders
-                        </Badge>
-                      )}
-                      {location.type === 'Storage' && cylinders > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Package className="h-3 w-3 mr-1" />
-                          Storage: {cylinders}
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {/* Route metrics - show only for stops after first */}
-                    {index > 0 && metrics && routeMetrics && (
-                      <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                        <div className="flex items-center">
-                          <MapPin className="h-3 w-3 mr-1 text-blue-500" />
-                          {metrics.distanceSoFar.toFixed(1)} km
-                        </div>
-                        <div className="flex items-center">
-                          <Clock className="h-3 w-3 mr-1 text-amber-500" />
-                          {formatTime(metrics.durationSoFar)}
-                        </div>
-                        <div className="flex items-center">
-                          <DollarSign className="h-3 w-3 mr-1 text-green-500" />
-                          R{metrics.costSoFar.toFixed(2)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0 text-sm font-medium">
-                    {index > 0 && (
-                      <div className="flex space-x-1">
-                        {onReplaceLocation && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 text-muted-foreground hover:text-primary"
-                            onClick={() => handleEditLocation(index)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => onRemoveLocation(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p>No locations added to this route yet.</p>
-              <p className="text-sm">Add stops using the button above or from the location selector.</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Edit Location Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Replace Route Stop</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm mb-2">
-                  Current stop: <span className="font-medium">{editingLocationIndex !== null ? locations[editingLocationIndex]?.name : ''}</span>
-                </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Select a new location to replace this stop
-                </p>
-              </div>
-              <Select
-                value={replacementLocationId}
-                onValueChange={setReplacementLocationId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a replacement location" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {availableLocations && availableLocations.length > 0 ? (
-                    availableLocations.map((loc) => (
-                      <SelectItem key={loc.id.toString()} value={loc.id.toString()}>
-                        {loc.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-locations" disabled>No locations available</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleReplaceLocation} disabled={!replacementLocationId}>Replace Stop</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
