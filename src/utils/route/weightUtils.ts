@@ -43,7 +43,15 @@ export const calculateTotalWeight = (locations: LocationType[],
     }
   }
   
-  // Calculate initial weight with all full cylinders
+  // For customer locations, count the cylinders we need to deliver
+  for (const loc of routeLocations) {
+    if (loc.type === 'Customer' || loc.type === 'Distribution') {
+      // For each customer location, we need to deliver empty cylinders
+      fullCylindersOnBoard += (loc.emptyCylinders || 0);
+    }
+  }
+  
+  // Calculate initial weight with all full cylinders - this is what we load at the start
   const initialWeight = fullCylindersOnBoard * CYLINDER_WEIGHT_KG;
   maxWeight = initialWeight;
   
@@ -59,7 +67,7 @@ export const calculateTotalWeight = (locations: LocationType[],
     // For customer locations, we deliver fulls and collect empties
     if (loc.type === 'Customer' || loc.type === 'Distribution') {
       // The number of cylinders being delivered at this stop
-      const fullsToDeliver = loc.fullCylinders || 0;
+      const fullsToDeliver = loc.emptyCylinders || 0;
       
       // Can't deliver more than what's on board
       const actualFullsDelivered = Math.min(fullCylindersOnBoard, fullsToDeliver);
