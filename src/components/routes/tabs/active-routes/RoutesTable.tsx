@@ -1,140 +1,92 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, parseISO } from 'date-fns';
-import { RouteData } from '@/hooks/fleet/useRouteData';
 import RouteStatusBadge from './RouteStatusBadge';
 import RouteActionButtons from './RouteActionButtons';
-import RouteActions from '@/components/routes/RouteActions';
+import { RouteData } from '@/hooks/fleet/useRouteData';
 
 interface RoutesTableProps {
   routes: RouteData[];
   processingRoutes: Record<string, string>;
   onStartRoute: (routeId: string) => void;
   onCompleteRoute: (routeId: string) => void;
+  highlightedDeliveryId?: string | null;
 }
 
-const RoutesTable = ({
-  routes,
-  processingRoutes,
-  onStartRoute,
-  onCompleteRoute
+const RoutesTable = ({ 
+  routes, 
+  processingRoutes, 
+  onStartRoute, 
+  onCompleteRoute,
+  highlightedDeliveryId 
 }: RoutesTableProps) => {
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  // Ref to scroll to the highlighted row
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(parseISO(dateString), 'dd MMM yyyy');
-    } catch (e) {
-      return 'Invalid date';
+  // Effect to scroll to the highlighted route
+  useEffect(() => {
+    if (highlightedDeliveryId && highlightedRowRef.current) {
+      highlightedRowRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      
+      // Add a brief highlight animation
+      highlightedRowRef.current.classList.add('bg-primary/10');
+      
+      // Remove the highlight after animation
+      const timer = setTimeout(() => {
+        if (highlightedRowRef.current) {
+          highlightedRowRef.current.classList.remove('bg-primary/10');
+        }
+      }, 2500);
+      
+      return () => clearTimeout(timer);
     }
-  };
-
-  const getSelectedRouteData = () => {
-    if (!selectedRouteId) return null;
-    
-    const selectedRoute = routes.find(route => route.id === selectedRouteId);
-    if (!selectedRoute) return null;
-    
-    // Create a default stops array if route.stops doesn't exist
-    const stops = selectedRoute.stops || [];
-    
-    // Transform the route data into the format expected by RouteActions
-    return {
-      name: selectedRoute.name || `Route ${formatDate(selectedRoute.date)}`,
-      stops: stops.map(stop => ({
-        siteName: stop.location_name || 'Unknown',
-        cylinders: stop.cylinders || 0,
-        kms: stop.distance || 0,
-        fuelCost: stop.fuel_cost || 0
-      })) || []
-    };
-  };
-
-  const selectedRouteData = getSelectedRouteData();
-  
-  const handleSaveRoute = () => {
-    // Placeholder for save functionality
-    console.log("Save route:", selectedRouteId);
-  };
-  
-  const handleOptimizeRoute = () => {
-    // Placeholder for optimize functionality
-    console.log("Optimize route:", selectedRouteId);
-  };
+  }, [highlightedDeliveryId, routes]);
 
   return (
-    <div>
-      {selectedRouteData && (
-        <div className="flex justify-end mb-4">
-          <RouteActions 
-            routeData={selectedRouteData}
-            onSave={handleSaveRoute}
-            onOptimize={handleOptimizeRoute}
-            disabled={false}
-          />
-        </div>
-      )}
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead></TableHead>
-            <TableHead>Route Name</TableHead>
+            <TableHead>Name</TableHead>
             <TableHead>Date</TableHead>
+            <TableHead>Locations</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Stops</TableHead>
-            <TableHead>Distance</TableHead>
-            <TableHead>Cylinders</TableHead>
             <TableHead>Vehicle</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {routes.map((route) => {
-            // Ensure we have valid values for distance
-            const displayDistance = route.total_distance && route.total_distance > 0 
-              ? route.total_distance
-              : (route.stops?.length || 1) * 15.5; // Fallback based on number of stops
-              
-            return (
-              <TableRow 
-                key={route.id}
-                className={selectedRouteId === route.id ? "bg-blue-50" : ""}
-                onClick={() => setSelectedRouteId(route.id === selectedRouteId ? null : route.id)}
-              >
-                <TableCell>
-                  <input 
-                    type="radio" 
-                    checked={selectedRouteId === route.id}
-                    onChange={() => {}}
-                    className="rounded-full"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">
-                  {route.name || `Route ${formatDate(route.date)}`}
-                </TableCell>
-                <TableCell>{formatDate(route.date)}</TableCell>
-                <TableCell>
-                  <RouteStatusBadge status={route.status} />
-                </TableCell>
-                <TableCell>{(route.stops || []).length}</TableCell>
-                <TableCell>{displayDistance.toFixed(1)} km</TableCell>
-                <TableCell>{route.total_cylinders}</TableCell>
-                <TableCell>
-                  {route.vehicle_name || (route.vehicle_id ? route.vehicle_id : 'Not assigned')}
-                </TableCell>
-                <TableCell className="text-right">
-                  <RouteActionButtons
-                    routeId={route.id}
-                    status={route.status}
-                    processingRoutes={processingRoutes}
-                    onStartRoute={onStartRoute}
-                    onCompleteRoute={onCompleteRoute}
-                  />
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {routes.map((route) => (
+            <TableRow 
+              key={route.id}
+              ref={route.id === highlightedDeliveryId ? highlightedRowRef : null}
+              className={`transition-colors duration-300 ${
+                route.id === highlightedDeliveryId ? 'bg-primary/10' : ''
+              }`}
+            >
+              <TableCell className="font-medium">{route.name}</TableCell>
+              <TableCell>{new Date(route.date).toLocaleDateString()}</TableCell>
+              <TableCell>{route.locations?.length || 0} stops</TableCell>
+              <TableCell>
+                <RouteStatusBadge status={route.status} />
+              </TableCell>
+              <TableCell>
+                {route.vehicle_name || (route.vehicle_id ? `Vehicle ${route.vehicle_id}` : 'None')}
+              </TableCell>
+              <TableCell className="text-right">
+                <RouteActionButtons 
+                  routeId={route.id} 
+                  status={route.status}
+                  processing={processingRoutes[route.id]} 
+                  onStart={onStartRoute}
+                  onComplete={onCompleteRoute}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

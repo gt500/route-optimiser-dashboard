@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Truck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface DeliveryItemProps {
   id: string;
@@ -18,6 +19,18 @@ interface UpcomingDeliveriesProps {
 }
 
 const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) => {
+  const navigate = useNavigate();
+  
+  const handleNavigateToRoutes = () => {
+    // Navigate to routes page with active tab selected
+    navigate('/routes', { state: { activeTab: 'active' } });
+  };
+
+  const handleNavigateToDelivery = (deliveryId: string) => {
+    // Navigate to routes page with specific delivery highlighted
+    navigate('/routes', { state: { activeTab: 'active', highlightDelivery: deliveryId } });
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow duration-300 bg-black text-white">
       <CardHeader>
@@ -44,7 +57,11 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) =
                 }`}>
                   {delivery.status === 'in_progress' ? 'In Progress' : 'Scheduled'}
                 </div>
-                <Button size="sm" variant="ghost">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => handleNavigateToDelivery(delivery.id)}
+                >
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -58,12 +75,22 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) =
                 <div className="font-medium">No deliveries scheduled for today</div>
                 <div className="text-sm text-gray-400">Schedule deliveries in the Routes section</div>
               </div>
-              <Button size="sm" variant="ghost">
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={handleNavigateToRoutes}
+              >
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           )}
-          <Button variant="outline" className="w-full">View All</Button>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={handleNavigateToRoutes}
+          >
+            View All
+          </Button>
         </div>
       </CardContent>
     </Card>

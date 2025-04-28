@@ -12,6 +12,7 @@ import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import RegionSelectionDialog from '@/components/routes/RegionSelectionDialog';
+import { useLocation } from 'react-router-dom';
 
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -36,14 +37,20 @@ const initialLocations: LocationType[] = [
 ];
 
 const RoutesList = () => {
-  const [activeTab, setActiveTab] = useState('create');
+  const location = useLocation();
+  const locationState = location.state as { activeTab?: string; highlightDelivery?: string } | null;
+  
+  const [activeTab, setActiveTab] = useState(locationState?.activeTab || 'create');
+  const [highlightedDeliveryId, setHighlightedDeliveryId] = useState<string | null>(
+    locationState?.highlightDelivery || null
+  );
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   const [regionSelectionOpen, setRegionSelectionOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   
   const { vehicles, fetchVehicles } = useVehiclesData();
-  
+
   const {
     route,
     availableLocations,
@@ -75,10 +82,30 @@ const RoutesList = () => {
   }, []);
 
   useEffect(() => {
+    if (locationState?.activeTab) {
+      setActiveTab(locationState.activeTab);
+    }
+    
+    if (locationState?.highlightDelivery) {
+      setHighlightedDeliveryId(locationState.highlightDelivery);
+    }
+  }, [location]);
+
+  useEffect(() => {
     if (activeTab === 'create' && !isLoadConfirmed && !selectedCountry) {
       setRegionSelectionOpen(true);
     }
   }, [activeTab, isLoadConfirmed]);
+
+  useEffect(() => {
+    if (highlightedDeliveryId) {
+      const timer = setTimeout(() => {
+        setHighlightedDeliveryId(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedDeliveryId]);
 
   const filteredAvailableLocations = useMemo(() => {
     return availableLocations.filter(loc => 
@@ -228,7 +255,10 @@ const RoutesList = () => {
         </TabsContent>
         
         <TabsContent value="active">
-          <ActiveRoutesTab onCreateRoute={() => setActiveTab('create')} />
+          <ActiveRoutesTab 
+            onCreateRoute={() => setActiveTab('create')} 
+            highlightedDeliveryId={highlightedDeliveryId}
+          />
         </TabsContent>
         
         <TabsContent value="history">

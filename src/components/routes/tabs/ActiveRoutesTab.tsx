@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
@@ -8,17 +7,22 @@ import EmptyRouteState from './active-routes/EmptyRouteState';
 import RoutesTable from './active-routes/RoutesTable';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 
-const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
+interface ActiveRoutesTabProps {
+  onCreateRoute: () => void;
+  highlightedDeliveryId?: string | null;
+}
+
+const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesTabProps) => {
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
   const { fetchActiveRoutes } = useRouteData();
   const { vehicles, saveVehicle, fetchVehicles } = useVehiclesData();
 
-  // Load routes when component mounts
+  // Load routes when component mounts or when highlightedDeliveryId changes
   useEffect(() => {
     loadRoutes();
-  }, []);
+  }, [highlightedDeliveryId]);
 
   const loadRoutes = async () => {
     setIsLoading(true);
@@ -242,6 +246,7 @@ const ActiveRoutesTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
           processingRoutes={processingRoutes} 
           onStartRoute={startRoute} 
           onCompleteRoute={markRouteAsComplete} 
+          highlightedDeliveryId={highlightedDeliveryId}
         />
       </CardContent>
     </Card>
