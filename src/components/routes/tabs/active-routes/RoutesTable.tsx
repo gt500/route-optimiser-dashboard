@@ -69,7 +69,7 @@ const RoutesTable = ({
             >
               <TableCell className="font-medium">{route.name}</TableCell>
               <TableCell>{new Date(route.date).toLocaleDateString()}</TableCell>
-              <TableCell>{route.locations?.length || 0} stops</TableCell>
+              <TableCell>{route.stops?.length || 0} stops</TableCell>
               <TableCell>
                 <RouteStatusBadge status={route.status} />
               </TableCell>
@@ -80,7 +80,7 @@ const RoutesTable = ({
                 <RouteActionButtons 
                   routeId={route.id} 
                   status={route.status}
-                  processing={processingRoutes[route.id]} 
+                  processingRoutes={processingRoutes} 
                   onStart={onStartRoute}
                   onComplete={onCompleteRoute}
                 />

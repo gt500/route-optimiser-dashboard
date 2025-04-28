@@ -7,16 +7,16 @@ interface RouteActionButtonsProps {
   routeId: string;
   status: string;
   processingRoutes: Record<string, string>;
-  onStartRoute: (routeId: string) => void;
-  onCompleteRoute: (routeId: string) => void;
+  onStart: (routeId: string) => void;
+  onComplete: (routeId: string) => void;
 }
 
 const RouteActionButtons = ({ 
   routeId, 
   status, 
   processingRoutes, 
-  onStartRoute, 
-  onCompleteRoute 
+  onStart, 
+  onComplete 
 }: RouteActionButtonsProps) => {
   return (
     <div className="flex justify-end gap-1">
@@ -29,7 +29,7 @@ const RouteActionButtons = ({
               ? 'bg-blue-500 text-white border-blue-600'
               : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
           }`}
-          onClick={() => onStartRoute(routeId)}
+          onClick={() => onStart(routeId)}
           disabled={processingRoutes[routeId] === 'starting'}
         >
           <Play className="h-4 w-4 mr-1" />
@@ -45,7 +45,7 @@ const RouteActionButtons = ({
               ? 'bg-green-500 text-white border-green-600'
               : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700'
           }`}
-          onClick={() => onCompleteRoute(routeId)}
+          onClick={() => onComplete(routeId)}
           disabled={processingRoutes[routeId] === 'completing'}
         >
           <CheckCircle className="h-4 w-4 mr-1" />
