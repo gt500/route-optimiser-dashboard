@@ -33,7 +33,7 @@ export interface VehicleConfigProps {
 }
 
 export const MAX_CYLINDERS = 100;
-export const CYLINDER_WEIGHT_KG = 48;
+export const CYLINDER_WEIGHT_KG = 22;
 export const EMPTY_CYLINDER_WEIGHT_KG = 12;
 
 export const defaultVehicleConfig: VehicleConfigProps = {
