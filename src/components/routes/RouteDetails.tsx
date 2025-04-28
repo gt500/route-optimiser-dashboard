@@ -29,14 +29,16 @@ interface RouteDetailsProps {
   };
   isLoadConfirmed?: boolean;
   isOverweight?: boolean;
-  onRemoveLocation: (index: number) => void;
+  onRemoveLocation?: (index: number) => void;
   onFuelCostUpdate: (newCost: number) => void;
-  onRouteDataUpdate: (distance: number, duration: number, trafficConditions?: string) => void;
+  onRouteDataUpdate?: (distance: number, duration: number, trafficConditions?: string) => void;
   onOptimize: () => void;
-  onSave: () => void;
+  onConfirmLoad: () => void; // Added this missing prop
+  onSave?: () => void;
   vehicleConfig: VehicleConfigProps;
   selectedVehicle?: string | null;
   vehicles?: Vehicle[];
+  onVehicleChange?: (vehicleId: string) => void; // Added this prop
   startLocationId?: string | null;
   endLocationId?: string | null;
 }
@@ -49,10 +51,12 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   onFuelCostUpdate,
   onRouteDataUpdate,
   onOptimize,
+  onConfirmLoad, // Using the new prop
   onSave,
   vehicleConfig,
   selectedVehicle,
   vehicles = [],
+  onVehicleChange, // Using the new prop
   startLocationId = null,
   endLocationId = null
 }) => {
@@ -243,7 +247,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </div>
             ) : (
               <Button 
-                onClick={onSave} 
+                onClick={onConfirmLoad} // Use the onConfirmLoad prop here
                 disabled={route.locations.length < 2 || vehicleIsOverweight}
                 className="gap-1"
               >

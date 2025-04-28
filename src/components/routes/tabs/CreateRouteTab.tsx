@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import RouteDetails from '../RouteDetails';
 import RouteMap from '../RouteMap';
 import RouteLocations from '../RouteLocations';
-import { LocationType } from '@/components/locations/LocationEditDialog';
+import { LocationType } from '@/types/location';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
 
