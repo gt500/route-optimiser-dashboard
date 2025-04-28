@@ -35,11 +35,11 @@ const ReportMetricsGrid: React.FC<ReportMetricsGridProps> = ({
       />
       
       <ReportMetricsCard
-        title="Delivery Locations"
+        title="Number of Deliveries"
         value={totalLocations}
         icon={<MapPin />}
         color="bg-gradient-to-br from-purple-500 to-purple-600"
-        tooltip="Number of unique delivery locations visited"
+        tooltip="Total number of deliveries completed"
       />
       
       <ReportMetricsCard
