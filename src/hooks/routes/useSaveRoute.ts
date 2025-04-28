@@ -44,6 +44,14 @@ export const useSaveRoute = (
         };
       });
 
+      // Prepare route metadata as a JSON string since there's no dedicated column for stops
+      const routeMetadata = JSON.stringify({
+        stops: stops,
+        trafficConditions: route.trafficConditions,
+        country: route.country,
+        region: route.region
+      });
+
       // Create route record - ensuring we match the exact schema expected by Supabase
       const { data, error } = await supabase.from('routes').insert({
         name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
@@ -51,17 +59,37 @@ export const useSaveRoute = (
         status: 'scheduled',
         total_distance: route.distance,
         total_duration: route.estimatedDuration,
-        estimated_cost: route.fuelCost, // Map total_fuel_cost to estimated_cost field
+        estimated_cost: route.fuelCost,
         total_cylinders: route.cylinders,
-        vehicle_id: selectedVehicle,
-        // Store these as metadata in the DB for future use
-        stops: stops
+        vehicle_id: selectedVehicle
       }).select();
 
       if (error) {
         console.error('Error saving route:', error);
         toast.error('Failed to save route');
         return;
+      }
+      
+      // Now save the route metadata separately to the deliveries table
+      if (data && data.length > 0) {
+        const routeId = data[0].id;
+        
+        // Create deliveries for each stop except the first one (which is the depot)
+        const deliveryPromises = stops.slice(1).map(async (stop, index) => {
+          const { error: deliveryError } = await supabase.from('deliveries').insert({
+            id: crypto.randomUUID(),
+            route_id: routeId,
+            location_id: stop.location_id,
+            cylinders: stop.cylinders,
+            sequence: index + 1
+          });
+          
+          if (deliveryError) {
+            console.error('Error creating delivery:', deliveryError);
+          }
+        });
+        
+        await Promise.all(deliveryPromises);
       }
       
       console.log('Route saved successfully:', data);
