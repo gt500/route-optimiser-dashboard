@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,18 +55,15 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const [totalWeight, setTotalWeight] = useState<number>(0);
   const [isAlertAcknowledged, setIsAlertAcknowledged] = useState<boolean>(false);
 
-  // Calculate total weight of all cylinders with consistent weight values
   useEffect(() => {
     if (!route.locations || route.locations.length === 0) {
       setTotalWeight(0);
       return;
     }
     
-    // Use the improved weight calculation, excluding start and end points
     const weight = calculateTotalWeight(route.locations, startLocationId, endLocationId);
     setTotalWeight(weight);
     
-    // Reset acknowledgment when weight changes
     if (isOverweight) {
       setIsAlertAcknowledged(false);
     }
@@ -77,16 +73,13 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     onFuelCostUpdate(cost);
   };
 
-  // Find the assigned vehicle details if one is selected
   const assignedVehicle = selectedVehicle ? 
     vehicles.find(v => v.id === selectedVehicle) : 
     null;
 
-  // Prepare route data for the RouteActions component
   const routeData = {
     name: route.name || "Route Report",
     stops: route.locations.map((location, index) => {
-      // For the first location (start point), don't calculate metrics
       if (index === 0) {
         return {
           siteName: location.name,
@@ -96,7 +89,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         };
       }
 
-      // For segments, calculate approximate metrics
       const totalSegments = Math.max(1, route.locations.length - 1);
       const avgDistancePerStop = route.distance / totalSegments;
       const avgFuelCostPerStop = route.fuelCost / totalSegments;

@@ -24,6 +24,9 @@ export const calculateFuelConsumption = (
   totalWeight: number,
   isCityDriving: boolean = true
 ): number => {
+  // Handle edge cases with small distances
+  if (distance <= 0) return 0;
+  
   // Convert distance to 100km units
   const distanceIn100km = distance / 100;
   
@@ -60,7 +63,7 @@ export const calculateRouteFuelConsumption = (
     return 0;
   }
   
-  // Calculate total weight from all cylinders on the route
+  // Calculate total weight of all cylinders on the route
   const totalWeight = calculateTotalWeight(locations);
   
   // Calculate consumption based on weight and distance

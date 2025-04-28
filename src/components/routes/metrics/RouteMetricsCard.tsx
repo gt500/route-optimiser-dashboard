@@ -9,7 +9,7 @@ interface RouteMetricsCardProps {
   value: string | ReactNode;
   icon: ReactNode;
   color?: string;
-  ringColor?: string; // Added ringColor property
+  ringColor?: string;
   subtitle?: ReactNode;
   tooltip?: string;
   onClick?: () => void;
@@ -20,11 +20,16 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
   value,
   icon,
   color = "bg-primary",
-  ringColor, // Include ringColor in props
+  ringColor,
   subtitle,
   tooltip,
   onClick
 }) => {
+  // Ensure the value is properly formatted and never shows as 0 or NaN
+  const formattedValue = typeof value === 'number' && (isNaN(value) || value === 0) 
+    ? '—' 
+    : value;
+
   return (
     <Card 
       className={`flex flex-col p-4 h-full overflow-hidden transition-all ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
@@ -50,7 +55,7 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
         <div className={`${color} rounded-full p-2.5 text-white ${ringColor ? `ring-2 ${ringColor}` : ''}`}>
           {icon}
         </div>
-        <div className="text-xl font-bold">{value}</div>
+        <div className="text-xl font-bold">{formattedValue}</div>
       </div>
       
       {subtitle && (

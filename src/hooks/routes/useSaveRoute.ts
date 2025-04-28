@@ -29,9 +29,9 @@ export const useSaveRoute = (
         const distance = waypointData.distance || 0;
         
         // Calculate fuel cost for this segment based on distance
-        const fuelConsumptionRate = route.fuelConsumption / route.distance; // L per km
+        const fuelConsumptionRate = route.fuelConsumption / Math.max(0.1, route.distance); // L per km
         const segmentFuelConsumption = distance * fuelConsumptionRate;
-        const segmentFuelCost = segmentFuelConsumption * (route.fuelCost / route.fuelConsumption);
+        const segmentFuelCost = segmentFuelConsumption * (route.fuelCost / Math.max(0.1, route.fuelConsumption));
         
         return {
           location_id: loc.id,

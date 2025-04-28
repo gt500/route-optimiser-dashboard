@@ -48,18 +48,24 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
     );
   }
   
-  // Calculate segment metrics if waypointData is not provided
+  // Calculate segment metrics with proper validation
   const calculateSegmentMetrics = (index: number) => {
     if (!routeMetrics || locations.length < 2 || index === 0) {
       return { distance: 0, duration: 0, fuelCost: 0 };
     }
     
-    // Simple estimation - divide by number of segments
-    const segments = locations.length - 1;
+    // If we have waypoint data in the route state, use it
+    const segments = Math.max(1, locations.length - 1);
+    
+    // Ensure we don't divide by zero and provide reasonable defaults
+    const distance = (routeMetrics.distance || 0) / segments;
+    const duration = (routeMetrics.duration || 0) / segments;
+    const fuelCost = (routeMetrics.fuelCost || 0) / segments;
+    
     return {
-      distance: routeMetrics.distance / segments,
-      duration: routeMetrics.duration / segments,
-      fuelCost: routeMetrics.fuelCost / segments
+      distance,
+      duration,
+      fuelCost
     };
   };
   
@@ -82,6 +88,11 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
   const formatCost = (cost: number): string => {
     return `R${cost.toFixed(2)}`;
   };
+  
+  // Calculate the total route metrics to display at the bottom
+  const totalDistance = routeMetrics?.distance || 0;
+  const totalDuration = routeMetrics?.duration || 0;
+  const totalFuelCost = routeMetrics?.fuelCost || 0;
   
   return (
     <Card>
@@ -198,6 +209,26 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
             );
           })}
         </div>
+        
+        {locations.length > 1 && routeMetrics && (
+          <div className="mt-3 p-3 bg-muted/30 rounded-md">
+            <div className="text-sm font-medium mb-2">Route Summary</div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 text-blue-500" />
+                <span>{formatDistance(totalDistance)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                <span>{formatTime(totalDuration)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Fuel className="h-3.5 w-3.5 text-green-500" />
+                <span>{formatCost(totalFuelCost)}</span>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="p-3">
           <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>

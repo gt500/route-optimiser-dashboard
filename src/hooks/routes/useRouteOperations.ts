@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { LocationType } from '@/types/location';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
@@ -31,7 +30,7 @@ export const useRouteOperations = (
       const newCylinders = prev.cylinders + (location.cylinders || 0);
       
       // Recalculate fuel consumption with updated route
-      const newDistance = prev.distance || 45.7; // Default to 45.7km if no distance is set
+      const newDistance = Math.max(0.1, prev.distance || 45.7); // Default to 45.7km if no distance is set
       const newConsumption = calculateRouteFuelConsumption(newDistance, updatedLocations);
       const newFuelCost = newConsumption * vehicleConfig.fuelPrice;
       
@@ -40,8 +39,8 @@ export const useRouteOperations = (
         if (index === 0) return { distance: 0, duration: 0 };
         
         // Evenly distribute distance and duration across segments
-        const segmentDistance = newDistance / (updatedLocations.length - 1);
-        const segmentDuration = (prev.estimatedDuration || 75) / (updatedLocations.length - 1);
+        const segmentDistance = newDistance / Math.max(1, updatedLocations.length - 1);
+        const segmentDuration = (prev.estimatedDuration || 75) / Math.max(1, updatedLocations.length - 1);
         
         return {
           distance: segmentDistance,
@@ -189,7 +188,9 @@ export const useRouteOperations = (
   };
 
   const updateRouteCosts = (distance: number) => {
-    if (distance <= 0) return;
+    if (distance <= 0) {
+      distance = 0.1; // Set minimum to avoid division by zero
+    }
     
     const consumption = calculateRouteFuelConsumption(distance, route.locations);
     const fuelCost = consumption * vehicleConfig.fuelPrice;

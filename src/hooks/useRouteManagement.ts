@@ -175,10 +175,11 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     
     if (distance <= 0 || isNaN(distance)) {
       console.warn("Invalid distance received:", distance);
-      return;
+      distance = 0.1; // Set minimum distance to avoid division by zero
     }
     
     setRoute(prev => {
+      // Use the fuel calculation utility to get more accurate consumption
       const consumption = (distance * vehicleConfig.baseConsumption) / 100;
       const cost = consumption * vehicleConfig.fuelPrice;
       
