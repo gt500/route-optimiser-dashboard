@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { LocationType } from '@/types/location';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
 import { toast } from 'sonner';
-import { calculateRouteFuelConsumption } from '@/utils/route/fuelUtils';
+import { calculateRouteFuelConsumption, calculateFuelConsumption } from '@/utils/route/fuelUtils';
+import { calculateTotalWeight } from '@/utils/route/weightUtils';
 
 export const useRouteOperations = (
   route: RouteState,
@@ -18,7 +19,6 @@ export const useRouteOperations = (
       const existingLocations = prev.locations;
       const updatedLocations = [...existingLocations];
       
-      // Insert new location before the end location if it exists
       if (endLocation && updatedLocations.length > 0 && 
           updatedLocations[updatedLocations.length - 1].id === endLocation.id) {
         updatedLocations.splice(-1, 0, location);
@@ -26,19 +26,17 @@ export const useRouteOperations = (
         updatedLocations.push(location);
       }
 
-      // Calculate new cylinders count
       const newCylinders = prev.cylinders + (location.cylinders || 0);
       
-      // Recalculate fuel consumption with updated route
-      const newDistance = Math.max(0.1, prev.distance || 45.7); // Default to 45.7km if no distance is set
+      const totalWeight = calculateTotalWeight(updatedLocations);
+      
+      const newDistance = Math.max(0.1, prev.distance || 45.7);
       const newConsumption = calculateRouteFuelConsumption(newDistance, updatedLocations);
       const newFuelCost = newConsumption * vehicleConfig.fuelPrice;
       
-      // Create segment data for new location
-      const segmentData = updatedLocations.map((_, index) => {
+      const waypointData = updatedLocations.map((_, index) => {
         if (index === 0) return { distance: 0, duration: 0 };
         
-        // Evenly distribute distance and duration across segments
         const segmentDistance = newDistance / Math.max(1, updatedLocations.length - 1);
         const segmentDuration = (prev.estimatedDuration || 75) / Math.max(1, updatedLocations.length - 1);
         
@@ -54,30 +52,27 @@ export const useRouteOperations = (
         cylinders: newCylinders,
         fuelConsumption: newConsumption,
         fuelCost: newFuelCost,
-        waypointData: segmentData
+        waypointData
       };
     });
     
-    // Log successful addition
     console.log(`Added location ${location.name} to route with ${location.cylinders} cylinders`);
   };
 
   const removeLocationFromRoute = (locationId: string) => {
     setRoute(prev => {
-      // Find the location to be removed and its cylinders
       const locationToRemove = prev.locations.find(loc => loc.id === locationId);
       const cylindersToRemove = locationToRemove?.cylinders || 0;
       const updatedLocations = prev.locations.filter(loc => loc.id !== locationId);
       
-      // Recalculate fuel consumption with updated route
+      const totalWeight = calculateTotalWeight(updatedLocations);
+      
       const newConsumption = calculateRouteFuelConsumption(prev.distance, updatedLocations);
       const newFuelCost = newConsumption * vehicleConfig.fuelPrice;
       
-      // Update segment data
-      const segmentData = updatedLocations.map((_, index) => {
+      const waypointData = updatedLocations.map((_, index) => {
         if (index === 0) return { distance: 0, duration: 0 };
         
-        // Evenly distribute distance and duration across segments
         const segmentDistance = prev.distance / Math.max(1, updatedLocations.length - 1);
         const segmentDuration = (prev.estimatedDuration || 75) / Math.max(1, updatedLocations.length - 1);
         
@@ -93,7 +88,7 @@ export const useRouteOperations = (
         cylinders: Math.max(0, prev.cylinders - cylindersToRemove),
         fuelConsumption: newConsumption,
         fuelCost: newFuelCost,
-        waypointData: segmentData
+        waypointData
       };
     });
   };
@@ -109,12 +104,10 @@ export const useRouteOperations = (
       const oldLocation = prev.locations[oldLocationIndex];
       const updatedLocations = [...prev.locations];
       
-      // Preserve cylinders count from the old location
       const cylindersCount = oldLocation.type === 'Customer' 
         ? oldLocation.emptyCylinders 
         : oldLocation.fullCylinders;
       
-      // Create new location with preserved values
       const locationWithCylinders = {
         ...newLocation,
         emptyCylinders: oldLocation.type === 'Customer' ? cylindersCount : newLocation.emptyCylinders,
@@ -123,15 +116,28 @@ export const useRouteOperations = (
       
       updatedLocations[oldLocationIndex] = locationWithCylinders;
       
-      // Recalculate consumption
+      const totalWeight = calculateTotalWeight(updatedLocations);
+      
       const newConsumption = calculateRouteFuelConsumption(prev.distance, updatedLocations);
       const newFuelCost = newConsumption * vehicleConfig.fuelPrice;
+      
+      const waypointData = [...prev.waypointData];
+      if (oldLocationIndex > 0) {
+        const segmentDistance = prev.distance / Math.max(1, updatedLocations.length - 1);
+        const segmentDuration = (prev.estimatedDuration || 75) / Math.max(1, updatedLocations.length - 1);
+        
+        waypointData[oldLocationIndex - 1] = {
+          distance: segmentDistance,
+          duration: segmentDuration
+        };
+      }
       
       return {
         ...prev,
         locations: updatedLocations,
         fuelConsumption: newConsumption,
-        fuelCost: newFuelCost
+        fuelCost: newFuelCost,
+        waypointData
       };
     });
   };
@@ -147,27 +153,20 @@ export const useRouteOperations = (
       return;
     }
     
-    // Simple optimization just reorders the points between start and end
     setRoute(prev => {
-      // Keep start and end points fixed
       const startPoint = prev.locations[0];
       const endPoint = prev.locations.length > 1 ? prev.locations[prev.locations.length - 1] : null;
       
-      // Get middle points
       let middlePoints = prev.locations.slice(1, endPoint ? -1 : undefined);
       
-      // Simple random shuffle for demonstration (a real optimization would use algorithms)
       middlePoints = [...middlePoints].sort(() => Math.random() - 0.5);
       
-      // Reassemble the route
       let optimizedLocations = [startPoint, ...middlePoints];
       if (endPoint) optimizedLocations.push(endPoint);
       
-      // Create new segment data for the optimized route
       const optimizedSegments = optimizedLocations.map((_, index) => {
         if (index === 0) return { distance: 0, duration: 0 };
         
-        // Evenly distribute metrics across segments for now
         const segmentDistance = prev.distance / Math.max(1, optimizedLocations.length - 1);
         const segmentDuration = (prev.estimatedDuration || 75) / Math.max(1, optimizedLocations.length - 1);
         
@@ -189,36 +188,38 @@ export const useRouteOperations = (
 
   const updateRouteCosts = (distance: number) => {
     if (distance <= 0) {
-      distance = 0.1; // Set minimum to avoid division by zero
+      distance = 0.1;
     }
     
-    const consumption = calculateRouteFuelConsumption(distance, route.locations);
-    const fuelCost = consumption * vehicleConfig.fuelPrice;
-    const maintenanceCost = distance * vehicleConfig.maintenanceCost;
-    
-    // Create segment data
-    const segmentData = route.locations.map((_, index) => {
-      if (index === 0) return { distance: 0, duration: 0 };
+    setRoute(prev => {
+      const totalWeight = calculateTotalWeight(prev.locations);
       
-      // Evenly distribute costs across segments
-      const segmentDistance = distance / Math.max(1, route.locations.length - 1);
-      const segmentDuration = (route.estimatedDuration || 75) / Math.max(1, route.locations.length - 1);
+      const consumption = calculateRouteFuelConsumption(distance, prev.locations, prev.trafficConditions === 'heavy');
+      const fuelCost = consumption * vehicleConfig.fuelPrice;
+      const maintenanceCost = distance * vehicleConfig.maintenanceCost;
+      
+      const waypointData = prev.locations.map((_, index) => {
+        if (index === 0) return { distance: 0, duration: 0 };
+        
+        const segmentDistance = distance / Math.max(1, prev.locations.length - 1);
+        const segmentDuration = (prev.estimatedDuration || 75) / Math.max(1, prev.locations.length - 1);
+        
+        return {
+          distance: segmentDistance,
+          duration: segmentDuration
+        };
+      });
       
       return {
-        distance: segmentDistance,
-        duration: segmentDuration
+        ...prev,
+        distance,
+        fuelConsumption: consumption,
+        fuelCost,
+        maintenanceCost,
+        totalCost: fuelCost + maintenanceCost,
+        waypointData
       };
     });
-    
-    setRoute(prev => ({
-      ...prev,
-      distance,
-      fuelConsumption: consumption,
-      fuelCost,
-      maintenanceCost,
-      totalCost: fuelCost + maintenanceCost,
-      waypointData: segmentData
-    }));
   };
 
   return {

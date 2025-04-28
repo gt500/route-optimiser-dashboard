@@ -11,6 +11,7 @@ import { Vehicle } from '@/types/fleet';
 import RouteActions from './RouteActions';
 import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/hooks/routes/types';
 import { calculateTotalWeight } from '@/utils/route/weightUtils';
+import { calculateRouteFuelConsumption, calculateFuelCost } from '@/utils/route/fuelUtils';
 
 interface RouteDetailsProps {
   route: {
@@ -89,15 +90,28 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         };
       }
 
-      const totalSegments = Math.max(1, route.locations.length - 1);
-      const avgDistancePerStop = route.distance / totalSegments;
-      const avgFuelCostPerStop = route.fuelCost / totalSegments;
+      const previousSegment = Math.max(0, index - 1);
+      const segmentData = route.waypointData && route.waypointData[previousSegment];
+      
+      const segmentDistance = segmentData?.distance || 
+        (route.distance / Math.max(1, route.locations.length - 1));
+        
+      const segmentFuelConsumption = calculateRouteFuelConsumption(
+        segmentDistance,
+        route.locations.slice(0, index + 1),
+        route.trafficConditions === 'heavy'
+      );
+      
+      const segmentFuelCost = calculateFuelCost(
+        segmentFuelConsumption, 
+        vehicleConfig.fuelPrice
+      );
 
       return {
         siteName: location.name,
         cylinders: (location.type === 'Customer' ? location.emptyCylinders : location.fullCylinders) || 0,
-        kms: avgDistancePerStop,
-        fuelCost: avgFuelCostPerStop
+        kms: Math.round(segmentDistance * 10) / 10,
+        fuelCost: Math.round(segmentFuelCost * 100) / 100
       };
     })
   };

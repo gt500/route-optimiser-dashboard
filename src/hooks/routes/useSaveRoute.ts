@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { RouteState } from './types';
 import { supabase } from '@/integrations/supabase/client';
+import { calculateSegmentFuelConsumption, calculateFuelCost } from '@/utils/route/fuelUtils';
 
 export const useSaveRoute = (
   route: RouteState,
@@ -22,34 +23,12 @@ export const useSaveRoute = (
     }
 
     try {
-      // Create stops data
-      const stops = route.locations.map((loc, index) => {
-        // Calculate individual stop costs based on waypoint data if available
-        const waypointData = route.waypointData[index - 1] || { distance: 0, duration: 0 };
-        const distance = waypointData.distance || 0;
-        
-        // Calculate fuel cost for this segment based on distance
-        const fuelConsumptionRate = route.fuelConsumption / Math.max(0.1, route.distance); // L per km
-        const segmentFuelConsumption = distance * fuelConsumptionRate;
-        const segmentFuelCost = segmentFuelConsumption * (route.fuelCost / Math.max(0.1, route.fuelConsumption));
-        
-        return {
-          location_id: loc.id,
-          location_name: loc.name,
-          cylinders: loc.type === 'Customer' ? (loc.emptyCylinders || 0) : (loc.fullCylinders || 0),
-          order: index,
-          distance: distance,
-          duration: waypointData.duration || 0,
-          fuel_cost: parseFloat(segmentFuelCost.toFixed(2)) || 0
-        };
-      });
-
       // Generate a UUID for the route
       const routeId = crypto.randomUUID();
 
       // Create route record - ensuring we match the exact schema expected by Supabase
       const { data, error } = await supabase.from('routes').insert({
-        id: routeId, // Add the required id field
+        id: routeId,
         name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
         date: new Date().toISOString(),
         status: 'scheduled',
@@ -68,7 +47,51 @@ export const useSaveRoute = (
       
       // Now save the route metadata separately to the deliveries table
       if (data && data.length > 0) {
-        const routeId = data[0].id;
+        // Create stops data with accurate segment metrics
+        const stops = route.locations.map((loc, index) => {
+          // First stop has no distance or cost
+          if (index === 0) {
+            return {
+              location_id: loc.id,
+              location_name: loc.name,
+              cylinders: loc.type === 'Customer' ? (loc.emptyCylinders || 0) : (loc.fullCylinders || 0),
+              order: index,
+              distance: 0,
+              duration: 0,
+              fuel_cost: 0
+            };
+          }
+
+          // For other stops, calculate segment-specific metrics
+          // Use waypointData if available for more accuracy
+          const previousWaypoint = Math.max(0, index - 1);
+          const segmentData = route.waypointData[previousWaypoint];
+          
+          // Get accurate segment distance
+          const segmentDistance = segmentData?.distance || 
+            (route.distance / Math.max(1, route.locations.length - 1));
+          
+          // Calculate fuel consumption for this specific segment based on load
+          const segmentFuelConsumption = calculateSegmentFuelConsumption(
+            segmentDistance, 
+            route.locations,
+            index,
+            route.trafficConditions === 'heavy'
+          );
+          
+          // Calculate segment cost based on actual consumption
+          const segmentFuelCost = calculateFuelCost(segmentFuelConsumption, route.fuelCost / Math.max(0.1, route.fuelConsumption));
+          
+          return {
+            location_id: loc.id,
+            location_name: loc.name,
+            cylinders: loc.type === 'Customer' ? (loc.emptyCylinders || 0) : (loc.fullCylinders || 0),
+            order: index,
+            distance: parseFloat(segmentDistance.toFixed(1)),
+            duration: segmentData?.duration || route.estimatedDuration / Math.max(1, route.locations.length - 1),
+            fuel_cost: parseFloat(segmentFuelCost.toFixed(2))
+          };
+        });
         
         // Create deliveries for each stop except the first one (which is the depot)
         const deliveryPromises = stops.slice(1).map(async (stop, index) => {

@@ -25,10 +25,25 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
   tooltip,
   onClick
 }) => {
-  // Ensure the value is properly formatted and never shows as 0 or NaN
-  const formattedValue = typeof value === 'number' && (isNaN(value) || value === 0) 
-    ? '—' 
-    : value;
+  // Format numeric values to ensure they're always properly displayed
+  const formatValue = (val: string | ReactNode): ReactNode => {
+    if (typeof val === 'number') {
+      if (isNaN(val) || val === 0) {
+        return '—';
+      }
+      // Format depending on the value size
+      if (val < 0.1) {
+        return val.toFixed(2);
+      } else if (val < 10) {
+        return val.toFixed(1);
+      } else {
+        return Math.round(val);
+      }
+    }
+    return val;
+  };
+
+  const formattedValue = formatValue(value);
 
   return (
     <Card 
