@@ -22,6 +22,7 @@ export interface RouteDelivery {
   longitude?: number;
   region?: string;
   country?: string;
+  actualDistance?: number; // Added to support route-based distance
 }
 
 export interface ProcessedRoute {

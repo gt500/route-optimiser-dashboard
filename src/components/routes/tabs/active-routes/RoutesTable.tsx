@@ -90,44 +90,51 @@ const RoutesTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {routes.map((route) => (
-            <TableRow 
-              key={route.id}
-              className={selectedRouteId === route.id ? "bg-blue-50" : ""}
-              onClick={() => setSelectedRouteId(route.id === selectedRouteId ? null : route.id)}
-            >
-              <TableCell>
-                <input 
-                  type="radio" 
-                  checked={selectedRouteId === route.id}
-                  onChange={() => {}}
-                  className="rounded-full"
-                />
-              </TableCell>
-              <TableCell className="font-medium">
-                {route.name || `Route ${formatDate(route.date)}`}
-              </TableCell>
-              <TableCell>{formatDate(route.date)}</TableCell>
-              <TableCell>
-                <RouteStatusBadge status={route.status} />
-              </TableCell>
-              <TableCell>{(route.stops || []).length}</TableCell>
-              <TableCell>{route.total_distance?.toFixed(1)} km</TableCell>
-              <TableCell>{route.total_cylinders}</TableCell>
-              <TableCell>
-                {route.vehicle_name || (route.vehicle_id ? route.vehicle_id : 'Not assigned')}
-              </TableCell>
-              <TableCell className="text-right">
-                <RouteActionButtons
-                  routeId={route.id}
-                  status={route.status}
-                  processingRoutes={processingRoutes}
-                  onStartRoute={onStartRoute}
-                  onCompleteRoute={onCompleteRoute}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+          {routes.map((route) => {
+            // Ensure we have valid values for distance
+            const displayDistance = route.total_distance && route.total_distance > 0 
+              ? route.total_distance
+              : (route.stops?.length || 1) * 15.5; // Fallback based on number of stops
+              
+            return (
+              <TableRow 
+                key={route.id}
+                className={selectedRouteId === route.id ? "bg-blue-50" : ""}
+                onClick={() => setSelectedRouteId(route.id === selectedRouteId ? null : route.id)}
+              >
+                <TableCell>
+                  <input 
+                    type="radio" 
+                    checked={selectedRouteId === route.id}
+                    onChange={() => {}}
+                    className="rounded-full"
+                  />
+                </TableCell>
+                <TableCell className="font-medium">
+                  {route.name || `Route ${formatDate(route.date)}`}
+                </TableCell>
+                <TableCell>{formatDate(route.date)}</TableCell>
+                <TableCell>
+                  <RouteStatusBadge status={route.status} />
+                </TableCell>
+                <TableCell>{(route.stops || []).length}</TableCell>
+                <TableCell>{displayDistance.toFixed(1)} km</TableCell>
+                <TableCell>{route.total_cylinders}</TableCell>
+                <TableCell>
+                  {route.vehicle_name || (route.vehicle_id ? route.vehicle_id : 'Not assigned')}
+                </TableCell>
+                <TableCell className="text-right">
+                  <RouteActionButtons
+                    routeId={route.id}
+                    status={route.status}
+                    processingRoutes={processingRoutes}
+                    onStartRoute={onStartRoute}
+                    onCompleteRoute={onCompleteRoute}
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

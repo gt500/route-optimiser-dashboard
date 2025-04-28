@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import RouteActions from './RouteActions';
 import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/hooks/routes/types';
 import { calculateTotalWeight } from '@/utils/route/weightUtils';
 import { calculateRouteFuelConsumption, calculateFuelCost } from '@/utils/route/fuelUtils';
+import { calculateRoadDistances } from '@/utils/route/routeCalculation';
 
 interface RouteDetailsProps {
   route: {
@@ -69,7 +71,21 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     if (isOverweight) {
       setIsAlertAcknowledged(false);
     }
-  }, [route.locations, route.cylinders, isOverweight, startLocationId, endLocationId]);
+    
+    // If we have locations but no distance data, calculate some default values
+    if (route.locations.length >= 2 && (!route.distance || route.distance <= 0)) {
+      const locationCoordinates = route.locations.map(loc => ({
+        latitude: loc.lat || 0,
+        longitude: loc.long || 0
+      }));
+      
+      const segmentDistances = calculateRoadDistances(locationCoordinates);
+      const totalDistance = segmentDistances.reduce((sum, d) => sum + d, 0);
+      const estimatedDuration = totalDistance / 50 * 60 + route.locations.length * 5;
+      
+      onRouteDataUpdate(totalDistance, estimatedDuration, route.trafficConditions);
+    }
+  }, [route.locations, route.distance, route.cylinders, isOverweight, startLocationId, endLocationId]);
 
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);
@@ -94,6 +110,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       const previousSegment = Math.max(0, index - 1);
       const segmentData = route.waypointData && route.waypointData[previousSegment];
       
+      // Use waypoint data if available, otherwise calculate based on total distance
       const segmentDistance = segmentData?.distance || 
         (route.distance / Math.max(1, route.locations.length - 1));
         
@@ -124,7 +141,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const maxAllowedWeight = vehicleConfig.maxWeight || (MAX_CYLINDERS * CYLINDER_WEIGHT_KG);
   const vehicleIsOverweight = totalWeight > maxAllowedWeight;
 
-  const validDistance = route.distance > 0 ? route.distance : route.locations.length * 5.0;
+  // Ensure we have valid minimum values for all metrics
+  const minDistancePerLocation = 15.0; // km
+  const defaultDistance = route.locations.length * minDistancePerLocation;
+  
+  const validDistance = route.distance > 0 ? route.distance : defaultDistance;
   const validDuration = route.estimatedDuration && route.estimatedDuration > 0 ? 
     route.estimatedDuration : route.locations.length * 15;
   const validFuelConsumption = route.fuelConsumption > 0 ? 

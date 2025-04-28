@@ -11,6 +11,7 @@ import TrafficOverlay from './map-components/TrafficOverlay';
 import { toast } from 'sonner';
 import { calculateDistance } from '@/utils/route/distanceUtils';
 import { AVG_SPEED_URBAN_KM_H } from '@/utils/route/constants';
+import { calculateRoadDistances } from '@/utils/route/routeCalculation';
 
 interface Location {
   id: string;
@@ -18,6 +19,11 @@ interface Location {
   latitude: number;
   longitude: number;
   address?: string;
+}
+
+interface NamedCoords {
+  name: string;
+  coords: [number, number];
 }
 
 interface RouteMapProps {
@@ -78,6 +84,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
     return totalDistance;
   };
   
+  // Calculate more accurate road distances based on available data
+  const calculateRouteDistances = () => {
+    if (locations.length < 2) return 0;
+    
+    const roadDistances = calculateRoadDistances(locations);
+    return roadDistances.reduce((sum, distance) => sum + distance, 0);
+  };
+  
   // Ensure we update the parent with route data even if there are no locations
   useEffect(() => {
     if (locations.length < 2 && onRouteDataUpdate) {
@@ -90,14 +104,13 @@ const RouteMap: React.FC<RouteMapProps> = ({
       
       onRouteDataUpdate(defaultDistance, defaultDuration, 'moderate');
     } else if (locations.length >= 2 && onRouteDataUpdate && !showRoadRoutes) {
-      // Calculate straight-line distance with correction factors
-      const straightLineDistance = calculateStraightLineDistances();
-      const correctedDistance = straightLineDistance * 1.3; // Apply road correction factor
+      // Calculate road-like distance using our utility function
+      const roadDistance = calculateRouteDistances();
       
-      // Estimate duration based on average speed
-      const estimatedDuration = (correctedDistance / AVG_SPEED_URBAN_KM_H) * 60 + locations.length * 5;
+      // Estimate duration based on average speed and number of stops
+      const estimatedDuration = (roadDistance / AVG_SPEED_URBAN_KM_H) * 60 + locations.length * 5;
       
-      onRouteDataUpdate(correctedDistance, estimatedDuration, 'moderate');
+      onRouteDataUpdate(roadDistance, estimatedDuration, 'moderate');
     }
   }, [locations, onRouteDataUpdate, showRoadRoutes]);
   
@@ -111,7 +124,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   }) => {
     if (onRouteDataUpdate) {
       // Ensure non-zero values and report accurate data back
-      const validDistance = routeData.distance > 0 ? routeData.distance : calculateStraightLineDistances() * 1.3;
+      const validDistance = routeData.distance > 0 ? routeData.distance : calculateRouteDistances();
       const validDuration = routeData.duration > 0 ? routeData.duration : (validDistance / AVG_SPEED_URBAN_KM_H) * 60;
       
       console.log("Route found:", {

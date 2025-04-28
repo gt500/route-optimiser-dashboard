@@ -27,22 +27,24 @@ const DailyDeliveriesTable: React.FC<DailyDeliveriesTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {deliveries.map((delivery) => (
-          <TableRow key={delivery.id}>
-            <TableCell>{delivery.siteName}</TableCell>
-            <TableCell>{delivery.cylinders}</TableCell>
-            <TableCell>
-              {delivery.kms > 0 ? 
-                delivery.kms.toFixed(1) : 
-                (delivery.actualDistance ? delivery.actualDistance.toFixed(1) : '5.0')}
-            </TableCell>
-            <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
-          </TableRow>
-        ))}
+        {deliveries.map((delivery) => {
+          // Ensure we have a valid distance value for each delivery
+          const displayDistance = delivery.actualDistance || delivery.kms || 
+            (delivery.latitude && delivery.longitude ? 10.5 : 5.0); // Fallback to reasonable default
+            
+          return (
+            <TableRow key={delivery.id}>
+              <TableCell>{delivery.siteName}</TableCell>
+              <TableCell>{delivery.cylinders}</TableCell>
+              <TableCell>{displayDistance.toFixed(1)}</TableCell>
+              <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
+            </TableRow>
+          );
+        })}
         <TableRow className="font-bold">
           <TableCell>TOTALS</TableCell>
           <TableCell>{totalCylinders}</TableCell>
-          <TableCell>{totalKms > 0 ? totalKms.toFixed(1) : '25.0'}</TableCell>
+          <TableCell>{totalKms.toFixed(1)}</TableCell>
           <TableCell>R{totalFuelCost.toFixed(2)}</TableCell>
         </TableRow>
       </TableBody>

@@ -28,7 +28,7 @@ export const calculateRoadDistances = (
     if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
       const defaultDistance = totalKnownDistance ? 
         totalKnownDistance / (locations.length - 1) : 
-        5; // Default to 5km if we don't have a total
+        10; // Default to 10km if we don't have a total - increased from 5km
       
       distances.push(defaultDistance);
       totalCalculatedDistance += defaultDistance;
@@ -43,8 +43,8 @@ export const calculateRoadDistances = (
       next.longitude
     );
     
-    // Apply road correction factors
-    let roadFactor = 1.3; // Default urban road factor
+    // Apply road correction factors - adjusted for more realistic values
+    let roadFactor = 1.4; // Default urban road factor - increased from 1.3
     
     // Adjust factor based on distance (rough approximation of road type)
     if (directDistance > 15) {
@@ -52,7 +52,7 @@ export const calculateRoadDistances = (
     } else if (directDistance > 5) {
       roadFactor = 1.4; // Suburban routes
     } else if (directDistance < 1) {
-      roadFactor = 1.2; // Very short urban trips
+      roadFactor = 1.8; // Very short urban trips often involve more detours - increased from 1.2
     }
     
     const roadDistance = directDistance * roadFactor;
