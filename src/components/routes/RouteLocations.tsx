@@ -7,6 +7,7 @@ import { PlusCircle, Loader2, Cylinder } from 'lucide-react';
 import LocationSelector from './LocationSelector';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import TruckWeightIndicator from '../reports/TruckWeightIndicator';
 
 interface RouteLocationsProps {
   availableLocations: LocationType[];
@@ -118,6 +119,13 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
               <p className="text-sm text-muted-foreground mb-2">
                 Add and arrange stops for your delivery route
               </p>
+              
+              <TruckWeightIndicator
+                totalCylinders={routeLocations.reduce((sum, loc) => sum + (loc.emptyCylinders || 0), 0)}
+                locations={routeLocations}
+                startLocationId={startLocation?.id}
+                endLocationId={endLocation?.id}
+              />
 
               {routeLocations.length > 0 ? (
                 <div className="space-y-2 mt-4">
@@ -185,6 +193,9 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
 
               <LocationSelector
                 locations={availableLocations}
+                routeLocations={routeLocations}
+                startLocationId={startLocation?.id}
+                endLocationId={endLocation?.id}
                 onSelect={(locationId, cylinders) => {
                   const location = availableLocations.find((loc) => loc.id === locationId);
                   if (location) {

@@ -182,7 +182,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </div>
               <div className="py-1">
                 <FuelCostEditor 
-                  currentPrice={vehicleConfig.fuelPrice} 
+                  value={vehicleConfig.fuelPrice} 
                   onUpdate={onFuelCostUpdate} 
                 />
               </div>

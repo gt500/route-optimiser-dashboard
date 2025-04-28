@@ -1,50 +1,62 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Cylinder } from 'lucide-react';
+import { MAX_CYLINDERS } from '@/hooks/routes/types';
 
 interface CylinderSelectorProps {
   cylinders: number;
   setCylinders: (cylinders: number) => void;
-  disabled?: boolean;
+  maxCylinders?: number;
 }
 
-const CylinderSelector = ({ cylinders, setCylinders, disabled = false }: CylinderSelectorProps) => {
+const CylinderSelector: React.FC<CylinderSelectorProps> = ({ 
+  cylinders, 
+  setCylinders, 
+  maxCylinders = MAX_CYLINDERS 
+}) => {
+  const handleIncrease = () => {
+    setCylinders(Math.min(cylinders + 1, maxCylinders));
+  };
+
+  const handleDecrease = () => {
+    setCylinders(Math.max(1, cylinders - 1));
+  };
+  
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor="cylinders" className="text-white flex items-center gap-1">
+    <div className="bg-blue-800 rounded-md p-3">
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-white text-sm font-medium flex items-center gap-1.5">
           <Cylinder className="h-4 w-4" />
-          Cylinders to Deliver
-        </Label>
-        <div className="text-sm font-medium text-white bg-blue-700 rounded-full h-6 w-6 flex items-center justify-center">
-          {cylinders}
+          Select Cylinders
         </div>
+        <div className="text-blue-300 text-xs">Max: {maxCylinders}</div>
       </div>
-      <div className="flex items-center gap-2">
+      
+      <div className="flex items-center gap-3">
         <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setCylinders(Math.max(1, cylinders - 1))}
-          disabled={cylinders <= 1 || disabled}
-          className="bg-white hover:bg-slate-100 text-blue-900"
+          onClick={handleDecrease}
+          disabled={cylinders <= 1}
+          variant="secondary" 
+          size="icon"
         >
           -
         </Button>
-        <Progress value={(cylinders/25)*100} className="flex-1 h-2 bg-blue-300" />
+        
+        <div className="flex-1 bg-blue-700 rounded-md p-2 text-center">
+          <div className="text-2xl font-bold text-white">{cylinders}</div>
+          <div className="text-xs text-blue-300">Cylinders</div>
+        </div>
+        
         <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setCylinders(Math.min(25, cylinders + 1))}
-          disabled={cylinders >= 25 || disabled}
-          className="bg-white hover:bg-slate-100 text-blue-900"
+          onClick={handleIncrease}
+          disabled={cylinders >= maxCylinders}
+          variant="secondary" 
+          size="icon"
         >
           +
         </Button>
       </div>
-      <p className="text-xs text-gray-300">Maximum 25 cylinders per location</p>
     </div>
   );
 };

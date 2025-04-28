@@ -29,7 +29,7 @@ export const calculateTotalWeight = (locations: LocationType[],
     return 0;
   }
   
-  // Initial count - starting with no cylinders
+  // Track weight changes through the journey
   let fullCylindersOnBoard = 0;
   let emptyCylindersOnBoard = 0;
   let maxWeight = 0;
@@ -46,7 +46,7 @@ export const calculateTotalWeight = (locations: LocationType[],
   // For customer locations, count the cylinders we need to deliver
   for (const loc of routeLocations) {
     if (loc.type === 'Customer' || loc.type === 'Distribution') {
-      // For each customer location, we need to deliver empty cylinders
+      // For each customer location, we need to deliver cylinders
       fullCylindersOnBoard += (loc.emptyCylinders || 0);
     }
   }
@@ -96,15 +96,102 @@ export const calculateTotalWeight = (locations: LocationType[],
 };
 
 /**
+ * Calculate weight at each point in the route to show progression
+ */
+export const calculateRouteWeightProfile = (locations: LocationType[], 
+                                           startLocationId?: string | null, 
+                                           endLocationId?: string | null): {
+  location: string;
+  weight: number;
+  fullCylinders: number;
+  emptyCylinders: number;
+}[] => {
+  if (!locations || locations.length === 0) {
+    return [];
+  }
+  
+  // Filter out start/end locations
+  const routeLocations = locations.filter(loc => 
+    loc.id !== startLocationId && 
+    loc.id !== endLocationId
+  );
+  
+  if (routeLocations.length === 0) {
+    return [];
+  }
+  
+  const weightProfile = [];
+  let fullCylindersOnBoard = 0;
+  let emptyCylindersOnBoard = 0;
+  
+  // First load from storage/depot
+  for (const loc of routeLocations) {
+    if (loc.type === 'Storage' || loc.type === 'Depot') {
+      fullCylindersOnBoard += (loc.fullCylinders || 0);
+    }
+  }
+  
+  // For customer stops, add cylinders to deliver
+  for (const loc of routeLocations) {
+    if (loc.type === 'Customer' || loc.type === 'Distribution') {
+      fullCylindersOnBoard += (loc.emptyCylinders || 0);
+    }
+  }
+  
+  // Initial weight
+  let currentWeight = fullCylindersOnBoard * CYLINDER_WEIGHT_KG;
+  
+  // Add starting point
+  weightProfile.push({
+    location: "Starting load",
+    weight: currentWeight,
+    fullCylinders: fullCylindersOnBoard,
+    emptyCylinders: emptyCylindersOnBoard
+  });
+  
+  // Track route progression
+  for (const loc of routeLocations) {
+    if (loc.type === 'Customer' || loc.type === 'Distribution') {
+      const fullsToDeliver = loc.emptyCylinders || 0;
+      const actualFullsDelivered = Math.min(fullCylindersOnBoard, fullsToDeliver);
+      
+      fullCylindersOnBoard -= actualFullsDelivered;
+      emptyCylindersOnBoard += (loc.emptyCylinders || 0);
+      
+      currentWeight = 
+        (fullCylindersOnBoard * CYLINDER_WEIGHT_KG) + 
+        (emptyCylindersOnBoard * EMPTY_CYLINDER_WEIGHT_KG);
+      
+      weightProfile.push({
+        location: loc.name,
+        weight: currentWeight,
+        fullCylinders: fullCylindersOnBoard,
+        emptyCylinders: emptyCylindersOnBoard
+      });
+    }
+  }
+  
+  return weightProfile;
+};
+
+/**
  * Calculates if a route's total cylinder count would exceed the maximum allowed
  */
 export const isRouteOverweight = (locations: LocationType[], startLocationId?: string | null, endLocationId?: string | null): boolean => {
   const totalWeight = calculateTotalWeight(locations, startLocationId, endLocationId);
-  return totalWeight > (MAX_CYLINDERS * CYLINDER_WEIGHT_KG);
+  const maxWeight = MAX_CYLINDERS * CYLINDER_WEIGHT_KG;
+  return totalWeight > maxWeight;
 };
 
 /**
- * Gets maximum cylinders allowed based on the weight limit
+ * Gets maximum allowed weight based on the cylinder limits
+ */
+export const getMaxWeight = (): number => {
+  return MAX_CYLINDERS * CYLINDER_WEIGHT_KG;
+};
+
+/**
+ * Gets maximum cylinders allowed
  */
 export const getMaxCylinders = (): number => {
   return MAX_CYLINDERS;
