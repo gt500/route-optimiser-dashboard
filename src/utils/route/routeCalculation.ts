@@ -1,16 +1,36 @@
-
+import { supabase } from "@/integrations/supabase/client";
 import { calculateDistance } from './distanceUtils';
 
 /**
- * Calculate realistic road distances between a series of locations
- * @param locations Array of location objects with latitude and longitude
- * @param totalKnownDistance Optional known total distance for the entire route
- * @returns Array of distances between consecutive locations
+ * Calculate realistic road distances between a series of locations using Google Maps API
  */
-export const calculateRoadDistances = (
+export const calculateRoadDistances = async (
   locations: { latitude: number; longitude: number }[],
-  totalKnownDistance?: number
-): number[] => {
+): Promise<number[]> => {
+  if (locations.length <= 1) {
+    return [0];
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('calculate-route', {
+      body: { waypoints: locations }
+    });
+
+    if (error) {
+      console.error('Error calculating route:', error);
+      // Fallback to direct distances with road factors
+      return calculateFallbackDistances(locations);
+    }
+
+    return data.waypointData.map((wp: { distance: number }) => wp.distance);
+  } catch (error) {
+    console.error('Error in calculateRoadDistances:', error);
+    return calculateFallbackDistances(locations);
+  }
+};
+
+// Keep the fallback calculation logic for when API fails
+function calculateFallbackDistances(locations: { latitude: number; longitude: number }[]): number[] {
   const distances: number[] = [];
   let totalCalculatedDistance = 0;
   
@@ -71,19 +91,123 @@ export const calculateRoadDistances = (
   }
   
   // If we have a known total distance, scale all segments proportionally
-  if (totalKnownDistance && totalKnownDistance > 0 && totalCalculatedDistance > 0) {
-    const scaleFactor = totalKnownDistance / totalCalculatedDistance;
+  // if (totalKnownDistance && totalKnownDistance > 0 && totalCalculatedDistance > 0) {
+  //   const scaleFactor = totalKnownDistance / totalCalculatedDistance;
     
-    // Only scale if there's a significant difference
-    if (scaleFactor < 0.8 || scaleFactor > 1.2) {
-      for (let i = 0; i < distances.length; i++) {
-        distances[i] = distances[i] * scaleFactor;
-      }
-    }
-  }
+  //   // Only scale if there's a significant difference
+  //   if (scaleFactor < 0.8 || scaleFactor > 1.2) {
+  //     for (let i = 0; i < distances.length; i++) {
+  //       distances[i] = distances[i] * scaleFactor;
+  //     }
+  //   }
+  // }
   
   return distances;
 };
+
+/**
+ * Calculate complete route with multiple waypoints
+ */
+export const calculateCompleteRoute = async (
+  waypoints: { latitude: number; longitude: number }[],
+  region: string = "Cape Town"
+): Promise<{ 
+  totalDistance: number; 
+  totalDuration: number; 
+  segments: { distance: number; duration: number }[];
+  trafficConditions: 'light' | 'moderate' | 'heavy';
+}> => {
+  if (waypoints.length < 2) {
+    return { 
+      totalDistance: 0, 
+      totalDuration: 0, 
+      segments: [],
+      trafficConditions: 'moderate'
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('calculate-route', {
+      body: { waypoints }
+    });
+
+    if (error) throw error;
+
+    return {
+      totalDistance: data.distance,
+      totalDuration: data.duration,
+      segments: data.waypointData,
+      trafficConditions: data.trafficConditions
+    };
+  } catch (error) {
+    console.error('Error calculating complete route:', error);
+    // Fall back to simulated data
+    return simulateFallbackRoute(waypoints);
+  }
+};
+
+function simulateFallbackRoute(waypoints: { latitude: number; longitude: number }[]) {
+  let totalDistance = 0;
+  let totalDuration = 0;
+  const segments: { distance: number; duration: number }[] = [];
+  const trafficConditions = 'moderate';
+  
+  if (waypoints.length < 2) {
+    return { totalDistance: 0, totalDuration: 0, segments: [], trafficConditions };
+  }
+  
+  // Calculate each segment
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const from = waypoints[i];
+    const to = waypoints[i + 1];
+    
+    // Skip if coordinates are missing
+    if (!from.latitude || !from.longitude || !to.latitude || !to.longitude) {
+      // Use defaults for missing coordinates
+      const defaultSegment = { distance: 8.8, duration: 16 };
+      segments.push(defaultSegment);
+      totalDistance += defaultSegment.distance;
+      totalDuration += defaultSegment.duration;
+      continue;
+    }
+    
+    const directDistance = calculateDistance(
+      from.latitude,
+      from.longitude,
+      to.latitude,
+      to.longitude
+    );
+    
+    // Apply road correction factors - adjusted for South Africa with variation
+    let roadFactor = 1.4; // Default Cape Town urban factor
+    
+    if (directDistance > 15) {
+      roadFactor = 1.6 + (Math.random() * 0.2); // Add variance
+    } else if (directDistance > 5) {
+      roadFactor = 1.5 + (Math.random() * 0.15);
+    } else if (directDistance < 1) {
+      roadFactor = 1.8 + (Math.random() * 0.25);
+    }
+    
+    const roadDistance = directDistance * roadFactor;
+    const segmentDuration = roadDistance / 0.6;
+    
+    segments.push({ distance: roadDistance, duration: segmentDuration });
+    totalDistance += roadDistance;
+    totalDuration += segmentDuration;
+  }
+  
+  // Add loading/unloading time (8 minutes per stop)
+  const stopTime = 8 * (waypoints.length);
+  totalDuration += stopTime;
+  
+  return {
+    totalDistance: Number(totalDistance.toFixed(1)),
+    totalDuration: Number(totalDuration.toFixed(1)),
+    segments,
+    trafficConditions
+  };
+}
 
 /**
  * Estimate travel time for a given distance based on traffic conditions
