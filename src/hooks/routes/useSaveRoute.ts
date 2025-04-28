@@ -44,16 +44,12 @@ export const useSaveRoute = (
         };
       });
 
-      // Prepare route metadata as a JSON string since there's no dedicated column for stops
-      const routeMetadata = JSON.stringify({
-        stops: stops,
-        trafficConditions: route.trafficConditions,
-        country: route.country,
-        region: route.region
-      });
+      // Generate a UUID for the route
+      const routeId = crypto.randomUUID();
 
       // Create route record - ensuring we match the exact schema expected by Supabase
       const { data, error } = await supabase.from('routes').insert({
+        id: routeId, // Add the required id field
         name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
         date: new Date().toISOString(),
         status: 'scheduled',
