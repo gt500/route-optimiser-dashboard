@@ -14,6 +14,9 @@ import { toast } from 'sonner';
 const DailyReports = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
+  const [routeDistance, setRouteDistance] = useState(0);
+  const [routeDuration, setRouteDuration] = useState(0);
+  const [trafficCondition, setTrafficCondition] = useState<'light' | 'moderate' | 'heavy'>('moderate');
   
   const { deliveries, isLoading, fetchDeliveryData } = useDeliveryData(date);
   
@@ -31,7 +34,8 @@ const DailyReports = () => {
   );
 
   const totalCylinders = filteredDeliveries.reduce((sum, delivery) => sum + delivery.cylinders, 0);
-  const totalKms = filteredDeliveries.reduce((sum, delivery) => sum + delivery.kms, 0);
+  const totalKms = routeDistance > 0 ? routeDistance : 
+                  filteredDeliveries.reduce((sum, delivery) => sum + delivery.kms, 0);
   const totalFuelCost = filteredDeliveries.reduce((sum, delivery) => sum + delivery.fuelCost, 0);
 
   const handleRefresh = () => {
@@ -55,6 +59,17 @@ const DailyReports = () => {
       address: `${delivery.cylinders} cylinders`
     }))
     .filter(loc => loc.latitude && loc.longitude);
+    
+  const handleRouteDataUpdate = (
+    distance: number, 
+    duration: number, 
+    traffic?: 'light' | 'moderate' | 'heavy'
+  ) => {
+    console.log("Route data updated in DailyReports:", { distance, duration, traffic });
+    setRouteDistance(distance);
+    setRouteDuration(duration);
+    if (traffic) setTrafficCondition(traffic);
+  };
 
   return (
     <div className="space-y-4">
@@ -79,7 +94,7 @@ const DailyReports = () => {
           />
           
           <RouteMetricsCard
-            title="Delivery Locations"
+            title="Number of Deliveries"
             value={filteredDeliveries.length}
             icon={<MapPin className="h-4 w-4" />}
             color="bg-gradient-to-br from-purple-500 to-purple-600"
@@ -130,6 +145,9 @@ const DailyReports = () => {
                       height="100%"
                       country="South Africa"
                       region="Western Cape"
+                      showTraffic={true}
+                      showRoadRoutes={true}
+                      onRouteDataUpdate={handleRouteDataUpdate}
                     />
                   </div>
                 )

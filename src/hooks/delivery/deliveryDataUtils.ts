@@ -2,6 +2,7 @@
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { DeliveryData, RouteDelivery, ProcessedRoute, FULL_LOAD_PER_SITE } from './types';
+import { calculateDistance } from '@/utils/route/distanceUtils';
 
 /**
  * Processes delivery data from Supabase into a structured format
@@ -22,7 +23,7 @@ export const processDeliveryData = (
   
   console.log('Processed route deliveries:', routeDeliveries.length);
   
-  const transformedData = transformRouteDataToDeliveries(routeDeliveries, formattedDateStr);
+  const transformedData = transformRouteDataToDeliveries(routeDeliveries, formattedDateStr, locationsMap);
   
   console.log('Final transformed data:', transformedData.length);
   
@@ -95,54 +96,117 @@ const mapRoutesToDeliveries = (
 };
 
 /**
+ * Calculate realistic distances between locations based on road network
+ */
+const calculateRealisticDistances = (
+  locations: any[],
+  totalRouteDistance: number
+): { distances: number[], totalCalculated: number } => {
+  let distances: number[] = [];
+  let totalCalculated = 0;
+  
+  // If we don't have enough locations or a total route distance
+  if (locations.length <= 1 || totalRouteDistance <= 0) {
+    return { distances: [0], totalCalculated: 0 };
+  }
+
+  // First calculate direct distances between consecutive locations
+  for (let i = 0; i < locations.length - 1; i++) {
+    const current = locations[i];
+    const next = locations[i + 1];
+    
+    if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
+      // If location data is missing, use an average distance
+      distances.push(Math.max(5, totalRouteDistance / (locations.length - 1)));
+      continue;
+    }
+    
+    // Calculate direct distance and apply road correction factors
+    const directDistance = calculateDistance(
+      current.latitude,
+      current.longitude,
+      next.latitude,
+      next.longitude
+    );
+    
+    // Apply more aggressive road correction factors for realistic distances
+    // Rural/highway routes have significantly more circuitous paths than direct lines
+    let roadFactor = 1.3; // Default urban road factor
+    
+    // Calculate distance to determine road type (rough estimation)
+    if (directDistance > 15) {
+      roadFactor = 1.5; // Highway/rural routes with more detours
+    } else if (directDistance > 5) {
+      roadFactor = 1.4; // Suburban routes
+    }
+    
+    const roadDistance = directDistance * roadFactor;
+    distances.push(roadDistance);
+    totalCalculated += roadDistance;
+  }
+  
+  // If we have a precise route distance and it's significantly different from our calculation,
+  // proportionally scale all segments to match the known total
+  if (totalRouteDistance > 0 && totalCalculated > 0 && 
+      (totalCalculated < totalRouteDistance * 0.8 || totalCalculated > totalRouteDistance * 1.2)) {
+    const scaleFactor = totalRouteDistance / totalCalculated;
+    distances = distances.map(d => d * scaleFactor);
+    totalCalculated = totalRouteDistance;
+  }
+  
+  return { distances, totalCalculated };
+};
+
+/**
  * Transforms ProcessedRoute objects into flattened DeliveryData array
  */
 const transformRouteDataToDeliveries = (
   routeDeliveries: ProcessedRoute[],
-  formattedDateStr: string
+  formattedDateStr: string,
+  locationsMap: Record<string, any>
 ): DeliveryData[] => {
   const transformedData: DeliveryData[] = [];
   
   routeDeliveries.forEach(route => {
     const deliveriesCount = route.deliveries.length;
+    if (deliveriesCount === 0) return;
     
     // Ensure we have a valid distance and distribute it properly
     const totalRouteDistance = Math.max(5.0, route.totalDistance || 0); // Minimum 5km if no distance
-    const kmsPerDelivery = deliveriesCount > 0 ? totalRouteDistance / deliveriesCount : 0;
-    const costPerDelivery = deliveriesCount > 0 ? route.estimatedCost / deliveriesCount : 0;
+    const costPerKm = totalRouteDistance > 0 ? route.estimatedCost / totalRouteDistance : 15.0;
+    
+    // Extract location data for distance calculations
+    const locationData = route.deliveries.map(delivery => ({
+      latitude: delivery.latitude,
+      longitude: delivery.longitude
+    }));
+    
+    // Calculate realistic segment distances
+    const { distances } = calculateRealisticDistances(locationData, totalRouteDistance);
     
     // Calculate individual delivery distances based on sequence
-    let previousDistance = 0;
-    
     route.deliveries.forEach((delivery, index) => {
-      // For the first delivery, use a portion of the total distance
-      // For subsequent deliveries, use portions based on their position in the sequence
-      let distanceForThisDelivery = kmsPerDelivery;
+      // Get the distance for this segment (default to minimum if not available)
+      let distanceForThisDelivery = index < distances.length ? 
+        distances[index] : 
+        Math.max(5.0, totalRouteDistance / deliveriesCount);
+        
+      // Minimum realistic distance
+      if (distanceForThisDelivery < 0.5) distanceForThisDelivery = 0.5;
       
-      // First stop is always from depot - give it more distance
-      if (index === 0 && deliveriesCount > 1) {
-        distanceForThisDelivery = totalRouteDistance * 0.35; // 35% of total for first leg
-        previousDistance = distanceForThisDelivery;
-      } 
-      // Last stop might have more distance to return to depot
-      else if (index === deliveriesCount - 1 && deliveriesCount > 1) {
-        distanceForThisDelivery = totalRouteDistance * 0.35; // 35% of total for last leg
-      }
-      // Middle stops share the remaining 30% evenly
-      else if (deliveriesCount > 2) {
-        const remainingDistance = totalRouteDistance * 0.3;
-        distanceForThisDelivery = remainingDistance / (deliveriesCount - 2);
-      }
+      // Calculate fuel cost based on distance
+      const segmentFuelCost = distanceForThisDelivery * costPerKm;
       
       const deliveryData: DeliveryData = {
         id: delivery.id,
         siteName: delivery.locationName,
         cylinders: delivery.cylinders,
         kms: parseFloat(distanceForThisDelivery.toFixed(1)),
-        fuelCost: parseFloat(costPerDelivery.toFixed(2)),
+        fuelCost: parseFloat(segmentFuelCost.toFixed(2)),
         date: formattedDateStr,
         latitude: delivery.latitude,
-        longitude: delivery.longitude
+        longitude: delivery.longitude,
+        actualDistance: parseFloat(distanceForThisDelivery.toFixed(1))
       };
       
       // Only add region and country if available

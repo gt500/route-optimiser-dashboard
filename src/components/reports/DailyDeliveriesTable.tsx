@@ -31,7 +31,11 @@ const DailyDeliveriesTable: React.FC<DailyDeliveriesTableProps> = ({
           <TableRow key={delivery.id}>
             <TableCell>{delivery.siteName}</TableCell>
             <TableCell>{delivery.cylinders}</TableCell>
-            <TableCell>{delivery.kms > 0 ? delivery.kms.toFixed(1) : '5.0'}</TableCell>
+            <TableCell>
+              {delivery.kms > 0 ? 
+                delivery.kms.toFixed(1) : 
+                (delivery.actualDistance ? delivery.actualDistance.toFixed(1) : '5.0')}
+            </TableCell>
             <TableCell>R{delivery.fuelCost.toFixed(2)}</TableCell>
           </TableRow>
         ))}

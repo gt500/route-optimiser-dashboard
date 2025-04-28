@@ -27,8 +27,17 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   totalWeight
 }) => {
   // Ensure we have valid non-zero values for display
-  const displayDistance = distance > 0 ? distance : 5.0 * locations;
-  const displayDuration = duration > 0 ? duration : 15 * locations;
+  // Use more realistic minimum values for distance based on number of locations
+  const minDistancePerLocation = locations > 0 ? 7.5 : 5.0; // km
+  const displayDistance = distance > 0 ? distance : minDistancePerLocation * locations;
+  
+  // Use more realistic minimum values for duration based on distance
+  const minDurationPerLocation = 15; // minutes
+  const displayDuration = duration > 0 ? duration : Math.max(
+    Math.round(displayDistance / 35 * 60), // Base on 35km/h average speed 
+    locations * minDurationPerLocation // Ensure minimum stop time
+  );
+  
   const displayFuelConsumption = fuelConsumption > 0 ? fuelConsumption : (displayDistance * 0.12);
   const displayFuelCost = fuelCost > 0 ? fuelCost : (displayFuelConsumption * fuelCostPerLiter);
   
