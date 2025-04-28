@@ -13,6 +13,8 @@ interface TruckWeightIndicatorProps {
   cylinderWeight?: number;
   emptyCylinders?: number;
   locations?: LocationType[];
+  startLocationId?: string | null;
+  endLocationId?: string | null;
 }
 
 const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
@@ -20,11 +22,13 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
   maxCylinders = MAX_CYLINDERS,
   cylinderWeight = CYLINDER_WEIGHT_KG,
   emptyCylinders = 0,
-  locations = []
+  locations = [],
+  startLocationId = null,
+  endLocationId = null
 }) => {
   // Use the correct weight calculation when locations are available
   const currentWeight = locations && locations.length > 0 
-    ? calculateTotalWeight(locations) 
+    ? calculateTotalWeight(locations, startLocationId, endLocationId) 
     : 0;
 
   const maxWeight = maxCylinders * cylinderWeight;
@@ -48,6 +52,7 @@ const TruckWeightIndicator: React.FC<TruckWeightIndicatorProps> = ({
         tooltip={`
           Max load: ${maxWeight} kg (${maxCylinders} cylinders: full=${cylinderWeight}kg, empty=${EMPTY_CYLINDER_WEIGHT_KG}kg).
           Shows maximum weight during route accounting for cylinder exchanges.
+          Start and end points are excluded from weight calculations.
         `}
       />
       {isOverweight && (

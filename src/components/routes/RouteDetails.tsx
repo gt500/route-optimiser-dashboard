@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +36,8 @@ interface RouteDetailsProps {
   vehicleConfig: VehicleConfigProps;
   selectedVehicle?: string | null;
   vehicles?: Vehicle[];
+  startLocationId?: string | null;
+  endLocationId?: string | null;
 }
 
 const RouteDetails: React.FC<RouteDetailsProps> = ({
@@ -50,7 +51,9 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   onSave,
   vehicleConfig,
   selectedVehicle,
-  vehicles = []
+  vehicles = [],
+  startLocationId = null,
+  endLocationId = null
 }) => {
   const [totalWeight, setTotalWeight] = useState<number>(0);
   const [isAlertAcknowledged, setIsAlertAcknowledged] = useState<boolean>(false);
@@ -62,15 +65,15 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       return;
     }
     
-    // Use the improved weight calculation
-    const weight = calculateTotalWeight(route.locations);
+    // Use the improved weight calculation, excluding start and end points
+    const weight = calculateTotalWeight(route.locations, startLocationId, endLocationId);
     setTotalWeight(weight);
     
     // Reset acknowledgment when weight changes
     if (isOverweight) {
       setIsAlertAcknowledged(false);
     }
-  }, [route.locations, route.cylinders, isOverweight]);
+  }, [route.locations, route.cylinders, isOverweight, startLocationId, endLocationId]);
 
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);

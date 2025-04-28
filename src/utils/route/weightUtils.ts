@@ -8,10 +8,24 @@ import { CYLINDER_WEIGHT_KG, EMPTY_CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/h
  * 
  * The truck starts with full cylinders and gradually exchanges them for empty ones,
  * so we need to calculate the weight at each point of the journey to find the maximum.
+ * 
+ * Note: Start and end points are excluded from weight calculations.
  */
-export const calculateTotalWeight = (locations: LocationType[]): number => {
+export const calculateTotalWeight = (locations: LocationType[], 
+                                     startLocationId?: string | null, 
+                                     endLocationId?: string | null): number => {
   // If no locations, return 0 weight
   if (!locations || locations.length === 0) {
+    return 0;
+  }
+  
+  // Filter out start and end locations from weight calculations
+  const routeLocations = locations.filter(loc => 
+    loc.id !== startLocationId && 
+    loc.id !== endLocationId
+  );
+  
+  if (routeLocations.length === 0) {
     return 0;
   }
   
@@ -21,7 +35,7 @@ export const calculateTotalWeight = (locations: LocationType[]): number => {
   let maxWeight = 0;
   
   // First load full cylinders from storage/depot locations
-  for (const loc of locations) {
+  for (const loc of routeLocations) {
     if (loc.type === 'Storage' || loc.type === 'Depot') {
       if (loc.fullCylinders) {
         fullCylindersOnBoard += loc.fullCylinders;
@@ -41,7 +55,7 @@ export const calculateTotalWeight = (locations: LocationType[]): number => {
   // 3. Calculate current weight after this exchange
   let currentWeight = initialWeight;
   
-  for (const loc of locations) {
+  for (const loc of routeLocations) {
     // For customer locations, we deliver fulls and collect empties
     if (loc.type === 'Customer' || loc.type === 'Distribution') {
       // The number of cylinders being delivered at this stop
@@ -76,8 +90,8 @@ export const calculateTotalWeight = (locations: LocationType[]): number => {
 /**
  * Calculates if a route's total cylinder count would exceed the maximum allowed
  */
-export const isRouteOverweight = (locations: LocationType[]): boolean => {
-  const totalWeight = calculateTotalWeight(locations);
+export const isRouteOverweight = (locations: LocationType[], startLocationId?: string | null, endLocationId?: string | null): boolean => {
+  const totalWeight = calculateTotalWeight(locations, startLocationId, endLocationId);
   return totalWeight > (MAX_CYLINDERS * CYLINDER_WEIGHT_KG);
 };
 

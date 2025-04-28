@@ -91,15 +91,18 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   selectedRegion,
   onRegionChange
 }) => {
+  const startLocationId = startLocation?.id || null;
+  const endLocationId = endLocation?.id || null;
+
   const routeWeight = route.locations && route.locations.length > 0 
-    ? calculateTotalWeight(route.locations) 
+    ? calculateTotalWeight(route.locations, startLocationId, endLocationId) 
     : 0;
     
   const isOverweight = routeWeight > MAX_CYLINDERS * CYLINDER_WEIGHT_KG;
 
   const handleAddLocationToRoute = (location: LocationType & { cylinders: number }) => {
     const simulatedLocations = [...route.locations, location];
-    const projectedWeight = calculateTotalWeight(simulatedLocations);
+    const projectedWeight = calculateTotalWeight(simulatedLocations, startLocationId, endLocationId);
     
     if (projectedWeight > (MAX_CYLINDERS * CYLINDER_WEIGHT_KG)) {
       toast.error(`Weight limit exceeded! Adding this location would exceed the maximum capacity of ${MAX_CYLINDERS * CYLINDER_WEIGHT_KG}kg.`, {
@@ -137,6 +140,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                     maxCylinders={MAX_CYLINDERS}
                     cylinderWeight={CYLINDER_WEIGHT_KG}
                     locations={route.locations}
+                    startLocationId={startLocationId}
+                    endLocationId={endLocationId}
                   />
                 </div>
               </div>
@@ -225,6 +230,8 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             isOverweight={isOverweight}
             selectedVehicle={selectedVehicle}
             vehicles={vehicles}
+            startLocationId={startLocationId}
+            endLocationId={endLocationId}
           />
         </div>
       </div>
