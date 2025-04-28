@@ -90,18 +90,6 @@ function calculateFallbackDistances(locations: { latitude: number; longitude: nu
     totalCalculatedDistance += finalDistance;
   }
   
-  // If we have a known total distance, scale all segments proportionally
-  // if (totalKnownDistance && totalKnownDistance > 0 && totalCalculatedDistance > 0) {
-  //   const scaleFactor = totalKnownDistance / totalCalculatedDistance;
-    
-  //   // Only scale if there's a significant difference
-  //   if (scaleFactor < 0.8 || scaleFactor > 1.2) {
-  //     for (let i = 0; i < distances.length; i++) {
-  //       distances[i] = distances[i] * scaleFactor;
-  //     }
-  //   }
-  // }
-  
   return distances;
 };
 

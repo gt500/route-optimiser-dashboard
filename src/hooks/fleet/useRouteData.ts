@@ -25,7 +25,7 @@ export interface RouteData {
   estimated_cost?: number;
 }
 
-// Mock data for routes
+// Mock data for routes - restore original route names
 const mockRoutes: RouteData[] = [
   {
     id: '1',

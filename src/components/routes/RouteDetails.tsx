@@ -86,7 +86,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         longitude: loc.long || 0
       }));
       
-      // Calculate segment distances - now handling the Promise properly
+      // Calculate segment distances - properly handle the Promise
       const fetchSegmentDistances = async () => {
         try {
           const segmentDistances = await calculateRoadDistances(locationCoordinates);
