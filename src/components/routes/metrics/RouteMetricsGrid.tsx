@@ -26,18 +26,21 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   trafficConditions = 'moderate',
   totalWeight
 }) => {
-  // Ensure we have valid non-zero values for display
-  // Use more realistic minimum values for distance based on number of locations
-  const minDistancePerLocation = locations > 0 ? 15.0 : 10.0; // km - increased to be more realistic
+  // Ensure we have valid non-zero values for display with more realistic calculations
+  const minDistancePerLocation = locations > 0 ? 8.0 : 0;
   const displayDistance = distance > 0 ? distance : minDistancePerLocation * Math.max(1, locations);
   
-  // Use more realistic minimum values for duration based on distance
-  const minDurationPerLocation = 15; // minutes
-  const displayDuration = duration > 0 ? duration : Math.max(
-    Math.round(displayDistance / 35 * 60), // Base on 35km/h average speed 
-    Math.max(1, locations) * minDurationPerLocation // Ensure minimum stop time
-  );
+  // Calculate a more realistic duration based on distance and number of stops
+  // Average urban speed in South Africa is about 35-45 km/h depending on traffic
+  const avgSpeedKmh = trafficConditions === 'light' ? 45 : (trafficConditions === 'moderate' ? 35 : 25);
+  const stopTimeMinutes = 8; // Average time spent at each stop for loading/unloading
   
+  const drivingTimeMinutes = (displayDistance / avgSpeedKmh) * 60;
+  const stopsTimeMinutes = locations * stopTimeMinutes;
+  
+  const displayDuration = duration > 0 ? duration : (drivingTimeMinutes + stopsTimeMinutes);
+  
+  // Calculate fuel consumption and cost based on actual distance
   const displayFuelConsumption = fuelConsumption > 0 ? fuelConsumption : (displayDistance * 0.12);
   const displayFuelCost = fuelCost > 0 ? fuelCost : (displayFuelConsumption * fuelCostPerLiter);
   
@@ -46,7 +49,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
     `${Math.round(displayDistance * 1000)} m` : 
     `${displayDistance.toFixed(1)} km`;
 
-  // Format duration for display - ensure minimum display time and better formatting
+  // Format duration for display with better human-readable format
   let formattedDuration: string;
   const durationMinutes = Math.max(1, Math.round(displayDuration));
   
@@ -60,7 +63,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
       `${mins} min`;
   }
   
-  // Traffic condition info
+  // Traffic condition info with South African context
   const trafficInfo = {
     'light': { color: 'bg-green-500', text: 'Light traffic' },
     'moderate': { color: 'bg-orange-500', text: 'Moderate traffic' },

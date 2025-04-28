@@ -23,6 +23,7 @@ export interface RouteDelivery {
   region?: string;
   country?: string;
   actualDistance?: number; // Actual road distance from routing calculations
+  actualDuration?: number; // Actual travel time in minutes
 }
 
 export interface ProcessedRoute {
