@@ -16,6 +16,7 @@ interface RouteMapProps {
   className?: string;
   height?: string;
   showTraffic?: boolean;
+  showRoadRoutes?: boolean;
   onRouteDataUpdate?: (
     distance: number, 
     duration: number,
@@ -34,6 +35,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   className = '',
   height = '400px',
   showTraffic = false,
+  showRoadRoutes = false,
   onRouteDataUpdate,
   country,
   region,
@@ -89,7 +91,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         {locations.length >= 2 ? (
           <div className="h-full w-full relative overflow-hidden bg-blue-50">
             {/* Mock route line */}
-            <div className="absolute h-1 bg-blue-500 top-1/2 left-4 right-4 transform -translate-y-1/2"></div>
+            <div className={`absolute h-1 ${showRoadRoutes ? 'bg-blue-700' : 'bg-blue-500'} top-1/2 left-4 right-4 transform -translate-y-1/2 ${showRoadRoutes ? 'border-dashed border-blue-400' : ''}`}></div>
             
             {/* Location markers */}
             {locations.map((location, index) => {
