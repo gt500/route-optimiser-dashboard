@@ -26,7 +26,7 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) =
     const fetchRouteEfficiencyData = async () => {
       try {
         // Fetch actual route data
-        const routes = await routeDataHook.fetchRouteData();
+        const routes = await routeDataHook.fetchRoutes();
         
         // Format data for chart display with accurate time calculations
         const formattedData = routes.map(route => {

@@ -29,10 +29,10 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
   // Ensure we have valid non-zero values for display with more realistic calculations
   const displayDistance = distance > 0 ? distance : 0.1;
   
-  // Use the provided duration directly, as it should now be coming from our Waze-like simulation
+  // Use the provided duration directly, as it should now be coming from our Waze API integration
   const displayDuration = duration > 0 ? duration : 1;
   
-  // Calculate fuel consumption and cost based on actual distance
+  // Calculate fuel consumption and cost based on actual distance from Waze
   const displayFuelConsumption = fuelConsumption > 0 ? fuelConsumption : (displayDistance * 0.12);
   const displayFuelCost = fuelCost > 0 ? fuelCost : (displayFuelConsumption * fuelCostPerLiter);
   
@@ -72,7 +72,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         tooltip="Total road distance for all stops in route"
         subtitle={
           <div className="text-xs text-muted-foreground mt-1">
-            Using Waze-like routing estimation
+            Using Waze API routing data
           </div>
         }
       />

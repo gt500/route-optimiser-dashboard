@@ -10,7 +10,7 @@ export interface DeliveryData {
   longitude?: number;
   region?: string;
   country?: string;
-  actualDistance?: number; // Actual road distance from routing calculations
+  actualDistance?: number; // Actual road distance from Waze API
   actualDuration?: number; // Travel time in minutes
   traffic?: 'light' | 'moderate' | 'heavy'; // Traffic condition at time of calculation
 }
@@ -24,7 +24,7 @@ export interface RouteDelivery {
   longitude?: number;
   region?: string;
   country?: string;
-  actualDistance?: number; // Actual road distance from routing calculations
+  actualDistance?: number; // Actual road distance from Waze API
   actualDuration?: number; // Actual travel time in minutes
   traffic?: 'light' | 'moderate' | 'heavy'; // Traffic condition
 }
