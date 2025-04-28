@@ -86,38 +86,52 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         longitude: loc.long || 0
       }));
       
-      // Calculate segment distances
-      const segmentDistances = calculateRoadDistances(locationCoordinates);
+      // Calculate segment distances - now handling the Promise properly
+      const fetchSegmentDistances = async () => {
+        try {
+          const segmentDistances = await calculateRoadDistances(locationCoordinates);
+          
+          // Calculate segment durations based on distances
+          const segmentDurations = segmentDistances.map(
+            distance => estimateTravelTime(distance, route.trafficConditions)
+          );
+          
+          // Store the calculated segments
+          setCalculatedSegmentDetails({
+            distances: segmentDistances,
+            durations: segmentDurations
+          });
+          
+          // Calculate total distance
+          const totalDistance = segmentDistances.reduce((sum, d) => sum + d, 0);
+          
+          // If the route doesn't have distance data or it's unrealistically low, update it
+          if (!route.distance || route.distance <= 0 || 
+              (route.distance < 5 && route.locations.length > 1)) {
+            
+            // Calculate total time including stops
+            const totalDriveMinutes = segmentDurations.reduce((sum, d) => sum + d, 0);
+            const stopTimePerLocation = 8; // minutes for loading/unloading at each stop
+            const totalStopMinutes = route.locations.length * stopTimePerLocation;
+            const totalTime = totalDriveMinutes + totalStopMinutes;
+            
+            console.log(`Calculated route metrics: ${totalDistance.toFixed(1)}km, ${Math.round(totalTime)}mins`);
+            
+            // Update the parent component with the calculated values
+            onRouteDataUpdate(totalDistance, totalTime, route.trafficConditions);
+          }
+        } catch (error) {
+          console.error('Error calculating segment distances:', error);
+          // Set some default values in case of error
+          setCalculatedSegmentDetails({
+            distances: Array(route.locations.length).fill(10),
+            durations: Array(route.locations.length).fill(15)
+          });
+        }
+      };
       
-      // Calculate segment durations based on distances
-      const segmentDurations = segmentDistances.map(
-        distance => estimateTravelTime(distance, route.trafficConditions)
-      );
-      
-      // Store the calculated segments
-      setCalculatedSegmentDetails({
-        distances: segmentDistances,
-        durations: segmentDurations
-      });
-      
-      // Calculate total distance
-      const totalDistance = segmentDistances.reduce((sum, d) => sum + d, 0);
-      
-      // If the route doesn't have distance data or it's unrealistically low, update it
-      if (!route.distance || route.distance <= 0 || 
-          (route.distance < 5 && route.locations.length > 1)) {
-        
-        // Calculate total time including stops
-        const totalDriveMinutes = segmentDurations.reduce((sum, d) => sum + d, 0);
-        const stopTimePerLocation = 8; // minutes for loading/unloading at each stop
-        const totalStopMinutes = route.locations.length * stopTimePerLocation;
-        const totalTime = totalDriveMinutes + totalStopMinutes;
-        
-        console.log(`Calculated route metrics: ${totalDistance.toFixed(1)}km, ${Math.round(totalTime)}mins`);
-        
-        // Update the parent component with the calculated values
-        onRouteDataUpdate(totalDistance, totalTime, route.trafficConditions);
-      }
+      // Call the async function
+      fetchSegmentDistances();
     }
   }, [route.locations, route.distance, route.cylinders, isOverweight, startLocationId, endLocationId, route.trafficConditions]);
 

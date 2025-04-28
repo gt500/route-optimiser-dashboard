@@ -134,17 +134,15 @@ export const calculateCompleteRoute = async (
     if (error) throw error;
 
     // Ensure trafficConditions is one of the allowed enum values
-    const validTrafficConditions: 'light' | 'moderate' | 'heavy' = 
-      data.trafficConditions === 'light' || 
-      data.trafficConditions === 'moderate' || 
-      data.trafficConditions === 'heavy' ? 
-      data.trafficConditions : 'moderate';
+    const validTrafficCondition: 'light' | 'moderate' | 'heavy' = 
+      data.trafficConditions === 'light' ? 'light' : 
+      data.trafficConditions === 'heavy' ? 'heavy' : 'moderate';
 
     return {
       totalDistance: data.distance,
       totalDuration: data.duration,
       segments: data.waypointData,
-      trafficConditions: validTrafficConditions
+      trafficConditions: validTrafficCondition
     };
   } catch (error) {
     console.error('Error calculating complete route:', error);
@@ -153,11 +151,16 @@ export const calculateCompleteRoute = async (
   }
 };
 
-function simulateFallbackRoute(waypoints: { latitude: number; longitude: number }[]) {
+function simulateFallbackRoute(waypoints: { latitude: number; longitude: number }[]): {
+  totalDistance: number;
+  totalDuration: number;
+  segments: { distance: number; duration: number }[];
+  trafficConditions: 'light' | 'moderate' | 'heavy';
+} {
   let totalDistance = 0;
   let totalDuration = 0;
   const segments: { distance: number; duration: number }[] = [];
-  const trafficConditions = 'moderate';
+  const trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
   
   if (waypoints.length < 2) {
     return { totalDistance: 0, totalDuration: 0, segments: [], trafficConditions };
@@ -212,7 +215,7 @@ function simulateFallbackRoute(waypoints: { latitude: number; longitude: number 
     totalDistance: Number(totalDistance.toFixed(1)),
     totalDuration: Number(totalDuration.toFixed(1)),
     segments,
-    trafficConditions: 'moderate' as const
+    trafficConditions
   };
 }
 
