@@ -161,6 +161,17 @@ const RouteMap: React.FC<RouteMapProps> = ({
     )
     .map(loc => ({ lat: loc.latitude, lng: loc.longitude }));
   
+  // Find start and end locations for special markers if available
+  const startLocation = locations.length > 0 ? {
+    name: locations[0].name,
+    coords: [locations[0].latitude, locations[0].longitude] as [number, number]
+  } : undefined;
+  
+  const endLocation = locations.length > 1 ? {
+    name: locations[locations.length - 1].name,
+    coords: [locations[locations.length - 1].latitude, locations[locations.length - 1].longitude] as [number, number]
+  } : undefined;
+  
   // Map component with memoization to prevent unnecessary re-renders
   const MapComponent = React.useMemo(() => (
     <MapContainer
@@ -177,8 +188,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
           <RouteMarkers 
             locations={locations}
             waypoints={[]} 
-            startLocation={locations.length > 0 ? locations[0] : undefined}
-            endLocation={locations.length > 1 ? locations[locations.length - 1] : undefined}
+            startLocation={startLocation}
+            endLocation={endLocation}
           />
           
           {/* Only show road routes if enabled and we have at least 2 locations */}
