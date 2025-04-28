@@ -1,253 +1,165 @@
 
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import RouteMarkers from './map-components/RouteMarkers';
-import SetViewOnChange from './map-components/SetViewOnChange';
-import { useMapState } from '@/hooks/routes/useMapState';
-import RoutingMachine from './map-components/RoutingMachine';
-import TrafficOverlay from './map-components/TrafficOverlay';
-import { toast } from 'sonner';
-import { 
-  calculateSegmentDistances,
-  calculateCompleteRoute 
-} from '@/utils/route/routeCalculation';
-import { getCurrentTrafficCondition } from '@/utils/route/trafficUtils';
-
-interface Location {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  address?: string;
-}
+import React, { useEffect, useRef } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { MapPin, Truck } from 'lucide-react';
+import { calculateCompleteRoute } from '@/utils/route/routeCalculation';
+import { getTrafficColor, getCurrentTrafficCondition } from '@/utils/route/trafficUtils';
 
 interface RouteMapProps {
-  locations: Location[];
+  locations: {
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    address?: string;
+  }[];
   className?: string;
   height?: string;
+  showTraffic?: boolean;
   onRouteDataUpdate?: (
     distance: number, 
-    duration: number, 
+    duration: number,
     trafficConditions?: 'light' | 'moderate' | 'heavy',
     coordinates?: [number, number][],
-    waypointData?: { distance: number, duration: number }[]
+    waypointData?: { distance: number; duration: number }[]
   ) => void;
-  showTraffic?: boolean;
   country?: string;
   region?: string;
-  showRoadRoutes?: boolean;
   routeName?: string;
+  showStopMetrics?: boolean;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
-  locations = [],
+  locations,
   className = '',
-  height = '500px',
-  onRouteDataUpdate,
+  height = '400px',
   showTraffic = false,
+  onRouteDataUpdate,
   country,
   region,
-  showRoadRoutes = true,
-  routeName
+  routeName,
+  showStopMetrics = false
 }) => {
-  const { mapCenter, zoom } = useMapState(locations, country, region);
-  const [trafficSegments, setTrafficSegments] = useState<any[]>([]);
-  const [routeFound, setRouteFound] = useState<boolean>(false);
-  
-  const defaultCenter: [number, number] = [-30.5595, 22.9375];
-  const center = (mapCenter[0] !== 0 && mapCenter[1] !== 0) ? mapCenter : defaultCenter;
+  const mapRef = useRef(null);
+  const isFirstRender = useRef(true);
   
   useEffect(() => {
-    if (locations.length >= 2) {
-      const segmentInfo = calculateSegmentDistances(locations);
-      console.log('Segment distance breakdown:', segmentInfo.map((seg, i) => {
-        const from = locations[i].name;
-        const to = locations[i+1].name;
-        return `${from} → ${to}: Direct ${seg.direct.toFixed(1)}km, Road ${seg.road.toFixed(1)}km`;
-      }));
-    }
-  }, [locations]);
-  
-  useEffect(() => {
-    if (locations.length >= 2 && onRouteDataUpdate) {
-      const waypoints = locations.map(loc => ({
-        latitude: loc.latitude,
-        longitude: loc.longitude
-      }));
-      
-      calculateCompleteRoute(waypoints, routeName, region || "Cape Town")
-        .then(result => {
-          const routeCoordinates: [number, number][] = locations.map(loc => 
-            [loc.latitude, loc.longitude] as [number, number]
-          );
-          
-          const waypointData = [
-            { distance: 0, duration: 0 },
-            ...result.segments
-          ];
-          
-          onRouteDataUpdate(
-            result.totalDistance,
-            result.totalDuration,
-            result.trafficConditions,
-            routeCoordinates,
-            waypointData
-          );
-          
-          if (showTraffic) {
-            const segments: any[] = [];
-            for (let i = 0; i < locations.length - 1; i++) {
-              if (!locations[i].latitude || !locations[i].longitude || 
-                  !locations[i+1].latitude || !locations[i+1].longitude) {
-                continue;
-              }
-              
-              segments.push({
-                start: [locations[i].latitude, locations[i].longitude],
-                end: [locations[i+1].latitude, locations[i+1].longitude],
-                level: result.trafficConditions || (i % 3 === 0 ? 'moderate' : (i % 3 === 1 ? 'heavy' : 'light')),
-                distance: result.segments[i]?.distance || 0,
-                duration: result.segments[i]?.duration || 0
-              });
-            }
-            setTrafficSegments(segments);
-          }
-          
-          if (!routeFound) {
-            toast.success(`Route calculated: ${result.totalDistance.toFixed(1)} km, ${Math.round(result.totalDuration)} min`);
-            setRouteFound(true);
-          }
-        })
-        .catch(error => {
-          console.error("Error calculating route:", error);
-          
-          const minDistancePerLocation = 8.8;
-          const minTimePerLocation = 16;
-          
-          const defaultDistance = Math.max(locations.length * minDistancePerLocation, 0.1);
-          const defaultDuration = Math.max(locations.length * minTimePerLocation, 5);
-          
-          onRouteDataUpdate(defaultDistance, defaultDuration, 'moderate');
-        });
-    } else if (locations.length < 2 && onRouteDataUpdate) {
-      const minDistancePerLocation = 8.8;
-      const minTimePerLocation = 16;
-      
-      const defaultDistance = Math.max(locations.length * minDistancePerLocation, 0.1);
-      const defaultDuration = Math.max(locations.length * minTimePerLocation, 5);
-      
-      onRouteDataUpdate(defaultDistance, defaultDuration, 'moderate');
-      setRouteFound(false);
-    }
-  }, [locations, onRouteDataUpdate, region, showTraffic, routeName]);
-  
-  const handleRouteFound = (routeData: {
-    distance: number;
-    duration: number;
-    coordinates: [number, number][];
-    waypoints?: { distance: number; duration: number }[];
-    trafficConditions?: 'light' | 'moderate' | 'heavy';
-  }) => {
-    if (onRouteDataUpdate) {
-      const defaultTrafficCondition = getCurrentTrafficCondition();
-      
-      if (routeData.distance > 0 && routeData.duration > 0 && routeData.coordinates.length > 1) {
-        let waypointData = routeData.waypoints;
+    if (locations.length < 2 || !onRouteDataUpdate) return;
+    
+    // Calculate route data with Google Maps API (simulated here)
+    const calculateRouteData = async () => {
+      try {
+        const waypoints = locations.map(loc => ({
+          latitude: loc.latitude,
+          longitude: loc.longitude
+        }));
         
-        if (!waypointData || waypointData.length === 0) {
-          waypointData = Array(locations.length).fill(0).map((_, i) => {
-            if (i === 0) return { distance: 0, duration: 0 };
-            
-            return {
-              distance: 8.8 + (Math.random() * 2 - 1),
-              duration: 16 + (Math.random() * 4 - 2)
-            };
-          });
-        }
+        const result = await calculateCompleteRoute(waypoints, routeName, region);
         
+        console.log('Route calculation result:', result);
+        
+        // Pass the data back to the parent component
         onRouteDataUpdate(
-          routeData.distance, 
-          routeData.duration, 
-          routeData.trafficConditions || defaultTrafficCondition,
-          routeData.coordinates,
-          waypointData
+          result.totalDistance,
+          result.totalDuration,
+          result.trafficConditions,
+          undefined, // coordinates would go here in a real implementation
+          result.segments
         );
-        
-        setRouteFound(true);
-        
-        if (!routeFound) {
-          toast.success(`Route calculated: ${routeData.distance.toFixed(1)} km, ${Math.round(routeData.duration)} min`);
-        }
+      } catch (error) {
+        console.error('Error calculating route:', error);
       }
+    };
+    
+    // Only calculate route if we have valid locations
+    if (!isFirstRender.current && locations.every(loc => loc.latitude && loc.longitude)) {
+      calculateRouteData();
     }
-  };
+    
+    isFirstRender.current = false;
+  }, [locations, onRouteDataUpdate, region, routeName]);
   
-  const validWaypoints = locations
-    .filter(loc => 
-      loc.latitude && 
-      loc.longitude && 
-      !isNaN(loc.latitude) && 
-      !isNaN(loc.longitude) &&
-      loc.latitude !== 0 && 
-      loc.longitude !== 0
-    )
-    .map(loc => ({ lat: loc.latitude, lng: loc.longitude }));
+  // For demo purposes, let's render a simplified map representation
+  // In a production app, this would integrate with Google Maps or Leaflet
   
-  const startLocation = locations.length > 0 ? {
-    name: locations[0].name,
-    coords: [locations[0].latitude, locations[0].longitude] as [number, number]
-  } : undefined;
-  
-  const endLocation = locations.length > 1 ? {
-    name: locations[locations.length - 1].name,
-    coords: [locations[locations.length - 1].latitude, locations[locations.length - 1].longitude] as [number, number]
-  } : undefined;
-
-  const MapComponent = React.useMemo(() => (
-    <MapContainer
-      style={{ height, width: '100%' }}
-      className={`z-0 ${className}`}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      
-      {locations.length > 0 && (
-        <>
-          <RouteMarkers 
-            locations={locations}
-            waypoints={[]} 
-            startLocation={startLocation}
-            endLocation={endLocation}
-          />
-          
-          {showRoadRoutes && validWaypoints.length > 1 && (
-            <RoutingMachine 
-              waypoints={validWaypoints} 
-              onRouteFound={handleRouteFound}
-              routeOptions={{
-                avoidTraffic: true,
-                alternateRoutes: false,
-                useRealTimeData: true,
-                routeColor: '#3B82F6',
-                routeWeight: 6,
-                includeSegmentDurations: true
-              }}
-              routeName={routeName}
-            />
-          )}
-        </>
-      )}
-      
-      {showTraffic && <TrafficOverlay trafficSegments={trafficSegments} visible={showTraffic} />}
-      
-      <SetViewOnChange center={center} zoom={zoom} />
-    </MapContainer>
-  ), [locations, center, zoom, height, className, showTraffic, trafficSegments, showRoadRoutes, validWaypoints, routeFound, routeName]);
-
-  return MapComponent;
+  return (
+    <div className={`relative ${className}`} style={{ height }}>
+      {/* Placeholder map with location markers */}
+      <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+        {locations.length >= 2 ? (
+          <div className="h-full w-full relative overflow-hidden bg-blue-50">
+            {/* Mock route line */}
+            <div className="absolute h-1 bg-blue-500 top-1/2 left-4 right-4 transform -translate-y-1/2"></div>
+            
+            {/* Location markers */}
+            {locations.map((location, index) => {
+              // Position markers evenly along the route line
+              const leftPosition = `${4 + (92 * (index / Math.max(1, locations.length - 1)))}%`;
+              
+              const isFirst = index === 0;
+              const isLast = index === locations.length - 1;
+              const markerColor = isFirst ? 'bg-green-500' : isLast ? 'bg-red-500' : 'bg-blue-500';
+              
+              return (
+                <div 
+                  key={`marker-${location.id}-${index}`}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                  style={{ 
+                    top: '50%', 
+                    left: leftPosition,
+                  }}
+                >
+                  <div className={`${markerColor} w-4 h-4 rounded-full flex items-center justify-center`}>
+                    <span className="text-white text-xs font-bold">{index + 1}</span>
+                  </div>
+                  
+                  {/* Location name tooltip */}
+                  <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow-md text-xs">
+                    {location.name}
+                  </div>
+                  
+                  {/* Stop metrics */}
+                  {showStopMetrics && index > 0 && (
+                    <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow-md text-xs">
+                      <div className="whitespace-nowrap text-center">
+                        ~{((index / Math.max(1, locations.length - 1)) * 100).toFixed(0)} km
+                      </div>
+                      <div className="whitespace-nowrap text-center">
+                        ~{((index / Math.max(1, locations.length - 1)) * 60).toFixed(0)} min
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            
+            {/* Traffic indicator */}
+            {showTraffic && (
+              <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow-md">
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="font-medium">Traffic:</span>
+                  <div className={`${getTrafficColor(getCurrentTrafficCondition())} w-2 h-2 rounded-full`}></div>
+                  <span>{getCurrentTrafficCondition()}</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Moving truck visualization */}
+            <div className="absolute top-1/2 left-1/4 transform -translate-y-1/2">
+              <Truck className="h-5 w-5 text-slate-700" />
+            </div>
+          </div>
+        ) : (
+          <div className="text-center p-4">
+            <MapPin className="h-12 w-12 mx-auto text-slate-400" />
+            <p className="mt-2 text-slate-500">
+              Add at least two locations to view the route
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
-export default React.memo(RouteMap);
+export default RouteMap;

@@ -3,8 +3,10 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LocationType } from '@/types/location';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, Cylinder } from 'lucide-react';
 import LocationSelector from './LocationSelector';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RouteLocationsProps {
   availableLocations: LocationType[];
@@ -18,6 +20,7 @@ interface RouteLocationsProps {
   onAddNewLocation: (locationId: string) => void;
   onReplaceLocation: (index: number, newLocationId: string) => void;
   isSyncingLocations: boolean;
+  allowSameStartEndLocation?: boolean;
 }
 
 const RouteLocations: React.FC<RouteLocationsProps> = ({
@@ -31,8 +34,32 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
   onRemoveLocation,
   onAddNewLocation,
   onReplaceLocation,
-  isSyncingLocations
+  isSyncingLocations,
+  allowSameStartEndLocation = false
 }) => {
+  // New state for cylinder counts for each location
+  const [locationCylinders, setLocationCylinders] = React.useState<{[key: string]: number}>({});
+
+  const handleChangeCylinderCount = (locationId: string, change: number) => {
+    setLocationCylinders(prev => {
+      const current = prev[locationId] || 10;
+      const newCount = Math.max(1, Math.min(25, current + change));
+      return { ...prev, [locationId]: newCount };
+    });
+  };
+
+  const getCylinderCount = (locationId: string) => {
+    return locationCylinders[locationId] || 10;
+  };
+
+  const addLocationWithCylinders = (locationId: string) => {
+    const location = availableLocations.find(loc => loc.id.toString() === locationId);
+    if (location) {
+      const cylinderCount = getCylinderCount(locationId);
+      onAddLocationToRoute({ ...location, cylinders: cylinderCount });
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -53,7 +80,8 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
                 >
                   <option value="">Select Start Location</option>
                   {availableLocations
-                    .filter((loc) => loc.type === 'Storage')
+                    .filter((loc) => loc.type === 'Storage' || 
+                                    (allowSameStartEndLocation ? true : loc.id !== endLocation?.id))
                     .map((location) => (
                       <option key={`start-${location.id}`} value={location.id}>
                         {location.name}
@@ -70,7 +98,8 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
                 >
                   <option value="">Select End Location</option>
                   {availableLocations
-                    .filter((loc) => loc.id !== startLocation?.id)
+                    .filter((loc) => 
+                      allowSameStartEndLocation ? true : loc.id !== startLocation?.id)
                     .map((location) => (
                       <option key={`end-${location.id}`} value={location.id}>
                         {location.name}
@@ -93,18 +122,38 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
                       key={`route-location-${location.id}-${index}`}
                       className="flex items-center justify-between border rounded-md p-2"
                     >
-                      <div>
-                        <span className="font-medium">{index + 1}. {location.name}</span>
-                        <p className="text-xs text-muted-foreground">{location.address}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-500 rounded-full h-7 w-7 flex items-center justify-center text-white font-medium text-sm">
+                          {location.emptyCylinders || location.cylinders || 0}
+                        </div>
+                        <div>
+                          <span className="font-medium">{index + 1}. {location.name}</span>
+                          <p className="text-xs text-muted-foreground">{location.address}</p>
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onRemoveLocation(index)}
-                        className="h-8 w-8 p-0"
-                      >
-                        ✕
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="bg-slate-100 px-2 py-1 rounded text-xs flex items-center">
+                                <Cylinder className="h-3 w-3 mr-1" />
+                                {location.emptyCylinders || location.cylinders || 0}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Cylinders to deliver</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRemoveLocation(index)}
+                          className="h-8 w-8 p-0"
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

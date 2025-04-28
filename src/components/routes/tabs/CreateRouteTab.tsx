@@ -9,6 +9,8 @@ import RouteLocations from '../RouteLocations';
 import { LocationType } from '@/types/location';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
+import RouteEndpoints from '../RouteEndpoints';
+import RouteOptimizationPanel from '../RouteOptimizationPanel';
 
 interface CreateRouteTabProps {
   route: {
@@ -93,6 +95,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   onRegionChange
 }) => {
   const [activeTab, setActiveTab] = React.useState('details');
+  const [isOptimizationPanelVisible, setIsOptimizationPanelVisible] = React.useState(false);
   
   // Determine route name based on start and end locations
   const getRouteName = () => {
@@ -114,74 +117,124 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
     return `${startName} to ${endName}`;
   };
 
+  const handleOptimizeClick = () => {
+    setIsOptimizationPanelVisible(true);
+    onOptimize();
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <Card className="h-full">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="details">Route Details</TabsTrigger>
-              <TabsTrigger value="locations">Locations</TabsTrigger>
-            </TabsList>
-            <TabsContent value="details" className="space-y-4">
-              <RouteDetails
-                route={route}
-                onFuelCostUpdate={onFuelCostUpdate}
-                onOptimize={onOptimize}
-                isLoadConfirmed={isLoadConfirmed}
-                onConfirmLoad={onConfirmLoad}
-                vehicleConfig={vehicleConfig}
-                vehicles={vehicles}
-                selectedVehicle={selectedVehicle}
-                onVehicleChange={onVehicleChange}
-              />
-            </TabsContent>
-            <TabsContent value="locations" className="space-y-4">
-              <RouteLocations 
-                availableLocations={filteredAvailableLocations}
-                startLocation={startLocation}
-                endLocation={endLocation}
-                onStartLocationChange={onStartLocationChange}
-                onEndLocationChange={onEndLocationChange}
-                onAddLocationToRoute={onAddLocationToRoute}
-                routeLocations={route.locations}
-                onRemoveLocation={onRemoveLocation}
-                onAddNewLocation={onAddNewLocation}
-                onReplaceLocation={onReplaceLocation}
-                isSyncingLocations={isSyncingLocations}
-              />
-            </TabsContent>
-          </Tabs>
-        </Card>
-      </div>
-      <div>
-        <Card className="h-[500px] overflow-hidden">
-          <RouteMap 
-            locations={transformedLocations}
-            className="h-full"
-            height="500px"
-            onRouteDataUpdate={onRouteDataUpdate}
-            showTraffic={true}
-            country={selectedCountry}
-            region={selectedRegion}
-            routeName={getRouteName()}
+    <div className="space-y-4">
+      {/* Endpoints selection card */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="col-span-1">
+          <RouteEndpoints
+            availableLocations={availableLocations}
+            startLocation={startLocation}
+            endLocation={endLocation}
+            onStartLocationChange={onStartLocationChange}
+            onEndLocationChange={onEndLocationChange}
+            isLoadingLocations={isSyncingLocations}
+            isDisabled={isLoadConfirmed}
+            selectedCountry={selectedCountry}
+            selectedRegion={selectedRegion}
           />
-        </Card>
-        <div className="flex justify-between mt-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setActiveTab('details')} 
-            className="w-[49%]"
-          >
-            Edit Route Details
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setActiveTab('locations')} 
-            className="w-[49%]"
-          >
-            Edit Locations
-          </Button>
+        </div>
+
+        <div className="md:col-span-2">
+          <Card className="h-full overflow-hidden">
+            <RouteMap 
+              locations={transformedLocations}
+              className="h-full"
+              height="200px"
+              onRouteDataUpdate={onRouteDataUpdate}
+              showTraffic={true}
+              country={selectedCountry}
+              region={selectedRegion}
+              routeName={getRouteName()}
+            />
+          </Card>
+        </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Card className="h-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Route Details</TabsTrigger>
+                <TabsTrigger value="locations">Locations</TabsTrigger>
+              </TabsList>
+              <TabsContent value="details" className="space-y-4">
+                <RouteDetails
+                  route={route}
+                  onFuelCostUpdate={onFuelCostUpdate}
+                  onOptimize={handleOptimizeClick}
+                  isLoadConfirmed={isLoadConfirmed}
+                  onConfirmLoad={onConfirmLoad}
+                  vehicleConfig={vehicleConfig}
+                  vehicles={vehicles}
+                  selectedVehicle={selectedVehicle}
+                  onVehicleChange={onVehicleChange}
+                />
+              </TabsContent>
+              <TabsContent value="locations" className="space-y-4">
+                <RouteLocations 
+                  availableLocations={filteredAvailableLocations}
+                  startLocation={startLocation}
+                  endLocation={endLocation}
+                  onStartLocationChange={onStartLocationChange}
+                  onEndLocationChange={onEndLocationChange}
+                  onAddLocationToRoute={onAddLocationToRoute}
+                  routeLocations={route.locations}
+                  onRemoveLocation={onRemoveLocation}
+                  onAddNewLocation={onAddNewLocation}
+                  onReplaceLocation={onReplaceLocation}
+                  isSyncingLocations={isSyncingLocations}
+                  allowSameStartEndLocation={true}
+                />
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card className="h-[400px] overflow-hidden">
+            {isOptimizationPanelVisible ? (
+              <RouteOptimizationPanel 
+                route={route}
+                onClose={() => setIsOptimizationPanelVisible(false)}
+              />
+            ) : (
+              <RouteMap 
+                locations={transformedLocations}
+                className="h-full"
+                height="400px"
+                onRouteDataUpdate={onRouteDataUpdate}
+                showTraffic={true}
+                country={selectedCountry}
+                region={selectedRegion}
+                routeName={getRouteName()}
+                showStopMetrics={true}
+              />
+            )}
+          </Card>
+          <div className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setActiveTab('details')} 
+              className="w-[49%]"
+            >
+              Edit Route Details
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setActiveTab('locations')} 
+              className="w-[49%]"
+            >
+              Edit Locations
+            </Button>
+          </div>
         </div>
       </div>
     </div>
