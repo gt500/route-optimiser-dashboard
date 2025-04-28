@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
@@ -16,7 +17,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
-  const { fetchActiveRoutes } = useRouteData();
+  const { fetchActiveRoutes, startRoute: startRouteHook, completeRoute: completeRouteHook } = useRouteData();
   const { vehicles, saveVehicle, fetchVehicles } = useVehiclesData();
 
   // Load routes when component mounts or when highlightedDeliveryId changes
@@ -57,62 +58,20 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   };
 
   const startRoute = async (routeId: string) => {
+    console.log(`Starting route with ID: ${routeId}`);
+    
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
       
-      // Get the route details
-      const route = routes.find(r => r.id === routeId);
-      if (!route) {
-        throw new Error('Route not found');
-      }
+      // Call the startRoute function from the hook
+      await startRouteHook(routeId);
       
-      console.log(`Starting route ${routeId}, vehicle assignment: ${route.vehicle_id || 'none'}`);
-      
-      // Update route status to 'in_progress'
-      const { error } = await supabase
-        .from('routes')
-        .update({ status: 'in_progress' })
-        .eq('id', routeId)
-        .eq('status', 'scheduled'); // Only update if currently scheduled
-      
-      if (error) {
-        console.error('Error updating route status:', error);
-        throw error;
-      }
-      
-      // If there's a vehicle assigned to this route, update its status
-      if (route.vehicle_id) {
-        const vehicleToUpdate = vehicles.find(v => v.id === route.vehicle_id);
-        if (vehicleToUpdate) {
-          console.log(`Updating assigned vehicle ${vehicleToUpdate.id} status to On Route`);
-          await saveVehicle({
-            ...vehicleToUpdate,
-            status: 'On Route',
-            region: vehicleToUpdate.id === 'TRK-001' ? 'Western Cape' : vehicleToUpdate.region
-          });
-        }
-      } else {
-        // If no vehicle assigned, use the first available vehicle
-        const availableVehicle = vehicles.find(v => v.status === 'Available');
-        if (availableVehicle) {
-          console.log(`No vehicle assigned, updating ${availableVehicle.id} status to On Route`);
-          await saveVehicle({
-            ...availableVehicle,
-            status: 'On Route',
-            region: availableVehicle.id === 'TRK-001' ? 'Western Cape' : availableVehicle.region
-          });
-          
-          // Update the route with the vehicle ID
-          const { error: updateError } = await supabase
-            .from('routes')
-            .update({ vehicle_id: availableVehicle.id })
-            .eq('id', routeId);
-            
-          if (updateError) {
-            console.error('Error updating route with vehicle ID:', updateError);
-          }
-        }
-      }
+      // Update local state for immediate feedback
+      setRoutes(prev => 
+        prev.map(route => 
+          route.id === routeId ? { ...route, status: 'in_progress' } : route
+        )
+      );
       
       toast.success('Route started successfully');
       
@@ -131,75 +90,28 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   };
 
   const markRouteAsComplete = async (routeId: string) => {
+    console.log(`Completing route with ID: ${routeId}`);
+    
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
-      // Get the route to find assigned vehicle
-      const routeToComplete = routes.find(r => r.id === routeId);
-      if (!routeToComplete) {
-        throw new Error('Route not found');
-      }
+      // Call the completeRoute function from the hook
+      await completeRouteHook(routeId);
       
-      console.log(`Marking route ${routeId} as completed, assigned vehicle: ${routeToComplete.vehicle_id || 'none'}`);
-      
-      // Update route status to 'completed'
-      const { error } = await supabase
-        .from('routes')
-        .update({ status: 'completed' })
-        .eq('id', routeId);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      
-      // If the route has an assigned vehicle, update that vehicle specifically
-      if (routeToComplete.vehicle_id) {
-        const assignedVehicle = vehicles.find(v => v.id === routeToComplete.vehicle_id);
-        if (assignedVehicle) {
-          console.log(`Setting assigned vehicle ${assignedVehicle.id} from "On Route" to "Available"`);
-          await saveVehicle({
-            ...assignedVehicle,
-            status: 'Available', // Always set vehicle back to Available
-            load: 0, // Reset the load since the route is complete
-            region: assignedVehicle.id === 'TRK-001' ? 'Western Cape' : assignedVehicle.region // Ensure TRK-001 is Western Cape
-          });
-        }
-      } else {
-        // If no vehicle is assigned, update any vehicles that are 'On Route'
-        const vehiclesOnRoute = vehicles.filter(v => v.status === 'On Route');
-        console.log(`Found ${vehiclesOnRoute.length} vehicles on route to update status`);
-        
-        for (const vehicle of vehiclesOnRoute) {
-          console.log(`Setting vehicle ${vehicle.id} from "On Route" to "Available"`);
-          await saveVehicle({
-            ...vehicle,
-            status: 'Available', // Always set vehicle back to Available
-            load: 0, // Reset the load since the route is complete
-            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region // Ensure TRK-001 is Western Cape
-          });
-        }
-      }
-      
-      toast.success('Route marked as completed');
-      
-      // First, update the local state for immediate feedback
+      // Update local state for immediate feedback
       setRoutes(prev => 
         prev.map(route => 
-          route.id === routeId 
-            ? { ...route, status: 'completed' } 
-            : route
+          route.id === routeId ? { ...route, status: 'completed' } : route
         )
       );
       
-      // Then reload all routes data for full synchronization
+      toast.success('Route completed successfully');
+      
+      // Reload routes to ensure everything is up-to-date
       await loadRoutes();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
-      
-      // Rollback the optimistic update if there was an error
-      await loadRoutes();
     } finally {
       setProcessingRoutes(prev => {
         const updated = { ...prev };

@@ -156,6 +156,8 @@ export const useRouteData = () => {
     setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
     
     try {
+      console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1200));
       
@@ -167,9 +169,11 @@ export const useRouteData = () => {
       );
       
       toast.success('Route started successfully');
+      return true;
     } catch (error) {
+      console.error('Error in startRoute:', error);
       toast.error('Failed to start route');
-      console.error(error);
+      throw error;
     } finally {
       // Clear processing state
       setProcessingRoutes(prev => {
@@ -185,6 +189,8 @@ export const useRouteData = () => {
     setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
     
     try {
+      console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -196,9 +202,11 @@ export const useRouteData = () => {
       );
       
       toast.success('Route completed successfully');
+      return true;
     } catch (error) {
+      console.error('Error in completeRoute:', error);
       toast.error('Failed to complete route');
-      console.error(error);
+      throw error;
     } finally {
       // Clear processing state
       setProcessingRoutes(prev => {
