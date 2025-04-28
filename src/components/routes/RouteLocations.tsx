@@ -21,6 +21,7 @@ interface RouteLocationsProps {
   onReplaceLocation: (index: number, newLocationId: string) => void;
   isSyncingLocations: boolean;
   allowSameStartEndLocation?: boolean;
+  hideEndpoints?: boolean;
 }
 
 const RouteLocations: React.FC<RouteLocationsProps> = ({
@@ -35,7 +36,8 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
   onAddNewLocation,
   onReplaceLocation,
   isSyncingLocations,
-  allowSameStartEndLocation = false
+  allowSameStartEndLocation = false,
+  hideEndpoints = false
 }) => {
   // New state for cylinder counts for each location
   const [locationCylinders, setLocationCylinders] = React.useState<{[key: string]: number}>({});
@@ -66,48 +68,50 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
         {isSyncingLocations ? (
           <div className="flex items-center justify-center h-40">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2">Loading locations...</span>
+            <span className="ml-2">Loading route stops...</span>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Start Location</label>
-                <select
-                  value={startLocation?.id || ''}
-                  onChange={(e) => onStartLocationChange(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                >
-                  <option value="">Select Start Location</option>
-                  {availableLocations
-                    .filter((loc) => loc.type === 'Storage' || 
-                                    (allowSameStartEndLocation ? true : loc.id !== endLocation?.id))
-                    .map((location) => (
-                      <option key={`start-${location.id}`} value={location.id}>
-                        {location.name}
-                      </option>
-                    ))}
-                </select>
+            {!hideEndpoints && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Start Location</label>
+                  <select
+                    value={startLocation?.id || ''}
+                    onChange={(e) => onStartLocationChange(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    <option value="">Select Start Location</option>
+                    {availableLocations
+                      .filter((loc) => loc.type === 'Storage' || 
+                                      (allowSameStartEndLocation ? true : loc.id !== endLocation?.id))
+                      .map((location) => (
+                        <option key={`start-${location.id}`} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">End Location</label>
+                  <select
+                    value={endLocation?.id || ''}
+                    onChange={(e) => onEndLocationChange(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    <option value="">Select End Location</option>
+                    {availableLocations
+                      .filter((loc) => 
+                        allowSameStartEndLocation ? true : loc.id !== startLocation?.id)
+                      .map((location) => (
+                        <option key={`end-${location.id}`} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">End Location</label>
-                <select
-                  value={endLocation?.id || ''}
-                  onChange={(e) => onEndLocationChange(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                >
-                  <option value="">Select End Location</option>
-                  {availableLocations
-                    .filter((loc) => 
-                      allowSameStartEndLocation ? true : loc.id !== startLocation?.id)
-                    .map((location) => (
-                      <option key={`end-${location.id}`} value={location.id}>
-                        {location.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
+            )}
 
             <div>
               <h3 className="text-lg font-medium">Route Stops</h3>
@@ -160,14 +164,14 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
               ) : (
                 <div className="border border-dashed rounded-md p-4 text-center">
                   <p className="text-muted-foreground">No stops added to your route yet</p>
-                  <p className="text-xs text-muted-foreground">Add locations from the list below</p>
+                  <p className="text-xs text-muted-foreground">Add route stops from the list below</p>
                 </div>
               )}
             </div>
 
             <div>
               <h3 className="text-lg font-medium flex items-center">
-                Available Locations
+                Available Route Stops
                 <Button
                   variant="ghost"
                   size="sm"

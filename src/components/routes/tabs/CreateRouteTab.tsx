@@ -163,7 +163,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="details">Route Details</TabsTrigger>
-                <TabsTrigger value="locations">Locations</TabsTrigger>
+                <TabsTrigger value="stops">Route Stops</TabsTrigger>
               </TabsList>
               <TabsContent value="details" className="space-y-4">
                 <RouteDetails
@@ -176,9 +176,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                   vehicles={vehicles}
                   selectedVehicle={selectedVehicle}
                   onVehicleChange={onVehicleChange}
+                  hideEndpoints={true} /* Hide duplicate endpoints here */
                 />
               </TabsContent>
-              <TabsContent value="locations" className="space-y-4">
+              <TabsContent value="stops" className="space-y-4">
                 <RouteLocations 
                   availableLocations={filteredAvailableLocations}
                   startLocation={startLocation}
@@ -192,6 +193,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                   onReplaceLocation={onReplaceLocation}
                   isSyncingLocations={isSyncingLocations}
                   allowSameStartEndLocation={true}
+                  hideEndpoints={true} /* Hide duplicate endpoints here */
                 />
               </TabsContent>
             </Tabs>
@@ -229,10 +231,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => setActiveTab('locations')} 
+              onClick={() => setActiveTab('stops')} 
               className="w-[49%]"
             >
-              Edit Locations
+              Edit Route Stops
             </Button>
           </div>
         </div>

@@ -34,7 +34,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ locations, onSelect
       <div className="relative">
         <Input
           type="text"
-          placeholder="Search locations..."
+          placeholder="Search route stops..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-9"
@@ -104,7 +104,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ locations, onSelect
           </div>
         ) : (
           <div className="p-4 text-center text-muted-foreground">
-            No locations found
+            No route stops found
           </div>
         )}
       </div>
