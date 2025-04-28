@@ -67,7 +67,6 @@ const DailyReports = () => {
             value={totalCylinders}
             icon={<Truck className="h-4 w-4" />}
             color="bg-gradient-to-br from-orange-500 to-orange-600"
-            ringColor="ring-orange-400/30"
             tooltip="Total cylinders delivered or picked up on this date"
           />
           
@@ -76,7 +75,6 @@ const DailyReports = () => {
             value={`${totalKms.toFixed(1)} km`}
             icon={<MapPin className="h-4 w-4" />}
             color="bg-gradient-to-br from-blue-500 to-blue-600"
-            ringColor="ring-blue-400/30"
             tooltip="Total distance covered by all deliveries"
           />
           
@@ -85,7 +83,6 @@ const DailyReports = () => {
             value={filteredDeliveries.length}
             icon={<MapPin className="h-4 w-4" />}
             color="bg-gradient-to-br from-purple-500 to-purple-600"
-            ringColor="ring-purple-400/30"
             tooltip="Number of delivery locations visited"
           />
           
@@ -94,7 +91,6 @@ const DailyReports = () => {
             value={`R${totalFuelCost.toFixed(2)}`}
             icon={<Fuel className="h-4 w-4" />}
             color="bg-gradient-to-br from-green-500 to-green-600"
-            ringColor="ring-green-400/30"
             tooltip="Total fuel cost for all deliveries"
           />
         </div>

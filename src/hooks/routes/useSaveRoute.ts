@@ -44,23 +44,19 @@ export const useSaveRoute = (
         };
       });
 
-      // Create route record
-      const { data, error } = await supabase.from('routes').insert([
-        {
-          name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
-          date: new Date().toISOString(),
-          status: 'scheduled',
-          total_distance: route.distance,
-          total_duration: route.estimatedDuration,
-          total_fuel_cost: route.fuelCost,
-          total_cylinders: route.cylinders,
-          vehicle_id: selectedVehicle,
-          traffic_conditions: route.trafficConditions,
-          country: route.country,
-          region: route.region,
-          stops: stops
-        }
-      ]).select();
+      // Create route record - ensuring we match the exact schema expected by Supabase
+      const { data, error } = await supabase.from('routes').insert({
+        name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
+        date: new Date().toISOString(),
+        status: 'scheduled',
+        total_distance: route.distance,
+        total_duration: route.estimatedDuration,
+        estimated_cost: route.fuelCost, // Map total_fuel_cost to estimated_cost field
+        total_cylinders: route.cylinders,
+        vehicle_id: selectedVehicle,
+        // Store these as metadata in the DB for future use
+        stops: stops
+      }).select();
 
       if (error) {
         console.error('Error saving route:', error);

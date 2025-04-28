@@ -9,6 +9,7 @@ interface RouteMetricsCardProps {
   value: string | ReactNode;
   icon: ReactNode;
   color?: string;
+  ringColor?: string; // Added ringColor property
   subtitle?: ReactNode;
   tooltip?: string;
   onClick?: () => void;
@@ -19,6 +20,7 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
   value,
   icon,
   color = "bg-primary",
+  ringColor, // Include ringColor in props
   subtitle,
   tooltip,
   onClick
@@ -45,7 +47,7 @@ const RouteMetricsCard: React.FC<RouteMetricsCardProps> = ({
       </div>
       
       <div className="flex items-center gap-3 mb-1.5">
-        <div className={`${color} rounded-full p-2.5 text-white`}>
+        <div className={`${color} rounded-full p-2.5 text-white ${ringColor ? `ring-2 ${ringColor}` : ''}`}>
           {icon}
         </div>
         <div className="text-xl font-bold">{value}</div>
