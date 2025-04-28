@@ -1,162 +1,93 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LocationType } from '../../locations/LocationEditDialog';
-import LocationEditDialog from '../../locations/LocationEditDialog';
-import { toast } from 'sonner';
-import LocationSearch from './LocationSearch';
-import ViewToggle from './ViewToggle';
-import LocationDropdown from './LocationDropdown';
-import LocationList from './LocationList';
-import CylinderSelector from './CylinderSelector';
-import AddButton from './AddButton';
+import React, { useState } from 'react';
+import { LocationType } from '@/types/location';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PlusCircle } from 'lucide-react';
 
 interface LocationSelectorProps {
-  availableLocations: LocationType[];
-  onSelectLocation: (location: LocationType & { cylinders: number }) => void;
-  disabled?: boolean;
-  onUpdateLocations?: (locations: LocationType[]) => void;
+  locations: LocationType[];
+  onSelect: (locationId: string, cylinders: number) => void;
 }
 
-const LocationSelector = ({ 
-  onSelectLocation, 
-  availableLocations, 
-  disabled = false,
-  onUpdateLocations = () => {}
-}: LocationSelectorProps) => {
-  const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null);
-  const [cylinders, setCylinders] = useState(10);
+const LocationSelector: React.FC<LocationSelectorProps> = ({ locations, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [editLocation, setEditLocation] = useState<LocationType | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'dropdown'>('dropdown');
-  
-  const filteredLocations = availableLocations.filter(loc => 
-    loc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (loc.address && loc.address.toLowerCase().includes(searchTerm.toLowerCase()))
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [cylinderCount, setCylinderCount] = useState<number>(10);
+
+  const filteredLocations = locations.filter(location => 
+    location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    location.address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
-  const handleAdd = () => {
+
+  const handleAddToRoute = () => {
     if (selectedLocation) {
-      console.log("Adding location with cylinders:", cylinders, selectedLocation);
-      
-      // Create a copy with correct properties to avoid mutation issues
-      const locationWithCylinders = {
-        ...selectedLocation,
-        id: selectedLocation.id.toString(),
-        cylinders,
-        emptyCylinders: cylinders, 
-        // Ensure we have the proper type assignment for customer locations
-        fullCylinders: selectedLocation.type === 'Storage' || selectedLocation.type === 'Depot' 
-          ? selectedLocation.fullCylinders || 0 
-          : 0
-      };
-      
-      onSelectLocation(locationWithCylinders);
-      toast.success(`Added ${selectedLocation.name} to route`);
-    } else {
-      toast.error("Please select a location");
+      onSelect(selectedLocation, cylinderCount);
+      setSelectedLocation('');
+      setCylinderCount(10);
     }
-  };
-
-  const handleEditClick = (location: LocationType) => {
-    console.log("Edit location clicked:", location);
-    setEditLocation(location);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSaveLocation = (updatedLocation: LocationType) => {
-    console.log("Saving location:", updatedLocation);
-    const updatedLocations = availableLocations.map(loc => 
-      loc.id === updatedLocation.id ? updatedLocation : loc
-    );
-    onUpdateLocations(updatedLocations);
-    toast.success(`Location "${updatedLocation.name}" updated successfully`);
-    setIsEditDialogOpen(false);
-  };
-
-  useEffect(() => {
-    console.log("LocationSelector - Available locations:", availableLocations);
-    if (availableLocations.length > 0 && !selectedLocation) {
-      // Pre-select first location if none selected
-      setSelectedLocation(availableLocations[0]);
-    }
-  }, [availableLocations, selectedLocation]);
-
-  const handleLocationSelect = (value: string) => {
-    console.log("Location selected with ID:", value);
-    const location = availableLocations.find(loc => loc.id.toString() === value);
-    console.log("Found location:", location);
-    setSelectedLocation(location || null);
   };
 
   return (
-    <>
-      <Card className="shadow-sm bg-black">
-        <CardHeader>
-          <CardTitle className="text-base text-white">Add Location to Route</CardTitle>
-          <CardDescription className="text-gray-300">Select a delivery location and specify the number of cylinders</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-2">
-              <LocationSearch 
-                searchTerm={searchTerm} 
-                setSearchTerm={setSearchTerm} 
-                disabled={disabled} 
-              />
-              <ViewToggle 
-                viewMode={viewMode} 
-                setViewMode={setViewMode} 
-                disabled={disabled} 
-              />
-            </div>
-            
-            {viewMode === 'dropdown' ? (
-              <LocationDropdown
-                selectedLocation={selectedLocation}
-                filteredLocations={filteredLocations}
-                handleLocationSelect={handleLocationSelect}
-                handleEditClick={handleEditClick}
-                disabled={disabled}
-              />
-            ) : (
-              <LocationList
-                selectedLocation={selectedLocation}
-                filteredLocations={filteredLocations}
-                handleLocationSelect={handleLocationSelect}
-                handleEditClick={handleEditClick}
-                disabled={disabled}
-              />
-            )}
-            
-            {filteredLocations.length === 0 && (
-              <div className="text-center py-4 text-gray-400">
-                No locations found. Try a different search term or add new locations.
-              </div>
-            )}
-          </div>
-          
-          <CylinderSelector 
-            cylinders={cylinders} 
-            setCylinders={setCylinders} 
-            disabled={disabled} 
-          />
-          
-          <AddButton 
-            handleAdd={handleAdd} 
-            disabled={!selectedLocation || filteredLocations.length === 0 || disabled} 
-          />
-        </CardContent>
-      </Card>
-
-      <LocationEditDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        location={editLocation}
-        onSave={handleSaveLocation}
+    <div className="space-y-4 mt-2">
+      <Input
+        type="text"
+        placeholder="Search locations..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full"
       />
-    </>
+
+      <div className="border rounded-md overflow-hidden">
+        {filteredLocations.length > 0 ? (
+          <div className="max-h-60 overflow-y-auto">
+            {filteredLocations.map(location => (
+              <div 
+                key={location.id}
+                className={`p-2 border-b flex justify-between items-center cursor-pointer ${
+                  selectedLocation === location.id ? 'bg-accent' : ''
+                }`}
+                onClick={() => setSelectedLocation(location.id)}
+              >
+                <div>
+                  <div className="font-medium">{location.name}</div>
+                  <div className="text-xs text-muted-foreground">{location.address}</div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedLocation(location.id);
+                    onSelect(location.id, cylinderCount);
+                  }}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-4 text-center text-muted-foreground">
+            No locations found
+          </div>
+        )}
+      </div>
+
+      {selectedLocation && (
+        <div className="flex items-center space-x-2">
+          <Input
+            type="number"
+            min="1"
+            max="50"
+            value={cylinderCount}
+            onChange={(e) => setCylinderCount(parseInt(e.target.value) || 1)}
+            className="w-20"
+          />
+          <Button onClick={handleAddToRoute}>Add to Route</Button>
+        </div>
+      )}
+    </div>
   );
 };
 
