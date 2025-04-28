@@ -38,6 +38,7 @@ interface RouteMapProps {
   country?: string;
   region?: string;
   showRoadRoutes?: boolean;
+  routeName?: string;
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
@@ -49,6 +50,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   country,
   region,
   showRoadRoutes = true,
+  routeName
 }) => {
   const { mapCenter, zoom } = useMapState(locations, country, region);
   const [trafficSegments, setTrafficSegments] = useState<any[]>([]);
@@ -75,7 +77,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
         longitude: loc.longitude
       }));
       
-      calculateCompleteRoute(waypoints, region || "Cape Town")
+      calculateCompleteRoute(waypoints, routeName, region || "Cape Town")
         .then(result => {
           const routeCoordinates: [number, number][] = locations.map(loc => 
             [loc.latitude, loc.longitude] as [number, number]
@@ -139,7 +141,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       onRouteDataUpdate(defaultDistance, defaultDuration, 'moderate');
       setRouteFound(false);
     }
-  }, [locations, onRouteDataUpdate, region, showTraffic]);
+  }, [locations, onRouteDataUpdate, region, showTraffic, routeName]);
   
   const handleRouteFound = (routeData: {
     distance: number;
@@ -233,6 +235,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
                 routeWeight: 6,
                 includeSegmentDurations: true
               }}
+              routeName={routeName}
             />
           )}
         </>
@@ -242,7 +245,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       
       <SetViewOnChange center={center} zoom={zoom} />
     </MapContainer>
-  ), [locations, center, zoom, height, className, showTraffic, trafficSegments, showRoadRoutes, validWaypoints, routeFound]);
+  ), [locations, center, zoom, height, className, showTraffic, trafficSegments, showRoadRoutes, validWaypoints, routeFound, routeName]);
 
   return MapComponent;
 };

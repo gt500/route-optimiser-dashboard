@@ -27,6 +27,7 @@ interface RoutingMachineProps {
     trafficConditions?: 'light' | 'moderate' | 'heavy';
   }) => void;
   routeOptions?: RouteOptions;
+  routeName?: string;
 }
 
 const RoutingMachine: React.FC<RoutingMachineProps> = ({ 
@@ -40,7 +41,8 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
     routeColor: '#6366F1',
     routeWeight: 6,
     includeSegmentDurations: true
-  }
+  },
+  routeName
 }) => {
   const map = useMap();
   
@@ -50,7 +52,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
       return;
     }
     
-    console.log("Creating route with waypoints:", waypoints);
+    console.log("Creating route with waypoints:", waypoints, "route name:", routeName);
     
     let routingControl: L.Routing.Control | null = null;
     
@@ -85,58 +87,54 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         console.log("Creating route with valid waypoints:", validWaypoints);
         
-        // Always enable real-time traffic data by default for maximum efficiency
-        const useRealTimeTraffic = routeOptions.useRealTimeData !== false;
+        // Check for predefined route data first
+        let knownRoute = routeName ? identifyKnownRoute(routeName) : null;
         
+        if (knownRoute) {
+          console.log("Found predefined data for route:", knownRoute.name);
+          
+          // Display the predefined route on the map
+          routingControl = L.Routing.control({
+            waypoints: validWaypoints,
+            lineOptions: {
+              styles: [
+                { color: routeOptions.routeColor || '#6366F1', weight: routeOptions.routeWeight || 6, opacity: 0.7 },
+                { color: '#FFFFFF', weight: (routeOptions.routeWeight || 6) - 2, opacity: 0.5, dashArray: '5,10' }
+              ]
+            },
+            routeWhileDragging: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            showAlternatives: false,
+            show: false
+          }).addTo(map);
+          
+          // Hide the control UI but show the route line
+          routingControl.hide();
+          
+          // Return the predefined route data
+          if (onRouteFound) {
+            const coordinates = validWaypoints.map(wp => [wp.lat(), wp.lng()] as [number, number]);
+            
+            setTimeout(() => {
+              onRouteFound({
+                distance: knownRoute!.distance,
+                duration: knownRoute!.duration,
+                coordinates: coordinates,
+                waypoints: knownRoute!.segments,
+                trafficConditions: getCurrentTrafficCondition()
+              });
+            }, 300);
+          }
+          
+          return;
+        }
+        
+        // If not a predefined route, use the routing API
         // Extract styling options from routeOptions or use defaults
         const routeColor = routeOptions.routeColor || '#6366F1';
         const routeWeight = routeOptions.routeWeight || 6;
-
-        // Special case for known routes in Cape Town
-        // This is a workaround since we're still using Leaflet for the map display
-        // but want to have the correct route data shown
-        if (validWaypoints.length > 1) {
-          let specialRoute = identifyKnownRoute(validWaypoints);
-          
-          if (specialRoute) {
-            console.log("Using specific data for known route:", specialRoute.name);
-            
-            // Use our simulation function to generate known route data
-            setTimeout(() => {
-              if (onRouteFound) {
-                const coordinates = validWaypoints.map(wp => [wp.lat(), wp.lng()] as [number, number]);
-                
-                onRouteFound({
-                  distance: specialRoute.distance,
-                  duration: specialRoute.duration,
-                  coordinates: coordinates,
-                  waypoints: specialRoute.segments,
-                  trafficConditions: getCurrentTrafficCondition()
-                });
-              }
-            }, 500);
-            
-            // Still show a visual route on the map
-            routingControl = L.Routing.control({
-              waypoints: validWaypoints,
-              lineOptions: {
-                styles: [
-                  { color: routeColor, weight: routeWeight, opacity: 0.7 },
-                  { color: '#FFFFFF', weight: routeWeight - 2, opacity: 0.5, dashArray: '5,10' }
-                ]
-              },
-              routeWhileDragging: false,
-              addWaypoints: false,
-              draggableWaypoints: false,
-              fitSelectedRoutes: true,
-              showAlternatives: false,
-              show: false
-            }).addTo(map);
-            
-            routingControl.hide();
-            return;
-          }
-        }
         
         // Configure options with real-time traffic preferences
         const routerOptions: L.Routing.RoutingControlOptions = {
@@ -153,7 +151,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
               overview: 'full',
               annotations: 'true',
               // Always use real-time traffic data when available
-              traffic: useRealTimeTraffic ? 'true' : 'false'
+              traffic: routeOptions.useRealTimeData ? 'true' : 'false'
             }
           }),
           waypoints: validWaypoints,
@@ -243,28 +241,26 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         map.removeControl(routingControl);
       }
     };
-  }, [map, waypoints, forceRouteUpdate, onRouteFound, routeOptions]);
+  }, [map, waypoints, forceRouteUpdate, onRouteFound, routeOptions, routeName]);
   
   return null;
 };
 
-// Helper function to identify known routes in Cape Town
-function identifyKnownRoute(waypoints: L.LatLng[]): {
+// Helper function to identify known routes by name
+function identifyKnownRoute(routeName: string): {
   name: string;
   distance: number;
   duration: number;
   segments: { distance: number; duration: number }[];
 } | null {
-  if (waypoints.length < 2) return null;
-  
   // Known routes with predefined data
   const knownRoutes = [
     {
       name: "Cape Town Urban Delivery",
-      // Afrox Epping to West Coast Village via TableView and Parklands
       distance: 26.5,
       duration: 48,
       segments: [
+        { distance: 0, duration: 0 },
         { distance: 18.5, duration: 26 },
         { distance: 4.2, duration: 12 },
         { distance: 3.8, duration: 10 }
@@ -272,10 +268,10 @@ function identifyKnownRoute(waypoints: L.LatLng[]): {
     },
     {
       name: "Northern Suburbs Route",
-      // Shell Hugo Street to Zevenwacht via Plattekloof and Willowridge
       distance: 29.8,
       duration: 51,
       segments: [
+        { distance: 0, duration: 0 },
         { distance: 12.7, duration: 19 },
         { distance: 7.8, duration: 15 },
         { distance: 9.3, duration: 17 }
@@ -283,10 +279,10 @@ function identifyKnownRoute(waypoints: L.LatLng[]): {
     },
     {
       name: "Winelands Delivery",
-      // Shell Stellenbosch Square to Simonsrust via Paarl and Laborie
       distance: 56.1,
       duration: 78,
       segments: [
+        { distance: 0, duration: 0 },
         { distance: 25.6, duration: 34 },
         { distance: 8.4, duration: 16 },
         { distance: 22.1, duration: 28 }
@@ -294,31 +290,12 @@ function identifyKnownRoute(waypoints: L.LatLng[]): {
     }
   ];
   
-  // Simple algorithm: check if starting and ending points match known routes
-  const startLat = waypoints[0].lat();
-  const startLng = waypoints[0].lng();
-  const endLat = waypoints[waypoints.length - 1].lat();
-  const endLng = waypoints[waypoints.length - 1].lng();
+  // Check if route name matches any of our known routes
+  const matchedRoute = knownRoutes.find(route => 
+    route.name.toLowerCase() === routeName.toLowerCase()
+  );
   
-  // Cape Town Urban Delivery (Afrox Epping to West Coast Village)
-  if (Math.abs(startLat - (-33.93631)) < 0.01 && Math.abs(startLng - 18.52759) < 0.01 &&
-      Math.abs(endLat - (-33.803329)) < 0.01 && Math.abs(endLng - 18.485944) < 0.01) {
-    return knownRoutes[0];
-  }
-  
-  // Northern Suburbs Route (Shell Hugo Street to Zevenwacht)
-  if (Math.abs(startLat - (-33.900848)) < 0.01 && Math.abs(startLng - 18.564976) < 0.01 &&
-      Math.abs(endLat - (-33.949867)) < 0.01 && Math.abs(endLng - 18.696407) < 0.01) {
-    return knownRoutes[1];
-  }
-  
-  // Winelands Delivery (Shell Stellenbosch Square to Simonsrust)
-  if (Math.abs(startLat - (-33.976185)) < 0.01 && Math.abs(startLng - 18.843523) < 0.01 &&
-      Math.abs(endLat - (-33.926464)) < 0.01 && Math.abs(endLng - 18.877136) < 0.01) {
-    return knownRoutes[2];
-  }
-  
-  return null;
+  return matchedRoute || null;
 }
 
 export default RoutingMachine;

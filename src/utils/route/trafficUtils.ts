@@ -1,151 +1,77 @@
 
-/**
- * Traffic utility functions for route calculation
- */
+// Traffic utilities for route visualization and calculation
 
-/**
- * Type definition for a traffic segment
- */
+// Define the TrafficSegment type
 export interface TrafficSegment {
-  start: [number, number]; // Starting lat, lng coordinates
-  end: [number, number];   // Ending lat, lng coordinates
-  level: 'light' | 'moderate' | 'heavy'; // Traffic condition
-  distance?: number;       // Optional distance in kilometers
-  duration?: number;       // Optional duration in minutes
+  start: [number, number];
+  end: [number, number];
+  level: 'light' | 'moderate' | 'heavy';
+  distance?: number;
+  duration?: number;
 }
 
-/**
- * Get the current traffic condition based on time of day
- * @returns Traffic condition ('light', 'moderate', 'heavy')
- */
-export function getCurrentTrafficCondition(): 'light' | 'moderate' | 'heavy' {
+// Get color based on traffic level
+export const getTrafficColor = (level: 'light' | 'moderate' | 'heavy'): string => {
+  switch (level) {
+    case 'light':
+      return '#4ade80'; // green-500
+    case 'moderate':
+      return '#fb923c'; // orange-400
+    case 'heavy':
+      return '#ef4444'; // red-500
+    default:
+      return '#fb923c'; // orange-400 as default
+  }
+};
+
+// Get current traffic condition based on time of day
+export const getCurrentTrafficCondition = (): 'light' | 'moderate' | 'heavy' => {
   const now = new Date();
   const hour = now.getHours();
-  const day = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const day = now.getDay(); // 0 = Sunday, 6 = Saturday
   
-  // Weekend
+  // Weekend logic
   if (day === 0 || day === 6) {
-    if (hour >= 10 && hour <= 14) {
-      // Weekend midday can be moderately busy
-      return 'moderate';
-    } else {
-      // Most of the weekend is light traffic
-      return 'light';
-    }
-  }
-  
-  // Weekday
-  if ((hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18)) {
-    // Rush hours - heavy traffic
-    return 'heavy';
-  } else if ((hour >= 10 && hour <= 15) || hour === 19) {
-    // Business hours - moderate traffic
-    return 'moderate';
-  } else {
-    // Early morning and late night - light traffic
+    if (hour >= 10 && hour <= 14) return 'moderate';
     return 'light';
   }
-}
-
-/**
- * Calculate traffic delay factor based on conditions
- * @param trafficCondition Traffic condition
- * @returns Multiplier for travel time (1.0 = no delay, higher means more delay)
- */
-export function calculateTrafficDelayFactor(trafficCondition: 'light' | 'moderate' | 'heavy'): number {
-  switch (trafficCondition) {
-    case 'light':
-      return 1.0; // No extra delay
-    case 'moderate':
-      return 1.25; // 25% longer
-    case 'heavy':
-      return 1.6; // 60% longer
-    default:
-      return 1.0;
-  }
-}
-
-/**
- * Get the appropriate color for a traffic condition
- * @param trafficLevel Traffic level ('light', 'moderate', 'heavy')
- * @returns Color code for the traffic level
- */
-export function getTrafficColor(trafficLevel: 'light' | 'moderate' | 'heavy'): string {
-  switch (trafficLevel) {
-    case 'light':
-      return '#4CAF50'; // Green
-    case 'moderate':
-      return '#FFC107'; // Amber
-    case 'heavy':
-      return '#F44336'; // Red
-    default:
-      return '#4CAF50'; // Default to green
-  }
-}
-
-/**
- * Estimate current traffic delay for a specific route in Cape Town
- * @param startLat Starting latitude
- * @param startLng Starting longitude
- * @param endLat Ending latitude
- * @param endLng Ending longitude
- * @returns Traffic delay factor
- */
-export function estimateTrafficDelay(
-  startLat: number,
-  startLng: number,
-  endLat: number,
-  endLng: number
-): number {
-  // Cape Town CBD coordinates (approximate)
-  const cbdLat = -33.92;
-  const cbdLng = 18.42;
   
-  // Calculate if route is going through the CBD
-  const isThroughCBD = isRouteThroughCBD(startLat, startLng, endLat, endLng, cbdLat, cbdLng);
-  
-  // Get base traffic condition
-  const baseCondition = getCurrentTrafficCondition();
-  let delayFactor = calculateTrafficDelayFactor(baseCondition);
-  
-  // Add extra delay if going through the CBD during busy hours
-  if (isThroughCBD) {
-    const now = new Date();
-    const hour = now.getHours();
-    
-    if ((hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18)) {
-      // CBD rush hour - add extra delay
-      delayFactor *= 1.2;
-    }
+  // Weekday logic - South African peak hours
+  if ((hour >= 6 && hour <= 9) || (hour >= 16 && hour <= 18)) {
+    return 'heavy';
+  } else if ((hour >= 9 && hour <= 15) || (hour >= 19 && hour <= 20)) {
+    return 'moderate';
   }
   
-  return delayFactor;
-}
+  return 'light';
+};
 
-/**
- * Simple check if a route likely goes through the CBD
- */
-function isRouteThroughCBD(
-  startLat: number, 
-  startLng: number,
-  endLat: number,
-  endLng: number,
-  cbdLat: number,
-  cbdLng: number
-): boolean {
-  // Simple check: draw a line between start and end points,
-  // then check if CBD is near that line
+// Calculate realistic travel time based on traffic condition
+export const calculateTravelTime = (
+  distanceKm: number,
+  trafficCondition: 'light' | 'moderate' | 'heavy'
+): number => {
+  // Base speeds (km/h) for different traffic conditions
+  const speeds = {
+    light: 60,
+    moderate: 45,
+    heavy: 30
+  };
   
-  // Calculate distance from the center of the line to the CBD
-  const lineMidLat = (startLat + endLat) / 2;
-  const lineMidLng = (startLng + endLng) / 2;
+  // Calculate time in hours, then convert to minutes
+  const timeHours = distanceKm / speeds[trafficCondition];
+  const timeMinutes = timeHours * 60;
   
-  // Distance from line midpoint to CBD (simple Euclidean - not geodesic)
-  const distToCBD = Math.sqrt(
-    Math.pow(lineMidLat - cbdLat, 2) + 
-    Math.pow(lineMidLng - cbdLng, 2)
-  );
+  return Math.max(5, Math.round(timeMinutes));
+};
+
+// Format duration in minutes to hours and minutes
+export const formatDuration = (minutes: number): string => {
+  if (minutes < 60) return `${minutes} min`;
   
-  // If the CBD is within this threshold of the route line, assume the route goes through CBD
-  return distToCBD < 0.05; // About 5km at Cape Town's latitude
-}
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) return `${hours}h`;
+  return `${hours}h ${remainingMinutes}min`;
+};

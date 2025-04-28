@@ -11,7 +11,7 @@ const today = new Date();
 const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
 const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 
-// Initial vehicles data - ensure we have correct vehicle names
+// Initial vehicles data - ONLY the two approved vehicles
 const initialVehicles: Vehicle[] = [
   { 
     id: 'TRK-001', 
@@ -62,7 +62,7 @@ export const useVehiclesData = () => {
       // Check for active routes to update vehicle statuses
       const { data: activeRoutes, error: routesError } = await supabase
         .from('routes')
-        .select('id, status')
+        .select('id, status, vehicle_id')
         .eq('status', 'in_progress'); // Only consider in_progress routes for vehicle status
 
       console.log("Active routes for vehicle status update:", activeRoutes);
@@ -76,8 +76,10 @@ export const useVehiclesData = () => {
             region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region
           };
           
-          // If it's TRK-001 and there are active routes, set to On Route
-          if (vehicle.id === 'TRK-001' && activeRoutes.some(route => route.status === 'in_progress')) {
+          // Check if this vehicle is assigned to any active route
+          const vehicleHasActiveRoute = activeRoutes.some(route => route.vehicle_id === vehicle.id);
+          
+          if (vehicleHasActiveRoute) {
             return {
               ...updatedVehicle,
               status: 'On Route'
@@ -88,25 +90,13 @@ export const useVehiclesData = () => {
         });
       } else {
         // If no active routes, ensure all vehicles are Available
-        updatedVehicles = updatedVehicles.map(vehicle => {
-          // Always ensure TRK-001 has Western Cape region
-          const updatedVehicle = {
-            ...vehicle,
-            region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region,
-            startDate: formattedReferenceDate // Ensure April 16th start date
-          };
-          
-          if (updatedVehicle.status === 'On Route') {
-            console.log(`Setting ${vehicle.id} from "On Route" to "Available" because no active routes`);
-            return {
-              ...updatedVehicle,
-              status: 'Available',
-              load: 0
-            };
-          }
-          
-          return updatedVehicle;
-        });
+        updatedVehicles = updatedVehicles.map(vehicle => ({
+          ...vehicle,
+          region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region,
+          status: 'Available',
+          load: 0,
+          startDate: formattedReferenceDate // Ensure April 16th start date
+        }));
       }
       
       // Set the updated vehicles in state (ensure we only have 2 vehicles)
@@ -135,6 +125,12 @@ export const useVehiclesData = () => {
       
       // Update existing vehicle
       if (updatedVehicle.id) {
+        // Only allow updates to our two approved vehicles
+        if (updatedVehicle.id !== 'TRK-001' && updatedVehicle.id !== 'TRK-002') {
+          toast.error(`Cannot update vehicle. Only Mercedes Sprinter and Leyland Ashok Phoenix are in the fleet.`);
+          return false;
+        }
+        
         // Update in our local state
         setVehicles(prev => 
           prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v)
@@ -143,20 +139,8 @@ export const useVehiclesData = () => {
         toast.success(`Vehicle ${updatedVehicle.name} (${updatedVehicle.licensePlate}) updated successfully`);
       } else {
         // We shouldn't add new vehicles as we're limited to 2
-        // This logic is kept but will not be used
-        const newVehicle = {
-          ...updatedVehicle,
-          id: `TRK-${String(vehicles.length + 1).padStart(3, '0')}`,
-          startDate: formattedReferenceDate // Ensure April 16th start date
-        };
-        
-        // Only add the new vehicle if we would still have at most 2 vehicles
-        if (vehicles.length < 2) {
-          setVehicles(prev => [...prev, newVehicle]);
-        } else {
-          toast.error("Maximum of 2 vehicles allowed in the fleet");
-          return false;
-        }
+        toast.error("Maximum of 2 vehicles allowed in the fleet");
+        return false;
       }
       
       return true;

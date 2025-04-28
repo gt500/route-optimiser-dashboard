@@ -1,62 +1,48 @@
 
-import React, { useEffect } from 'react';
-import { useMap } from 'react-leaflet';
-import L from 'leaflet';
+import React from 'react';
+import { Polyline } from 'react-leaflet';
 import { TrafficSegment, getTrafficColor } from '@/utils/route/trafficUtils';
 
 interface TrafficOverlayProps {
   trafficSegments: TrafficSegment[];
-  visible?: boolean;
+  visible: boolean;
 }
 
-const TrafficOverlay: React.FC<TrafficOverlayProps> = ({ trafficSegments = [], visible = true }) => {
-  const map = useMap();
-  const layerRef = React.useRef<L.LayerGroup | null>(null);
-  
-  useEffect(() => {
-    // Create layer group if it doesn't exist
-    if (!layerRef.current) {
-      layerRef.current = L.layerGroup([]).addTo(map);
-    }
-    
-    // Clear existing traffic visualization
-    layerRef.current.clearLayers();
-    
-    // Only add traffic visualization if visible
-    if (!visible || trafficSegments.length === 0) return;
-    
-    // Add new traffic visualization
-    trafficSegments.forEach(segment => {
-      const polyline = L.polyline(
-        [segment.start, segment.end], 
-        {
-          color: getTrafficColor(segment.level),
-          weight: 8,
-          opacity: 0.7,
-          lineCap: 'round',
-          lineJoin: 'round',
-          dashArray: segment.level === 'heavy' ? '10, 10' : null,
-        }
-      );
-      
-      // Add tooltip showing traffic information
-      let tooltipContent = `Traffic: ${segment.level.charAt(0).toUpperCase() + segment.level.slice(1)}`;
-      if (segment.distance) tooltipContent += `<br>Distance: ${(segment.distance / 1000).toFixed(1)} km`;
-      if (segment.duration) tooltipContent += `<br>Time: ${Math.ceil(segment.duration / 60)} min`;
-      
-      polyline.bindTooltip(tooltipContent);
-      
-      layerRef.current?.addLayer(polyline);
-    });
-    
-    return () => {
-      if (layerRef.current) {
-        layerRef.current.clearLayers();
-      }
-    };
-  }, [map, trafficSegments, visible]);
-  
-  return null;
+const TrafficOverlay: React.FC<TrafficOverlayProps> = ({ trafficSegments, visible }) => {
+  if (!visible || !trafficSegments.length) return null;
+
+  return (
+    <>
+      {trafficSegments.map((segment, index) => {
+        if (!segment.start || !segment.end) return null;
+        
+        const color = getTrafficColor(segment.level);
+        const positions = [segment.start, segment.end];
+        
+        return (
+          <React.Fragment key={`traffic-segment-${index}`}>
+            <Polyline 
+              positions={positions}
+              pathOptions={{
+                color,
+                weight: 7,
+                opacity: 0.7
+              }}
+            />
+            <Polyline 
+              positions={positions}
+              pathOptions={{
+                color: 'white',
+                weight: 3,
+                opacity: 0.4,
+                dashArray: '6,8'
+              }}
+            />
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
 };
 
 export default TrafficOverlay;

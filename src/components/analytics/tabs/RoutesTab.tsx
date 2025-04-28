@@ -30,36 +30,9 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ isLoading, onRouteLegendOpen }) =
         
         // Format data for chart display with accurate time calculations
         const formattedData = routes.map(route => {
-          // Use route's actual distance or set a default
+          // Use route's actual distance and duration from predefined data
           const distance = route.total_distance || 0;
-          
-          // Calculate estimated stops based on cylinders (roughly 1 stop per 5-10 cylinders)
-          const estimatedStops = Math.max(3, Math.ceil(route.total_cylinders / 8));
-          
-          // Calculate accurate time: driving time + stop time
-          // For driving time, use standard speeds: 35km/h for urban, 60km/h for highway
-          // Average speed calculation based on distance (longer routes likely have more highway portions)
-          const avgSpeed = distance < 20 ? 35 : distance < 50 ? 45 : 60; // km/h
-          const drivingTimeMinutes = (distance / avgSpeed) * 60; // Time in minutes
-          const stopTimeMinutes = estimatedStops * 15; // 15 minutes per stop
-          
-          // If we have actual duration data, use it with validation
-          let timeInMinutes = 0;
-          
-          if (route.total_duration && route.total_duration > 0) {
-            // Convert seconds to minutes
-            const durationInMinutes = Math.round(route.total_duration / 60);
-            
-            // Validate the duration - it should be at least as long as our calculated minimum
-            const calculatedMinimum = drivingTimeMinutes + stopTimeMinutes;
-            timeInMinutes = Math.max(durationInMinutes, calculatedMinimum);
-          } else {
-            // Use calculated time if no actual duration data
-            timeInMinutes = Math.round(drivingTimeMinutes + stopTimeMinutes);
-          }
-          
-          // Ensure a minimum reasonable time - at least 15 minutes per stop
-          timeInMinutes = Math.max(timeInMinutes, estimatedStops * 15);
+          const timeInMinutes = route.total_duration || 0;
           
           return {
             name: route.name,

@@ -25,7 +25,7 @@ export interface RouteData {
   estimated_cost?: number;
 }
 
-// Mock data for routes - ensure original route names are preserved
+// Mock data for routes - ensure each route has unique, realistic values
 const mockRoutes: RouteData[] = [
   {
     id: '1',
