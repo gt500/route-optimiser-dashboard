@@ -65,7 +65,7 @@ export const useSaveRoute = (
           // For other stops, calculate segment-specific metrics
           // Use waypointData if available for more accuracy
           const previousWaypoint = Math.max(0, index - 1);
-          const segmentData = route.waypointData[previousWaypoint];
+          const segmentData = route.waypointData && route.waypointData[previousWaypoint];
           
           // Get accurate segment distance
           const segmentDistance = segmentData?.distance || 

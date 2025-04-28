@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ interface RouteDetailsProps {
     estimatedDuration?: number;
     trafficConditions?: 'light' | 'moderate' | 'heavy'; 
     name?: string;
+    waypointData?: { distance: number; duration: number }[];
   };
   isLoadConfirmed?: boolean;
   isOverweight?: boolean;
