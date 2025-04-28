@@ -133,11 +133,18 @@ export const calculateCompleteRoute = async (
 
     if (error) throw error;
 
+    // Ensure trafficConditions is one of the allowed enum values
+    const validTrafficConditions: 'light' | 'moderate' | 'heavy' = 
+      data.trafficConditions === 'light' || 
+      data.trafficConditions === 'moderate' || 
+      data.trafficConditions === 'heavy' ? 
+      data.trafficConditions : 'moderate';
+
     return {
       totalDistance: data.distance,
       totalDuration: data.duration,
       segments: data.waypointData,
-      trafficConditions: data.trafficConditions
+      trafficConditions: validTrafficConditions
     };
   } catch (error) {
     console.error('Error calculating complete route:', error);
@@ -205,7 +212,7 @@ function simulateFallbackRoute(waypoints: { latitude: number; longitude: number 
     totalDistance: Number(totalDistance.toFixed(1)),
     totalDuration: Number(totalDuration.toFixed(1)),
     segments,
-    trafficConditions
+    trafficConditions: 'moderate' as const
   };
 }
 
