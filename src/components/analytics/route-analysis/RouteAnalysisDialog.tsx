@@ -56,12 +56,12 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
 
       let specificRoutes = await routeDataHook.fetchRouteDataByName(routeName);
 
-      if (!specificRoutes.length) {
+      if (specificRoutes.length === 0) {
         console.log(`No exact route data for "${routeName}", trying to find similar routes`);
         specificRoutes = allRoutes.filter(route =>
           (route.name || '').toLowerCase().includes(routeName.toLowerCase())
         );
-        if (!specificRoutes.length) {
+        if (specificRoutes.length === 0) {
           const routeKeywords = routeName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
           specificRoutes = allRoutes.filter(route => {
             const name = (route.name || '').toLowerCase();
@@ -70,7 +70,7 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         }
       }
 
-      if (!specificRoutes.length) {
+      if (specificRoutes.length === 0) {
         toast.warning(`No matching routes found for "${routeName}". Using sample data.`);
         const sampleDistance = 20; // km
         // Use realistic time calculation but not less than 15 minutes per route

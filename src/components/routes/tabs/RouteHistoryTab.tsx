@@ -67,7 +67,8 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
         siteName: stop.location_name || 'Unknown',
         cylinders: stop.cylinders || 0,
         kms: stop.distance || 0,
-        fuelCost: stop.fuel_cost || 0
+        // Ensure we have a fuel cost value, calculate it if not present
+        fuelCost: stop.fuel_cost || (stop.distance ? stop.distance * 0.5 : 0)
       }))
     };
   };

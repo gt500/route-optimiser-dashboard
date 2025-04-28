@@ -17,6 +17,7 @@ export interface RouteData {
     distance?: number;
     duration?: number;
     cylinders?: number;
+    fuel_cost?: number; // Add this for RouteHistoryTab
   }[];
   total_distance?: number;
   total_duration?: number;
@@ -106,9 +107,11 @@ export const useRouteData = () => {
     return data.filter(route => route.status === 'completed' || route.status === 'cancelled');
   }, [fetchRoutes]);
   
+  // Update this method to return an array instead of a single object
   const fetchRouteDataByName = useCallback(async (routeName: string) => {
     const data = await fetchRoutes();
-    return data.find(route => route.name === routeName);
+    const matchingRoutes = data.filter(route => route.name === routeName);
+    return matchingRoutes; // Return array instead of single object
   }, [fetchRoutes]);
   
   const getWeeklyDeliveryData = useCallback(async () => {

@@ -27,6 +27,7 @@ export interface RouteDelivery {
   actualDistance?: number; // Actual road distance from Waze API
   actualDuration?: number; // Actual travel time in minutes
   traffic?: 'light' | 'moderate' | 'heavy'; // Traffic condition
+  fuel_cost?: number; // Added to match the property used in RouteHistoryTab
 }
 
 export interface ProcessedRoute {
