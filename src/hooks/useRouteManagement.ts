@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
@@ -173,22 +174,21 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
       waypoints: waypointData?.length
     });
     
-    if (distance <= 0 || isNaN(distance)) {
-      console.warn("Invalid distance received:", distance);
-      distance = 0.1; // Set minimum distance to avoid division by zero
-    }
+    // Ensure we have valid minimum values
+    const validDistance = distance > 0 ? distance : Math.max(5.0 * route.locations.length, 0.1);
+    const validDuration = duration > 0 ? duration : Math.max(15 * route.locations.length, 1);
     
     setRoute(prev => {
-      // Use the fuel calculation utility to get more accurate consumption
-      const consumption = (distance * vehicleConfig.baseConsumption) / 100;
+      // Use the fuel calculation utility to get more accurate consumption based on valid distance
+      const consumption = (validDistance * vehicleConfig.baseConsumption) / 100;
       const cost = consumption * vehicleConfig.fuelPrice;
       
-      console.log(`Route data updated: distance=${distance}km, duration=${duration}mins, consumption=${consumption}L, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
+      console.log(`Route data updated: distance=${validDistance}km, duration=${validDuration}mins, consumption=${consumption}L, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
       
       return {
         ...prev,
-        distance,
-        estimatedDuration: duration,
+        distance: validDistance,
+        estimatedDuration: validDuration,
         fuelConsumption: consumption,
         fuelCost: cost,
         trafficConditions: trafficConditions || prev.trafficConditions,

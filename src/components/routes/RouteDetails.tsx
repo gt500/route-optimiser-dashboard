@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -125,6 +124,14 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const maxAllowedWeight = vehicleConfig.maxWeight || (MAX_CYLINDERS * CYLINDER_WEIGHT_KG);
   const vehicleIsOverweight = totalWeight > maxAllowedWeight;
 
+  const validDistance = route.distance > 0 ? route.distance : route.locations.length * 5.0;
+  const validDuration = route.estimatedDuration && route.estimatedDuration > 0 ? 
+    route.estimatedDuration : route.locations.length * 15;
+  const validFuelConsumption = route.fuelConsumption > 0 ? 
+    route.fuelConsumption : (validDistance * vehicleConfig.baseConsumption) / 100;
+  const validFuelCost = route.fuelCost > 0 ? 
+    route.fuelCost : validFuelConsumption * vehicleConfig.fuelPrice;
+
   return (
     <Card className="border shadow-sm p-4">
       <div className="space-y-4">
@@ -181,11 +188,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 
         <div className="overflow-hidden">
           <RouteMetricsGrid 
-            distance={route.distance} 
-            duration={route.estimatedDuration || 0} 
+            distance={validDistance} 
+            duration={validDuration} 
             cylinders={route.cylinders} 
-            fuelConsumption={route.fuelConsumption}
-            fuelCost={route.fuelCost}
+            fuelConsumption={validFuelConsumption}
+            fuelCost={validFuelCost}
             locations={route.locations.length}
             fuelCostPerLiter={vehicleConfig.fuelPrice}
             trafficConditions={route.trafficConditions}

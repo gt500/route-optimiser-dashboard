@@ -43,6 +43,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
   const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
   const center = (mapCenter[0] !== 0 && mapCenter[1] !== 0) ? mapCenter : defaultCenter;
   
+  // Ensure we update the parent with route data even if there are no locations
+  useEffect(() => {
+    if (locations.length < 2 && onRouteDataUpdate) {
+      // Provide default values when there are not enough locations for a route
+      const defaultDistance = locations.length * 5.0; // 5km per location minimum
+      const defaultDuration = locations.length * 15; // 15 minutes per location minimum
+      onRouteDataUpdate(defaultDistance, defaultDuration, 'moderate');
+    }
+  }, [locations, onRouteDataUpdate]);
+  
   // Map component with memoization to prevent unnecessary re-renders
   const MapComponent = React.useMemo(() => (
     <MapContainer
@@ -65,11 +75,16 @@ const RouteMap: React.FC<RouteMapProps> = ({
           <RoutingMachine 
             waypoints={locations.map(loc => ({ lat: loc.latitude, lng: loc.longitude }))} 
             onRouteFound={(route) => {
-              onRouteDataUpdate && onRouteDataUpdate(
-                route.distance, 
-                route.duration, 
-                route.trafficConditions
-              );
+              if (onRouteDataUpdate) {
+                // Ensure non-zero values are returned
+                const distance = route.distance > 0 ? route.distance : locations.length * 5.0;
+                const duration = route.duration > 0 ? route.duration : locations.length * 15;
+                onRouteDataUpdate(
+                  distance, 
+                  duration, 
+                  route.trafficConditions || 'moderate'
+                );
+              }
             }}
           />
         </>
