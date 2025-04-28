@@ -130,7 +130,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             <SelectValue placeholder="Select a vehicle" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None</SelectItem>
+            <SelectItem value="none">None</SelectItem>
             {vehicles.map(vehicle => (
               <SelectItem key={vehicle.id} value={vehicle.id}>
                 {vehicle.name} ({vehicle.licensePlate})

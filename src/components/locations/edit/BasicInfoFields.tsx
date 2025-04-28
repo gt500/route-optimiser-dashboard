@@ -32,7 +32,7 @@ const BasicInfoFields: React.FC<BasicInfoFieldsProps> = ({
       <div>
         <Label htmlFor="type">Location Type</Label>
         <Select
-          value={formData.type}
+          value={formData.type || "Customer"}
           onValueChange={handleTypeChange}
         >
           <SelectTrigger id="type">

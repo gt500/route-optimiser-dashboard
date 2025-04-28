@@ -55,7 +55,7 @@ const LocationDropdown = ({
             </SelectItem>
           ))
         ) : (
-          <SelectItem value="no-locations" disabled>No locations available</SelectItem>
+          <SelectItem value="no-locations-found" disabled>No locations available</SelectItem>
         )}
       </SelectContent>
     </Select>

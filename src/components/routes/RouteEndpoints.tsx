@@ -68,14 +68,18 @@ const RouteEndpoints = ({
               <SelectValue placeholder="Select start location" />
             </SelectTrigger>
             <SelectContent className="bg-popover">
-              {warehouses.map((location) => (
-                <SelectItem key={`start-${location.id.toString()}`} value={location.id.toString()}>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{location.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {warehouses.length > 0 ? (
+                warehouses.map((location) => (
+                  <SelectItem key={`start-${location.id.toString()}`} value={location.id.toString()}>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{location.name}</span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-warehouses-available">No warehouses available</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <p className="text-xs text-gray-300">Select a warehouse or depot as your starting point</p>
@@ -92,14 +96,18 @@ const RouteEndpoints = ({
               <SelectValue placeholder="Select end location" />
             </SelectTrigger>
             <SelectContent className="bg-popover">
-              {allLocations.map((location) => (
-                <SelectItem key={`end-${location.id.toString()}`} value={location.id.toString()}>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{location.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {allLocations.length > 0 ? (
+                allLocations.map((location) => (
+                  <SelectItem key={`end-${location.id.toString()}`} value={location.id.toString()}>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{location.name}</span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-locations-available">No locations available</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <p className="text-xs text-gray-300">Choose where your route will end</p>
