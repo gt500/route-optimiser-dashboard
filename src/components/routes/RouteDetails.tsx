@@ -13,7 +13,7 @@ import RouteActions from './RouteActions';
 import { EMPTY_CYLINDER_WEIGHT_KG, CYLINDER_WEIGHT_KG, MAX_CYLINDERS } from '@/hooks/routes/types';
 import { calculateTotalWeight } from '@/utils/route/weightUtils';
 import { calculateRouteFuelConsumption, calculateFuelCost } from '@/utils/route/fuelUtils';
-import { calculateRoadDistances } from '@/utils/route/routeCalculation';
+import { calculateRoadDistances, estimateTravelTime } from '@/utils/route/routeCalculation';
 
 interface RouteDetailsProps {
   route: {
@@ -58,13 +58,19 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
 }) => {
   const [totalWeight, setTotalWeight] = useState<number>(0);
   const [isAlertAcknowledged, setIsAlertAcknowledged] = useState<boolean>(false);
+  const [calculatedSegmentDetails, setCalculatedSegmentDetails] = useState<{
+    distances: number[];
+    durations: number[];
+  }>({ distances: [], durations: [] });
 
   useEffect(() => {
     if (!route.locations || route.locations.length === 0) {
       setTotalWeight(0);
+      setCalculatedSegmentDetails({ distances: [], durations: [] });
       return;
     }
     
+    // Calculate actual weight from all locations
     const weight = calculateTotalWeight(route.locations, startLocationId, endLocationId);
     setTotalWeight(weight);
     
@@ -72,20 +78,48 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       setIsAlertAcknowledged(false);
     }
     
-    // If we have locations but no distance data, calculate some default values
-    if (route.locations.length >= 2 && (!route.distance || route.distance <= 0)) {
+    // If we have locations but no distance data, calculate realistic values
+    if (route.locations.length >= 2) {
+      // Calculate distances between each location
       const locationCoordinates = route.locations.map(loc => ({
         latitude: loc.lat || 0,
         longitude: loc.long || 0
       }));
       
+      // Calculate segment distances
       const segmentDistances = calculateRoadDistances(locationCoordinates);
-      const totalDistance = segmentDistances.reduce((sum, d) => sum + d, 0);
-      const estimatedDuration = totalDistance / 50 * 60 + route.locations.length * 5;
       
-      onRouteDataUpdate(totalDistance, estimatedDuration, route.trafficConditions);
+      // Calculate segment durations based on distances
+      const segmentDurations = segmentDistances.map(
+        distance => estimateTravelTime(distance, route.trafficConditions)
+      );
+      
+      // Store the calculated segments
+      setCalculatedSegmentDetails({
+        distances: segmentDistances,
+        durations: segmentDurations
+      });
+      
+      // Calculate total distance
+      const totalDistance = segmentDistances.reduce((sum, d) => sum + d, 0);
+      
+      // If the route doesn't have distance data or it's unrealistically low, update it
+      if (!route.distance || route.distance <= 0 || 
+          (route.distance < 5 && route.locations.length > 1)) {
+        
+        // Calculate total time including stops
+        const totalDriveMinutes = segmentDurations.reduce((sum, d) => sum + d, 0);
+        const stopTimePerLocation = 8; // minutes for loading/unloading at each stop
+        const totalStopMinutes = route.locations.length * stopTimePerLocation;
+        const totalTime = totalDriveMinutes + totalStopMinutes;
+        
+        console.log(`Calculated route metrics: ${totalDistance.toFixed(1)}km, ${Math.round(totalTime)}mins`);
+        
+        // Update the parent component with the calculated values
+        onRouteDataUpdate(totalDistance, totalTime, route.trafficConditions);
+      }
     }
-  }, [route.locations, route.distance, route.cylinders, isOverweight, startLocationId, endLocationId]);
+  }, [route.locations, route.distance, route.cylinders, isOverweight, startLocationId, endLocationId, route.trafficConditions]);
 
   const handleSetFuelCost = (cost: number) => {
     onFuelCostUpdate(cost);
@@ -95,9 +129,11 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
     vehicles.find(v => v.id === selectedVehicle) : 
     null;
 
+  // Prepare route data for export/display
   const routeData = {
     name: route.name || "Route Report",
     stops: route.locations.map((location, index) => {
+      // For the first location (starting point), show no distance
       if (index === 0) {
         return {
           siteName: location.name,
@@ -107,13 +143,18 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         };
       }
 
-      const previousSegment = Math.max(0, index - 1);
-      const segmentData = route.waypointData && route.waypointData[previousSegment];
+      // Get distance from the waypoint data if available, or from the calculated segments
+      let segmentDistance: number;
+      if (route.waypointData && route.waypointData[index - 1]) {
+        segmentDistance = route.waypointData[index - 1].distance;
+      } else if (calculatedSegmentDetails.distances[index - 1]) {
+        segmentDistance = calculatedSegmentDetails.distances[index - 1];
+      } else {
+        // Fallback to an estimated distance based on total route
+        segmentDistance = route.distance / Math.max(1, route.locations.length - 1);
+      }
       
-      // Use waypoint data if available, otherwise calculate based on total distance
-      const segmentDistance = segmentData?.distance || 
-        (route.distance / Math.max(1, route.locations.length - 1));
-        
+      // Calculate fuel consumption and cost for this segment
       const segmentFuelConsumption = calculateRouteFuelConsumption(
         segmentDistance,
         route.locations.slice(0, index + 1),
@@ -142,14 +183,31 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   const vehicleIsOverweight = totalWeight > maxAllowedWeight;
 
   // Ensure we have valid minimum values for all metrics
-  const minDistancePerLocation = 15.0; // km
-  const defaultDistance = route.locations.length * minDistancePerLocation;
+  const minDistancePerLocation = 15.0; // km - more realistic minimum
+  const defaultDistance = Math.max(route.locations.length * minDistancePerLocation, 1);
   
-  const validDistance = route.distance > 0 ? route.distance : defaultDistance;
-  const validDuration = route.estimatedDuration && route.estimatedDuration > 0 ? 
-    route.estimatedDuration : route.locations.length * 15;
+  // Calculate valid distance - use route.distance if available and reasonable
+  const validDistance = (route.distance > 0 && (route.locations.length <= 1 || route.distance >= 5)) ? 
+    route.distance : defaultDistance;
+    
+  // Calculate valid duration - ensure it's proportional to distance and includes stops
+  const stopTimeMinutes = route.locations.length * 8; // 8 minutes per stop
+  
+  let validDuration: number;
+  if (route.estimatedDuration && route.estimatedDuration > 0) {
+    validDuration = route.estimatedDuration;
+  } else {
+    // Calculate based on an average speed of 40 km/h plus stop time
+    validDuration = (validDistance / 40 * 60) + stopTimeMinutes;
+  }
+  
+  // Ensure minimum values
+  validDuration = Math.max(validDuration, route.locations.length * 15);
+  
+  // Calculate fuel consumption and cost
   const validFuelConsumption = route.fuelConsumption > 0 ? 
     route.fuelConsumption : (validDistance * vehicleConfig.baseConsumption) / 100;
+    
   const validFuelCost = route.fuelCost > 0 ? 
     route.fuelCost : validFuelConsumption * vehicleConfig.fuelPrice;
 

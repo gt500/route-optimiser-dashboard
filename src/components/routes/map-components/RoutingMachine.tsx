@@ -38,7 +38,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
     useRealTimeData: true,
     routeColor: '#6366F1',
     routeWeight: 6,
-    includeSegmentDurations: false
+    includeSegmentDurations: true
   }
 }) => {
   const map = useMap();
@@ -86,10 +86,6 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
         
         // Always enable real-time traffic data by default for maximum efficiency
         const useRealTimeTraffic = routeOptions.useRealTimeData !== false;
-        
-        if (useRealTimeTraffic) {
-          toast.info("Using real-time traffic data for optimal routing");
-        }
         
         // Extract styling options from routeOptions or use defaults
         const routeColor = routeOptions.routeColor || '#6366F1';
@@ -164,10 +160,25 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
             if (selectedRoute.summary.totalDistance && selectedRoute.summary.totalTime) {
               const avgSpeedKmh = (selectedRoute.summary.totalDistance / 1000) / (selectedRoute.summary.totalTime / 3600);
               
-              if (avgSpeedKmh > 70) trafficConditions = 'light';
-              else if (avgSpeedKmh > 40) trafficConditions = 'moderate';
+              if (avgSpeedKmh > 60) trafficConditions = 'light';
+              else if (avgSpeedKmh > 35) trafficConditions = 'moderate';
               else trafficConditions = 'heavy';
+              
+              console.log(`Average route speed: ${avgSpeedKmh.toFixed(1)} km/h (${trafficConditions} traffic)`);
             }
+            
+            // Log detailed segment information for debugging
+            if (selectedRoute.instructions && selectedRoute.instructions.length > 0) {
+              console.log("Route segments:", selectedRoute.instructions.map(instr => ({
+                road: instr.road,
+                direction: instr.direction,
+                distance: (instr.distance / 1000).toFixed(1) + " km",
+                time: Math.round(instr.time / 60) + " min"
+              })));
+            }
+            
+            // Format route data for displaying to user
+            console.log(`Route found: ${(selectedRoute.summary.totalDistance / 1000).toFixed(1)}km, ${Math.round(selectedRoute.summary.totalTime / 60)}min`);
             
             onRouteFound({
               distance: selectedRoute.summary.totalDistance / 1000,

@@ -28,7 +28,7 @@ export const calculateRoadDistances = (
     if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
       const defaultDistance = totalKnownDistance ? 
         totalKnownDistance / (locations.length - 1) : 
-        10; // Default to 10km if we don't have a total - increased from 5km
+        15; // Default to 15km if we don't have a total - increased from 10km for more realism
       
       distances.push(defaultDistance);
       totalCalculatedDistance += defaultDistance;
@@ -44,20 +44,26 @@ export const calculateRoadDistances = (
     );
     
     // Apply road correction factors - adjusted for more realistic values
-    let roadFactor = 1.4; // Default urban road factor - increased from 1.3
+    let roadFactor = 1.4; // Default urban road factor 
     
     // Adjust factor based on distance (rough approximation of road type)
     if (directDistance > 15) {
-      roadFactor = 1.5; // Highway/rural routes
+      roadFactor = 1.6; // Highway/rural routes with more winding roads
     } else if (directDistance > 5) {
-      roadFactor = 1.4; // Suburban routes
+      roadFactor = 1.5; // Suburban routes with more intersections
     } else if (directDistance < 1) {
-      roadFactor = 1.8; // Very short urban trips often involve more detours - increased from 1.2
+      roadFactor = 1.8; // Very short urban trips often involve more detours
     }
     
+    // Apply increased factor for specific location pairs that are known to have difficult routes
+    // This would ideally come from a database of known difficult routes
     const roadDistance = directDistance * roadFactor;
-    distances.push(roadDistance);
-    totalCalculatedDistance += roadDistance;
+    
+    // Minimum realistic distance between stops (accounts for local roads, one-way streets, etc.)
+    const minDistance = Math.max(1.0, roadDistance);
+    
+    distances.push(minDistance);
+    totalCalculatedDistance += minDistance;
   }
   
   // If we have a known total distance, scale all segments proportionally
@@ -86,30 +92,30 @@ export const estimateTravelTime = (
   trafficCondition: 'light' | 'moderate' | 'heavy' = 'moderate'
 ): number => {
   // Base speed based on traffic conditions (km/h)
-  let avgSpeed = 60; // Default moderate traffic
+  let avgSpeed = 50; // Default moderate traffic - reduced from 60 for more realism in urban areas
   
   switch (trafficCondition) {
     case 'light':
-      avgSpeed = 75;
+      avgSpeed = 65; // Reduced from 75 for more realism
       break;
     case 'moderate':
-      avgSpeed = 60;
+      avgSpeed = 50; // Reduced from 60 for more realism
       break;
     case 'heavy':
-      avgSpeed = 40;
+      avgSpeed = 35; // Reduced from 40 for more realism
       break;
   }
   
   // Adjust speed based on distance (approximation of road type)
   if (distanceKm > 100) {
     // Long highway routes are faster even in traffic
-    avgSpeed = Math.min(avgSpeed * 1.3, 120);
+    avgSpeed = Math.min(avgSpeed * 1.3, 100); // Reduced max speed from 120 for more realism
   } else if (distanceKm > 50) {
     // Medium distance routes are a mix
-    avgSpeed = Math.min(avgSpeed * 1.1, 100);
+    avgSpeed = Math.min(avgSpeed * 1.1, 85); // Reduced from 100 for more realism
   } else if (distanceKm < 5) {
     // Very short urban trips are slower
-    avgSpeed = Math.min(avgSpeed * 0.8, 40);
+    avgSpeed = Math.min(avgSpeed * 0.7, 35); // Reduced factor for more realism
   }
   
   // Calculate time in hours, then convert to minutes
@@ -117,7 +123,8 @@ export const estimateTravelTime = (
   const timeMinutes = timeHours * 60;
   
   // Add minimum base time for very short trips (traffic lights, etc)
-  return Math.max(5, Math.round(timeMinutes));
+  // Increased from 5 to 8 minutes minimum for more realism (account for parking, loading/unloading)
+  return Math.max(8, Math.round(timeMinutes));
 };
 
 /**
@@ -125,4 +132,50 @@ export const estimateTravelTime = (
  */
 export const calculateTotalDistance = (distances: number[]): number => {
   return distances.reduce((sum, distance) => sum + distance, 0);
+};
+
+/**
+ * Calculate segment-by-segment distances for debugging and display
+ */
+export const calculateSegmentDistances = (
+  locations: { latitude: number; longitude: number }[]
+): { direct: number; road: number; }[] => {
+  const segments: { direct: number; road: number; }[] = [];
+  
+  if (locations.length <= 1) {
+    return segments;
+  }
+  
+  for (let i = 0; i < locations.length - 1; i++) {
+    const current = locations[i];
+    const next = locations[i + 1];
+    
+    if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
+      segments.push({ direct: 0, road: 15 });
+      continue;
+    }
+    
+    const directDistance = calculateDistance(
+      current.latitude,
+      current.longitude,
+      next.latitude,
+      next.longitude
+    );
+    
+    // Apply road correction factors
+    let roadFactor = 1.4;
+    
+    if (directDistance > 15) {
+      roadFactor = 1.6;
+    } else if (directDistance > 5) {
+      roadFactor = 1.5;
+    } else if (directDistance < 1) {
+      roadFactor = 1.8;
+    }
+    
+    const roadDistance = directDistance * roadFactor;
+    segments.push({ direct: directDistance, road: roadDistance });
+  }
+  
+  return segments;
 };

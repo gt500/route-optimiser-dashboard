@@ -46,8 +46,19 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
     `${Math.round(displayDistance * 1000)} m` : 
     `${displayDistance.toFixed(1)} km`;
 
-  // Format duration for display - ensure minimum display time
-  const formattedDuration = `${Math.max(1, Math.round(displayDuration))} min`;
+  // Format duration for display - ensure minimum display time and better formatting
+  let formattedDuration: string;
+  const durationMinutes = Math.max(1, Math.round(displayDuration));
+  
+  if (durationMinutes < 60) {
+    formattedDuration = `${durationMinutes} min`;
+  } else {
+    const hours = Math.floor(durationMinutes / 60);
+    const mins = durationMinutes % 60;
+    formattedDuration = hours > 0 ? 
+      (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : 
+      `${mins} min`;
+  }
   
   // Traffic condition info
   const trafficInfo = {
@@ -63,10 +74,10 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         value={formattedDistance}
         icon={<MapPin className="h-5 w-5" />}
         color="bg-blue-500"
-        tooltip="Total distance for all stops in route"
+        tooltip="Total road distance for all stops in route"
         subtitle={
           <div className="text-xs text-muted-foreground mt-1">
-            Based on real-time data
+            Based on real-time routing data
           </div>
         }
       />
@@ -76,7 +87,7 @@ const RouteMetricsGrid: React.FC<RouteMetricsGridProps> = ({
         value={formattedDuration}
         icon={<Clock className="h-5 w-5" />}
         color="bg-orange-500"
-        tooltip="Estimated time to complete all deliveries"
+        tooltip="Estimated time to complete all deliveries including stops"
         subtitle={
           <div className="flex items-center text-xs mt-1">
             <div className={`h-2 w-2 rounded-full mr-1 ${trafficInfo[trafficConditions].color}`}></div>

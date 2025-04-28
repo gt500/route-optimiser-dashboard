@@ -11,7 +11,7 @@ import TrafficOverlay from './map-components/TrafficOverlay';
 import { toast } from 'sonner';
 import { calculateDistance } from '@/utils/route/distanceUtils';
 import { AVG_SPEED_URBAN_KM_H } from '@/utils/route/constants';
-import { calculateRoadDistances } from '@/utils/route/routeCalculation';
+import { calculateRoadDistances, calculateSegmentDistances } from '@/utils/route/routeCalculation';
 
 interface Location {
   id: string;
@@ -56,61 +56,56 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Use the custom hook for map state management
   const { mapCenter, zoom } = useMapState(locations, country, region);
   const [trafficSegments, setTrafficSegments] = useState<any[]>([]);
+  const [routeFound, setRouteFound] = useState<boolean>(false);
   
   // Setup default map center for South Africa if no specific locations
   const defaultCenter: [number, number] = [-30.5595, 22.9375]; // Center of South Africa
   const center = (mapCenter[0] !== 0 && mapCenter[1] !== 0) ? mapCenter : defaultCenter;
   
-  // Calculate straight-line distances between consecutive points
-  const calculateStraightLineDistances = () => {
-    if (locations.length < 2) return 0;
-    
-    let totalDistance = 0;
-    for (let i = 0; i < locations.length - 1; i++) {
-      const start = locations[i];
-      const end = locations[i + 1];
-      
-      if (start.latitude && start.longitude && end.latitude && end.longitude) {
-        const segmentDistance = calculateDistance(
-          start.latitude, 
-          start.longitude, 
-          end.latitude, 
-          end.longitude
-        );
-        totalDistance += segmentDistance;
-      }
+  // Calculate detailed segment distances for debugging
+  useEffect(() => {
+    if (locations.length >= 2) {
+      const segmentInfo = calculateSegmentDistances(locations);
+      console.log('Segment distance breakdown:', segmentInfo.map((seg, i) => {
+        const from = locations[i].name;
+        const to = locations[i+1].name;
+        return `${from} → ${to}: Direct ${seg.direct.toFixed(1)}km, Road ${seg.road.toFixed(1)}km`;
+      }));
     }
-    
-    return totalDistance;
-  };
+  }, [locations]);
   
   // Calculate more accurate road distances based on available data
   const calculateRouteDistances = () => {
     if (locations.length < 2) return 0;
     
     const roadDistances = calculateRoadDistances(locations);
-    return roadDistances.reduce((sum, distance) => sum + distance, 0);
+    const totalDistance = roadDistances.reduce((sum, distance) => sum + distance, 0);
+    
+    console.log(`Total calculated road distance: ${totalDistance.toFixed(1)}km`);
+    return totalDistance;
   };
   
   // Ensure we update the parent with route data even if there are no locations
   useEffect(() => {
     if (locations.length < 2 && onRouteDataUpdate) {
-      // Provide real minimum values when there are not enough locations for a route
-      const minDistancePerLocation = 5.0; // km
-      const minTimePerLocation = 15; // minutes
+      // Provide realistic minimum values when there are not enough locations for a route
+      const minDistancePerLocation = 15.0; // km - increased for more realism
+      const minTimePerLocation = 20; // minutes - increased for more realism
       
       const defaultDistance = Math.max(locations.length * minDistancePerLocation, 0.1);
-      const defaultDuration = Math.max(locations.length * minTimePerLocation, 1);
+      const defaultDuration = Math.max(locations.length * minTimePerLocation, 5);
       
       onRouteDataUpdate(defaultDistance, defaultDuration, 'moderate');
+      setRouteFound(false);
     } else if (locations.length >= 2 && onRouteDataUpdate && !showRoadRoutes) {
       // Calculate road-like distance using our utility function
       const roadDistance = calculateRouteDistances();
       
       // Estimate duration based on average speed and number of stops
-      const estimatedDuration = (roadDistance / AVG_SPEED_URBAN_KM_H) * 60 + locations.length * 5;
+      const estimatedDuration = (roadDistance / AVG_SPEED_URBAN_KM_H) * 60 + locations.length * 8;
       
       onRouteDataUpdate(roadDistance, estimatedDuration, 'moderate');
+      setRouteFound(false);
     }
   }, [locations, onRouteDataUpdate, showRoadRoutes]);
   
@@ -123,22 +118,58 @@ const RouteMap: React.FC<RouteMapProps> = ({
     trafficConditions?: 'light' | 'moderate' | 'heavy';
   }) => {
     if (onRouteDataUpdate) {
+      // Fallback to calculated values if routing machine returns invalid data
+      const calculatedDistance = calculateRouteDistances();
+      
       // Ensure non-zero values and report accurate data back
-      const validDistance = routeData.distance > 0 ? routeData.distance : calculateRouteDistances();
-      const validDuration = routeData.duration > 0 ? routeData.duration : (validDistance / AVG_SPEED_URBAN_KM_H) * 60;
+      let validDistance: number;
+      let validDuration: number;
+      
+      // If routing machine returned valid data, use it with a sanity check
+      if (routeData.distance > 0) {
+        validDistance = routeData.distance;
+        // If the routing machine distance is drastically different from our calculation (more than 50% difference),
+        // log a warning but still use the routing machine value as it's likely more accurate
+        if (Math.abs(validDistance - calculatedDistance) / calculatedDistance > 0.5) {
+          console.warn(`Routing machine distance (${validDistance.toFixed(1)}km) differs significantly from calculation (${calculatedDistance.toFixed(1)}km)`);
+        }
+      } else {
+        // Fallback to calculated distance
+        validDistance = calculatedDistance;
+      }
+      
+      // Similarly for duration
+      if (routeData.duration > 0) {
+        validDuration = routeData.duration;
+      } else {
+        // Calculate duration based on the distance with reasonable speed assumptions
+        validDuration = (validDistance / AVG_SPEED_URBAN_KM_H) * 60 + locations.length * 8;
+      }
       
       console.log("Route found:", {
         distance: validDistance.toFixed(1) + "km",
         duration: Math.round(validDuration) + "min",
-        traffic: routeData.trafficConditions
+        traffic: routeData.trafficConditions,
+        waypoints: routeData.waypoints?.length || 0
       });
       
       // Generate traffic visualization segments if needed
       if (showTraffic && routeData.coordinates && routeData.coordinates.length > 1) {
         const segments = [];
+        let prevTraffic = 'moderate';
+        
         for (let i = 0; i < routeData.coordinates.length - 1; i++) {
-          const segmentTraffic = Math.random() > 0.7 ? 'heavy' : 
-                               Math.random() > 0.4 ? 'moderate' : 'light';
+          // Make traffic conditions more realistic by considering trends
+          // Make traffic consistent for stretches with occasional changes
+          let segmentTraffic;
+          if (Math.random() > 0.85) {
+            // Only change traffic conditions occasionally
+            const r = Math.random();
+            segmentTraffic = r > 0.6 ? 'heavy' : r > 0.3 ? 'moderate' : 'light';
+            prevTraffic = segmentTraffic;
+          } else {
+            segmentTraffic = prevTraffic;
+          }
           
           segments.push({
             start: routeData.coordinates[i],
@@ -159,6 +190,13 @@ const RouteMap: React.FC<RouteMapProps> = ({
         routeData.coordinates,
         routeData.waypoints
       );
+      
+      setRouteFound(true);
+      
+      // If this is the first time we found a route, show a toast to confirm
+      if (!routeFound) {
+        toast.success(`Route calculated: ${validDistance.toFixed(1)} km, ${Math.round(validDuration)} min`);
+      }
     }
   };
   
@@ -228,7 +266,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       {/* Update view when center or zoom changes */}
       <SetViewOnChange center={center} zoom={zoom} />
     </MapContainer>
-  ), [locations, center, zoom, height, className, showTraffic, trafficSegments, showRoadRoutes, validWaypoints]);
+  ), [locations, center, zoom, height, className, showTraffic, trafficSegments, showRoadRoutes, validWaypoints, routeFound]);
 
   return MapComponent;
 };

@@ -10,7 +10,7 @@ export interface DeliveryData {
   longitude?: number;
   region?: string;
   country?: string;
-  actualDistance?: number;
+  actualDistance?: number; // Actual road distance from routing calculations
 }
 
 export interface RouteDelivery {
@@ -22,7 +22,7 @@ export interface RouteDelivery {
   longitude?: number;
   region?: string;
   country?: string;
-  actualDistance?: number; // Added to support route-based distance
+  actualDistance?: number; // Actual road distance from routing calculations
 }
 
 export interface ProcessedRoute {
