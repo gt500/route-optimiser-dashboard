@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { MaintenanceItem, MaintenanceTask, FixedCost, MaintenanceBudget, MaintenanceTimeline, Vehicle } from '@/types/fleet';
 import { toast } from 'sonner';
@@ -85,9 +86,11 @@ export const useMaintenanceData = () => {
   const [maintenanceItems, setMaintenanceItems] = useState<MaintenanceItem[]>([]);
   const { vehicles } = useVehiclesData();
 
+  // New start date: May 2nd, 2025
+  const MAINTENANCE_START_DATE = '2025-05-02';
+  
   const predictMaintenanceDate = (vehicle: Vehicle, taskType: string): Date => {
-    const startDateStr = vehicle.startDate || '2025-04-15';
-    const startDate = new Date(startDateStr);
+    const startDate = new Date(MAINTENANCE_START_DATE);
 
     switch(taskType) {
       case 'Tyres':
@@ -112,12 +115,7 @@ export const useMaintenanceData = () => {
     try {
       const maintenanceSchedule: MaintenanceItem[] = [];
 
-      const updatedVehicles = vehicles.map(v => ({
-        ...v,
-        startDate: '2025-04-15'
-      }));
-
-      updatedVehicles.forEach(vehicle => {
+      vehicles.forEach(vehicle => {
         const nextTyreDate = predictMaintenanceDate(vehicle, 'Tyres');
         maintenanceSchedule.push({
           vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
