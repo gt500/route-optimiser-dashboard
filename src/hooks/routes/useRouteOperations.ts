@@ -101,18 +101,20 @@ export const useRouteOperations = (
       optimizedLocations.sort((a, b) => a.name.localeCompare(b.name));
 
       // Ensure start and end locations remain in their positions
-      const startLocation = optimizedLocations.find(loc => loc.id === startLocation?.id);
-      const endLocation = optimizedLocations.find(loc => loc.id === endLocation?.id);
+      const routeStartLocation = optimizedLocations.find(loc => 
+        loc.id === (startLocation?.id || ''));
+      const routeEndLocation = optimizedLocations.find(loc => 
+        loc.id === (endLocation?.id || ''));
 
       const filteredLocations = optimizedLocations.filter(loc =>
-        loc.id !== startLocation?.id && loc.id !== endLocation?.id
+        loc.id !== (startLocation?.id || '') && loc.id !== (endLocation?.id || '')
       );
 
       // Reconstruct the route with start and end locations in place
       const newLocations = [
-        ...(startLocation ? [startLocation] : []),
+        ...(routeStartLocation ? [routeStartLocation] : []),
         ...filteredLocations,
-        ...(endLocation ? [endLocation] : [])
+        ...(routeEndLocation ? [routeEndLocation] : [])
       ];
 
       return {
