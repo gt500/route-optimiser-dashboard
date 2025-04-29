@@ -16,10 +16,12 @@ const CylinderSelector: React.FC<CylinderSelectorProps> = ({
   maxCylinders = MAX_CYLINDERS 
 }) => {
   const handleIncrease = () => {
+    console.log(`Increasing cylinders from ${cylinders} to ${Math.min(cylinders + 1, maxCylinders)}`);
     setCylinders(Math.min(cylinders + 1, maxCylinders));
   };
 
   const handleDecrease = () => {
+    console.log(`Decreasing cylinders from ${cylinders} to ${Math.max(1, cylinders - 1)}`);
     setCylinders(Math.max(1, cylinders - 1));
   };
   

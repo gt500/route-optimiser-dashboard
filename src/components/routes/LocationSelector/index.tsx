@@ -54,16 +54,20 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         return;
       }
       
-      if (cylinderCount > maxAddableCylinders) {
-        toast.warning(`Reduced cylinder count to ${maxAddableCylinders} due to weight limits`);
-        onSelect(selectedLocation, maxAddableCylinders);
-      } else {
-        onSelect(selectedLocation, cylinderCount);
-      }
+      // Ensure we're passing the exact cylinder count the user selected
+      onSelect(selectedLocation, cylinderCount);
+      console.log(`Adding location with ${cylinderCount} cylinders`);
       
       setSelectedLocation('');
       setCylinderCount(Math.min(10, maxAddableCylinders));
     }
+  };
+
+  const handleCylinderChange = (newCount: number) => {
+    // Ensure cylinder count doesn't exceed limits
+    const validCount = Math.min(maxAddableCylinders, Math.max(1, newCount));
+    console.log(`Setting cylinder count to ${validCount}`);
+    setCylinderCount(validCount);
   };
 
   return (
@@ -118,7 +122,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                         className="h-6 w-6"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setCylinderCount(Math.max(1, cylinderCount - 1));
+                          handleCylinderChange(cylinderCount - 1);
                         }}
                       >
                         -
@@ -132,7 +136,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                         className="h-6 w-6"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setCylinderCount(Math.min(maxAddableCylinders, cylinderCount + 1));
+                          handleCylinderChange(cylinderCount + 1);
                         }}
                       >
                         +
@@ -149,7 +153,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                         return;
                       }
                       setSelectedLocation(location.id);
-                      onSelect(location.id, Math.min(cylinderCount, maxAddableCylinders));
                     }}
                     disabled={isAtWeightLimit}
                   >
@@ -170,7 +173,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         <div className="p-4 bg-blue-900 rounded-md">
           <CylinderSelector 
             cylinders={cylinderCount} 
-            setCylinders={(value) => setCylinderCount(Math.min(maxAddableCylinders, value))} 
+            setCylinders={(value) => handleCylinderChange(value)} 
             maxCylinders={maxAddableCylinders}
           />
           <Button 

@@ -1,4 +1,3 @@
-
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
