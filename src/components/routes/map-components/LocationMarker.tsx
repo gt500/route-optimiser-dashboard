@@ -33,6 +33,12 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   index = 0,
   stopNumber
 }) => {
+  // Check if position contains valid coordinates
+  if (position.some(coord => isNaN(coord) || coord === null || coord === undefined)) {
+    console.warn(`Invalid coordinates for location ${name}:`, position);
+    return null;
+  }
+  
   // Use numbered marker if stopNumber is provided
   const markerIcon = stopNumber 
     ? createNumberedMarker(stopNumber) 
@@ -59,3 +65,4 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
 };
 
 export default LocationMarker;
+export { LocationMarker };

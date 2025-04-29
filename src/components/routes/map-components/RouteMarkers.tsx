@@ -9,13 +9,15 @@ interface RouteMarkersProps {
   endLocation?: NamedCoords;
   waypoints: NamedCoords[];
   locations: LocationPoint[];
+  showStopNumbers?: boolean;
 }
 
 const RouteMarkers: React.FC<RouteMarkersProps> = ({
   startLocation,
   endLocation,
   waypoints = [],
-  locations = []
+  locations = [],
+  showStopNumbers = true
 }) => {
   return (
     <>
@@ -42,12 +44,15 @@ const RouteMarkers: React.FC<RouteMarkersProps> = ({
           name={wp.name}
           position={wp.coords}
           index={index + 1}
-          stopNumber={index + 1}
+          stopNumber={showStopNumbers ? index + 1 : undefined}
         />
       ))}
 
       {locations.map((loc, index) => {
-        if (!loc.latitude || !loc.longitude) return null;
+        if (!loc.latitude || !loc.longitude) {
+          console.warn(`Location ${loc.name} has invalid coordinates:`, loc);
+          return null;
+        }
         return (
           <LocationMarker
             key={`location-${loc.id}-${index}`}
@@ -55,7 +60,7 @@ const RouteMarkers: React.FC<RouteMarkersProps> = ({
             name={loc.name}
             position={[loc.latitude, loc.longitude]}
             address={loc.address}
-            stopNumber={index + 1}
+            stopNumber={showStopNumbers ? index + 1 : undefined}
           />
         );
       })}

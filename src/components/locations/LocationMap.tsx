@@ -1,14 +1,23 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import RouteMap from '@/components/routes/RouteMap';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { LocationMarker } from '@/components/routes/map-components/LocationMarker';
 import { LocationInfo } from '@/types/location';
+import { useMapState } from '@/hooks/routes/useMapState';
+import MapSetup from '@/components/routes/map-components/MapSetup';
 
 interface LocationMapProps {
   locations: LocationInfo[];
 }
 
 const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
+  const { bounds, mapCenter, zoom } = useMapState(locations);
+  
+  // Define default center if no locations or bounds calculated
+  const defaultCenter: [number, number] = [-33.93, 18.52]; // Cape Town
+  
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -17,18 +26,32 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
       </CardHeader>
       <CardContent>
         <div className="h-[400px]">
-          <RouteMap 
-            locations={locations.map(loc => ({
-              id: loc.id.toString(),
-              name: loc.name,
-              latitude: loc.latitude,
-              longitude: loc.longitude,
-              address: loc.address
-            }))} 
-            height="100%"
-            country="South Africa"
-            region="Western Cape"
-          />
+          <MapContainer 
+            center={mapCenter || defaultCenter}
+            zoom={zoom}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            
+            <MapSetup 
+              bounds={bounds} 
+              center={mapCenter}
+              zoom={zoom}
+            />
+            
+            {locations.map((location, index) => (
+              <LocationMarker
+                key={`location-marker-${location.id}-${index}`}
+                id={location.id}
+                name={location.name}
+                position={[location.latitude, location.longitude]}
+                address={location.address}
+              />
+            ))}
+          </MapContainer>
         </div>
       </CardContent>
     </Card>

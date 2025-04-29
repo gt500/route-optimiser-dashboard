@@ -8,8 +8,11 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
 import MapSetup from './map-components/MapSetup';
 import RouteRoutingMachine from './map-components/RouteRoutingMachine';
+import RouteMarkers from './map-components/RouteMarkers';
 import TrafficIndicator from './map-components/TrafficIndicator';
 import NoLocationsDisplay from './map-components/NoLocationsDisplay';
+import { useMapState } from '@/hooks/routes/useMapState';
+import { NamedCoords } from '@/types/location';
 
 interface RouteMapProps {
   locations: {
@@ -50,6 +53,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
 }) => {
   const [mapReady, setMapReady] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
+  const { bounds, mapCenter, zoom } = useMapState(locations, country, region);
   
   // Convert locations to Leaflet waypoints
   const waypoints = React.useMemo(() => {
@@ -65,46 +69,62 @@ const RouteMap: React.FC<RouteMapProps> = ({
       .map(loc => L.latLng(loc.latitude, loc.longitude));
   }, [locations]);
   
-  // Calculate the map bounds to fit all waypoints
-  const bounds = React.useMemo(() => {
-    if (!L || waypoints.length < 1) return null;
-    
-    const latLngs = waypoints.map(point => [point.lat, point.lng]);
-    return L.latLngBounds(latLngs);
-  }, [waypoints]);
-  
   // Force update the routing component when route name or region changes
   React.useEffect(() => {
     if (routeName || region) {
       setForceUpdate(prev => prev + 1);
     }
   }, [routeName, region]);
-  
-  // Use first location coordinates as default center or fallback to Cape Town
-  const defaultCenter: [number, number] = 
-    locations[0] && locations[0].latitude && locations[0].longitude 
-      ? [locations[0].latitude, locations[0].longitude]
-      : [-33.93, 18.52];
+
+  // Format locations for markers
+  const formattedLocations = React.useMemo(() => {
+    return locations.map(loc => ({
+      id: loc.id,
+      name: loc.name,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      address: loc.address
+    }));
+  }, [locations]);
+
+  // Create waypoints for markers
+  const waypointCoords = React.useMemo(() => {
+    return locations.map(loc => ({
+      name: loc.name,
+      coords: [loc.latitude, loc.longitude] as [number, number]
+    })) as NamedCoords[];
+  }, [locations]);
   
   // Helper function to determine if we have enough valid locations to show a map
-  const hasValidLocations = locations.length >= 2;
+  const hasValidLocations = locations.length >= 1;
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
       {hasValidLocations ? (
         <div className="h-full w-full relative overflow-hidden">
           <MapContainer
-            key={`map-${defaultCenter[0]}-${defaultCenter[1]}`}
+            center={mapCenter}
+            zoom={zoom}
             style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             
             <MapSetup 
               bounds={bounds} 
+              center={mapCenter}
+              zoom={zoom}
               onMapReady={() => setMapReady(true)} 
+            />
+            
+            {/* Always show markers for locations */}
+            <RouteMarkers
+              locations={formattedLocations}
+              waypoints={waypointCoords}
+              showStopNumbers={true}
             />
             
             {mapReady && waypoints.length >= 2 && (

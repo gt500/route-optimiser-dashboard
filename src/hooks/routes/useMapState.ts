@@ -4,22 +4,30 @@ import { useState, useEffect } from 'react';
 interface Location {
   id: string;
   name: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const useMapState = (locations: Location[], country?: string, region?: string) => {
   const [bounds, setBounds] = useState<[[number, number], [number, number]] | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([0, 0]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-33.9249, 18.4241]); // Default: Cape Town
   const [zoom, setZoom] = useState(13);
 
   // This function calculates bounds from locations
   const calculateBounds = (locs: Location[]): [[number, number], [number, number]] | null => {
-    if (!locs || locs.length === 0) return null;
+    // Filter for locations with valid coordinates
+    const validLocations = locs.filter(loc => 
+      loc.latitude && 
+      loc.longitude && 
+      !isNaN(loc.latitude) && 
+      !isNaN(loc.longitude)
+    );
+    
+    if (validLocations.length === 0) return null;
     
     let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
     
-    locs.forEach(loc => {
+    validLocations.forEach(loc => {
       if (loc.latitude && loc.longitude) {
         minLat = Math.min(minLat, loc.latitude);
         maxLat = Math.max(maxLat, loc.latitude);
@@ -31,9 +39,13 @@ export const useMapState = (locations: Location[], country?: string, region?: st
     // Only return bounds if we actually found coordinates
     if (minLat === 90 || maxLat === -90) return null;
     
+    // Add padding to bounds
+    const latPadding = Math.max(0.05, (maxLat - minLat) * 0.2);
+    const lngPadding = Math.max(0.05, (maxLng - minLng) * 0.2);
+    
     return [
-      [minLat - 0.05, minLng - 0.05], 
-      [maxLat + 0.05, maxLng + 0.05]
+      [minLat - latPadding, minLng - lngPadding], 
+      [maxLat + latPadding, maxLng + lngPadding]
     ];
   };
   
@@ -69,10 +81,23 @@ export const useMapState = (locations: Location[], country?: string, region?: st
   useEffect(() => {
     // Only recalculate if we have locations
     if (locations && locations.length > 0) {
+      console.log("Calculating bounds for", locations.length, "locations");
+      const validLocations = locations.filter(loc => 
+        loc.latitude && 
+        loc.longitude && 
+        !isNaN(loc.latitude) && 
+        !isNaN(loc.longitude)
+      );
+      
+      if (validLocations.length === 0) {
+        console.warn("No valid locations with coordinates found");
+        return;
+      }
+      
       const newBounds = calculateBounds(locations);
       
-      // Use previous bounds if we can't calculate new ones
       if (newBounds) {
+        console.log("New bounds calculated:", newBounds);
         setBounds(newBounds);
         
         // Calculate center from bounds

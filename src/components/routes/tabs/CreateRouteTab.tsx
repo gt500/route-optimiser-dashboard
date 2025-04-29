@@ -7,7 +7,7 @@ import RouteDetails from '../RouteDetails';
 import RouteMap from '../RouteMap';
 import RouteLocations from '../RouteLocations';
 import { LocationType } from '@/types/location';
-import { VehicleConfigProps } from '@/hooks/useRouteManagement';
+import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteEndpoints from '../RouteEndpoints';
 import RouteOptimizationPanel from '../RouteOptimizationPanel';
@@ -124,7 +124,6 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Endpoints selection card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="col-span-1">
           <RouteEndpoints
@@ -145,27 +144,34 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
             <RouteMap 
               locations={transformedLocations}
               className="h-full"
-              height="200px"
+              height="250px"
               onRouteDataUpdate={onRouteDataUpdate}
               showTraffic={true}
               country={selectedCountry}
               region={selectedRegion}
               routeName={getRouteName()}
+              showStopMetrics={true}
             />
           </Card>
         </div>
       </div>
 
-      {/* Main content area */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Card className="h-full">
+      {/* Main content area with single map display */}
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="h-full">
+          {isOptimizationPanelVisible ? (
+            <RouteOptimizationPanel 
+              route={route}
+              onClose={() => setIsOptimizationPanelVisible(false)}
+            />
+          ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="details">Route Details</TabsTrigger>
                 <TabsTrigger value="stops">Route Stops</TabsTrigger>
               </TabsList>
-              <TabsContent value="details" className="space-y-4">
+              
+              <TabsContent value="details" className="space-y-4 p-4">
                 <RouteDetails
                   route={route}
                   onFuelCostUpdate={onFuelCostUpdate}
@@ -176,9 +182,10 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                   vehicles={vehicles}
                   selectedVehicle={selectedVehicle}
                   onVehicleChange={onVehicleChange}
-                  hideEndpoints={true} /* Hide duplicate endpoints here */
+                  hideEndpoints={true}
                 />
               </TabsContent>
+              
               <TabsContent value="stops" className="space-y-4">
                 <RouteLocations 
                   availableLocations={filteredAvailableLocations}
@@ -193,50 +200,28 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
                   onReplaceLocation={onReplaceLocation}
                   isSyncingLocations={isSyncingLocations}
                   allowSameStartEndLocation={true}
-                  hideEndpoints={true} /* Hide duplicate endpoints here */
+                  hideEndpoints={true}
                 />
               </TabsContent>
             </Tabs>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="h-[400px] overflow-hidden">
-            {isOptimizationPanelVisible ? (
-              <RouteOptimizationPanel 
-                route={route}
-                onClose={() => setIsOptimizationPanelVisible(false)}
-              />
-            ) : (
-              <RouteMap 
-                locations={transformedLocations}
-                className="h-full"
-                height="400px"
-                onRouteDataUpdate={onRouteDataUpdate}
-                showTraffic={true}
-                country={selectedCountry}
-                region={selectedRegion}
-                routeName={getRouteName()}
-                showStopMetrics={true}
-              />
-            )}
-          </Card>
-          <div className="flex justify-between">
-            <Button 
-              variant="outline" 
-              onClick={() => setActiveTab('details')} 
-              className="w-[49%]"
-            >
-              Edit Route Details
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setActiveTab('stops')} 
-              className="w-[49%]"
-            >
-              Edit Route Stops
-            </Button>
-          </div>
+          )}
+        </Card>
+        
+        <div className="flex justify-between">
+          <Button 
+            variant="outline" 
+            onClick={() => setActiveTab('details')} 
+            className={`w-[49%] ${activeTab === 'details' ? 'bg-primary/10' : ''}`}
+          >
+            Route Details
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setActiveTab('stops')} 
+            className={`w-[49%] ${activeTab === 'stops' ? 'bg-primary/10' : ''}`}
+          >
+            Route Stops
+          </Button>
         </div>
       </div>
     </div>
