@@ -15,7 +15,7 @@ const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 const initialVehicles: Vehicle[] = [
   { 
     id: 'TRK-001', 
-    name: 'Mercedes Sprinter', 
+    name: 'Heavy Duty Truck', 
     licensePlate: 'CA 123-456',
     status: 'Available', 
     capacity: 80, 
@@ -31,7 +31,7 @@ const initialVehicles: Vehicle[] = [
   },
   { 
     id: 'TRK-002', 
-    name: 'Leyland Ashok Phoenix', 
+    name: 'Medium Capacity Truck', 
     licensePlate: 'CA 789-012',
     status: 'Available', 
     capacity: 80, 
