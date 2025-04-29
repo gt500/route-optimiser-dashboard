@@ -117,8 +117,8 @@ export const useMaintenanceData = () => {
 
       // Only generate maintenance items for actual vehicles in the fleet
       vehicles.forEach(vehicle => {
-        // Update vehicle name to consistently show "Medium Duty Truck"
-        const vehicleName = `Medium Duty Truck (${vehicle.licensePlate})`;
+        // Update vehicle name to consistently show "Leyland Ashok Phoenix"
+        const vehicleName = `Leyland Ashok Phoenix (${vehicle.licensePlate})`;
         
         const nextTyreDate = predictMaintenanceDate(vehicle, 'Tyres');
         maintenanceSchedule.push({

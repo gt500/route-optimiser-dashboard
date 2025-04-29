@@ -9,7 +9,7 @@ export const mockRoutes: RouteData[] = [
     date: '2025-04-28',
     status: 'in_progress',
     vehicle_id: 'TRK-001',
-    vehicle_name: 'Heavy Duty Truck',
+    vehicle_name: 'Leyland Ashok Phoenix',
     stops: [
       { id: 's1', location_name: 'Afrox Epping Depot', sequence: 1, distance: 0, duration: 0 },
       { id: 's2', location_name: 'Pick n Pay TableView', sequence: 2, distance: 18.5, duration: 26, cylinders: 18 },
@@ -27,7 +27,7 @@ export const mockRoutes: RouteData[] = [
     date: '2025-04-29',
     status: 'scheduled',
     vehicle_id: 'TRK-002',
-    vehicle_name: 'Medium Capacity Truck',
+    vehicle_name: 'Leyland Ashok Phoenix',
     stops: [
       { id: 's5', location_name: 'Shell Hugo Street', sequence: 1, distance: 0, duration: 0 },
       { id: 's6', location_name: 'SUPERSPAR Plattekloof', sequence: 2, distance: 12.7, duration: 19, cylinders: 14 },
@@ -45,7 +45,7 @@ export const mockRoutes: RouteData[] = [
     date: '2025-04-30',
     status: 'scheduled',
     vehicle_id: 'TRK-001',
-    vehicle_name: 'Heavy Duty Truck',
+    vehicle_name: 'Leyland Ashok Phoenix',
     stops: [
       { id: 's9', location_name: 'Shell Stellenbosch Square', sequence: 1, distance: 0, duration: 0 },
       { id: 's10', location_name: 'KWIKSPAR Paarl', sequence: 2, distance: 25.6, duration: 34, cylinders: 10 },

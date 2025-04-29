@@ -69,7 +69,7 @@ const Fleet = () => {
   const handleAddVehicle = () => {
     setEditingVehicle({
       id: '',
-      name: 'Medium Duty Truck', // Changed from 'Leyland Phoenix' to 'Medium Duty Truck'
+      name: 'Leyland Ashok Phoenix', // Updated to Leyland Ashok Phoenix
       licensePlate: '',
       status: 'Available',
       capacity: 80,

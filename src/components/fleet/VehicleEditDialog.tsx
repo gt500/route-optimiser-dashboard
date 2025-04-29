@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -66,7 +65,7 @@ export function VehicleEditDialog({ isOpen, onClose, vehicle, onSave }: VehicleE
     resolver: zodResolver(formSchema),
     defaultValues: vehicle || {
       id: '',
-      name: 'Leyland Phoenix',
+      name: 'Leyland Ashok Phoenix',
       licensePlate: '',
       status: 'Available',
       capacity: 80,
@@ -82,7 +81,11 @@ export function VehicleEditDialog({ isOpen, onClose, vehicle, onSave }: VehicleE
 
   React.useEffect(() => {
     if (vehicle) {
-      form.reset(vehicle);
+      // Always ensure vehicle name is set to Leyland Ashok Phoenix
+      form.reset({
+        ...vehicle,
+        name: 'Leyland Ashok Phoenix'
+      });
     }
   }, [vehicle, form]);
 
@@ -117,7 +120,7 @@ export function VehicleEditDialog({ isOpen, onClose, vehicle, onSave }: VehicleE
                   <FormItem>
                     <FormLabel>Vehicle Name</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Leyland Phoenix" />
+                      <Input {...field} placeholder="Leyland Ashok Phoenix" readOnly />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

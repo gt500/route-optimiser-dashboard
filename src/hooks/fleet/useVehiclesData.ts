@@ -11,11 +11,11 @@ const today = new Date();
 const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
 const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 
-// Initial vehicles data - Both trucks are now Medium Duty Trucks
+// Initial vehicles data - Both trucks are Leyland Ashok Phoenix
 const initialVehicles: Vehicle[] = [
   { 
     id: 'TRK-001', 
-    name: 'Medium Duty Truck', 
+    name: 'Leyland Ashok Phoenix', 
     licensePlate: 'CA 123-456',
     status: 'Available', 
     capacity: 80, 
@@ -31,7 +31,7 @@ const initialVehicles: Vehicle[] = [
   },
   { 
     id: 'TRK-002', 
-    name: 'Medium Duty Truck', 
+    name: 'Leyland Ashok Phoenix', 
     licensePlate: 'CA 789-012',
     status: 'Available', 
     capacity: 80, 
@@ -120,14 +120,15 @@ export const useVehiclesData = () => {
       let updatedVehicle = {
         ...vehicle,
         region: vehicle.id === 'TRK-001' ? 'Western Cape' : vehicle.region,
-        startDate: formattedReferenceDate // Always ensure April 16th start date
+        startDate: formattedReferenceDate, // Always ensure April 16th start date
+        name: 'Leyland Ashok Phoenix', // Ensure consistent vehicle name
       };
       
       // Update existing vehicle
       if (updatedVehicle.id) {
         // Only allow updates to our two approved vehicles
         if (updatedVehicle.id !== 'TRK-001' && updatedVehicle.id !== 'TRK-002') {
-          toast.error(`Cannot update vehicle. Only Mercedes Sprinter and Leyland Ashok Phoenix are in the fleet.`);
+          toast.error(`Cannot update vehicle. Only Leyland Ashok Phoenix trucks are in the fleet.`);
           return false;
         }
         
