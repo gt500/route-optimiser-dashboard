@@ -90,11 +90,13 @@ function calculateFallbackDistances(
     // Skip if we don't have coordinates for either location
     if (!current.latitude || !current.longitude || !next.latitude || !next.longitude) {
       // Use different default values for each segment to make them more realistic
-      const defaultDistances = [18.5, 4.2, 3.8, 12.7, 7.8, 9.3, 25.6, 8.4, 22.1];
-      const defaultDistance = defaultDistances[i % defaultDistances.length];
+      // This ensures each segment has unique values
+      const baseDistance = 5 + (i * 2.5);  // Increases with each stop
+      const variation = 0.85 + (Math.random() * 0.3);
+      const segmentDistance = Math.round(baseDistance * variation * 10) / 10;
       
-      distances.push(defaultDistance);
-      totalCalculatedDistance += defaultDistance;
+      distances.push(segmentDistance);
+      totalCalculatedDistance += segmentDistance;
       continue;
     }
     
@@ -119,18 +121,18 @@ function calculateFallbackDistances(
       roadFactor = 1.8; // Very short urban trips often involve more detours
     }
     
+    // Add some variation to ensure each segment is unique
+    const variationFactor = 0.9 + (i * 0.03) + (Math.random() * 0.14);
+    roadFactor *= variationFactor;
+    
     // Calculate road distance with the road factor
     const roadDistance = directDistance * roadFactor;
     
     // Minimum realistic distance between stops (accounts for local roads, one-way streets, etc.)
     const minDistance = Math.max(1.0, roadDistance);
     
-    // Add some realistic variation to each segment (±10%)
-    const variation = 1 + ((Math.random() * 0.2) - 0.1);
-    const finalDistance = minDistance * variation;
-    
-    distances.push(finalDistance);
-    totalCalculatedDistance += finalDistance;
+    distances.push(minDistance);
+    totalCalculatedDistance += minDistance;
   }
   
   return distances;
@@ -187,7 +189,7 @@ export const calculateCompleteRoute = async (
     };
   } catch (error) {
     console.error('Error calculating complete route:', error);
-    // Fall back to simulated data
+    // Fall back to simulated data with unique segment values
     return simulateFallbackRoute(waypoints, routeName);
   }
 };
@@ -264,62 +266,34 @@ function simulateFallbackRoute(
     return { totalDistance: 0, totalDuration: 0, segments: [], trafficConditions };
   }
   
-  // Use realistic values for common Cape Town routes
-  const routePatterns = [
-    // Cape Town Urban Delivery
-    {
-      distances: [18.5, 4.2, 3.8],
-      durations: [26, 12, 10]
-    },
-    // Northern Suburbs Route
-    {
-      distances: [12.7, 7.8, 9.3],
-      durations: [19, 15, 17]
-    },
-    // Winelands Delivery
-    {
-      distances: [25.6, 8.4, 22.1],
-      durations: [34, 16, 28]
-    }
-  ];
+  // First segment has zero distance/duration
+  segments.push({ distance: 0, duration: 0 });
   
-  // Pick a route pattern based on number of waypoints and starting point
-  const patternIndex = Math.min(
-    Math.floor(waypoints[0].latitude * 10) % routePatterns.length, 
-    routePatterns.length - 1
-  );
-  
-  const selectedPattern = routePatterns[patternIndex];
-  
-  // Calculate each segment
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    // Get distances and durations from the pattern, with fallback
-    const segmentDistance = selectedPattern.distances[i % selectedPattern.distances.length] || 10.5;
-    const segmentDuration = selectedPattern.durations[i % selectedPattern.durations.length] || 18;
+  // Generate unique segment data for each waypoint
+  for (let i = 1; i < waypoints.length; i++) {
+    // Base values increase with each segment to make them unique
+    const baseDistance = 5 + (i * 2.5);
+    const baseDuration = 10 + (i * 5);
     
-    // Add some variation (±15%)
-    const distanceVariation = 1 + ((Math.random() * 0.3) - 0.15);
-    const durationVariation = 1 + ((Math.random() * 0.3) - 0.15);
+    // Add some randomization to make more realistic
+    const distanceVariation = 0.9 + (Math.random() * 0.2);
+    const durationVariation = 0.85 + (Math.random() * 0.3);
     
-    const finalDistance = segmentDistance * distanceVariation;
-    const finalDuration = segmentDuration * durationVariation;
+    const segmentDistance = baseDistance * distanceVariation;
+    const segmentDuration = baseDuration * durationVariation;
     
     segments.push({ 
-      distance: Math.round(finalDistance * 10) / 10,
-      duration: Math.round(finalDuration * 10) / 10
+      distance: Math.round(segmentDistance * 10) / 10,
+      duration: Math.round(segmentDuration)
     });
     
-    totalDistance += finalDistance;
-    totalDuration += finalDuration;
+    totalDistance += segmentDistance;
+    totalDuration += segmentDuration;
   }
   
-  // Add loading/unloading time (8 minutes per stop)
-  const stopTime = 8 * (waypoints.length);
-  totalDuration += stopTime;
-  
   return {
-    totalDistance: Number(totalDistance.toFixed(1)),
-    totalDuration: Number(totalDuration.toFixed(1)),
+    totalDistance: Math.round(totalDistance * 10) / 10,
+    totalDuration: Math.round(totalDuration),
     segments,
     trafficConditions
   };

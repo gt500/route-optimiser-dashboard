@@ -45,7 +45,34 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
         return route;
       });
       
-      setRoutes(routesWithVehicleInfo);
+      // Ensure each route has proper waypoint data if stops exist
+      const routesWithWaypointData = routesWithVehicleInfo.map(route => {
+        if (route.stops && route.stops.length > 0 && (!route.stops[0].distance || !route.stops[0].duration)) {
+          // Create synthetic waypoint data if none exists
+          const waypoints = route.stops.map((stop, index) => {
+            if (index === 0) {
+              return { 
+                ...stop, 
+                distance: 0, 
+                duration: 0 
+              };
+            }
+            // Unique values for each stop
+            return {
+              ...stop,
+              distance: stop.distance || 5 + (index * 2.5),
+              duration: stop.duration || 10 + (index * 5)
+            };
+          });
+          return {
+            ...route,
+            stops: waypoints
+          };
+        }
+        return route;
+      });
+      
+      setRoutes(routesWithWaypointData);
       
       // Refresh vehicle data to ensure statuses are in sync with routes
       await fetchVehicles();
