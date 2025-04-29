@@ -38,6 +38,24 @@ export const fetchRouteHistory = async (): Promise<RouteData[]> => {
 };
 
 /**
+ * Update a route's status in our mock database
+ */
+export const updateRouteStatus = async (routeId: string, status: string): Promise<boolean> => {
+  console.log(`Updating route ${routeId} status to ${status}`);
+  
+  // Find the route in our mockRoutes
+  const routeIndex = mockRoutes.findIndex(route => route.id === routeId);
+  
+  if (routeIndex >= 0) {
+    // Update the route status
+    mockRoutes[routeIndex].status = status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+    return true;
+  }
+  
+  return false;
+};
+
+/**
  * Fetch routes by name
  */
 export const fetchRouteDataByName = async (routeName: string): Promise<RouteData[]> => {

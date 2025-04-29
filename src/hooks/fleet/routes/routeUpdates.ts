@@ -28,6 +28,7 @@ export const startRoute = async (
     );
     
     console.log("Route status updated to in_progress");
+    toast.success("Route started successfully");
     return true;
   } catch (error) {
     console.error('Error in startRoute:', error);
@@ -69,6 +70,7 @@ export const completeRoute = async (
     );
     
     console.log("Route status updated to completed");
+    toast.success("Route marked as completed");
     return true;
   } catch (error) {
     console.error('Error in completeRoute:', error);

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +36,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       const activeFilteredRoutes = routesFromHook.filter(
         route => route.status === 'scheduled' || route.status === 'in_progress'
       );
+      console.log("Active filtered routes:", activeFilteredRoutes);
       setRoutes(activeFilteredRoutes);
     }
   }, [routesFromHook]);
@@ -54,11 +55,14 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
           if (vehicle) {
             return {
               ...route,
-              vehicle_name: vehicle.name
+              vehicle_name: 'Leyland Ashok Phoenix'
             };
           }
         }
-        return route;
+        return {
+          ...route,
+          vehicle_name: route.vehicle_name || 'Leyland Ashok Phoenix'
+        };
       });
       
       // Ensure each route has proper waypoint data if stops exist
@@ -88,7 +92,13 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
         return route;
       });
       
-      setRoutes(routesWithWaypointData);
+      // Filter to only show scheduled and in_progress routes
+      const activeFilteredRoutes = routesWithWaypointData.filter(
+        route => route.status === 'scheduled' || route.status === 'in_progress'
+      );
+      
+      console.log("Setting active routes:", activeFilteredRoutes);
+      setRoutes(activeFilteredRoutes);
       
       // Refresh vehicle data to ensure statuses are in sync with routes
       await fetchVehicles();

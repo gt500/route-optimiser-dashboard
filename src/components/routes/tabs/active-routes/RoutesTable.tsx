@@ -78,20 +78,20 @@ const RoutesTable = ({
                 <RouteStatusBadge status={route.status} />
               </TableCell>
               <TableCell>
-                {route.vehicle_name ? route.vehicle_name : (route.vehicle_id ? 'Leyland Ashok Phoenix' : 'None')}
+                {route.vehicle_name ? 'Leyland Ashok Phoenix' : (route.vehicle_id ? 'Leyland Ashok Phoenix' : 'None')}
               </TableCell>
               <TableCell className="text-right">
                 <RouteActionButtons 
                   routeId={route.id} 
                   status={route.status}
                   processingRoutes={processingRoutes} 
-                  onStart={() => {
-                    console.log("Start route clicked in RoutesTable for:", route.id);
-                    onStartRoute(route.id);
+                  onStart={(id) => {
+                    console.log("Start route clicked in RoutesTable for:", id);
+                    onStartRoute(id);
                   }}
-                  onComplete={() => {
-                    console.log("Complete route clicked in RoutesTable for:", route.id);
-                    onCompleteRoute(route.id);
+                  onComplete={(id) => {
+                    console.log("Complete route clicked in RoutesTable for:", id);
+                    onCompleteRoute(id);
                   }}
                 />
               </TableCell>
