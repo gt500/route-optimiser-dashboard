@@ -70,7 +70,7 @@ export interface LeafletMapContainerProps {
   whenCreated?: (map: any) => void;
 }
 
-// Fix: Update LeafletTileLayerProps to properly include attribution
+// Updated to properly include attribution and other TileLayer props
 export interface LeafletTileLayerProps {
   url: string;
   attribution?: string;

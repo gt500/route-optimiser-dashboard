@@ -12,7 +12,7 @@ import RouteMarkers from './map-components/RouteMarkers';
 import TrafficIndicator from './map-components/TrafficIndicator';
 import NoLocationsDisplay from './map-components/NoLocationsDisplay';
 import { useMapState } from '@/hooks/routes/useMapState';
-import { NamedCoords, LeafletTileLayerProps } from '@/types/location';
+import { NamedCoords } from '@/types/location';
 
 interface RouteMapProps {
   locations: {
@@ -107,7 +107,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
-            {/* Using TileLayer with proper typing */}
+            {/* Using TileLayer with proper attribution */}
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

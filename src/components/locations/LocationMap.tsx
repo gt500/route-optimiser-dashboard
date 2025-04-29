@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocationMarker } from '@/components/routes/map-components/LocationMarker';
-import { LocationInfo, LeafletTileLayerProps } from '@/types/location';
+import { LocationInfo } from '@/types/location';
 import { useMapState } from '@/hooks/routes/useMapState';
 import MapSetup from '@/components/routes/map-components/MapSetup';
 
@@ -30,7 +30,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
           <MapContainer 
             style={{ height: '100%', width: '100%' }}
           >
-            {/* Using TileLayer with proper typing */}
+            {/* Using TileLayer with proper attribution */}
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
