@@ -128,7 +128,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
       {locations.length >= 2 ? (
         <div className="h-full w-full relative overflow-hidden">
           <MapContainer
-            defaultCenter={defaultCenter}
+            center={defaultCenter}
             zoom={12}
             style={{ height: '100%', width: '100%' }}
             className="z-0"
@@ -136,6 +136,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              // @ts-ignore - attribution is valid but missing in type definitions
             />
             <MapSetup />
             
