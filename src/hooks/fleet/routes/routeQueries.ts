@@ -6,6 +6,7 @@ import { RouteData, RouteStats, WeeklyData } from '../types/routeTypes';
  * Fetch all routes
  */
 export const fetchRoutes = async (): Promise<RouteData[]> => {
+  console.log("Fetching all routes from mockRoutes:", mockRoutes);
   // In a real app, this would fetch from an API
   return mockRoutes;
 };
@@ -14,16 +15,26 @@ export const fetchRoutes = async (): Promise<RouteData[]> => {
  * Fetch active routes (scheduled or in-progress)
  */
 export const fetchActiveRoutes = async (): Promise<RouteData[]> => {
+  console.log("Fetching active routes");
   const data = await fetchRoutes();
-  return data.filter(route => route.status === 'scheduled' || route.status === 'in_progress');
+  const activeRoutes = data.filter(route => 
+    route.status === 'scheduled' || route.status === 'in_progress'
+  );
+  console.log("Active routes:", activeRoutes);
+  return activeRoutes;
 };
 
 /**
  * Fetch completed or cancelled routes
  */
 export const fetchRouteHistory = async (): Promise<RouteData[]> => {
+  console.log("Fetching route history");
   const data = await fetchRoutes();
-  return data.filter(route => route.status === 'completed' || route.status === 'cancelled');
+  const historyRoutes = data.filter(route => 
+    route.status === 'completed' || route.status === 'cancelled'
+  );
+  console.log("History routes:", historyRoutes);
+  return historyRoutes;
 };
 
 /**

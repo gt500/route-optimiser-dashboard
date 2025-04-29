@@ -24,39 +24,62 @@ export const useRouteData = () => {
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
 
   const fetchRoutes = useCallback(async () => {
+    console.log("Fetching all routes in useRouteData hook");
     return await fetchRoutesQuery();
   }, []);
   
   const fetchRouteData = useCallback(async () => {
+    console.log("Fetching route data in useRouteData hook");
     return await fetchRoutesQuery();
   }, []);
   
   const fetchActiveRoutes = useCallback(async () => {
+    console.log("Fetching active routes in useRouteData hook");
     return await fetchActiveRoutesQuery();
   }, []);
   
   const fetchRouteHistory = useCallback(async () => {
+    console.log("Fetching route history in useRouteData hook");
     return await fetchRouteHistoryQuery();
   }, []);
   
   const fetchRouteDataByName = useCallback(async (routeName: string) => {
+    console.log(`Fetching route data for ${routeName} in useRouteData hook`);
     return await fetchRouteDataByNameQuery(routeName);
   }, []);
   
   const getWeeklyDeliveryData = useCallback(async () => {
+    console.log("Getting weekly delivery data in useRouteData hook");
     return await getWeeklyDeliveryDataQuery();
   }, []);
   
   const getOptimizationStats = useCallback(async () => {
+    console.log("Getting optimization stats in useRouteData hook");
     return await getOptimizationStatsQuery(routes);
   }, [routes.length]);
 
   const startRoute = useCallback(async (routeId: string) => {
-    return await startRouteAction(routeId, routes, setRoutes, setProcessingRoutes);
+    console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
+    try {
+      const result = await startRouteAction(routeId, routes, setRoutes, setProcessingRoutes);
+      return result;
+    } catch (error) {
+      console.error("Error starting route:", error);
+      toast.error("Failed to start route");
+      return false;
+    }
   }, [routes]);
 
   const completeRoute = useCallback(async (routeId: string) => {
-    return await completeRouteAction(routeId, routes, setRoutes, setProcessingRoutes);
+    console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
+    try {
+      const result = await completeRouteAction(routeId, routes, setRoutes, setProcessingRoutes);
+      return result;
+    } catch (error) {
+      console.error("Error completing route:", error);
+      toast.error("Failed to complete route");
+      return false;
+    }
   }, [routes]);
 
   return {

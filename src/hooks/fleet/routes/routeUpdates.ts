@@ -1,5 +1,6 @@
 
 import { RouteData } from '../types/routeTypes';
+import { toast } from 'sonner';
 
 /**
  * Start a route with the given ID
@@ -14,7 +15,7 @@ export const startRoute = async (
   setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
   
   try {
-    console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
+    console.log(`Starting route with ID: ${routeId} in routeUpdates.ts`);
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1200));
@@ -30,7 +31,8 @@ export const startRoute = async (
     return true;
   } catch (error) {
     console.error('Error in startRoute:', error);
-    throw error;
+    toast.error('Failed to start route');
+    return false;
   } finally {
     // Clear processing state
     setProcessingRoutes(prev => {
@@ -54,7 +56,7 @@ export const completeRoute = async (
   setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
   
   try {
-    console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
+    console.log(`Completing route with ID: ${routeId} in routeUpdates.ts`);
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -70,7 +72,8 @@ export const completeRoute = async (
     return true;
   } catch (error) {
     console.error('Error in completeRoute:', error);
-    throw error;
+    toast.error('Failed to complete route');
+    return false;
   } finally {
     // Clear processing state
     setProcessingRoutes(prev => {

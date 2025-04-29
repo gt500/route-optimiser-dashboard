@@ -29,7 +29,8 @@ const RouteActionButtons = ({
               ? 'bg-blue-500 text-white border-blue-600'
               : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
           }`}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             console.log("Start button clicked for route:", routeId);
             onStart(routeId);
           }}
@@ -48,7 +49,8 @@ const RouteActionButtons = ({
               ? 'bg-green-500 text-white border-green-600'
               : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700'
           }`}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             console.log("Complete button clicked for route:", routeId);
             onComplete(routeId);
           }}

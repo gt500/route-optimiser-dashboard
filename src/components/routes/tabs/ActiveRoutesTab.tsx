@@ -17,15 +17,31 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
-  const { fetchActiveRoutes, startRoute: startRouteHook, completeRoute: completeRouteHook } = useRouteData();
-  const { vehicles, saveVehicle, fetchVehicles } = useVehiclesData();
+  const { 
+    fetchActiveRoutes, 
+    routes: routesFromHook, 
+    startRoute: startRouteHook, 
+    completeRoute: completeRouteHook 
+  } = useRouteData();
+  const { vehicles, fetchVehicles } = useVehiclesData();
 
   // Load routes when component mounts or when highlightedDeliveryId changes
   useEffect(() => {
     loadRoutes();
   }, [highlightedDeliveryId]);
+  
+  // Add this effect to update local state when routesFromHook changes
+  useEffect(() => {
+    if (routesFromHook.length > 0) {
+      const activeFilteredRoutes = routesFromHook.filter(
+        route => route.status === 'scheduled' || route.status === 'in_progress'
+      );
+      setRoutes(activeFilteredRoutes);
+    }
+  }, [routesFromHook]);
 
   const loadRoutes = async () => {
+    console.log("Loading active routes...");
     setIsLoading(true);
     try {
       const activeRoutes = await fetchActiveRoutes();
@@ -38,7 +54,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
           if (vehicle) {
             return {
               ...route,
-              vehicle_name: `${vehicle.name} (${vehicle.licensePlate})`
+              vehicle_name: vehicle.name
             };
           }
         }
@@ -85,22 +101,26 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   };
 
   const startRoute = async (routeId: string) => {
-    console.log(`Starting route with ID: ${routeId}`);
+    console.log(`Starting route with ID: ${routeId} in ActiveRoutesTab`);
     
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
       
       // Call the startRoute function from the hook
-      await startRouteHook(routeId);
+      const success = await startRouteHook(routeId);
       
-      // Update local state for immediate feedback
-      setRoutes(prev => 
-        prev.map(route => 
-          route.id === routeId ? { ...route, status: 'in_progress' } : route
-        )
-      );
-      
-      toast.success('Route started successfully');
+      if (success) {
+        // Update local state for immediate feedback
+        setRoutes(prev => 
+          prev.map(route => 
+            route.id === routeId ? { ...route, status: 'in_progress' } : route
+          )
+        );
+        
+        toast.success('Route started successfully');
+      } else {
+        toast.error('Failed to start route');
+      }
       
       // Reload routes to ensure everything is up-to-date
       await loadRoutes();
@@ -117,18 +137,22 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   };
 
   const markRouteAsComplete = async (routeId: string) => {
-    console.log(`Completing route with ID: ${routeId}`);
+    console.log(`Completing route with ID: ${routeId} in ActiveRoutesTab`);
     
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
       // Call the completeRoute function from the hook
-      await completeRouteHook(routeId);
+      const success = await completeRouteHook(routeId);
       
-      // Update local state for immediate feedback - remove the route from active routes
-      setRoutes(prev => prev.filter(route => route.id !== routeId));
-      
-      toast.success('Route completed successfully');
+      if (success) {
+        // Update local state for immediate feedback - remove the route from active routes
+        setRoutes(prev => prev.filter(route => route.id !== routeId));
+        
+        toast.success('Route completed successfully');
+      } else {
+        toast.error('Failed to complete route');
+      }
       
       // No need to reload routes here since we've already removed it from the list
     } catch (error) {

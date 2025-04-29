@@ -45,6 +45,10 @@ const RoutesTable = ({
     }
   }, [highlightedDeliveryId, routes]);
 
+  // Debug to help troubleshoot
+  console.log("RoutesTable rendering with routes:", routes);
+  console.log("Processing routes:", processingRoutes);
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -74,15 +78,21 @@ const RoutesTable = ({
                 <RouteStatusBadge status={route.status} />
               </TableCell>
               <TableCell>
-                {route.vehicle_name ? 'Leyland Ashok Phoenix' : (route.vehicle_id ? `Leyland Ashok Phoenix` : 'None')}
+                {route.vehicle_name ? route.vehicle_name : (route.vehicle_id ? 'Leyland Ashok Phoenix' : 'None')}
               </TableCell>
               <TableCell className="text-right">
                 <RouteActionButtons 
                   routeId={route.id} 
                   status={route.status}
                   processingRoutes={processingRoutes} 
-                  onStart={onStartRoute}
-                  onComplete={onCompleteRoute}
+                  onStart={() => {
+                    console.log("Start route clicked in RoutesTable for:", route.id);
+                    onStartRoute(route.id);
+                  }}
+                  onComplete={() => {
+                    console.log("Complete route clicked in RoutesTable for:", route.id);
+                    onCompleteRoute(route.id);
+                  }}
                 />
               </TableCell>
             </TableRow>

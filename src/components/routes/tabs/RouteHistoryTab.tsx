@@ -17,9 +17,16 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
 
   const loadRoutes = async () => {
     setIsLoading(true);
-    const historyRoutes = await fetchRouteHistory();
-    setRoutes(historyRoutes);
-    setIsLoading(false);
+    try {
+      console.log("Fetching route history in RouteHistoryTab");
+      const historyRoutes = await fetchRouteHistory();
+      console.log("Received history routes:", historyRoutes);
+      setRoutes(historyRoutes);
+    } catch (error) {
+      console.error("Error loading route history:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
