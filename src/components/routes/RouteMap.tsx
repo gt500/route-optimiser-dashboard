@@ -30,15 +30,15 @@ interface RouteMapProps {
   showStopMetrics?: boolean;
 }
 
-// Helper functions from the user's example code
-function calcDistance(p1, p2) {
+// Helper functions for distance and time calculations
+function calcDistance(p1: { x: number, y: number }, p2: { x: number, y: number }) {
   return Math.sqrt(
     Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)
   );
 }
 
-function calcTime(t1, t2) {
-  return Math.abs(new Date(t2) - new Date(t1)) / 1000 / 60; // Convert to minutes
+function calcTime(t1: string | Date, t2: string | Date) {
+  return Math.abs(new Date(t2).getTime() - new Date(t1).getTime()) / 1000 / 60; // Convert to minutes
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({
