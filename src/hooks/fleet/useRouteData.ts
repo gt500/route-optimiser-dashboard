@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { RouteData } from './types/routeTypes';
+import type { RouteData } from './types/routeTypes';
 import { mockRoutes } from './routes/mockRouteData';
 import { 
   fetchRoutes as fetchRoutesQuery,
@@ -16,6 +16,7 @@ import {
   completeRoute as completeRouteAction
 } from './routes/routeUpdates';
 
+// Use proper type-only re-export with 'export type'
 export type { RouteData } from './types/routeTypes';
 
 export const useRouteData = () => {

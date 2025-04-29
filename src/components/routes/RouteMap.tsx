@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
 import { MapContainer, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
 import MapSetup from './map-components/MapSetup';
@@ -52,7 +53,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   
   // Convert locations to Leaflet waypoints
   const waypoints = React.useMemo(() => {
-    if (!window.L) return [];
+    if (!L) return [];
     
     return locations
       .filter(loc => 
@@ -61,15 +62,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
         !isNaN(loc.latitude) && 
         !isNaN(loc.longitude)
       )
-      .map(loc => window.L.latLng(loc.latitude, loc.longitude));
+      .map(loc => L.latLng(loc.latitude, loc.longitude));
   }, [locations]);
   
   // Calculate the map bounds to fit all waypoints
   const bounds = React.useMemo(() => {
-    if (!window.L || waypoints.length < 1) return null;
+    if (!L || waypoints.length < 1) return null;
     
     const latLngs = waypoints.map(point => [point.lat, point.lng]);
-    return window.L.latLngBounds(latLngs);
+    return L.latLngBounds(latLngs);
   }, [waypoints]);
   
   // Force update the routing component when route name or region changes

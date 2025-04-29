@@ -104,9 +104,9 @@ const RouteRoutingMachine: React.FC<RouteRoutingMachineProps> = ({
               onRouteFound(
                 knownRoute!.distance,
                 knownRoute!.duration,
+                getCurrentTrafficCondition(),
                 coordinates,
-                knownRoute!.segments,
-                getCurrentTrafficCondition()
+                knownRoute!.segments
               );
             }, 300);
           }
@@ -188,9 +188,9 @@ const RouteRoutingMachine: React.FC<RouteRoutingMachineProps> = ({
             onRouteFound(
               selectedRoute.summary.totalDistance / 1000,
               selectedRoute.summary.totalTime / 60,
+              trafficConditions,
               coordinates,
-              waypoints,
-              trafficConditions
+              waypoints
             );
           }
         };
