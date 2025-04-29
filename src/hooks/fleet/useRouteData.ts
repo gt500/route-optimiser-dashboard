@@ -89,8 +89,8 @@ export const useRouteData = () => {
 
   const fetchRoutes = useCallback(async () => {
     // In a real app, this would fetch from an API
-    return mockRoutes;
-  }, []);
+    return routes;
+  }, [routes]);
   
   // Add the missing methods to fix our build errors
   const fetchRouteData = useCallback(async () => {
@@ -143,13 +143,13 @@ export const useRouteData = () => {
   const getOptimizationStats = useCallback(async () => {
     // Return mock optimization stats for the dashboard
     return {
-      totalRoutes: mockRoutes.length,
-      optimizedRoutes: Math.floor(mockRoutes.length * 0.7),
+      totalRoutes: routes.length,
+      optimizedRoutes: Math.floor(routes.length * 0.7),
       distanceSaved: 128.5,
       timeSaved: 214,
       fuelSaved: 18.6
     };
-  }, []);
+  }, [routes.length]);
 
   const startRoute = useCallback(async (routeId: string) => {
     // Mark route as processing
@@ -161,18 +161,17 @@ export const useRouteData = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1200));
       
-      // Update route status
+      // Update route status in our state
       setRoutes(prev => 
         prev.map(route => 
           route.id === routeId ? { ...route, status: 'in_progress' } : route
         )
       );
       
-      toast.success('Route started successfully');
+      console.log("Route status updated to in_progress");
       return true;
     } catch (error) {
       console.error('Error in startRoute:', error);
-      toast.error('Failed to start route');
       throw error;
     } finally {
       // Clear processing state
@@ -194,18 +193,17 @@ export const useRouteData = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Update route status
+      // Update route status in our state
       setRoutes(prev => 
         prev.map(route => 
           route.id === routeId ? { ...route, status: 'completed' } : route
         )
       );
       
-      toast.success('Route completed successfully');
+      console.log("Route status updated to completed");
       return true;
     } catch (error) {
       console.error('Error in completeRoute:', error);
-      toast.error('Failed to complete route');
       throw error;
     } finally {
       // Clear processing state

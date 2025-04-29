@@ -98,17 +98,12 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       // Call the completeRoute function from the hook
       await completeRouteHook(routeId);
       
-      // Update local state for immediate feedback
-      setRoutes(prev => 
-        prev.map(route => 
-          route.id === routeId ? { ...route, status: 'completed' } : route
-        )
-      );
+      // Update local state for immediate feedback - remove the route from active routes
+      setRoutes(prev => prev.filter(route => route.id !== routeId));
       
       toast.success('Route completed successfully');
       
-      // Reload routes to ensure everything is up-to-date
-      await loadRoutes();
+      // No need to reload routes here since we've already removed it from the list
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
