@@ -26,11 +26,11 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
       </CardHeader>
       <CardContent>
         <div className="h-[400px]">
+          {/* Fix: Remove center and zoom from MapContainer and let MapSetup handle it */}
           <MapContainer 
-            center={mapCenter || defaultCenter}
-            zoom={zoom}
             style={{ height: '100%', width: '100%' }}
           >
+            {/* Fix: Move attribution to TileLayer options */}
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -38,7 +38,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
             
             <MapSetup 
               bounds={bounds} 
-              center={mapCenter}
+              center={mapCenter || defaultCenter}
               zoom={zoom}
             />
             

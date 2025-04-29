@@ -1,3 +1,4 @@
+
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
@@ -59,6 +60,20 @@ export interface LocationPoint {
 export interface NamedCoords {
   name: string;
   coords: [number, number];
+}
+
+// Adding more specific interfaces for Leaflet components to help with TypeScript errors
+export interface LeafletMapContainerProps {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+  whenCreated?: (map: any) => void;
+}
+
+export interface LeafletTileLayerProps {
+  url: string;
+  attribution?: string;
+  zIndex?: number;
 }
 
 export interface LeafletMarkerProps {
