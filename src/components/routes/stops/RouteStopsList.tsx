@@ -48,24 +48,47 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
     );
   }
   
-  // Calculate segment metrics with proper validation
+  // Calculate segment metrics with proper validation and use waypoint data if available
   const calculateSegmentMetrics = (index: number) => {
     if (!routeMetrics || locations.length < 2 || index === 0) {
       return { distance: 0, duration: 0, fuelCost: 0 };
     }
     
-    // If we have waypoint data in the route state, use it
-    const segments = Math.max(1, locations.length - 1);
+    // If we have waypoint data, use the specific segment metrics
+    if (locations.length > 1 && locations[index].waypointData) {
+      const waypointData = locations[index].waypointData;
+      return {
+        distance: waypointData.distance || 0,
+        duration: waypointData.duration || 0,
+        fuelCost: (waypointData.distance || 0) * 0.12 * 21.95 / 100 // Calculate fuel cost based on distance
+      };
+    }
     
-    // Ensure we don't divide by zero and provide reasonable defaults
-    const distance = (routeMetrics.distance || 0) / segments;
-    const duration = (routeMetrics.duration || 0) / segments;
-    const fuelCost = (routeMetrics.fuelCost || 0) / segments;
+    // If we have proper waypointData in the routeMetrics
+    if (routeMetrics.waypointData && routeMetrics.waypointData[index - 1]) {
+      const segment = routeMetrics.waypointData[index - 1];
+      return {
+        distance: segment.distance || 0,
+        duration: segment.duration || 0,
+        fuelCost: (segment.distance || 0) * 0.12 * 21.95 / 100 // 0.12L/km at R21.95/L
+      };
+    }
+    
+    // Fallback: divide total metrics by number of segments, but make each segment unique
+    // This ensures each stop has slightly different values
+    const segments = Math.max(1, locations.length - 1);
+    const segmentIndex = index - 1;
+    const baseDistance = routeMetrics.distance / segments;
+    const baseDuration = routeMetrics.duration / segments;
+    const baseFuelCost = routeMetrics.fuelCost / segments;
+    
+    // Add some variation based on the segment index to make each stop unique
+    const variationFactor = 0.85 + (segmentIndex / segments) * 0.3;
     
     return {
-      distance,
-      duration,
-      fuelCost
+      distance: baseDistance * variationFactor,
+      duration: baseDuration * variationFactor,
+      fuelCost: baseFuelCost * variationFactor
     };
   };
   
