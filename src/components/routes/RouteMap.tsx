@@ -117,16 +117,21 @@ const RouteMap: React.FC<RouteMapProps> = ({
     }
   }, [routeName, region]);
   
+  // Use first location coordinates as default center or fallback to Cape Town
+  const defaultCenter: [number, number] = 
+    locations[0] && locations[0].latitude && locations[0].longitude 
+      ? [locations[0].latitude, locations[0].longitude]
+      : [-33.93, 18.52];
+  
   return (
     <div className={`relative ${className}`} style={{ height }}>
       {locations.length >= 2 ? (
         <div className="h-full w-full relative overflow-hidden">
           <MapContainer
-            center={[locations[0]?.latitude || -33.93, locations[0]?.longitude || 18.52]}
+            defaultCenter={defaultCenter}
             zoom={12}
             style={{ height: '100%', width: '100%' }}
             className="z-0"
-            attributionControl={true}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
