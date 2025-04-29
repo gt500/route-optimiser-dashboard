@@ -1,0 +1,82 @@
+
+import { RouteData } from '../types/routeTypes';
+
+/**
+ * Start a route with the given ID
+ */
+export const startRoute = async (
+  routeId: string, 
+  routes: RouteData[],
+  setRoutes: React.Dispatch<React.SetStateAction<RouteData[]>>,
+  setProcessingRoutes: React.Dispatch<React.SetStateAction<Record<string, string>>>
+): Promise<boolean> => {
+  // Mark route as processing
+  setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
+  
+  try {
+    console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // Update route status in our state
+    setRoutes(prev => 
+      prev.map(route => 
+        route.id === routeId ? { ...route, status: 'in_progress' } : route
+      )
+    );
+    
+    console.log("Route status updated to in_progress");
+    return true;
+  } catch (error) {
+    console.error('Error in startRoute:', error);
+    throw error;
+  } finally {
+    // Clear processing state
+    setProcessingRoutes(prev => {
+      const updated = { ...prev };
+      delete updated[routeId];
+      return updated;
+    });
+  }
+};
+
+/**
+ * Complete a route with the given ID
+ */
+export const completeRoute = async (
+  routeId: string, 
+  routes: RouteData[],
+  setRoutes: React.Dispatch<React.SetStateAction<RouteData[]>>,
+  setProcessingRoutes: React.Dispatch<React.SetStateAction<Record<string, string>>>
+): Promise<boolean> => {
+  // Mark route as processing
+  setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
+  
+  try {
+    console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Update route status in our state
+    setRoutes(prev => 
+      prev.map(route => 
+        route.id === routeId ? { ...route, status: 'completed' } : route
+      )
+    );
+    
+    console.log("Route status updated to completed");
+    return true;
+  } catch (error) {
+    console.error('Error in completeRoute:', error);
+    throw error;
+  } finally {
+    // Clear processing state
+    setProcessingRoutes(prev => {
+      const updated = { ...prev };
+      delete updated[routeId];
+      return updated;
+    });
+  }
+};
