@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
@@ -11,7 +12,7 @@ import RouteMarkers from './map-components/RouteMarkers';
 import TrafficIndicator from './map-components/TrafficIndicator';
 import NoLocationsDisplay from './map-components/NoLocationsDisplay';
 import { useMapState } from '@/hooks/routes/useMapState';
-import { NamedCoords } from '@/types/location';
+import { NamedCoords, LeafletTileLayerProps } from '@/types/location';
 
 interface RouteMapProps {
   locations: {

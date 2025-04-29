@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocationMarker } from '@/components/routes/map-components/LocationMarker';
-import { LocationInfo } from '@/types/location';
+import { LocationInfo, LeafletTileLayerProps } from '@/types/location';
 import { useMapState } from '@/hooks/routes/useMapState';
 import MapSetup from '@/components/routes/map-components/MapSetup';
 

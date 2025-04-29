@@ -70,9 +70,10 @@ export interface LeafletMapContainerProps {
   whenCreated?: (map: any) => void;
 }
 
+// Fix: Update LeafletTileLayerProps to properly include attribution
 export interface LeafletTileLayerProps {
   url: string;
-  attribution: string;
+  attribution?: string;
   zIndex?: number;
   // Adding any to allow for all Leaflet TileLayer options
   [key: string]: any;
