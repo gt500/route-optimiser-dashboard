@@ -115,10 +115,14 @@ export const useMaintenanceData = () => {
     try {
       const maintenanceSchedule: MaintenanceItem[] = [];
 
+      // Only generate maintenance items for actual vehicles in the fleet
       vehicles.forEach(vehicle => {
+        // Update vehicle name to consistently show "Medium Duty Truck"
+        const vehicleName = `Medium Duty Truck (${vehicle.licensePlate})`;
+        
         const nextTyreDate = predictMaintenanceDate(vehicle, 'Tyres');
         maintenanceSchedule.push({
-          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicle: vehicleName,
           vehicleId: vehicle.id,
           type: 'Tyres',
           category: 'Quarterly',
@@ -130,7 +134,7 @@ export const useMaintenanceData = () => {
 
         const nextMinorServiceDate = predictMaintenanceDate(vehicle, 'Minor Service');
         maintenanceSchedule.push({
-          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicle: vehicleName,
           vehicleId: vehicle.id,
           type: 'Minor Service',
           category: 'Distance',
@@ -142,7 +146,7 @@ export const useMaintenanceData = () => {
 
         const nextMajorServiceDate = predictMaintenanceDate(vehicle, 'Major Service');
         maintenanceSchedule.push({
-          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicle: vehicleName,
           vehicleId: vehicle.id,
           type: 'Major Service',
           category: 'Distance',
@@ -154,7 +158,7 @@ export const useMaintenanceData = () => {
 
         const nextRefuelDate = predictMaintenanceDate(vehicle, 'Diesel Refuel');
         maintenanceSchedule.push({
-          vehicle: `${vehicle.name} (${vehicle.licensePlate})`,
+          vehicle: vehicleName,
           vehicleId: vehicle.id,
           type: 'Diesel Refuel',
           category: 'Monthly',

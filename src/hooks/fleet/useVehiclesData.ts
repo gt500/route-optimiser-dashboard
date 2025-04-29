@@ -11,11 +11,11 @@ const today = new Date();
 const REFERENCE_START_DATE = new Date(2025, 3, 16); // Note: Month is 0-indexed, so 3 = April
 const formattedReferenceDate = format(REFERENCE_START_DATE, 'yyyy-MM-dd');
 
-// Initial vehicles data - ONLY the two approved vehicles
+// Initial vehicles data - Both trucks are now Medium Duty Trucks
 const initialVehicles: Vehicle[] = [
   { 
     id: 'TRK-001', 
-    name: 'Heavy Duty Truck', 
+    name: 'Medium Duty Truck', 
     licensePlate: 'CA 123-456',
     status: 'Available', 
     capacity: 80, 
@@ -31,7 +31,7 @@ const initialVehicles: Vehicle[] = [
   },
   { 
     id: 'TRK-002', 
-    name: 'Medium Capacity Truck', 
+    name: 'Medium Duty Truck', 
     licensePlate: 'CA 789-012',
     status: 'Available', 
     capacity: 80, 
