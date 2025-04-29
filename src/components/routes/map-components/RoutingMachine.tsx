@@ -11,13 +11,14 @@ interface RouteOptions {
   routeWeight?: number;
   alternateRoutes?: boolean;
   avoidTraffic?: boolean;
+  showRoadRoutes?: boolean;
   useRealTimeData?: boolean;
   includeSegmentDurations?: boolean;
 }
 
 interface RoutingMachineProps {
   waypoints: L.LatLng[];
-  forceRouteUpdate?: boolean;
+  forceRouteUpdate?: number;
   onRouteFound?: (route: {
     distance: number;
     duration: number;
@@ -36,7 +37,8 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
   onRouteFound,
   routeOptions = { 
     avoidTraffic: true, 
-    alternateRoutes: false, 
+    alternateRoutes: false,
+    showRoadRoutes: true,
     useRealTimeData: true,
     routeColor: '#6366F1',
     routeWeight: 6,
