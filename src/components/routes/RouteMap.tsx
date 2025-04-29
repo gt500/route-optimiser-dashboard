@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Truck } from 'lucide-react';
@@ -129,7 +128,6 @@ const RouteMap: React.FC<RouteMapProps> = ({
         <div className="h-full w-full relative overflow-hidden">
           <MapContainer
             key={`map-${defaultCenter[0]}-${defaultCenter[1]}`}
-            zoom={12}
             style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
