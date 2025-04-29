@@ -20,6 +20,7 @@ export const calculateTotalWeight = (locations: LocationType[],
   }
   
   // Filter out start and end locations from weight calculations
+  // Start and end locations should always have 0 cylinders for calculations
   const routeLocations = locations.filter(loc => 
     loc.id !== startLocationId && 
     loc.id !== endLocationId
@@ -52,6 +53,7 @@ export const calculateTotalWeight = (locations: LocationType[],
   }
   
   // Calculate initial weight with all full cylinders - this is what we load at the start
+  // Full cylinder weight is exactly 22kg
   const initialWeight = fullCylindersOnBoard * CYLINDER_WEIGHT_KG;
   maxWeight = initialWeight;
   
@@ -80,6 +82,7 @@ export const calculateTotalWeight = (locations: LocationType[],
       emptyCylindersOnBoard += emptiesToCollect;
       
       // Calculate current weight after this stop
+      // Full cylinder = 22kg, Empty cylinder = 12kg
       currentWeight = 
         (fullCylindersOnBoard * CYLINDER_WEIGHT_KG) + 
         (emptyCylindersOnBoard * EMPTY_CYLINDER_WEIGHT_KG);
@@ -110,7 +113,7 @@ export const calculateRouteWeightProfile = (locations: LocationType[],
     return [];
   }
   
-  // Filter out start/end locations
+  // Filter out start/end locations - they should have 0 cylinders for calculations
   const routeLocations = locations.filter(loc => 
     loc.id !== startLocationId && 
     loc.id !== endLocationId
@@ -138,7 +141,7 @@ export const calculateRouteWeightProfile = (locations: LocationType[],
     }
   }
   
-  // Initial weight
+  // Initial weight - using exact weights: full cylinder = 22kg
   let currentWeight = fullCylindersOnBoard * CYLINDER_WEIGHT_KG;
   
   // Add starting point
@@ -158,6 +161,7 @@ export const calculateRouteWeightProfile = (locations: LocationType[],
       fullCylindersOnBoard -= actualFullsDelivered;
       emptyCylindersOnBoard += (loc.emptyCylinders || 0);
       
+      // Calculate with exact weights: full = 22kg, empty = 12kg
       currentWeight = 
         (fullCylindersOnBoard * CYLINDER_WEIGHT_KG) + 
         (emptyCylindersOnBoard * EMPTY_CYLINDER_WEIGHT_KG);

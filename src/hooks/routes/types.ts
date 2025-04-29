@@ -36,8 +36,8 @@ export interface VehicleConfigProps {
 }
 
 export const MAX_CYLINDERS = 80;
-export const CYLINDER_WEIGHT_KG = 22;
-export const EMPTY_CYLINDER_WEIGHT_KG = 12;
+export const CYLINDER_WEIGHT_KG = 22;  // Exact weight for full cylinder
+export const EMPTY_CYLINDER_WEIGHT_KG = 12;  // Exact weight for empty cylinder
 
 export const defaultVehicleConfig: VehicleConfigProps = {
   maxWeight: 3500,
