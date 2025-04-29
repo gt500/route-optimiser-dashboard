@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,8 +28,16 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
     }
   };
 
+  // Load routes when component mounts or when tab becomes active
   useEffect(() => {
     loadRoutes();
+    
+    // Set up an interval to refresh the data periodically
+    const refreshInterval = setInterval(() => {
+      loadRoutes();
+    }, 5000); // Refresh every 5 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -112,6 +119,9 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
             <Button variant="outline" className="mt-2" onClick={onCreateRoute}>
               Create Route
             </Button>
+            <Button variant="outline" className="mt-2" onClick={loadRoutes}>
+              Refresh History
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -127,12 +137,17 @@ const RouteHistoryTab = ({ onCreateRoute }: { onCreateRoute: () => void }) => {
           <CardTitle>Route History</CardTitle>
           <CardDescription>Previously completed routes</CardDescription>
         </div>
-        {selectedRouteData && (
-          <RouteActions 
-            routeData={selectedRouteData}
-            disabled={false}
-          />
-        )}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={loadRoutes}>
+            Refresh
+          </Button>
+          {selectedRouteData && (
+            <RouteActions 
+              routeData={selectedRouteData}
+              disabled={false}
+            />
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>

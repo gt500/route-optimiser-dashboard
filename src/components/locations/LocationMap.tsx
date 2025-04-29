@@ -7,6 +7,7 @@ import { LocationMarker } from '@/components/routes/map-components/LocationMarke
 import { LocationInfo } from '@/types/location';
 import { useMapState } from '@/hooks/routes/useMapState';
 import MapSetup from '@/components/routes/map-components/MapSetup';
+import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
 
 interface LocationMapProps {
   locations: LocationInfo[];

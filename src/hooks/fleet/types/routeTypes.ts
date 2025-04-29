@@ -35,3 +35,10 @@ export interface WeeklyData {
   completed: number;
   scheduled: number;
 }
+
+// Add this interface for TileLayer props
+export interface TileLayerProps {
+  url: string;
+  attribution: string;
+  [key: string]: any; // Add catch-all for other properties
+}

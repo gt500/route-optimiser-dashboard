@@ -8,7 +8,7 @@ import { RouteData, RouteStats, WeeklyData } from '../types/routeTypes';
 export const fetchRoutes = async (): Promise<RouteData[]> => {
   console.log("Fetching all routes from mockRoutes:", mockRoutes);
   // In a real app, this would fetch from an API
-  return mockRoutes;
+  return [...mockRoutes]; // Return a copy to avoid mutation issues
 };
 
 /**
@@ -49,6 +49,8 @@ export const updateRouteStatus = async (routeId: string, status: string): Promis
   if (routeIndex >= 0) {
     // Update the route status
     mockRoutes[routeIndex].status = status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+    console.log(`Route ${routeId} updated to status: ${status}`);
+    console.log("Updated mockRoutes:", mockRoutes);
     return true;
   }
   

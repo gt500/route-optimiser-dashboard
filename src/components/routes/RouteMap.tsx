@@ -1,149 +1,143 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { MapPin } from 'lucide-react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine';
-import MapSetup from './map-components/MapSetup';
-import RouteRoutingMachine from './map-components/RouteRoutingMachine';
-import RouteMarkers from './map-components/RouteMarkers';
-import TrafficIndicator from './map-components/TrafficIndicator';
-import NoLocationsDisplay from './map-components/NoLocationsDisplay';
-import { useMapState } from '@/hooks/routes/useMapState';
-import { NamedCoords } from '@/types/location';
+import { LocationInfo } from '@/types/location';
+import { Button } from '@/components/ui/button';
+import { useToast } from "@/components/ui/use-toast"
+import { MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useMap } from 'react-leaflet';
+import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
 
 interface RouteMapProps {
-  locations: {
-    id: string;
-    name: string;
-    latitude: number;
-    longitude: number;
-    address?: string;
-  }[];
-  className?: string;
-  height?: string;
-  showTraffic?: boolean;
-  showRoadRoutes?: boolean;
-  onRouteDataUpdate?: (
-    distance: number, 
-    duration: number,
-    trafficConditions?: 'light' | 'moderate' | 'heavy',
-    coordinates?: [number, number][],
-    waypointData?: { distance: number; duration: number }[]
-  ) => void;
-  country?: string;
-  region?: string;
-  routeName?: string;
-  showStopMetrics?: boolean;
+  locations: LocationInfo[];
+  routeCoordinates: [number, number][];
+  startLocation: LocationInfo | null;
+  endLocation: LocationInfo | null;
 }
 
-const RouteMap: React.FC<RouteMapProps> = ({
-  locations,
-  className = '',
-  height = '400px',
-  showTraffic = false,
-  showRoadRoutes = false,
-  onRouteDataUpdate,
-  country,
-  region,
-  routeName,
-  showStopMetrics = false
-}) => {
-  const [mapReady, setMapReady] = useState(false);
-  const [forceUpdate, setForceUpdate] = useState(0);
-  const { bounds, mapCenter, zoom } = useMapState(locations, country, region);
-  
-  // Convert locations to Leaflet waypoints
-  const waypoints = React.useMemo(() => {
-    if (!L) return [];
-    
-    return locations
-      .filter(loc => 
-        loc.latitude && 
-        loc.longitude && 
-        !isNaN(loc.latitude) && 
-        !isNaN(loc.longitude)
-      )
-      .map(loc => L.latLng(loc.latitude, loc.longitude));
-  }, [locations]);
-  
-  // Force update the routing component when route name or region changes
-  React.useEffect(() => {
-    if (routeName || region) {
-      setForceUpdate(prev => prev + 1);
+const RouteMap: React.FC<RouteMapProps> = ({ locations, routeCoordinates, startLocation, endLocation }) => {
+  const [map, setMap] = useState<L.Map | null>(null);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Default map center and zoom
+  const defaultCenter: [number, number] = [-33.93, 18.52];
+
+  // Custom marker icon
+  const customIcon = (color: string) => new L.Icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  useEffect(() => {
+    if (map) {
+      // Fit the map bounds to the route coordinates
+      if (routeCoordinates && routeCoordinates.length > 0) {
+        const bounds = L.latLngBounds(routeCoordinates);
+        map.fitBounds(bounds);
+      } else if (locations && locations.length > 0) {
+        // If no route, fit to the locations
+        const locationBounds = locations.map(loc => [loc.latitude, loc.longitude] as [number, number]);
+        if (locationBounds.length > 0) {
+          const bounds = L.latLngBounds(locationBounds);
+          map.fitBounds(bounds);
+        } else {
+          // If no locations, set view to default center
+          map.setView(defaultCenter, 12);
+        }
+      } else {
+        // If no route or locations, set view to default center
+        map.setView(defaultCenter, 12);
+      }
     }
-  }, [routeName, region]);
+  }, [map, locations, routeCoordinates]);
 
-  // Format locations for markers
-  const formattedLocations = React.useMemo(() => {
-    return locations.map(loc => ({
-      id: loc.id,
-      name: loc.name,
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-      address: loc.address
-    }));
-  }, [locations]);
-
-  // Create waypoints for markers
-  const waypointCoords = React.useMemo(() => {
-    return locations.map(loc => ({
-      name: loc.name,
-      coords: [loc.latitude, loc.longitude] as [number, number]
-    })) as NamedCoords[];
-  }, [locations]);
-  
-  // Helper function to determine if we have enough valid locations to show a map
-  const hasValidLocations = locations.length >= 1;
+  const handleLocationClick = (locationId: string) => {
+    navigate(`/routes?highlightDelivery=${locationId}`, { state: { activeTab: 'active', highlightDelivery: locationId } });
+    toast({
+      title: "Navigating to delivery...",
+      description: "Highlighting delivery on the Active Routes tab.",
+    })
+  };
 
   return (
-    <div className={`relative ${className}`} style={{ height }}>
-      {hasValidLocations ? (
-        <div className="h-full w-full relative overflow-hidden">
-          {/* Fix: Remove center and zoom from MapContainer and let MapSetup handle it */}
-          <MapContainer
-            style={{ height: '100%', width: '100%' }}
-            className="z-0"
-          >
-            {/* Using TileLayer with proper attribution */}
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            
-            <MapSetup 
-              bounds={bounds} 
-              center={mapCenter}
-              zoom={zoom}
-              onMapReady={() => setMapReady(true)} 
-            />
-            
-            {/* Always show markers for locations */}
-            <RouteMarkers
-              locations={formattedLocations}
-              waypoints={waypointCoords}
-              showStopNumbers={true}
-            />
-            
-            {mapReady && waypoints.length >= 2 && (
-              <RouteRoutingMachine 
-                waypoints={waypoints} 
-                forceRouteUpdate={forceUpdate}
-                onRouteFound={onRouteDataUpdate}
-                showRoadRoutes={showRoadRoutes}
-                routeName={routeName}
-              />
-            )}
-          </MapContainer>
-          
-          {/* Traffic indicator */}
-          {showTraffic && <TrafficIndicator />}
-        </div>
-      ) : (
-        <NoLocationsDisplay />
-      )}
+    <div className="bg-white rounded-md p-4 shadow-md">
+      <h2 className="text-lg font-semibold mb-2">Route Map</h2>
+      <div style={{ height: '400px', width: '100%' }}>
+        <MapContainer 
+          center={defaultCenter}
+          zoom={12}
+          style={{ height: '100%', width: '100%' }}
+          whenCreated={setMap}
+          attributionControl={false}
+        >
+          {/* Using TileLayer with proper attribution */}
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+
+          {/* Render polyline if route coordinates are available */}
+          {routeCoordinates && routeCoordinates.length > 0 && (
+            <Polyline positions={routeCoordinates} color="blue" />
+          )}
+
+          {/* Render start location marker */}
+          {startLocation && (
+            <Marker position={[startLocation.latitude, startLocation.longitude]} icon={customIcon('green')}>
+              <Popup>
+                <div className="text-center">
+                  <h3 className="font-semibold">{startLocation.name}</h3>
+                  <p className="text-sm">{startLocation.address}</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Render end location marker */}
+          {endLocation && (
+            <Marker position={[endLocation.latitude, endLocation.longitude]} icon={customIcon('red')}>
+              <Popup>
+                <div className="text-center">
+                  <h3 className="font-semibold">{endLocation.name}</h3>
+                  <p className="text-sm">{endLocation.address}</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Render location markers */}
+          {locations && locations.map((location) => (
+            <Marker 
+              key={location.id} 
+              position={[location.latitude, location.longitude]}
+              icon={customIcon('grey')}
+            >
+              <Popup>
+                <div className="text-center">
+                  <h3 className="font-semibold">{location.name}</h3>
+                  <p className="text-sm">{location.address}</p>
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => handleLocationClick(location.id)}
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    View Deliveries
+                  </Button>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
     </div>
   );
 };

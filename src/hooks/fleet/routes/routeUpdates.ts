@@ -1,6 +1,7 @@
 
 import { RouteData } from '../types/routeTypes';
 import { toast } from 'sonner';
+import { updateRouteStatus } from './routeQueries';
 
 /**
  * Start a route with the given ID
@@ -19,6 +20,9 @@ export const startRoute = async (
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // Update the mock database
+    await updateRouteStatus(routeId, 'in_progress');
     
     // Update route status in our state
     setRoutes(prev => 
@@ -61,6 +65,13 @@ export const completeRoute = async (
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Update the mock database
+    const updated = await updateRouteStatus(routeId, 'completed');
+    
+    if (!updated) {
+      throw new Error('Failed to update route status');
+    }
     
     // Update route status in our state
     setRoutes(prev => 
