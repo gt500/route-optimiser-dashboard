@@ -74,6 +74,8 @@ export interface LeafletTileLayerProps {
   url: string;
   attribution?: string;
   zIndex?: number;
+  // Adding any to allow for all Leaflet TileLayer options
+  [key: string]: any;
 }
 
 export interface LeafletMarkerProps {
@@ -85,11 +87,6 @@ export interface LeafletMapProps {
   children?: React.ReactNode;
   style?: React.CSSProperties;
   className?: string;
-}
-
-export interface LeafletTileLayerProps {
-  url: string;
-  children?: React.ReactNode;
 }
 
 export interface LeafletEventHandlerProps {

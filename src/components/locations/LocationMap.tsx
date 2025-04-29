@@ -30,7 +30,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
           <MapContainer 
             style={{ height: '100%', width: '100%' }}
           >
-            {/* Fix: Move attribution to TileLayer options */}
+            {/* Using TileLayer with proper typing */}
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

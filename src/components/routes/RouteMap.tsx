@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
@@ -107,7 +106,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
-            {/* Fix: Move attribution to TileLayer options */}
+            {/* Using TileLayer with proper typing */}
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
