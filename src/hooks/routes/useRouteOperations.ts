@@ -1,3 +1,4 @@
+
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { useState } from 'react';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
@@ -84,7 +85,12 @@ export const useRouteOperations = (
     });
   };
 
-  const handleOptimize = (params: OptimizationParams = {}) => {
+  const handleOptimize = (params: OptimizationParams = {
+    prioritizeFuel: true,
+    avoidTraffic: true,
+    useRealTimeData: true,
+    optimizeForDistance: true
+  }) => {
     console.log("Optimizing route with params:", params);
 
     setRoute(prevRoute => {

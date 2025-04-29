@@ -1,3 +1,4 @@
+
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
@@ -71,7 +72,7 @@ export interface LeafletMapContainerProps {
 
 export interface LeafletTileLayerProps {
   url: string;
-  attribution?: string;
+  attribution: string;
   zIndex?: number;
   // Adding any to allow for all Leaflet TileLayer options
   [key: string]: any;
