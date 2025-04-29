@@ -126,6 +126,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             zoom={12}
             style={{ height: '100%', width: '100%' }}
             className="z-0"
+            attributionControl={true}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
