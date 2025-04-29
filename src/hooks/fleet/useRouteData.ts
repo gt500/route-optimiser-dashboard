@@ -16,7 +16,7 @@ import {
   completeRoute as completeRouteAction
 } from './routes/routeUpdates';
 
-export { RouteData } from './types/routeTypes';
+export type { RouteData } from './types/routeTypes';
 
 export const useRouteData = () => {
   const [routes, setRoutes] = useState<RouteData[]>(mockRoutes);
