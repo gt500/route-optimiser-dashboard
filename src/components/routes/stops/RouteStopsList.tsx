@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ interface RouteStopsListProps {
     distance: number;
     duration: number;
     fuelCost: number;
+    waypointData?: { distance: number, duration: number }[];
   };
   onReplaceLocation?: (index: number, newLocationId: string) => void;
 }
@@ -54,15 +54,7 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
       return { distance: 0, duration: 0, fuelCost: 0 };
     }
     
-    // If we have waypoint data, use the specific segment metrics
-    if (locations.length > 1 && locations[index].waypointData) {
-      const waypointData = locations[index].waypointData;
-      return {
-        distance: waypointData.distance || 0,
-        duration: waypointData.duration || 0,
-        fuelCost: (waypointData.distance || 0) * 0.12 * 21.95 / 100 // Calculate fuel cost based on distance
-      };
-    }
+    // We no longer try to access waypointData from locations directly
     
     // If we have proper waypointData in the routeMetrics
     if (routeMetrics.waypointData && routeMetrics.waypointData[index - 1]) {
