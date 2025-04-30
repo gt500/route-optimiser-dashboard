@@ -7,7 +7,6 @@ import { LocationMarker } from '@/components/routes/map-components/LocationMarke
 import { LocationInfo } from '@/types/location';
 import { useMapState } from '@/hooks/routes/useMapState';
 import MapSetup from '@/components/routes/map-components/MapSetup';
-import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
 
 interface LocationMapProps {
   locations: LocationInfo[];
@@ -27,15 +26,16 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
       </CardHeader>
       <CardContent>
         <div className="h-[400px]">
-          {/* Remove center and zoom from MapContainer and let MapSetup handle it */}
           <MapContainer 
             style={{ height: '100%', width: '100%' }}
+            // Add initial center and zoom that will be updated by MapSetup
+            center={defaultCenter}
+            zoom={12}
           >
             {/* Using TileLayer with proper type cast */}
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              // Cast the props to any to avoid TypeScript errors
               {...({} as any)}
             />
             

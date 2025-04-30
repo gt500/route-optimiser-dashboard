@@ -23,7 +23,7 @@ export interface LocationType {
 export interface LocationInfo {
   id: string;
   name: string;
-  address: string;  // Keep as required since most components expect it
+  address: string;  // Required field for consistent type handling
   latitude: number;
   longitude: number;
   type?: string;
@@ -52,7 +52,7 @@ export interface SupabaseLocation {
 export interface LocationPoint {
   id: string;
   name: string;
-  address?: string;  // Make address optional here
+  address: string;  // Changed from optional to required for consistency
   latitude: number;
   longitude: number;
 }
@@ -67,7 +67,9 @@ export interface LeafletMapContainerProps {
   children: React.ReactNode;
   style?: React.CSSProperties;
   className?: string;
-  whenCreated?: (map: any) => void;
+  center: [number, number]; // Added center as required prop
+  zoom: number; // Added zoom as required prop
+  whenReady?: (map: any) => void; // Changed from whenCreated to whenReady
 }
 
 // Updated to properly include attribution and other TileLayer props

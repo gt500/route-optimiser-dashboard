@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -73,7 +74,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   startLocation,
   endLocation,
   filteredAvailableLocations,
-  transformedLocations,
+  transformedLocations: propTransformedLocations, // Renamed prop to avoid conflict
   onStartLocationChange,
   onEndLocationChange,
   onAddLocationToRoute,
@@ -117,7 +118,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   };
 
   // Transform locations to ensure they match the LocationInfo interface
-  const transformedLocations = useMemo(() => {
+  const computedLocations = useMemo(() => {
     return route.locations.map(loc => ({
       id: loc.id.toString(),
       name: loc.name,
@@ -126,6 +127,9 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
       address: loc.address || '', // Provide empty string as default for address
     }));
   }, [route.locations]);
+
+  // Use the provided transformed locations from props, or fall back to computed ones
+  const displayLocations = propTransformedLocations || computedLocations;
 
   const handleOptimizeClick = () => {
     setIsOptimizationPanelVisible(true);
@@ -152,7 +156,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
         <div className="md:col-span-2">
           <Card className="h-full overflow-hidden">
             <RouteMap 
-              locations={transformedLocations}
+              locations={displayLocations}
               className="h-full"
               height="250px"
               onRouteDataUpdate={onRouteDataUpdate}

@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from "@/components/ui/use-toast"
 import { MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useMap } from 'react-leaflet';
 import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
 
 interface RouteMapProps {
@@ -89,9 +88,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
       <div style={{ height: '400px', width: '100%' }}>
         <MapContainer 
           style={{ height: '100%', width: '100%' }}
-          whenCreated={setMap as any}
+          // Replace whenCreated with whenReady event
+          whenReady={(mapInstance) => setMap(mapInstance.target)}
           attributionControl={false}
-          // Remove center and zoom props
+          // Initial center and zoom will be set by the effect
+          center={defaultCenter}
+          zoom={12}
         >
           {/* Using TileLayer with proper type cast */}
           <TileLayer
