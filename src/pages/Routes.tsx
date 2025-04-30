@@ -1,18 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, MapPin, Globe } from 'lucide-react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
-import CreateRouteTab from '@/components/routes/tabs/CreateRouteTab';
-import ActiveRoutesTab from '@/components/routes/tabs/ActiveRoutesTab';
-import RouteHistoryTab from '@/components/routes/tabs/RouteHistoryTab';
-import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
-import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { toast } from 'sonner';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
-import RegionSelectionDialog from '@/components/routes/RegionSelectionDialog';
 import { useLocation } from 'react-router-dom';
+import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
+import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
+import RouteHeader from '@/components/routes/RouteHeader';
+import RouteTabs from '@/components/routes/RouteTabs';
+import RouteInitialLocation from '@/components/routes/RouteInitialLocation';
 
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -77,10 +73,12 @@ const RoutesList = () => {
     setRouteRegion
   } = useRouteManagement(initialLocations);
 
+  // Load vehicles on component mount
   useEffect(() => {
     fetchVehicles();
   }, []);
 
+  // Handle URL state updates
   useEffect(() => {
     if (locationState?.activeTab) {
       setActiveTab(locationState.activeTab);
@@ -91,12 +89,7 @@ const RoutesList = () => {
     }
   }, [location]);
 
-  useEffect(() => {
-    if (activeTab === 'create' && !isLoadConfirmed && !selectedCountry) {
-      setRegionSelectionOpen(true);
-    }
-  }, [activeTab, isLoadConfirmed]);
-
+  // Auto-clear the highlight after timeout
   useEffect(() => {
     if (highlightedDeliveryId) {
       const timer = setTimeout(() => {
@@ -107,6 +100,7 @@ const RoutesList = () => {
     }
   }, [highlightedDeliveryId]);
 
+  // Filter locations for availability
   const filteredAvailableLocations = useMemo(() => {
     return availableLocations.filter(loc => 
       loc.id !== startLocation?.id && 
@@ -115,6 +109,7 @@ const RoutesList = () => {
     );
   }, [availableLocations, startLocation, endLocation, route.locations]);
 
+  // Transform locations for map display
   const transformedLocations = useMemo(() => {
     return route.locations.map(loc => ({
       id: loc.id.toString(),
@@ -125,6 +120,7 @@ const RoutesList = () => {
     }));
   }, [route.locations]);
 
+  // Handler functions
   const addNewLocation = () => {
     setNewLocationDialog(true);
   };
@@ -184,88 +180,47 @@ const RoutesList = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <img 
-            src="/lovable-uploads/0b09ba82-e3f0-4fa1-ab8d-87f06fd9f31b.png" 
-            alt="GAZ2GO" 
-            className="h-12 w-auto" 
-          />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Route Optimiser</h1>
-            <p className="text-muted-foreground">Create and manage delivery routes in South Africa</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={addNewLocation}>
-            <MapPin className="h-4 w-4" />
-            New Location
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={() => setRegionSelectionOpen(true)}>
-            <Globe className="h-4 w-4" />
-            Change Region
-          </Button>
-          <Button className="gap-1" onClick={handleCreateRoute}>
-            <Plus className="h-4 w-4" />
-            New Route
-          </Button>
-        </div>
-      </div>
+      {/* Header component */}
+      <RouteHeader
+        onAddNewLocation={addNewLocation}
+        onOpenRegionSelection={() => setRegionSelectionOpen(true)}
+        onCreateNewRoute={handleCreateRoute}
+      />
 
-      <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 h-11">
-          <TabsTrigger value="create">Create Route</TabsTrigger>
-          <TabsTrigger value="active">Active Routes</TabsTrigger>
-          <TabsTrigger value="history">Route History</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="create" className="space-y-4">
-          <CreateRouteTab
-            route={{
-              ...route,
-              country: selectedCountry,
-              region: selectedRegion
-            }}
-            isSyncingLocations={isSyncingLocations}
-            isLoadConfirmed={isLoadConfirmed}
-            availableLocations={availableLocations}
-            startLocation={startLocation}
-            endLocation={endLocation}
-            filteredAvailableLocations={filteredAvailableLocations}
-            transformedLocations={transformedLocations}
-            onStartLocationChange={handleStartLocationChange}
-            onEndLocationChange={handleEndLocationChange}
-            onAddLocationToRoute={addLocationToRoute}
-            onUpdateLocations={handleUpdateLocations}
-            onOptimize={handleOptimizeRoute}
-            onRemoveLocation={handleRemoveLocation}
-            onAddNewLocation={handleAddNewLocationFromPopover}
-            onFuelCostUpdate={handleFuelCostUpdate}
-            onRouteDataUpdate={handleRouteDataUpdate}
-            onConfirmLoad={handleConfirmLoad}
-            vehicleConfig={vehicleConfig || defaultVehicleConfig}
-            vehicles={vehicles}
-            selectedVehicle={selectedVehicle}
-            onVehicleChange={handleVehicleChange}
-            onReplaceLocation={handleReplaceLocation}
-            selectedCountry={selectedCountry}
-            selectedRegion={selectedRegion}
-            onRegionChange={handleRegionChange}
-          />
-        </TabsContent>
-        
-        <TabsContent value="active">
-          <ActiveRoutesTab 
-            onCreateRoute={() => setActiveTab('create')} 
-            highlightedDeliveryId={highlightedDeliveryId}
-          />
-        </TabsContent>
-        
-        <TabsContent value="history">
-          <RouteHistoryTab onCreateRoute={() => setActiveTab('create')} />
-        </TabsContent>
-      </Tabs>
+      {/* Tabs component */}
+      <RouteTabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        route={route}
+        availableLocations={availableLocations}
+        startLocation={startLocation}
+        endLocation={endLocation}
+        filteredAvailableLocations={filteredAvailableLocations}
+        transformedLocations={transformedLocations}
+        onStartLocationChange={handleStartLocationChange}
+        onEndLocationChange={handleEndLocationChange}
+        onAddLocationToRoute={addLocationToRoute}
+        onRemoveLocation={handleRemoveLocation}
+        onAddNewLocation={handleAddNewLocationFromPopover}
+        onOptimize={handleOptimizeRoute}
+        onUpdateLocations={handleUpdateLocations}
+        onFuelCostUpdate={handleFuelCostUpdate}
+        onRouteDataUpdate={handleRouteDataUpdate}
+        onConfirmLoad={handleConfirmLoad}
+        onReplaceLocation={handleReplaceLocation}
+        isLoadConfirmed={isLoadConfirmed}
+        isSyncingLocations={isSyncingLocations}
+        vehicleConfig={vehicleConfig || defaultVehicleConfig}
+        vehicles={vehicles}
+        selectedVehicle={selectedVehicle}
+        onVehicleChange={handleVehicleChange}
+        highlightedDeliveryId={highlightedDeliveryId}
+        selectedCountry={selectedCountry}
+        selectedRegion={selectedRegion}
+        onRegionChange={handleRegionChange}
+      />
 
+      {/* Dialogs */}
       <LocationEditDialog 
         open={newLocationDialog}
         onOpenChange={setNewLocationDialog}
@@ -273,10 +228,12 @@ const RoutesList = () => {
         onSave={handleSaveNewLocation}
       />
 
-      <RegionSelectionDialog
-        open={regionSelectionOpen}
-        onOpenChange={setRegionSelectionOpen}
-        onComplete={handleRegionChange}
+      <RouteInitialLocation
+        activeTab={activeTab}
+        isLoadConfirmed={isLoadConfirmed}
+        regionSelectionOpen={regionSelectionOpen}
+        setRegionSelectionOpen={setRegionSelectionOpen}
+        onRegionChange={handleRegionChange}
       />
     </div>
   );
