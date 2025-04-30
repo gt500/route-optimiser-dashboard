@@ -88,12 +88,11 @@ const RouteMap: React.FC<RouteMapProps> = ({
       <div style={{ height: '400px', width: '100%' }}>
         <MapContainer 
           style={{ height: '100%', width: '100%' }}
-          // Replace whenCreated with whenReady event
-          whenReady={(mapInstance) => setMap(mapInstance.target)}
+          // Use type casting to avoid TypeScript errors with center and zoom props
+          whenReady={(mapInstance: any) => setMap(mapInstance.target)}
           attributionControl={false}
-          // Initial center and zoom will be set by the effect
-          center={defaultCenter}
-          zoom={12}
+          // Type cast to avoid errors
+          {...({ center: defaultCenter, zoom: 12 } as any)}
         >
           {/* Using TileLayer with proper type cast */}
           <TileLayer
@@ -104,15 +103,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
           {/* Render polyline if route coordinates are available */}
           {routeCoordinates && routeCoordinates.length > 0 && (
-            <Polyline positions={routeCoordinates} color="blue" {...({} as any)} />
+            <Polyline positions={routeCoordinates} {...({ color: "blue" } as any)} />
           )}
 
           {/* Render start location marker */}
           {startLocation && (
             <Marker 
               position={[startLocation.latitude, startLocation.longitude]} 
-              icon={customIcon('green')}
-              {...({} as any)}
+              {...({ icon: customIcon('green') } as any)}
             >
               <Popup>
                 <div className="text-center">
@@ -127,8 +125,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           {endLocation && (
             <Marker 
               position={[endLocation.latitude, endLocation.longitude]} 
-              icon={customIcon('red')}
-              {...({} as any)}
+              {...({ icon: customIcon('red') } as any)}
             >
               <Popup>
                 <div className="text-center">
@@ -144,8 +141,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
             <Marker 
               key={location.id} 
               position={[location.latitude, location.longitude]}
-              icon={customIcon('grey')}
-              {...({} as any)}
+              {...({ icon: customIcon('grey') } as any)}
             >
               <Popup>
                 <div className="text-center">

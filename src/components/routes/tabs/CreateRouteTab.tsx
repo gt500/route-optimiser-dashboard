@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import RouteDetails from '../RouteDetails';
 import RouteMap from '../RouteMap';
 import RouteLocations from '../RouteLocations';
-import { LocationType } from '@/types/location';
+import { LocationType, LocationInfo } from '@/types/location';
 import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteEndpoints from '../RouteEndpoints';
@@ -38,7 +38,7 @@ interface CreateRouteTabProps {
     name: string;
     latitude: number;
     longitude: number;
-    address?: string;
+    address: string; // Changed from optional to required to match LocationInfo
   }[];
   onStartLocationChange: (locationId: string) => void;
   onEndLocationChange: (locationId: string) => void;
@@ -129,7 +129,14 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
   }, [route.locations]);
 
   // Use the provided transformed locations from props, or fall back to computed ones
-  const displayLocations = propTransformedLocations || computedLocations;
+  // Make sure all locations have the required address field
+  const displayLocations: LocationInfo[] = useMemo(() => {
+    const baseLocations = propTransformedLocations || computedLocations;
+    return baseLocations.map(loc => ({
+      ...loc,
+      address: loc.address || ''  // Ensure address is always present
+    }));
+  }, [propTransformedLocations, computedLocations]);
 
   const handleOptimizeClick = () => {
     setIsOptimizationPanelVisible(true);

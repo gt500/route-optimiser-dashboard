@@ -67,9 +67,9 @@ export interface LeafletMapContainerProps {
   children: React.ReactNode;
   style?: React.CSSProperties;
   className?: string;
-  center: [number, number]; // Added center as required prop
-  zoom: number; // Added zoom as required prop
-  whenReady?: (map: any) => void; // Changed from whenCreated to whenReady
+  center?: [number, number]; // Changed from required to optional
+  zoom?: number; // Changed from required to optional
+  whenReady?: (map: any) => void; 
 }
 
 // Updated to properly include attribution and other TileLayer props
