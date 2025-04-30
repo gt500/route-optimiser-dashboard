@@ -36,9 +36,11 @@ export interface WeeklyData {
   scheduled: number;
 }
 
-// Add this interface for TileLayer props
+// Replace TileLayerProps with a more complete interface
 export interface TileLayerProps {
   url: string;
-  attribution: string;
+  attribution?: string;
+  zIndex?: number;
+  opacity?: number;
   [key: string]: any; // Add catch-all for other properties
 }

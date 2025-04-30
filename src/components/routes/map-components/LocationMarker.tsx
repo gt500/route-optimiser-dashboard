@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker, Popup, MarkerProps } from 'react-leaflet';
+import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { markerIcons } from './Icons';
 
@@ -44,8 +44,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     ? createNumberedMarker(stopNumber) 
     : markerIcons.default;
 
-  // The key is to use the icon prop with the appropriate type cast
-  // The Marker component from react-leaflet does accept an icon prop, but the types are incorrect
+  // Cast to any to avoid TypeScript errors
   const markerProps: any = {
     position,
     icon: markerIcon

@@ -23,7 +23,7 @@ export interface LocationType {
 export interface LocationInfo {
   id: string;
   name: string;
-  address: string;
+  address: string;  // Keep as required since most components expect it
   latitude: number;
   longitude: number;
   type?: string;
@@ -52,7 +52,7 @@ export interface SupabaseLocation {
 export interface LocationPoint {
   id: string;
   name: string;
-  address?: string;
+  address?: string;  // Make address optional here
   latitude: number;
   longitude: number;
 }
@@ -81,7 +81,14 @@ export interface LeafletTileLayerProps {
 
 export interface LeafletMarkerProps {
   position: [number, number];
+  icon?: any;  // Add icon property
   children?: React.ReactNode;
+}
+
+export interface LeafletPolylineProps {
+  positions: [number, number][];
+  color?: string;  // Add color property
+  [key: string]: any;
 }
 
 export interface LeafletMapProps {

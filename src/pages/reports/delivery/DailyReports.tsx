@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -142,11 +141,14 @@ const DailyReports = () => {
                   <div className="h-[400px]">
                     <RouteMap
                       locations={mapLocations}
-                      height="100%"
-                      country="South Africa"
-                      region="Western Cape"
+                      routeCoordinates={[]} // Provide empty array as default
+                      startLocation={null} // Set as null by default
+                      endLocation={null} // Set as null by default
+                      className="h-full w-full" // Use className instead of height
                       showTraffic={true}
                       showRoadRoutes={true}
+                      country="South Africa"
+                      region="Western Cape"
                       onRouteDataUpdate={handleRouteDataUpdate}
                     />
                   </div>

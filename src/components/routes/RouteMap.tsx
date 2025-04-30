@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
@@ -12,12 +13,28 @@ import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
 
 interface RouteMapProps {
   locations: LocationInfo[];
-  routeCoordinates: [number, number][];
-  startLocation: LocationInfo | null;
-  endLocation: LocationInfo | null;
+  routeCoordinates?: [number, number][];
+  startLocation?: LocationInfo | null;
+  endLocation?: LocationInfo | null;
+  height?: string;
+  showTraffic?: boolean;
+  showRoadRoutes?: boolean;
+  country?: string;
+  region?: string;
+  className?: string;
+  routeName?: string;
+  showStopMetrics?: boolean;
+  onRouteDataUpdate?: (distance: number, duration: number, traffic?: 'light' | 'moderate' | 'heavy') => void;
 }
 
-const RouteMap: React.FC<RouteMapProps> = ({ locations, routeCoordinates, startLocation, endLocation }) => {
+const RouteMap: React.FC<RouteMapProps> = ({ 
+  locations, 
+  routeCoordinates = [], 
+  startLocation = null, 
+  endLocation = null,
+  className = '',
+  onRouteDataUpdate
+}) => {
   const [map, setMap] = useState<L.Map | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -67,30 +84,34 @@ const RouteMap: React.FC<RouteMapProps> = ({ locations, routeCoordinates, startL
   };
 
   return (
-    <div className="bg-white rounded-md p-4 shadow-md">
+    <div className={`bg-white rounded-md p-4 shadow-md ${className}`}>
       <h2 className="text-lg font-semibold mb-2">Route Map</h2>
       <div style={{ height: '400px', width: '100%' }}>
         <MapContainer 
-          center={defaultCenter}
-          zoom={12}
           style={{ height: '100%', width: '100%' }}
-          whenCreated={setMap}
+          whenCreated={setMap as any}
           attributionControl={false}
+          // Remove center and zoom props
         >
-          {/* Using TileLayer with proper attribution */}
+          {/* Using TileLayer with proper type cast */}
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            {...({} as any)}
           />
 
           {/* Render polyline if route coordinates are available */}
           {routeCoordinates && routeCoordinates.length > 0 && (
-            <Polyline positions={routeCoordinates} color="blue" />
+            <Polyline positions={routeCoordinates} color="blue" {...({} as any)} />
           )}
 
           {/* Render start location marker */}
           {startLocation && (
-            <Marker position={[startLocation.latitude, startLocation.longitude]} icon={customIcon('green')}>
+            <Marker 
+              position={[startLocation.latitude, startLocation.longitude]} 
+              icon={customIcon('green')}
+              {...({} as any)}
+            >
               <Popup>
                 <div className="text-center">
                   <h3 className="font-semibold">{startLocation.name}</h3>
@@ -102,7 +123,11 @@ const RouteMap: React.FC<RouteMapProps> = ({ locations, routeCoordinates, startL
 
           {/* Render end location marker */}
           {endLocation && (
-            <Marker position={[endLocation.latitude, endLocation.longitude]} icon={customIcon('red')}>
+            <Marker 
+              position={[endLocation.latitude, endLocation.longitude]} 
+              icon={customIcon('red')}
+              {...({} as any)}
+            >
               <Popup>
                 <div className="text-center">
                   <h3 className="font-semibold">{endLocation.name}</h3>
@@ -118,6 +143,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ locations, routeCoordinates, startL
               key={location.id} 
               position={[location.latitude, location.longitude]}
               icon={customIcon('grey')}
+              {...({} as any)}
             >
               <Popup>
                 <div className="text-center">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -116,6 +115,17 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
     // Default: combine start and end locations
     return `${startName} to ${endName}`;
   };
+
+  // Transform locations to ensure they match the LocationInfo interface
+  const transformedLocations = useMemo(() => {
+    return route.locations.map(loc => ({
+      id: loc.id.toString(),
+      name: loc.name,
+      latitude: loc.lat,
+      longitude: loc.long,
+      address: loc.address || '', // Provide empty string as default for address
+    }));
+  }, [route.locations]);
 
   const handleOptimizeClick = () => {
     setIsOptimizationPanelVisible(true);
