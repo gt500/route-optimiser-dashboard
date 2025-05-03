@@ -48,25 +48,14 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       const activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
       
-      // Ensure that each route with a vehicle_id also has a vehicle_name
-      const routesWithVehicleInfo = activeRoutes.map(route => {
-        if (route.vehicle_id && !route.vehicle_name) {
-          const vehicle = vehicles.find(v => v.id === route.vehicle_id);
-          if (vehicle) {
-            return {
-              ...route,
-              vehicle_name: 'Leyland Ashok Phoenix'
-            };
-          }
-        }
-        return {
-          ...route,
-          vehicle_name: route.vehicle_name || 'Leyland Ashok Phoenix'
-        };
-      });
+      // Update vehicle names to always be "Leyland Ashok Phoenix"
+      const routesWithCorrectVehicleNames = activeRoutes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
       
       // Ensure each route has proper waypoint data if stops exist
-      const routesWithWaypointData = routesWithVehicleInfo.map(route => {
+      const routesWithWaypointData = routesWithCorrectVehicleNames.map(route => {
         if (route.stops && route.stops.length > 0 && (!route.stops[0].distance || !route.stops[0].duration)) {
           // Create synthetic waypoint data if none exists
           const waypoints = route.stops.map((stop, index) => {

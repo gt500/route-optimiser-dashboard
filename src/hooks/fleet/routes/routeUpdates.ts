@@ -27,7 +27,7 @@ export const startRoute = async (
     // Update route status in our state
     setRoutes(prev => 
       prev.map(route => 
-        route.id === routeId ? { ...route, status: 'in_progress' } : route
+        route.id === routeId ? { ...route, status: 'in_progress', vehicle_name: 'Leyland Ashok Phoenix' } : route
       )
     );
     
@@ -76,7 +76,7 @@ export const completeRoute = async (
     // Update route status in our state
     setRoutes(prev => 
       prev.map(route => 
-        route.id === routeId ? { ...route, status: 'completed' } : route
+        route.id === routeId ? { ...route, status: 'completed', vehicle_name: 'Leyland Ashok Phoenix' } : route
       )
     );
     
