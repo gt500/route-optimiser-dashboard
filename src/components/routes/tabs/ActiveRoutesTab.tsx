@@ -112,7 +112,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
         // Update local state for immediate feedback
         setRoutes(prev => 
           prev.map(route => 
-            route.id === routeId ? { ...route, status: 'in_progress' } : route
+            route.id === routeId ? { ...route, status: 'in_progress', vehicle_name: 'Leyland Ashok Phoenix' } : route
           )
         );
         
