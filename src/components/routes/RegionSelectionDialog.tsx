@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -42,7 +42,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
         setSelectedRegion(regions[0].regions[0]);
       }
     }
-  }, []);
+  }, [open]); // Re-initialize when dialog opens
 
   useEffect(() => {
     if (selectedCountry) {
@@ -56,17 +56,20 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
         }
       }
     }
-  }, [selectedCountry]);
+  }, [selectedCountry, countriesWithRegions]);
 
   const handleCountryChange = (country: string) => {
+    console.log("Country changed to:", country);
     setSelectedCountry(country);
   };
 
   const handleRegionChange = (region: string) => {
+    console.log("Region changed to:", region);
     setSelectedRegion(region);
   };
 
   const handleContinue = () => {
+    console.log("Continue button clicked with", selectedCountry, selectedRegion);
     if (!selectedCountry) {
       toast.error('Please select a country');
       return;
@@ -77,8 +80,13 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       return;
     }
     
+    // Call the onComplete callback with the selected country and region
     onComplete(selectedCountry, selectedRegion);
+    
+    // Close the dialog
     onOpenChange(false);
+    
+    console.log("Dialog should be closed now");
   };
 
   return (
@@ -86,6 +94,9 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Select Delivery Region</DialogTitle>
+          <DialogDescription>
+            Choose the country and region for your delivery route
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -128,7 +139,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handleContinue}>Continue</Button>
+          <Button type="button" onClick={handleContinue}>Continue</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

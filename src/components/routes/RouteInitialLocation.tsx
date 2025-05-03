@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import RegionSelectionDialog from '@/components/routes/RegionSelectionDialog';
 
 interface RouteInitialLocationProps {
@@ -20,15 +20,21 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
   // Open region selection dialog when on create tab and not confirmed
   useEffect(() => {
     if (activeTab === 'create' && !isLoadConfirmed && !regionSelectionOpen) {
+      console.log("Opening region selection dialog from useEffect");
       setRegionSelectionOpen(true);
     }
-  }, [activeTab, isLoadConfirmed, regionSelectionOpen]);
+  }, [activeTab, isLoadConfirmed, regionSelectionOpen, setRegionSelectionOpen]);
+
+  const handleRegionComplete = (country: string, region: string) => {
+    console.log("Region selection completed with:", country, region);
+    onRegionChange(country, region);
+  };
 
   return (
     <RegionSelectionDialog
       open={regionSelectionOpen}
       onOpenChange={setRegionSelectionOpen}
-      onComplete={onRegionChange}
+      onComplete={handleRegionComplete}
     />
   );
 };

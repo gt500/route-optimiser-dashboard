@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
@@ -76,7 +77,7 @@ const RoutesList = () => {
   // Load vehicles on component mount
   useEffect(() => {
     fetchVehicles();
-  }, []);
+  }, [fetchVehicles]);
 
   // Handle URL state updates
   useEffect(() => {
@@ -87,7 +88,7 @@ const RoutesList = () => {
     if (locationState?.highlightDelivery) {
       setHighlightedDeliveryId(locationState.highlightDelivery);
     }
-  }, [location]);
+  }, [location, locationState]);
 
   // Auto-clear the highlight after timeout
   useEffect(() => {
@@ -153,14 +154,17 @@ const RoutesList = () => {
   };
 
   const handleRegionChange = (country: string, region: string) => {
+    console.log("Region changed in RoutesList:", country, region);
     setSelectedCountry(country);
     setSelectedRegion(region);
     setRouteRegion(country, region);
     toast.success(`Selected region: ${region}, ${country}`);
+    setRegionSelectionOpen(false); // Explicitly close the dialog
   };
 
   const handleCreateRoute = () => {
     handleCreateNewRoute();
+    console.log("Opening region selection dialog from handleCreateRoute");
     setRegionSelectionOpen(true);
   };
 
@@ -183,7 +187,10 @@ const RoutesList = () => {
       {/* Header component */}
       <RouteHeader
         onAddNewLocation={addNewLocation}
-        onOpenRegionSelection={() => setRegionSelectionOpen(true)}
+        onOpenRegionSelection={() => {
+          console.log("Opening region selection from header button");
+          setRegionSelectionOpen(true);
+        }}
         onCreateNewRoute={handleCreateRoute}
       />
 
