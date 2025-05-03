@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CreateRouteTab from './tabs/CreateRouteTab';
-import ActiveRoutesTab from './tabs/ActiveRoutesTab';
-import RouteHistoryTab from './tabs/RouteHistoryTab';
+import React from 'react';
+import { Tabs } from '@/components/ui/tabs';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { Vehicle } from '@/types/fleet';
 import { RouteState, VehicleConfigProps } from '@/hooks/routes/types';
+import RouteTabList from './tabs/components/RouteTabList';
+import RouteTabContent from './tabs/components/RouteTabContent';
 
 interface RouteTabsProps {
   activeTab: string;
@@ -46,90 +45,16 @@ interface RouteTabsProps {
   onRegionChange: (country: string, region: string) => void;
 }
 
-const RouteTabs: React.FC<RouteTabsProps> = ({
-  activeTab,
-  setActiveTab,
-  route,
-  availableLocations,
-  startLocation,
-  endLocation,
-  filteredAvailableLocations,
-  transformedLocations,
-  onStartLocationChange,
-  onEndLocationChange,
-  onAddLocationToRoute,
-  onRemoveLocation,
-  onAddNewLocation,
-  onOptimize,
-  onUpdateLocations,
-  onFuelCostUpdate,
-  onRouteDataUpdate,
-  onConfirmLoad,
-  onReplaceLocation,
-  isLoadConfirmed,
-  isSyncingLocations,
-  vehicleConfig,
-  vehicles,
-  selectedVehicle,
-  onVehicleChange,
-  highlightedDeliveryId,
-  selectedCountry,
-  selectedRegion,
-  onRegionChange
-}) => {
+const RouteTabs: React.FC<RouteTabsProps> = (props) => {
+  const { 
+    activeTab, 
+    setActiveTab 
+  } = props;
+
   return (
     <Tabs defaultValue="create" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-      <TabsList className="grid w-full grid-cols-3 h-11">
-        <TabsTrigger value="create">Create Route</TabsTrigger>
-        <TabsTrigger value="active">Active Routes</TabsTrigger>
-        <TabsTrigger value="history">Route History</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="create" className="space-y-4">
-        <CreateRouteTab
-          route={{
-            ...route,
-            country: selectedCountry,
-            region: selectedRegion
-          }}
-          isSyncingLocations={isSyncingLocations}
-          isLoadConfirmed={isLoadConfirmed}
-          availableLocations={availableLocations}
-          startLocation={startLocation}
-          endLocation={endLocation}
-          filteredAvailableLocations={filteredAvailableLocations}
-          transformedLocations={transformedLocations}
-          onStartLocationChange={onStartLocationChange}
-          onEndLocationChange={onEndLocationChange}
-          onAddLocationToRoute={onAddLocationToRoute}
-          onUpdateLocations={onUpdateLocations}
-          onOptimize={onOptimize}
-          onRemoveLocation={onRemoveLocation}
-          onAddNewLocation={onAddNewLocation}
-          onFuelCostUpdate={onFuelCostUpdate}
-          onRouteDataUpdate={onRouteDataUpdate}
-          onConfirmLoad={onConfirmLoad}
-          vehicleConfig={vehicleConfig}
-          vehicles={vehicles}
-          selectedVehicle={selectedVehicle}
-          onVehicleChange={onVehicleChange}
-          onReplaceLocation={onReplaceLocation}
-          selectedCountry={selectedCountry}
-          selectedRegion={selectedRegion}
-          onRegionChange={onRegionChange}
-        />
-      </TabsContent>
-      
-      <TabsContent value="active">
-        <ActiveRoutesTab 
-          onCreateRoute={() => setActiveTab('create')} 
-          highlightedDeliveryId={highlightedDeliveryId}
-        />
-      </TabsContent>
-      
-      <TabsContent value="history">
-        <RouteHistoryTab onCreateRoute={() => setActiveTab('create')} />
-      </TabsContent>
+      <RouteTabList activeTab={activeTab} />
+      <RouteTabContent {...props} />
     </Tabs>
   );
 };
