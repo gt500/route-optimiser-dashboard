@@ -31,6 +31,7 @@ const RouteActionButtons = ({
           }`}
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             console.log("Start button clicked for route:", routeId);
             onStart(routeId);
           }}
@@ -51,6 +52,7 @@ const RouteActionButtons = ({
           }`}
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             console.log("Complete button clicked for route:", routeId);
             onComplete(routeId);
           }}

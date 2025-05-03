@@ -22,7 +22,11 @@ export const startRoute = async (
     await new Promise(resolve => setTimeout(resolve, 1200));
     
     // Update the mock database
-    await updateRouteStatus(routeId, 'in_progress');
+    const updated = await updateRouteStatus(routeId, 'in_progress');
+    
+    if (!updated) {
+      throw new Error('Failed to update route status');
+    }
     
     // Update route status in our state
     setRoutes(prev => 

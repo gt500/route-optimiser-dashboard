@@ -48,12 +48,17 @@ export const updateRouteStatus = async (routeId: string, status: string): Promis
   
   if (routeIndex >= 0) {
     // Update the route status
-    mockRoutes[routeIndex].status = status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+    mockRoutes[routeIndex] = {
+      ...mockRoutes[routeIndex],
+      status: status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    };
+    
     console.log(`Route ${routeId} updated to status: ${status}`);
     console.log("Updated mockRoutes:", mockRoutes);
     return true;
   }
   
+  console.error(`Could not find route with ID: ${routeId}`);
   return false;
 };
 

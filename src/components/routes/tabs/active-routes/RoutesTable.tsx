@@ -23,6 +23,10 @@ const RoutesTable = ({
   // Ref to scroll to the highlighted row
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
 
+  // Debug to help troubleshoot
+  console.log("RoutesTable rendering with routes:", routes);
+  console.log("Processing routes:", processingRoutes);
+
   // Effect to scroll to the highlighted route
   useEffect(() => {
     if (highlightedDeliveryId && highlightedRowRef.current) {
@@ -44,10 +48,6 @@ const RoutesTable = ({
       return () => clearTimeout(timer);
     }
   }, [highlightedDeliveryId, routes]);
-
-  // Debug to help troubleshoot
-  console.log("RoutesTable rendering with routes:", routes);
-  console.log("Processing routes:", processingRoutes);
 
   return (
     <div className="overflow-x-auto">

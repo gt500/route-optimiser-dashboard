@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import EmptyRouteState from './active-routes/EmptyRouteState';
 import RoutesTable from './active-routes/RoutesTable';
@@ -21,7 +20,8 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     fetchActiveRoutes, 
     routes: routesFromHook, 
     startRoute: startRouteHook, 
-    completeRoute: completeRouteHook 
+    completeRoute: completeRouteHook,
+    fetchRoutes: refreshAllRoutes
   } = useRouteData();
   const { vehicles, fetchVehicles } = useVehiclesData();
 
@@ -32,11 +32,11 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   
   // Add this effect to update local state when routesFromHook changes
   useEffect(() => {
-    if (routesFromHook.length > 0) {
+    if (routesFromHook && routesFromHook.length > 0) {
       const activeFilteredRoutes = routesFromHook.filter(
         route => route.status === 'scheduled' || route.status === 'in_progress'
       );
-      console.log("Active filtered routes:", activeFilteredRoutes);
+      console.log("Active filtered routes from hook:", activeFilteredRoutes);
       setRoutes(activeFilteredRoutes);
     }
   }, [routesFromHook]);
@@ -45,49 +45,21 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     console.log("Loading active routes...");
     setIsLoading(true);
     try {
+      // First refresh all routes to ensure we have the latest data
+      await refreshAllRoutes();
+      
       const activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
       
-      // Update vehicle names to always be "Leyland Ashok Phoenix"
-      const routesWithCorrectVehicleNames = activeRoutes.map(route => ({
+      // Ensure each route has proper data
+      const routesWithCorrectData = activeRoutes.map(route => ({
         ...route,
-        vehicle_name: 'Leyland Ashok Phoenix'
+        vehicle_name: 'Leyland Ashok Phoenix',
+        stops: route.stops || []
       }));
       
-      // Ensure each route has proper waypoint data if stops exist
-      const routesWithWaypointData = routesWithCorrectVehicleNames.map(route => {
-        if (route.stops && route.stops.length > 0 && (!route.stops[0].distance || !route.stops[0].duration)) {
-          // Create synthetic waypoint data if none exists
-          const waypoints = route.stops.map((stop, index) => {
-            if (index === 0) {
-              return { 
-                ...stop, 
-                distance: 0, 
-                duration: 0 
-              };
-            }
-            // Unique values for each stop
-            return {
-              ...stop,
-              distance: stop.distance || 5 + (index * 2.5),
-              duration: stop.duration || 10 + (index * 5)
-            };
-          });
-          return {
-            ...route,
-            stops: waypoints
-          };
-        }
-        return route;
-      });
-      
-      // Filter to only show scheduled and in_progress routes
-      const activeFilteredRoutes = routesWithWaypointData.filter(
-        route => route.status === 'scheduled' || route.status === 'in_progress'
-      );
-      
-      console.log("Setting active routes:", activeFilteredRoutes);
-      setRoutes(activeFilteredRoutes);
+      console.log("Setting active routes:", routesWithCorrectData);
+      setRoutes(routesWithCorrectData);
       
       // Refresh vehicle data to ensure statuses are in sync with routes
       await fetchVehicles();
@@ -153,7 +125,8 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
         toast.error('Failed to complete route');
       }
       
-      // No need to reload routes here since we've already removed it from the list
+      // Reload routes to ensure everything is up-to-date
+      await loadRoutes();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');

@@ -25,7 +25,9 @@ export const useRouteData = () => {
 
   const fetchRoutes = useCallback(async () => {
     console.log("Fetching all routes in useRouteData hook");
-    return await fetchRoutesQuery();
+    const freshRoutes = await fetchRoutesQuery();
+    setRoutes(freshRoutes);
+    return freshRoutes;
   }, []);
   
   const fetchRouteData = useCallback(async () => {
@@ -35,7 +37,8 @@ export const useRouteData = () => {
   
   const fetchActiveRoutes = useCallback(async () => {
     console.log("Fetching active routes in useRouteData hook");
-    return await fetchActiveRoutesQuery();
+    const activeRoutes = await fetchActiveRoutesQuery();
+    return activeRoutes;
   }, []);
   
   const fetchRouteHistory = useCallback(async () => {
@@ -62,25 +65,33 @@ export const useRouteData = () => {
     console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
     try {
       const result = await startRouteAction(routeId, routes, setRoutes, setProcessingRoutes);
+      if (result) {
+        // Refresh the routes data after a successful update
+        await fetchRoutes();
+      }
       return result;
     } catch (error) {
       console.error("Error starting route:", error);
       toast.error("Failed to start route");
       return false;
     }
-  }, [routes]);
+  }, [routes, fetchRoutes]);
 
   const completeRoute = useCallback(async (routeId: string) => {
     console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
     try {
       const result = await completeRouteAction(routeId, routes, setRoutes, setProcessingRoutes);
+      if (result) {
+        // Refresh the routes data after a successful update
+        await fetchRoutes();
+      }
       return result;
     } catch (error) {
       console.error("Error completing route:", error);
       toast.error("Failed to complete route");
       return false;
     }
-  }, [routes]);
+  }, [routes, fetchRoutes]);
 
   return {
     routes,
