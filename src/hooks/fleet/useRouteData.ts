@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { RouteData } from './types/routeTypes';
@@ -20,30 +19,60 @@ import {
 export type { RouteData } from './types/routeTypes';
 
 export const useRouteData = () => {
-  const [routes, setRoutes] = useState<RouteData[]>(mockRoutes);
+  const [routes, setRoutes] = useState<RouteData[]>(
+    // Ensure correct vehicle names on initialization
+    mockRoutes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }))
+  );
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
 
   const fetchRoutes = useCallback(async () => {
     console.log("Fetching all routes in useRouteData hook");
     const freshRoutes = await fetchRoutesQuery();
-    setRoutes(freshRoutes);
-    return freshRoutes;
+    
+    // Ensure correct vehicle names
+    const routesWithCorrectVehicleName = freshRoutes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
+    
+    setRoutes(routesWithCorrectVehicleName);
+    return routesWithCorrectVehicleName;
   }, []);
   
   const fetchRouteData = useCallback(async () => {
     console.log("Fetching route data in useRouteData hook");
-    return await fetchRoutesQuery();
+    const routes = await fetchRoutesQuery();
+    
+    // Ensure correct vehicle names
+    return routes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const fetchActiveRoutes = useCallback(async () => {
     console.log("Fetching active routes in useRouteData hook");
     const activeRoutes = await fetchActiveRoutesQuery();
-    return activeRoutes;
+    
+    // Ensure correct vehicle names
+    return activeRoutes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const fetchRouteHistory = useCallback(async () => {
     console.log("Fetching route history in useRouteData hook");
-    return await fetchRouteHistoryQuery();
+    const historyRoutes = await fetchRouteHistoryQuery();
+    
+    // Ensure correct vehicle names
+    return historyRoutes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const fetchRouteDataByName = useCallback(async (routeName: string) => {

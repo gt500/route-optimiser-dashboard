@@ -37,7 +37,14 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
         route => route.status === 'scheduled' || route.status === 'in_progress'
       );
       console.log("Active filtered routes from hook:", activeFilteredRoutes);
-      setRoutes(activeFilteredRoutes);
+      
+      // Ensure each route has the proper vehicle name
+      const routesWithCorrectVehicleName = activeFilteredRoutes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
+      
+      setRoutes(routesWithCorrectVehicleName);
     }
   }, [routesFromHook]);
 
@@ -51,7 +58,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       const activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
       
-      // Ensure each route has proper data
+      // Ensure each route has the Leyland Ashok Phoenix vehicle name
       const routesWithCorrectData = activeRoutes.map(route => ({
         ...route,
         vehicle_name: 'Leyland Ashok Phoenix',
