@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
@@ -84,7 +83,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
             total_duration: sampleDuration * 60, // Convert to seconds (supabase stores as seconds)
             estimated_cost: 200,
             total_cylinders: 25,
-            status: 'completed' as const
+            status: 'completed' as const,
+            vehicle_name: 'Leyland Ashok Phoenix' // Adding the required vehicle_name property
           }
         ];
       } else {
@@ -100,7 +100,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           total_duration: Math.max(15, Math.round((18 / 40)* 60)) * 60,
           estimated_cost: 180,
           total_cylinders: 22,
-          status: 'completed' as const
+          status: 'completed' as const,
+          vehicle_name: 'Leyland Ashok Phoenix' // Adding the required vehicle_name property
         },
         {
           id: 'sample-2',
@@ -110,7 +111,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
           total_duration: Math.max(15, Math.round((25 / 40)* 60)) * 60,
           estimated_cost: 230,
           total_cylinders: 30,
-          status: 'completed' as const
+          status: 'completed' as const,
+          vehicle_name: 'Leyland Ashok Phoenix' // Adding the required vehicle_name property
         }
       ];
 
@@ -119,7 +121,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         ...route,
         total_duration: route.total_duration
           ? Math.max(15 * 60, +route.total_duration) // seconds
-          : Math.max(15 * 60, Math.round((route.total_distance || 0) / 40 * 60) * 60)
+          : Math.max(15 * 60, Math.round((route.total_distance || 0) / 40 * 60) * 60),
+        vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle_name is always set correctly
       }));
 
       // Likewise for fleetData
@@ -127,7 +130,8 @@ const RouteAnalysisDialog: React.FC<RouteAnalysisDialogProps> = ({
         ...route,
         total_duration: route.total_duration
           ? Math.max(15 * 60, +route.total_duration)
-          : Math.max(15 * 60, Math.round((route.total_distance || 0) / 40 * 60) * 60)
+          : Math.max(15 * 60, Math.round((route.total_distance || 0) / 40 * 60) * 60),
+        vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle_name is always set correctly
       }));
 
       const analyticsData = generateRouteAnalytics(
