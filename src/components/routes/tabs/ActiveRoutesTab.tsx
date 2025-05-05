@@ -18,55 +18,28 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
   const { 
     fetchActiveRoutes, 
-    routes: routesFromHook, 
-    startRoute: startRouteHook, 
-    completeRoute: completeRouteHook,
-    fetchRoutes: refreshAllRoutes
+    startRoute, 
+    completeRoute, 
+    fetchRoutes
   } = useRouteData();
-  const { vehicles, fetchVehicles } = useVehiclesData();
+  const { fetchVehicles } = useVehiclesData();
 
   // Load routes when component mounts or when highlightedDeliveryId changes
   useEffect(() => {
     loadRoutes();
   }, [highlightedDeliveryId]);
-  
-  // Add this effect to update local state when routesFromHook changes
-  useEffect(() => {
-    if (routesFromHook && routesFromHook.length > 0) {
-      const activeFilteredRoutes = routesFromHook.filter(
-        route => route.status === 'scheduled' || route.status === 'in_progress'
-      );
-      console.log("Active filtered routes from hook:", activeFilteredRoutes);
-      
-      // Ensure each route has the proper vehicle name
-      const routesWithCorrectVehicleName = activeFilteredRoutes.map(route => ({
-        ...route,
-        vehicle_name: 'Leyland Ashok Phoenix'
-      }));
-      
-      setRoutes(routesWithCorrectVehicleName);
-    }
-  }, [routesFromHook]);
 
   const loadRoutes = async () => {
     console.log("Loading active routes...");
     setIsLoading(true);
     try {
       // First refresh all routes to ensure we have the latest data
-      await refreshAllRoutes();
+      await fetchRoutes();
       
       const activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
       
-      // Ensure each route has the Leyland Ashok Phoenix vehicle name
-      const routesWithCorrectData = activeRoutes.map(route => ({
-        ...route,
-        vehicle_name: 'Leyland Ashok Phoenix',
-        stops: route.stops || []
-      }));
-      
-      console.log("Setting active routes:", routesWithCorrectData);
-      setRoutes(routesWithCorrectData);
+      setRoutes(activeRoutes);
       
       // Refresh vehicle data to ensure statuses are in sync with routes
       await fetchVehicles();
@@ -78,14 +51,14 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     }
   };
 
-  const startRoute = async (routeId: string) => {
+  const handleStartRoute = async (routeId: string) => {
     console.log(`Starting route with ID: ${routeId} in ActiveRoutesTab`);
     
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
       
       // Call the startRoute function from the hook
-      const success = await startRouteHook(routeId);
+      const success = await startRoute(routeId);
       
       if (success) {
         // Update local state for immediate feedback
@@ -114,17 +87,17 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     }
   };
 
-  const markRouteAsComplete = async (routeId: string) => {
+  const handleCompleteRoute = async (routeId: string) => {
     console.log(`Completing route with ID: ${routeId} in ActiveRoutesTab`);
     
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
       // Call the completeRoute function from the hook
-      const success = await completeRouteHook(routeId);
+      const success = await completeRoute(routeId);
       
       if (success) {
-        // Update local state for immediate feedback - remove the route from active routes
+        // Update local state for immediate feedback
         setRoutes(prev => prev.filter(route => route.id !== routeId));
         
         toast.success('Route completed successfully');
@@ -181,8 +154,8 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
         <RoutesTable 
           routes={routes} 
           processingRoutes={processingRoutes} 
-          onStartRoute={startRoute} 
-          onCompleteRoute={markRouteAsComplete} 
+          onStartRoute={handleStartRoute} 
+          onCompleteRoute={handleCompleteRoute} 
           highlightedDeliveryId={highlightedDeliveryId}
         />
       </CardContent>

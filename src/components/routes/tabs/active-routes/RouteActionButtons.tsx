@@ -18,6 +18,10 @@ const RouteActionButtons = ({
   onStart, 
   onComplete 
 }: RouteActionButtonsProps) => {
+  const isStarting = processingRoutes[routeId] === 'starting';
+  const isCompleting = processingRoutes[routeId] === 'completing';
+  const disabled = isStarting || isCompleting;
+
   return (
     <div className="flex justify-end gap-1">
       {status === 'scheduled' && (
@@ -25,7 +29,7 @@ const RouteActionButtons = ({
           variant="outline" 
           size="sm" 
           className={`h-8 px-2 transition-colors ${
-            processingRoutes[routeId] === 'starting'
+            isStarting
               ? 'bg-blue-500 text-white border-blue-600'
               : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
           }`}
@@ -35,10 +39,10 @@ const RouteActionButtons = ({
             console.log("Start button clicked for route:", routeId);
             onStart(routeId);
           }}
-          disabled={processingRoutes[routeId] === 'starting'}
+          disabled={disabled}
         >
           <Play className="h-4 w-4 mr-1" />
-          {processingRoutes[routeId] === 'starting' ? 'Starting...' : 'Start'}
+          {isStarting ? 'Starting...' : 'Start'}
         </Button>
       )}
       {status !== 'completed' && (
@@ -46,7 +50,7 @@ const RouteActionButtons = ({
           variant="outline" 
           size="sm" 
           className={`h-8 px-2 transition-colors ${
-            processingRoutes[routeId] === 'completing'
+            isCompleting
               ? 'bg-green-500 text-white border-green-600'
               : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700'
           }`}
@@ -56,10 +60,10 @@ const RouteActionButtons = ({
             console.log("Complete button clicked for route:", routeId);
             onComplete(routeId);
           }}
-          disabled={processingRoutes[routeId] === 'completing'}
+          disabled={disabled}
         >
           <CheckCircle className="h-4 w-4 mr-1" />
-          {processingRoutes[routeId] === 'completing' ? 'Completing...' : 'Complete'}
+          {isCompleting ? 'Completing...' : 'Complete'}
         </Button>
       )}
     </div>

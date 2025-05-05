@@ -78,7 +78,7 @@ const RoutesTable = ({
                 <RouteStatusBadge status={route.status} />
               </TableCell>
               <TableCell>
-                {'Leyland Ashok Phoenix'}
+                {route.vehicle_name || 'Leyland Ashok Phoenix'}
               </TableCell>
               <TableCell className="text-right">
                 <RouteActionButtons 
