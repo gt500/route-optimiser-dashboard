@@ -31,28 +31,49 @@ export const useRouteData = () => {
     const freshRoutes = await fetchRoutesQuery();
     
     // Set the routes with the correct vehicle name
-    setRoutes(freshRoutes);
-    return freshRoutes;
+    const routesWithCorrectVehicles = freshRoutes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
+    
+    setRoutes(routesWithCorrectVehicles);
+    return routesWithCorrectVehicles;
   }, []);
   
   const fetchRouteData = useCallback(async () => {
     console.log("Fetching route data in useRouteData hook");
-    return await fetchRoutesQuery();
+    const routes = await fetchRoutesQuery();
+    return routes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const fetchActiveRoutes = useCallback(async () => {
     console.log("Fetching active routes in useRouteData hook");
-    return await fetchActiveRoutesQuery();
+    const routes = await fetchActiveRoutesQuery();
+    return routes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const fetchRouteHistory = useCallback(async () => {
     console.log("Fetching route history in useRouteData hook");
-    return await fetchRouteHistoryQuery();
+    const routes = await fetchRouteHistoryQuery();
+    return routes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const fetchRouteDataByName = useCallback(async (routeName: string) => {
     console.log(`Fetching route data for ${routeName} in useRouteData hook`);
-    return await fetchRouteDataByNameQuery(routeName);
+    const routes = await fetchRouteDataByNameQuery(routeName);
+    return routes.map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   }, []);
   
   const getWeeklyDeliveryData = useCallback(async () => {

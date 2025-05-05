@@ -36,8 +36,14 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       // First refresh all routes to ensure we have the latest data
       await fetchRoutes();
       
-      const activeRoutes = await fetchActiveRoutes();
+      let activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
+      
+      // Ensure all routes have the correct vehicle name
+      activeRoutes = activeRoutes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
       
       setRoutes(activeRoutes);
       

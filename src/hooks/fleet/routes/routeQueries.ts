@@ -24,7 +24,10 @@ export const fetchActiveRoutes = async (): Promise<RouteData[]> => {
   const data = await fetchRoutes();
   const activeRoutes = data.filter(route => 
     route.status === 'scheduled' || route.status === 'in_progress'
-  );
+  ).map(route => ({
+    ...route,
+    vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
+  }));
   console.log("Active routes:", activeRoutes);
   return activeRoutes;
 };
@@ -37,7 +40,10 @@ export const fetchRouteHistory = async (): Promise<RouteData[]> => {
   const data = await fetchRoutes();
   const historyRoutes = data.filter(route => 
     route.status === 'completed' || route.status === 'cancelled'
-  );
+  ).map(route => ({
+    ...route,
+    vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
+  }));
   console.log("History routes:", historyRoutes);
   return historyRoutes;
 };
@@ -56,7 +62,7 @@ export const updateRouteStatus = async (routeId: string, status: string): Promis
     mockRoutes[routeIndex] = {
       ...mockRoutes[routeIndex],
       status: status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-      vehicle_name: 'Leyland Ashok Phoenix'
+      vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
     };
     
     console.log(`Route ${routeId} updated to status: ${status}`);
@@ -76,7 +82,7 @@ export const fetchRouteDataByName = async (routeName: string): Promise<RouteData
   const matchingRoutes = data.filter(route => route.name === routeName)
     .map(route => ({
       ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
+      vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
     }));
   return matchingRoutes;
 };
