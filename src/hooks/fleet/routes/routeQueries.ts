@@ -8,7 +8,12 @@ import { RouteData, RouteStats, WeeklyData } from '../types/routeTypes';
 export const fetchRoutes = async (): Promise<RouteData[]> => {
   console.log("Fetching all routes from mockRoutes:", mockRoutes);
   // In a real app, this would fetch from an API
-  return [...mockRoutes]; // Return a copy to avoid mutation issues
+  
+  // Return a copy with the correct vehicle name
+  return mockRoutes.map(route => ({
+    ...route,
+    vehicle_name: 'Leyland Ashok Phoenix'
+  }));
 };
 
 /**
@@ -50,7 +55,8 @@ export const updateRouteStatus = async (routeId: string, status: string): Promis
     // Update the route status
     mockRoutes[routeIndex] = {
       ...mockRoutes[routeIndex],
-      status: status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+      status: status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+      vehicle_name: 'Leyland Ashok Phoenix'
     };
     
     console.log(`Route ${routeId} updated to status: ${status}`);
@@ -67,7 +73,11 @@ export const updateRouteStatus = async (routeId: string, status: string): Promis
  */
 export const fetchRouteDataByName = async (routeName: string): Promise<RouteData[]> => {
   const data = await fetchRoutes();
-  const matchingRoutes = data.filter(route => route.name === routeName);
+  const matchingRoutes = data.filter(route => route.name === routeName)
+    .map(route => ({
+      ...route,
+      vehicle_name: 'Leyland Ashok Phoenix'
+    }));
   return matchingRoutes;
 };
 
