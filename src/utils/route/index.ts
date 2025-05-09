@@ -7,3 +7,4 @@ export * from './routeMetrics';
 export * from './constants';
 export * from './regionUtils';
 export * from './trafficUtils';
+export * from './mapboxUtils';

@@ -114,23 +114,17 @@ const RouteRoutingMachine: React.FC<RouteRoutingMachineProps> = ({
           return;
         }
         
-        // If not a predefined route, use the routing API
-        const routerOptions: L.Routing.RoutingControlOptions = {
-          router: L.Routing.osrm({
-            serviceUrl: 'https://router.project-osrm.org/route/v1',
-            profile: 'driving',
-            useHints: false,
-            suppressDemoServerWarning: true,
-            urlParameters: {
-              alternatives: 'false',
-              steps: 'true',
-              geometries: 'geojson',
-              overview: 'full',
-              annotations: 'true',
-              traffic: 'true'
-            }
-          }),
+        // For real routes, use Mapbox router
+        // IMPORTANT: Replace 'YOUR_MAPBOX_ACCESS_TOKEN' with actual token from environment variable or secure storage
+        const mapboxToken = 'pk.placeholder'; // This should be replaced with a real token
+        
+        routingControl = L.Routing.control({
           waypoints: validWaypoints,
+          router: L.Routing.mapbox(mapboxToken, {
+            profile: 'mapbox/driving',
+            alternatives: false,
+            language: 'en'
+          }),
           lineOptions: {
             styles: [
               { color: '#6366F1', weight: 6, opacity: 0.7 },
@@ -145,9 +139,7 @@ const RouteRoutingMachine: React.FC<RouteRoutingMachineProps> = ({
           fitSelectedRoutes: true,
           showAlternatives: false,
           show: false
-        };
-        
-        routingControl = L.Routing.control(routerOptions).addTo(map);
+        }).addTo(map);
         
         // Hide the routing control UI but show the route path
         routingControl.hide();

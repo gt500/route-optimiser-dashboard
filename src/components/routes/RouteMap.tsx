@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
+import { hasValidMapboxToken } from '@/utils/route/mapboxUtils';
+import MapboxTokenInput from './map-components/MapboxTokenInput';
 
 interface RouteMapProps {
   locations: LocationInfo[];
@@ -35,6 +37,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   onRouteDataUpdate
 }) => {
   const [map, setMap] = useState<L.Map | null>(null);
+  const [showMapboxInput, setShowMapboxInput] = useState(!hasValidMapboxToken());
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -82,9 +85,22 @@ const RouteMap: React.FC<RouteMapProps> = ({
     })
   };
 
+  const handleMapboxTokenSet = () => {
+    setShowMapboxInput(false);
+    toast({
+      title: "Mapbox token configured",
+      description: "Route calculations will now use Mapbox for better accuracy.",
+    });
+  };
+
   return (
     <div className={`bg-white rounded-md p-4 shadow-md ${className}`}>
       <h2 className="text-lg font-semibold mb-2">Route Map</h2>
+      
+      {showMapboxInput && (
+        <MapboxTokenInput onTokenSet={handleMapboxTokenSet} />
+      )}
+      
       <div style={{ height: '400px', width: '100%' }}>
         <MapContainer 
           style={{ height: '100%', width: '100%' }}

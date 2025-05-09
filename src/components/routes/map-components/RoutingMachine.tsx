@@ -133,34 +133,23 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
           return;
         }
         
-        // If not a predefined route, use the routing API
-        // Extract styling options from routeOptions or use defaults
-        const routeColor = routeOptions.routeColor || '#6366F1';
-        const routeWeight = routeOptions.routeWeight || 6;
+        // For real routes, use Mapbox router
+        // IMPORTANT: Replace 'YOUR_MAPBOX_ACCESS_TOKEN' with actual token from environment variable or secure storage
+        // For demo purposes, we'll use a placeholder
+        const mapboxToken = 'pk.placeholder'; // This should be replaced with a real token
         
-        // Configure options with real-time traffic preferences
-        const routerOptions: L.Routing.RoutingControlOptions = {
-          router: L.Routing.osrm({
-            serviceUrl: 'https://router.project-osrm.org/route/v1',
-            profile: 'driving', // Use driving profile for road-based routing
-            useHints: false, // Disable hints for more accurate real-time routing
-            suppressDemoServerWarning: true,
-            urlParameters: {
-              // Always optimize for traffic avoidance
-              alternatives: routeOptions.alternateRoutes ? 'true' : 'false',
-              steps: 'true',
-              geometries: 'geojson',
-              overview: 'full',
-              annotations: 'true',
-              // Always use real-time traffic data when available
-              traffic: routeOptions.useRealTimeData ? 'true' : 'false'
-            }
-          }),
+        routingControl = L.Routing.control({
           waypoints: validWaypoints,
+          router: L.Routing.mapbox(mapboxToken, {
+            profile: 'mapbox/driving',
+            alternatives: routeOptions.alternateRoutes,
+            useHints: false,
+            language: 'en'
+          }),
           lineOptions: {
             styles: [
-              { color: routeColor, weight: routeWeight, opacity: 0.7 },
-              { color: '#FFFFFF', weight: routeWeight - 2, opacity: 0.5, dashArray: '5,10' } // Add a dashed white line in the middle
+              { color: routeOptions.routeColor || '#6366F1', weight: routeOptions.routeWeight || 6, opacity: 0.7 },
+              { color: '#FFFFFF', weight: (routeOptions.routeWeight || 6) - 2, opacity: 0.5, dashArray: '5,10' }
             ],
             extendToWaypoints: true,
             missingRouteTolerance: 0
@@ -171,9 +160,7 @@ const RoutingMachine: React.FC<RoutingMachineProps> = ({
           fitSelectedRoutes: true,
           showAlternatives: routeOptions.alternateRoutes,
           show: false
-        };
-        
-        routingControl = L.Routing.control(routerOptions).addTo(map);
+        }).addTo(map);
         
         // Hide the routing control UI but show the route path
         routingControl.hide();
