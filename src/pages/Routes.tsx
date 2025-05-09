@@ -10,6 +10,7 @@ import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import RouteHeader from '@/components/routes/RouteHeader';
 import RouteTabs from '@/components/routes/RouteTabs';
 import RouteInitialLocation from '@/components/routes/RouteInitialLocation';
+import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -43,8 +44,16 @@ const RoutesList = () => {
   );
   const [newLocationDialog, setNewLocationDialog] = useState(false);
   const [regionSelectionOpen, setRegionSelectionOpen] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('');
+  
+  // Initialize with default values if available
+  const defaultRegions = getStoredCountryRegions();
+  const defaultCountry = defaultRegions.length > 0 ? defaultRegions[0].country : 'South Africa';
+  const defaultRegion = defaultRegions.length > 0 && defaultRegions[0].regions.length > 0 
+    ? defaultRegions[0].regions[0] 
+    : 'Western Cape';
+    
+  const [selectedCountry, setSelectedCountry] = useState<string>(defaultCountry);
+  const [selectedRegion, setSelectedRegion] = useState<string>(defaultRegion);
   
   const { vehicles, fetchVehicles } = useVehiclesData();
 
@@ -100,6 +109,14 @@ const RoutesList = () => {
       return () => clearTimeout(timer);
     }
   }, [highlightedDeliveryId]);
+  
+  // Initialize route with default region if available
+  useEffect(() => {
+    if (!route.country && !route.region && selectedCountry && selectedRegion) {
+      console.log("Setting initial route region:", selectedCountry, selectedRegion);
+      setRouteRegion(selectedCountry, selectedRegion);
+    }
+  }, [route.country, route.region, selectedCountry, selectedRegion, setRouteRegion]);
 
   // Filter locations for availability
   const filteredAvailableLocations = useMemo(() => {
@@ -155,17 +172,28 @@ const RoutesList = () => {
 
   const handleRegionChange = (country: string, region: string) => {
     console.log("Region changed in RoutesList:", country, region);
+    
+    // Update local state
     setSelectedCountry(country);
     setSelectedRegion(region);
+    
+    // Update route state
     setRouteRegion(country, region);
+    
+    // Show confirmation toast
     toast.success(`Selected region: ${region}, ${country}`);
-    setRegionSelectionOpen(false); // Explicitly close the dialog
+    
+    // Explicitly close dialog
+    setRegionSelectionOpen(false);
   };
 
   const handleCreateRoute = () => {
     handleCreateNewRoute();
     console.log("Opening region selection dialog from handleCreateRoute");
-    setRegionSelectionOpen(true);
+    // Set a short timeout to ensure the route is created before opening the dialog
+    setTimeout(() => {
+      setRegionSelectionOpen(true);
+    }, 100);
   };
 
   const handleRemoveLocation = (index: number) => {

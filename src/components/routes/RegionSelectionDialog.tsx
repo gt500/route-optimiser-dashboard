@@ -24,22 +24,24 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
   useEffect(() => {
-    const regions = getStoredCountryRegions();
-    setCountriesWithRegions(regions);
-    
-    // Default to South Africa if available
-    const southAfrica = regions.find(r => r.country === 'South Africa');
-    if (southAfrica) {
-      setSelectedCountry('South Africa');
-      setAvailableRegions(southAfrica.regions);
-      if (southAfrica.regions.length > 0) {
-        setSelectedRegion(southAfrica.regions[0]);
-      }
-    } else if (regions.length > 0) {
-      setSelectedCountry(regions[0].country);
-      setAvailableRegions(regions[0].regions);
-      if (regions[0].regions.length > 0) {
-        setSelectedRegion(regions[0].regions[0]);
+    if (open) {
+      const regions = getStoredCountryRegions();
+      setCountriesWithRegions(regions);
+      
+      // Default to South Africa if available
+      const southAfrica = regions.find(r => r.country === 'South Africa');
+      if (southAfrica) {
+        setSelectedCountry('South Africa');
+        setAvailableRegions(southAfrica.regions);
+        if (southAfrica.regions.length > 0) {
+          setSelectedRegion(southAfrica.regions[0]);
+        }
+      } else if (regions.length > 0) {
+        setSelectedCountry(regions[0].country);
+        setAvailableRegions(regions[0].regions);
+        if (regions[0].regions.length > 0) {
+          setSelectedRegion(regions[0].regions[0]);
+        }
       }
     }
   }, [open]); // Re-initialize when dialog opens
@@ -56,7 +58,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
         }
       }
     }
-  }, [selectedCountry, countriesWithRegions]);
+  }, [selectedCountry, countriesWithRegions, selectedRegion]);
 
   const handleCountryChange = (country: string) => {
     console.log("Country changed to:", country);
@@ -70,6 +72,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
 
   const handleContinue = () => {
     console.log("Continue button clicked with", selectedCountry, selectedRegion);
+    
     if (!selectedCountry) {
       toast.error('Please select a country');
       return;
@@ -86,7 +89,8 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
     // Close the dialog
     onOpenChange(false);
     
-    console.log("Dialog should be closed now");
+    // Debugging log
+    console.log(`Selection completed and dialog should close: ${selectedCountry}, ${selectedRegion}`);
   };
 
   return (
@@ -139,7 +143,13 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" onClick={handleContinue}>Continue</Button>
+          <Button 
+            type="button" 
+            onClick={handleContinue} 
+            className="w-full"
+          >
+            Continue
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
