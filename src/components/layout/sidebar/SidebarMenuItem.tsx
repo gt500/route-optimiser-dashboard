@@ -37,7 +37,7 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
   // If this menu item has no submenu items
   if (!item.subItems) {
     return (
-      <SidebarMenuItem key={item.title}>
+      <SidebarMenuItem>
         <SidebarMenuButton asChild>
           <Link 
             to={item.path} 
@@ -53,7 +53,7 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
 
   // For menu items with submenus
   return (
-    <SidebarMenuItem key={item.title}>
+    <SidebarMenuItem>
       <Collapsible 
         open={openSections[item.title] || isActive} 
         onOpenChange={() => toggleSection(item.title)}
