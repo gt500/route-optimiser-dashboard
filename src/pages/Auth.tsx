@@ -27,7 +27,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function Auth() {
-  const { signIn, signUp, user, isLoading } = useAuth();
+  const { signIn, signUp, user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
 
   const loginForm = useForm<LoginFormValues>({
@@ -120,8 +120,8 @@ export default function Auth() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </Form>
@@ -181,8 +181,8 @@ export default function Auth() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Create Account"}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
               </Form>

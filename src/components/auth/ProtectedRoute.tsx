@@ -3,10 +3,10 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   
   // Show loading indicator while checking authentication
-  if (isLoading) {
+  if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
   
