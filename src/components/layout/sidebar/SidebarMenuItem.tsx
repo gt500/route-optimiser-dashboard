@@ -1,0 +1,88 @@
+
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  SidebarMenuItem as SidebarMenuItemComponent,
+  SidebarMenuButton,
+  SidebarMenuSub,
+} from "@/components/ui/sidebar";
+import { SidebarSubMenuItem } from "./SidebarSubMenuItem";
+import { MenuItem } from "./SidebarMenuData";
+
+interface SidebarMenuItemProps {
+  item: MenuItem;
+  openSections: Record<string, boolean>;
+  toggleSection: (title: string) => void;
+}
+
+export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({ 
+  item, 
+  openSections, 
+  toggleSection 
+}) => {
+  const location = useLocation();
+
+  // Check if this path is active or a parent of the current path
+  const isActivePath = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const isActive = isActivePath(item.path);
+
+  // If this menu item has no submenu items
+  if (!item.subItems) {
+    return (
+      <SidebarMenuItemComponent key={item.title}>
+        <SidebarMenuButton asChild>
+          <Link 
+            to={item.path} 
+            className={`flex items-center gap-3 ${isActive ? 'font-medium text-primary' : ''}`}
+          >
+            <item.icon className="h-5 w-5" />
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItemComponent>
+    );
+  }
+
+  // For menu items with submenus
+  return (
+    <SidebarMenuItemComponent key={item.title}>
+      <Collapsible 
+        open={openSections[item.title] || isActive} 
+        onOpenChange={() => toggleSection(item.title)}
+      >
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton 
+            className={`w-full justify-between ${isActive ? 'font-medium text-primary' : ''}`}
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className="h-5 w-5" />
+              <span>{item.title}</span>
+            </div>
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openSections[item.title] ? 'rotate-180' : ''}`} />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.subItems.map((subItem) => (
+              <SidebarSubMenuItem
+                key={subItem.title}
+                subItem={subItem}
+                isActive={isActivePath(subItem.path)}
+                isOpen={openSections[subItem.title] || false}
+                toggleSection={toggleSection}
+              />
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </Collapsible>
+    </SidebarMenuItemComponent>
+  );
+};
