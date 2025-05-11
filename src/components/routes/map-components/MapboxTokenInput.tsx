@@ -1,100 +1,53 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { setMapboxAccessToken, getMapboxAccessToken, hasValidMapboxToken } from '@/utils/route/mapboxUtils';
+import { Button } from '@/components/ui/button';
+import { setMapboxToken, hasValidMapboxToken } from '@/utils/route/mapboxUtils';
 import { toast } from 'sonner';
 
 interface MapboxTokenInputProps {
-  onTokenSet?: (token: string) => void;
+  onTokenSet: () => void;
 }
 
 const MapboxTokenInput: React.FC<MapboxTokenInputProps> = ({ onTokenSet }) => {
   const [token, setToken] = useState('');
-  const [isTokenSet, setIsTokenSet] = useState(false);
   
-  // Load token if available
-  useEffect(() => {
-    const savedToken = getMapboxAccessToken();
-    if (savedToken && savedToken !== 'pk.placeholder') {
-      setToken(savedToken);
-      setIsTokenSet(true);
-    }
-  }, []);
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!token.trim() || token.length < 20) {
-      toast.error('Please enter a valid Mapbox access token');
+  const handleSaveToken = () => {
+    if (!token || token.length < 10) {
+      toast.error("Please enter a valid Mapbox token");
       return;
     }
     
-    setMapboxAccessToken(token.trim());
-    setIsTokenSet(true);
-    toast.success('Mapbox token successfully saved');
-    
-    if (onTokenSet) {
-      onTokenSet(token.trim());
-    }
-  };
-  
-  const handleClear = () => {
-    setToken('');
-    setIsTokenSet(false);
-    setMapboxAccessToken('pk.placeholder');
-    toast.info('Mapbox token cleared');
+    setMapboxToken(token);
+    toast.success("Mapbox token saved successfully");
+    onTokenSet();
   };
   
   return (
-    <Card className="mb-4">
-      <CardHeader>
-        <CardTitle>Mapbox Configuration</CardTitle>
-        <CardDescription>
-          Enter your Mapbox access token to enable routing functionality
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isTokenSet ? (
-          <Alert className="bg-green-50 border-green-200">
-            <AlertDescription>
-              Mapbox token is set and routing is enabled
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-col space-y-2">
-              <label htmlFor="mapbox-token" className="text-sm font-medium">
-                Mapbox Access Token
-              </label>
-              <Input
-                id="mapbox-token"
-                placeholder="Enter your Mapbox access token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                className="flex-1"
-              />
-              <p className="text-xs text-gray-500">
-                Get your token from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noreferrer" className="text-primary underline">mapbox.com</a>
-              </p>
-            </div>
-          </form>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        {isTokenSet ? (
-          <Button variant="outline" onClick={handleClear}>
-            Clear Token
-          </Button>
-        ) : (
-          <Button type="submit" onClick={handleSubmit}>
-            Save Token
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+      <h3 className="text-sm font-medium mb-2">Enter Mapbox Access Token</h3>
+      <p className="text-xs text-muted-foreground mb-3">
+        For accurate route calculations, please enter your Mapbox public access token.
+        <a 
+          href="https://account.mapbox.com/access-tokens/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="ml-1 text-blue-600 hover:underline"
+        >
+          Get token
+        </a>
+      </p>
+      <div className="flex gap-2">
+        <Input
+          type="text"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder="pk.eyJ1Ijo..."
+          className="text-xs"
+        />
+        <Button size="sm" onClick={handleSaveToken}>Save</Button>
+      </div>
+    </div>
   );
 };
 

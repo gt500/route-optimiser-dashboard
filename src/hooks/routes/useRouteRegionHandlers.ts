@@ -9,6 +9,12 @@ export const useRouteRegionHandlers = (
   const setRouteRegion = useCallback((country: string, region: string) => {
     console.log("Setting route region in useRouteRegionHandlers:", country, region);
     
+    if (!country || !region) {
+      console.error("Invalid country or region values:", { country, region });
+      toast.error("Invalid region selection");
+      return;
+    }
+    
     // Update the route state with the new country and region
     setRoute(prev => {
       const updatedRoute = {

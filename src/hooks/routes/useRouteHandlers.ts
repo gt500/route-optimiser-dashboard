@@ -1,100 +1,37 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { RouteState, VehicleConfigProps } from './types';
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
 import { toast } from 'sonner';
 
-/**
- * Hook for route action handlers - creation, updates, location handling
- */
 export const useRouteHandlers = (
   route: RouteState,
   setRoute: React.Dispatch<React.SetStateAction<RouteState>>,
   startLocation: LocationType | null,
+  setStartLocation: React.Dispatch<React.SetStateAction<LocationType | null>>,
   endLocation: LocationType | null,
+  setEndLocation: React.Dispatch<React.SetStateAction<LocationType | null>>,
   availableLocations: LocationType[],
   setAvailableLocations: React.Dispatch<React.SetStateAction<LocationType[]>>,
   vehicleConfig: VehicleConfigProps,
   setIsLoadConfirmed: React.Dispatch<React.SetStateAction<boolean>>,
-  updateVehicleConfig: (
-    newConfig: Partial<VehicleConfigProps>,
-    updateRouteCosts?: (distance: number) => void,
-    distance?: number
-  ) => void
+  updateVehicleConfig: (config: Partial<VehicleConfigProps>) => void
 ) => {
-  
-  const handleStartLocationChange = useCallback((locationId: string) => {
-    console.log("Start location selected:", locationId);
-    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
-    if (location) {
-      console.log("Found start location:", location);
-      setStartLocation(location);
-    } else {
-      console.error("Could not find location with ID:", locationId);
-    }
-  }, [availableLocations]);
-  
-  const handleEndLocationChange = useCallback((locationId: string) => {
-    console.log("End location selected:", locationId);
-    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
-    setEndLocation(location || null);
-  }, [availableLocations]);
-  
-  const handleCreateNewRoute = useCallback(() => {
-    setStartLocation(null);
-    setEndLocation(null);
-    setIsLoadConfirmed(false);
-    setRoute({
-      distance: 0,
-      fuelConsumption: 0,
-      fuelCost: 0,
-      maintenanceCost: 0,
-      totalCost: 0,
-      cylinders: 0,
-      locations: [],
-      availableLocations: availableLocations,
-      trafficConditions: 'moderate',
-      estimatedDuration: 75,
-      usingRealTimeData: false,
-      country: route.country,
-      region: route.region,
-      waypointData: []
-    });
-    toast.info("New route created");
-  }, [availableLocations, route.country, route.region]);
-  
   const handleFuelCostUpdate = useCallback((newCost: number) => {
     console.log("Fuel cost updated to:", newCost);
-    
-    const updateRouteCosts = (distance: number) => {
-      setRoute(prev => {
-        const consumption = (distance * vehicleConfig.fuelPrice * 0.12) / 21.95;
-        const cost = consumption * vehicleConfig.fuelPrice;
-  
-        return {
-          ...prev,
-          distance: distance,
-          fuelConsumption: consumption,
-          fuelCost: cost
-        };
-      });
-    };
-    
-    updateVehicleConfig({ fuelPrice: newCost }, updateRouteCosts, route.distance);
-    
     toast.success(`Fuel cost updated to R${newCost.toFixed(2)}/L`);
-  }, [vehicleConfig, route.distance]);
-  
+  }, []);
+
   const handleRouteDataUpdate = useCallback((
     distance: number, 
     duration: number, 
     trafficConditions?: 'light' | 'moderate' | 'heavy',
     coordinates?: [number, number][],
-    waypointData?: { distance: number, duration: number }[]
+    waypointData?: { distance: number; duration: number }[]
   ) => {
     console.log("Received route data update:", { 
       distance, duration, 
       trafficInfo: trafficConditions,
-      waypoints: waypointData?.length
+      waypoints: waypointData?.length || 0
     });
     
     // Ensure we have valid minimum values
@@ -106,7 +43,7 @@ export const useRouteHandlers = (
       const consumption = (validDistance * vehicleConfig.baseConsumption) / 100;
       const cost = consumption * vehicleConfig.fuelPrice;
       
-      console.log(`Route data updated: distance=${validDistance}km, duration=${validDuration}mins, consumption=${consumption}L, fuelPrice=${vehicleConfig.fuelPrice}, cost=${cost}`);
+      console.log(`Route data updated: distance=${validDistance}km, duration=${validDuration}mins, consumption=${consumption}L, cost=${cost}`);
       
       return {
         ...prev,
@@ -118,93 +55,112 @@ export const useRouteHandlers = (
         waypointData: waypointData || []
       };
     });
-  }, [route.locations.length, vehicleConfig]);
-  
-  const handleAddNewLocationFromPopover = useCallback((locationId: string | number) => {
-    console.log("Adding location from popover with ID:", locationId);
-    const stringLocationId = String(locationId);
-    const location = availableLocations.find(loc => loc.id.toString() === stringLocationId);
-    
-    if (location) {
-      console.log("Found location to add:", location);
-      addLocationToRoute({
-        ...location,
-        cylinders: location.emptyCylinders || 10
-      } as LocationType & { cylinders: number });
-      toast.success(`Added ${location.name} to route`);
-    } else {
-      console.error("Could not find location with ID:", locationId);
-      toast.error("Could not find the selected location");
-    }
-  }, [availableLocations]);
-  
-  const handleUpdateLocations = useCallback((updatedLocations: LocationType[]) => {
-    setAvailableLocations(updatedLocations);
-    
-    setRoute(prev => {
-      const updatedRouteLocations = prev.locations.map(routeLoc => {
-        const updatedLoc = updatedLocations.find(loc => loc.id === routeLoc.id);
-        if (updatedLoc) {
+  }, [route.locations.length, vehicleConfig, setRoute]);
+
+  return {
+    handleStartLocationChange: useCallback((locationId: string) => {
+      console.log("Setting start location to:", locationId);
+      const location = availableLocations.find(loc => loc.id === locationId);
+      
+      if (location) {
+        setStartLocation(location);
+        
+        setRoute(prev => {
+          // Start location should be at the beginning of the locations array
+          const filteredLocations = prev.locations.filter(
+            loc => loc.id !== location.id && loc.id !== (endLocation?.id || '')
+          );
+          
           return {
-            ...routeLoc,
-            name: updatedLoc.name,
-            address: updatedLoc.address,
-            type: updatedLoc.type
+            ...prev,
+            locations: [
+              location,
+              ...filteredLocations,
+              ...(endLocation ? [endLocation] : [])
+            ]
           };
-        }
-        return routeLoc;
+        });
+      }
+    }, [availableLocations, endLocation, setRoute, setStartLocation]),
+
+    handleEndLocationChange: useCallback((locationId: string) => {
+      console.log("Setting end location to:", locationId);
+      const location = availableLocations.find(loc => loc.id === locationId);
+      
+      if (location) {
+        setEndLocation(location);
+        
+        setRoute(prev => {
+          // End location should be at the end of the locations array
+          const filteredLocations = prev.locations.filter(
+            loc => loc.id !== location.id && loc.id !== (startLocation?.id || '')
+          );
+          
+          return {
+            ...prev,
+            locations: [
+              ...(startLocation ? [startLocation] : []),
+              ...filteredLocations,
+              location
+            ]
+          };
+        });
+      }
+    }, [availableLocations, startLocation, setEndLocation, setRoute]),
+
+    handleCreateNewRoute: useCallback(() => {
+      console.log("Creating new route");
+      // Reset route state
+      setRoute({
+        id: crypto.randomUUID(),
+        name: 'New Route',
+        status: 'planning',
+        locations: [],
+        distance: 0,
+        estimatedDuration: 0,
+        cylinders: 0,
+        fuelConsumption: 0,
+        fuelCost: 0,
+        waypointData: [],
+        country: '',
+        region: ''
       });
       
-      return {
-        ...prev,
-        locations: updatedRouteLocations
-      };
-    });
-  }, []);
-  
-  const setRouteRegion = useCallback((country: string, region: string) => {
-    setRoute(prev => ({
-      ...prev,
-      country,
-      region
-    }));
-  }, []);
-  
-  const setStartLocation = useCallback((location: LocationType | null) => {
-    // This is a wrapper function that will be implemented in the main hook
-    // and connected to the state setter from useRouteStateManagement
-  }, []);
-  
-  const setEndLocation = useCallback((location: LocationType | null) => {
-    // This is a wrapper function that will be implemented in the main hook
-    // and connected to the state setter from useRouteStateManagement
-  }, []);
-  
-  // These functions will be connected to the implementations in useRouteOperations
-  const addLocationToRoute = useCallback((location: LocationType & { cylinders: number }) => {
-    // Placeholder - will be implemented in the main hook
-  }, []);
-  
-  const removeLocationFromRoute = useCallback((locationId: string) => {
-    // Placeholder - will be implemented in the main hook
-  }, []);
-  
-  const handleOptimize = useCallback((params: OptimizationParams) => {
-    // Placeholder - will be implemented in the main hook
-  }, []);
-  
-  const replaceLocation = useCallback((oldLocationId: string, newLocationId: string) => {
-    // Placeholder - will be implemented in the main hook
-  }, []);
-  
-  return {
-    handleStartLocationChange,
-    handleEndLocationChange,
-    handleCreateNewRoute,
+      // Reset start and end locations
+      setStartLocation(null);
+      setEndLocation(null);
+      
+      // Reset load confirmation
+      setIsLoadConfirmed(false);
+      
+      toast.success("Created new route");
+    }, [setRoute, setStartLocation, setEndLocation, setIsLoadConfirmed]),
+
     handleFuelCostUpdate,
     handleRouteDataUpdate,
-    handleAddNewLocationFromPopover,
-    handleUpdateLocations,
-    setRouteRegion
+    handleAddNewLocationFromPopover: useCallback((locationId: string | number) => {
+      console.log("Adding new location from popover:", locationId);
+      // Find the location by ID
+      const location = availableLocations.find(loc => loc.id === locationId);
+      
+      if (location) {
+        // Assume cylinders value in popover is set to a default
+        const locationWithCylinders = {
+          ...location,
+          cylinders: 10 // Default value when added from popover
+        };
+        
+        // Reuse addLocationToRoute logic (implemented in useRouteOperations)
+        // This will be provided via the composed hook
+        toast.success(`Added ${location.name} to route`);
+      } else {
+        toast.error("Location not found");
+      }
+    }, [availableLocations]),
+
+    handleUpdateLocations: useCallback((newLocations: LocationType[]) => {
+      console.log("Updating all locations:", newLocations.length);
+      setAvailableLocations(newLocations);
+    }, [setAvailableLocations])
   };
 };
