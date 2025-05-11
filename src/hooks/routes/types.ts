@@ -2,6 +2,9 @@
 import { LocationType } from '@/types/location';
 
 export interface RouteState {
+  id?: string; // Make id optional to accommodate existing code patterns
+  name?: string; // Make name optional
+  status?: string; // Make status optional
   distance: number;
   fuelConsumption: number;
   fuelCost: number;

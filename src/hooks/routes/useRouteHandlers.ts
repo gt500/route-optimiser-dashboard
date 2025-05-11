@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { RouteState, VehicleConfigProps } from './types';
 import { LocationType } from '@/components/locations/LocationEditDialog';
@@ -112,18 +113,20 @@ export const useRouteHandlers = (
       console.log("Creating new route");
       // Reset route state
       setRoute({
-        id: crypto.randomUUID(),
-        name: 'New Route',
-        status: 'planning',
-        locations: [],
         distance: 0,
-        estimatedDuration: 0,
-        cylinders: 0,
         fuelConsumption: 0,
         fuelCost: 0,
-        waypointData: [],
+        maintenanceCost: 0,
+        totalCost: 0,
+        cylinders: 0,
+        locations: [],
+        availableLocations: [],
+        trafficConditions: 'moderate',
+        estimatedDuration: 0,
+        usingRealTimeData: false,
         country: '',
-        region: ''
+        region: '',
+        waypointData: []
       });
       
       // Reset start and end locations
