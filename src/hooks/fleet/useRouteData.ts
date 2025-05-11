@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { RouteData } from './types/routeTypes';
@@ -69,8 +70,8 @@ export const useRouteData = () => {
   const fetchRouteData = useCallback(async () => {
     console.log("Fetching route data in useRouteData hook");
     try {
-      const routes = await fetchRoutesQuery();
-      return routes.map(route => ({
+      const routesData = await fetchRoutesQuery();
+      return routesData.map(route => ({
         ...route,
         vehicle_name: 'Leyland Ashok Phoenix'
       }));
@@ -115,8 +116,8 @@ export const useRouteData = () => {
         );
       }
       
-      const routes = await fetchRouteHistoryQuery();
-      return routes.map(route => ({
+      const historyRoutes = await fetchRouteHistoryQuery();
+      return historyRoutes.map(route => ({
         ...route,
         vehicle_name: 'Leyland Ashok Phoenix'
       }));
@@ -129,8 +130,8 @@ export const useRouteData = () => {
   // Other query methods (unchanged)
   const fetchRouteDataByName = useCallback(async (routeName: string) => {
     console.log(`Fetching route data for ${routeName} in useRouteData hook`);
-    const routes = await fetchRouteDataByNameQuery(routeName);
-    return routes.map(route => ({
+    const routeData = await fetchRouteDataByNameQuery(routeName);
+    return routeData.map(route => ({
       ...route,
       vehicle_name: 'Leyland Ashok Phoenix'
     }));
