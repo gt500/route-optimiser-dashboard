@@ -51,6 +51,8 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
                 name={location.name}
                 position={[location.latitude, location.longitude]}
                 address={location.address}
+                index={index}
+                stopNumber={index + 1} // Adding the stop number based on the location's index
               />
             ))}
           </MapContainer>

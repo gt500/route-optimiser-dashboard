@@ -54,7 +54,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
     return null;
   }
   
-  // Use blue marker for all markers
+  // Use numbered marker for locations page views and route views
   const markerIcon = stopNumber 
     ? createNumberedMarker(stopNumber) 
     : createBlueMarker();
@@ -73,7 +73,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
           <Popup>
             <div className="p-1">
               <h3 className="font-medium text-sm">{name}</h3>
-              {stopNumber && <p className="text-xs text-gray-600">Stop #{stopNumber}</p>}
+              {stopNumber && <p className="text-xs text-gray-600">Location #{stopNumber}</p>}
               {address && <p className="text-xs text-gray-600">{address}</p>}
               {cylinders > 0 && <p className="text-xs font-medium text-blue-600">Delivery: {cylinders} cylinders</p>}
             </div>
@@ -89,7 +89,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
               <span className="text-xs font-medium text-blue-600">Delivery: {cylinders} cylinders</span>
             </div>
           )}
-          {stopNumber && <p className="text-xs text-gray-500 mt-1">Stop #{stopNumber}</p>}
+          {stopNumber && <p className="text-xs text-gray-500 mt-1">Location #{stopNumber}</p>}
         </div>
       </HoverCardContent>
     </HoverCard>
