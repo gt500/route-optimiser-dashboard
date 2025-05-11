@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
@@ -215,7 +214,7 @@ const RoutesList = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header component */}
+      {/* Header component with new props */}
       <RouteHeader
         onAddNewLocation={addNewLocation}
         onOpenRegionSelection={() => {
@@ -223,6 +222,10 @@ const RoutesList = () => {
           setRegionSelectionOpen(true);
         }}
         onCreateNewRoute={handleCreateRoute}
+        onOptimize={handleOptimizeRoute}
+        onConfirmLoad={handleConfirmLoad}
+        isLoadConfirmed={isLoadConfirmed}
+        isOptimizeDisabled={route.locations.length < 3 || isLoadConfirmed}
       />
 
       {/* Tabs component */}
@@ -258,7 +261,7 @@ const RoutesList = () => {
         onRegionChange={handleRegionChange}
       />
 
-      {/* Dialogs */}
+      {/* Dialogs - keep existing code */}
       <LocationEditDialog 
         open={newLocationDialog}
         onOpenChange={setNewLocationDialog}

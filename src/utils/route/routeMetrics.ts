@@ -33,16 +33,6 @@ export const calculateRouteMetrics = (
     // Clone the waypoint data to avoid modifying the original
     if (routingMachineData.waypointData && routingMachineData.waypointData.length > 0) {
       waypointDataModified = [...routingMachineData.waypointData];
-      
-      // Ensure each waypoint has unique values
-      waypointDataModified = waypointDataModified.map((point, index) => {
-        // Apply small variations based on index
-        const variationFactor = 0.95 + (index * 0.05);
-        return {
-          distance: Math.max(0.1, point.distance * variationFactor),
-          duration: Math.max(1, point.duration * variationFactor)
-        };
-      });
     }
   } 
   else if (locations.length > 1) {
@@ -57,24 +47,31 @@ export const calculateRouteMetrics = (
       const distance = calculateDistance(lat1, lon1, lat2, lon2);
       calculatedDistance += distance;
       
-      // Calculate segment duration based on distance with variations for each segment
-      const avgSpeed = AVG_SPEED_URBAN_KM_H + (i * 5); // Vary speed by segment
+      // Calculate segment duration based on distance
+      const avgSpeed = i % 2 === 0 ? AVG_SPEED_URBAN_KM_H : AVG_SPEED_RURAL_KM_H;
       const drivingTimeMinutes = (distance / avgSpeed) * 60;
       const stopTimeMinutes = MIN_STOP_TIME_MINUTES;
-      const totalSegmentTime = drivingTimeMinutes + stopTimeMinutes;
+      const totalSegmentTime = Math.max(1, drivingTimeMinutes) + stopTimeMinutes;
+      
+      calculatedDuration += totalSegmentTime;
       
       // Add this segment's data to our waypoint data
       if (i > 0) {
         waypointDataModified.push({
-          distance: distance,
-          duration: totalSegmentTime
+          distance: Math.max(0.1, distance),
+          duration: Math.max(1, totalSegmentTime)
         });
       }
     }
   }
   
+  // Set minimum default values if we have no data
   if (calculatedDistance <= 0) {
-    calculatedDistance = 45.7;
+    calculatedDistance = 0.1;
+  }
+  
+  if (calculatedDuration <= 0) {
+    calculatedDuration = locations.length * MIN_STOP_TIME_MINUTES;
   }
   
   const totalWeight = calculateTotalWeight(locations);
@@ -82,43 +79,10 @@ export const calculateRouteMetrics = (
   const fuelMultiplier = params.prioritizeFuel ? 0.9 : 1.0;
   const distanceMultiplier = params.optimizeForDistance ? 0.9 : 1.05;
   
-  let newDistance = calculatedDistance > 0 ? calculatedDistance : 45.7;
+  // Apply optimization parameters
+  let finalDistance = calculatedDistance * distanceMultiplier;
   
-  if (!useRoutingMachineData || calculatedDuration <= 0) {
-    let avgSpeed = AVG_SPEED_URBAN_KM_H;
-    
-    if (newDistance > 50) {
-      avgSpeed = (AVG_SPEED_URBAN_KM_H + AVG_SPEED_RURAL_KM_H) / 2;
-    } else if (newDistance > 100) {
-      avgSpeed = AVG_SPEED_RURAL_KM_H;
-    }
-    
-    const drivingTimeMinutes = (newDistance / avgSpeed) * 60;
-    const numStops = locations.length;
-    const stopTimeMinutes = numStops * MIN_STOP_TIME_MINUTES;
-    
-    calculatedDuration = drivingTimeMinutes + stopTimeMinutes;
-    
-    // Generate waypoint data if we don't have routing machine data
-    if (waypointDataModified.length === 0 && locations.length > 1) {
-      waypointDataModified = [{ distance: 0, duration: 0 }];
-      
-      // Create different segment values for each stop
-      for (let i = 1; i < locations.length; i++) {
-        // Vary the distance and duration based on the segment index
-        // This ensures each segment has unique values
-        const segmentFactor = 0.8 + (i * 0.1); // Values increase as we progress through route
-        const segmentDistance = (newDistance / (locations.length - 1)) * segmentFactor;
-        const segmentDuration = (calculatedDuration / locations.length) * segmentFactor;
-        
-        waypointDataModified.push({
-          distance: segmentDistance,
-          duration: segmentDuration
-        });
-      }
-    }
-  }
-  
+  // Adjust for real-time traffic conditions
   let trafficConditions: 'light' | 'moderate' | 'heavy' = 'moderate';
   
   if (params.useRealTimeData) {
@@ -126,40 +90,35 @@ export const calculateRouteMetrics = (
     let realTimeTrafficFactor = 1.0;
     
     if ((hourOfDay >= 7 && hourOfDay <= 9) || (hourOfDay >= 16 && hourOfDay <= 18)) {
-      realTimeTrafficFactor = 1.3 + (Math.random() * 0.2);
+      realTimeTrafficFactor = 1.2;
       trafficConditions = 'heavy';
     } else if ((hourOfDay >= 10 && hourOfDay <= 15) || (hourOfDay >= 19 && hourOfDay <= 20)) {
-      realTimeTrafficFactor = 1.0 + (Math.random() * 0.2);
+      realTimeTrafficFactor = 1.0;
       trafficConditions = 'moderate';
     } else {
-      realTimeTrafficFactor = 0.8 + (Math.random() * 0.1);
+      realTimeTrafficFactor = 0.85;
       trafficConditions = 'light';
     }
     
     if (!useRoutingMachineData) {
       calculatedDuration = calculatedDuration * realTimeTrafficFactor;
-      
-      // Update the waypoint durations based on traffic conditions
-      waypointDataModified = waypointDataModified.map(point => ({
-        ...point,
-        duration: point.duration * realTimeTrafficFactor
-      }));
     }
-    
-    newDistance = newDistance * distanceMultiplier;
   }
   
+  // Ensure we have minimum values
   calculatedDuration = Math.max(calculatedDuration, locations.length * MIN_STOP_TIME_MINUTES);
+  finalDistance = Math.max(0.1, finalDistance);
   
-  const fuelConsumption = calculateRouteFuelConsumption(newDistance, locations) * fuelMultiplier;
-  const fuelCost = Math.round(fuelConsumption * fuelCostPerLiter * 100) / 100;
-  const maintenanceCost = newDistance * 0.85;
+  // Calculate fuel consumption and costs
+  const fuelConsumption = calculateRouteFuelConsumption(finalDistance, locations) * fuelMultiplier;
+  const fuelCost = Math.max(0, fuelConsumption * fuelCostPerLiter);
+  const maintenanceCost = finalDistance * 0.85;
   
   return {
-    distance: Math.round(newDistance * 10) / 10,
-    duration: Math.round(calculatedDuration),
-    fuelConsumption: Math.round(fuelConsumption * 100) / 100,
-    fuelCost,
+    distance: Math.max(0.1, Math.round(finalDistance * 10) / 10),
+    duration: Math.max(1, Math.round(calculatedDuration)),
+    fuelConsumption: Math.max(0, Math.round(fuelConsumption * 100) / 100),
+    fuelCost: Math.round(fuelCost * 100) / 100,
     maintenanceCost: Math.round(maintenanceCost * 100) / 100,
     totalCost: Math.round((fuelCost + maintenanceCost) * 100) / 100,
     trafficConditions,

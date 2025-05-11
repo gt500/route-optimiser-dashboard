@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import FuelCostEditor from './FuelCostEditor';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
-import { ChevronDown, ChevronUp, Clock, Fuel, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Fuel } from 'lucide-react';
 import CylinderSelector from './LocationSelector/CylinderSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -69,18 +69,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       {/* Status indicator for route details */}
       <div className="flex justify-between items-center">
         <div className="text-lg font-medium">Route Information</div>
-        
-        {/* Moved Confirm Load Button to the top */}
-        <Button
-          variant={isLoadConfirmed ? "secondary" : "default"}
-          size="sm"
-          onClick={onConfirmLoad}
-          disabled={route.locations.length < 2}
-          className="flex items-center gap-1"
-        >
-          {isLoadConfirmed && <Check className="h-4 w-4" />}
-          {isLoadConfirmed ? "Load Confirmed" : "Confirm Load"}
-        </Button>
       </div>
 
       {/* Display traffic conditions */}
@@ -155,7 +143,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </Select>
       </div>
 
-      {/* Cost Breakdown */}
+      {/* Cost Breakdown - Remove currency indicators */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <div className="font-medium text-sm">Cost Breakdown</div>
@@ -182,7 +170,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         <div className="space-y-1">
           <div className="flex justify-between items-center text-sm py-1 border-b">
             <span>Fuel</span>
-            <span className="font-medium">R{formatNumber(route.fuelCost)}</span>
+            <span className="font-medium">{formatNumber(route.fuelCost)}</span>
           </div>
           
           {isAdvancedOpen && (
@@ -193,7 +181,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
               </div>
               <div className="flex justify-between items-center text-sm py-1 border-b">
                 <span>Maintenance</span>
-                <span>R{formatNumber(route.maintenanceCost)}</span>
+                <span>{formatNumber(route.maintenanceCost)}</span>
               </div>
               <div className="py-1">
                 <FuelCostEditor 
@@ -206,7 +194,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           
           <div className="flex justify-between items-center py-1 font-medium">
             <span>Total Cost</span>
-            <span className="text-lg">R{formatNumber(route.totalCost)}</span>
+            <span className="text-lg">{formatNumber(route.totalCost)}</span>
           </div>
         </div>
       </div>
@@ -229,18 +217,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Action Buttons - Removed Confirm Load from here */}
-      <div className="flex flex-col gap-2 pt-2">
-        <Button
-          variant="default"
-          className="w-full"
-          onClick={onOptimize}
-          disabled={route.locations.length < 3 || isLoadConfirmed}
-        >
-          Optimize Route
-        </Button>
       </div>
     </CardContent>
   );
