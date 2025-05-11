@@ -91,10 +91,11 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
       return;
     }
     
-    // Call the onComplete callback with the selected country and region
-    // The AlertDialogAction component will automatically close the dialog
+    // Pass the selected values to the parent
     onComplete(selectedCountry, selectedRegion);
-    console.log("Region selection complete handled by AlertDialog");
+    
+    // Close dialog
+    onOpenChange(false);
   };
 
   return (

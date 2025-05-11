@@ -84,19 +84,13 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       return;
     }
     
-    try {
-      // First explicitly close the dialog
+    // Call onComplete first, then close the dialog
+    onComplete(selectedCountry, selectedRegion);
+    
+    // Close the dialog after a small delay to ensure the callback completes
+    setTimeout(() => {
       onOpenChange(false);
-      
-      // Then call the onComplete callback with the selected country and region
-      // Wrap in setTimeout to ensure the dialog closing isn't interrupted
-      setTimeout(() => {
-        onComplete(selectedCountry, selectedRegion);
-        console.log("Region selection complete callback executed");
-      }, 10);
-    } catch (error) {
-      console.error("Error in handleContinue:", error);
-    }
+    }, 50);
   };
 
   return (

@@ -1,34 +1,69 @@
 
 import { CountryRegion } from '../types';
 
-// Define initial country-region structure
-const initialCountryRegions: CountryRegion[] = [
+// Default regions to use if no regions are found in storage
+const DEFAULT_REGIONS: CountryRegion[] = [
   {
-    country: "South Africa",
-    regions: ["Western Cape", "Gauteng", "Eastern Cape", "KZN"]
+    country: 'South Africa',
+    regions: ['Western Cape', 'Gauteng', 'KwaZulu-Natal', 'Eastern Cape', 'Free State']
   },
   {
-    country: "USA",
-    regions: ["Florida", "Oklahoma", "Texas", "Georgia"]
+    country: 'United States',
+    regions: ['California', 'Texas', 'Florida', 'New York', 'Washington']
   }
 ];
 
-// Get country regions from localStorage
+// Key used for local storage
+const STORAGE_KEY = 'countryRegions';
+
+// Get country regions from localStorage or return default if not found
 export const getStoredCountryRegions = (): CountryRegion[] => {
   try {
-    const stored = localStorage.getItem('countryRegions');
-    return stored ? JSON.parse(stored) : initialCountryRegions;
-  } catch (e) {
-    console.error('Failed to load country regions from localStorage', e);
-    return initialCountryRegions;
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    
+    if (!storedData) {
+      console.log('No stored regions found, using defaults');
+      saveCountryRegions(DEFAULT_REGIONS);
+      return DEFAULT_REGIONS;
+    }
+    
+    const parsedData = JSON.parse(storedData) as CountryRegion[];
+    
+    // Check if the data is valid
+    if (!Array.isArray(parsedData) || parsedData.length === 0) {
+      console.warn('Invalid stored regions data, using defaults');
+      saveCountryRegions(DEFAULT_REGIONS);
+      return DEFAULT_REGIONS;
+    }
+    
+    return parsedData;
+  } catch (error) {
+    console.error('Error retrieving regions from localStorage:', error);
+    return DEFAULT_REGIONS;
   }
 };
 
 // Save country regions to localStorage
-export const saveCountryRegions = (countryRegions: CountryRegion[]): void => {
+export const saveCountryRegions = (regions: CountryRegion[]): void => {
   try {
-    localStorage.setItem('countryRegions', JSON.stringify(countryRegions));
-  } catch (e) {
-    console.error('Failed to save country regions to localStorage', e);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
+  } catch (error) {
+    console.error('Error saving regions to localStorage:', error);
   }
+};
+
+// Add a new country if it doesn't exist
+export const addCountry = (country: string): CountryRegion[] => {
+  const regions = getStoredCountryRegions();
+  
+  if (!regions.some(r => r.country === country)) {
+    const updatedRegions = [
+      ...regions,
+      { country, regions: [] }
+    ];
+    saveCountryRegions(updatedRegions);
+    return updatedRegions;
+  }
+  
+  return regions;
 };

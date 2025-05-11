@@ -21,7 +21,9 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
   useEffect(() => {
     if (activeTab === 'create' && !isLoadConfirmed && !regionSelectionOpen) {
       console.log("Opening region selection dialog from useEffect in RouteInitialLocation");
-      setRegionSelectionOpen(true);
+      setTimeout(() => {
+        setRegionSelectionOpen(true);
+      }, 100);
     }
   }, [activeTab, isLoadConfirmed, regionSelectionOpen, setRegionSelectionOpen]);
 
@@ -33,24 +35,15 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
       return;
     }
     
-    // First close the dialog to ensure UI updates properly
-    setRegionSelectionOpen(false);
-    
-    // Then call the parent handler with selected region data with a small delay
-    // This ensures the dialog closing animation completes before the next state update
-    setTimeout(() => {
-      onRegionChange(country, region);
-      console.log("Region change propagated to parent from RouteInitialLocation");
-    }, 100);
+    // Handle the region change
+    onRegionChange(country, region);
+    console.log("Region change propagated to parent from RouteInitialLocation");
   };
 
   return (
     <RegionSelectionDialog
       open={regionSelectionOpen}
-      onOpenChange={(open) => {
-        console.log("Dialog onOpenChange called with:", open);
-        setRegionSelectionOpen(open);
-      }}
+      onOpenChange={setRegionSelectionOpen}
       onComplete={handleRegionComplete}
     />
   );

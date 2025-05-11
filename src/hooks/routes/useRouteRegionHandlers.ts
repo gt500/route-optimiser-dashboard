@@ -17,6 +17,7 @@ export const useRouteRegionHandlers = (
     
     // Update the route state with the new country and region
     setRoute(prev => {
+      console.log("Previous route state:", prev);
       const updatedRoute = {
         ...prev,
         country,
