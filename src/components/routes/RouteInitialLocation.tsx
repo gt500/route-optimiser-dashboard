@@ -26,14 +26,16 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
   }, [activeTab, isLoadConfirmed, regionSelectionOpen, setRegionSelectionOpen]);
 
   const handleRegionComplete = (country: string, region: string) => {
-    console.log("Region selection completed with:", country, region);
+    console.log("Region selection completed in RouteInitialLocation with:", country, region);
     
-    // Call the parent handler with selected region data
-    onRegionChange(country, region);
-    
-    // Force close the dialog
-    console.log("Closing region selection dialog after selection complete");
+    // First close the dialog to ensure UI updates properly
     setRegionSelectionOpen(false);
+    
+    // Then call the parent handler with selected region data with a small delay
+    setTimeout(() => {
+      onRegionChange(country, region);
+      console.log("Region change propagated to parent from RouteInitialLocation");
+    }, 10);
   };
 
   return (

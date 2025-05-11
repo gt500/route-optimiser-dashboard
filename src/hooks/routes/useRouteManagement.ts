@@ -5,6 +5,7 @@ import { useRouteStateManagement } from './useRouteStateManagement';
 import { useRouteHandlers } from './useRouteHandlers';
 import { useRouteOperations } from './useRouteOperations';
 import { useSaveRoute } from './useSaveRoute';
+import { useRouteRegionHandlers } from './useRouteRegionHandlers';
 
 export { 
   routeOptimizationDefaultParams, 
@@ -56,6 +57,9 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
   // Get save route functionality
   const { handleConfirmLoad } = useSaveRoute(route, setIsLoadConfirmed, selectedVehicle);
 
+  // Get region handling functionality
+  const { setRouteRegion } = useRouteRegionHandlers(setRoute);
+
   // Get route handlers
   const {
     handleStartLocationChange,
@@ -65,7 +69,6 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     handleRouteDataUpdate,
     handleAddNewLocationFromPopover,
     handleUpdateLocations,
-    setRouteRegion
   } = useRouteHandlers(
     route,
     setRoute,
@@ -75,10 +78,7 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     setAvailableLocations,
     vehicleConfig,
     setIsLoadConfirmed,
-    updateVehicleConfig,
-    setStartLocation,
-    setEndLocation,
-    addLocationToRoute
+    updateVehicleConfig
   );
 
   return {

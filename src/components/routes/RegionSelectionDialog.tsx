@@ -25,6 +25,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      console.log("RegionSelectionDialog opened, fetching regions");
       const regions = getStoredCountryRegions();
       setCountriesWithRegions(regions);
       
@@ -44,7 +45,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
         }
       }
     }
-  }, [open]); // Re-initialize when dialog opens
+  }, [open]); 
 
   useEffect(() => {
     if (selectedCountry) {
@@ -83,14 +84,19 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       return;
     }
     
-    // First call the onComplete callback with the selected country and region
-    onComplete(selectedCountry, selectedRegion);
-    
-    // Then explicitly close the dialog with a slight delay to ensure state updates
-    setTimeout(() => {
-      console.log("Explicitly closing dialog after selection complete");
+    try {
+      // First explicitly close the dialog
       onOpenChange(false);
-    }, 10);
+      
+      // Then call the onComplete callback with the selected country and region
+      // Wrap in setTimeout to ensure the dialog closing isn't interrupted
+      setTimeout(() => {
+        onComplete(selectedCountry, selectedRegion);
+        console.log("Region selection complete callback executed");
+      }, 10);
+    } catch (error) {
+      console.error("Error in handleContinue:", error);
+    }
   };
 
   return (

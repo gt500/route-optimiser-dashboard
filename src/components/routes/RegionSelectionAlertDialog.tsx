@@ -8,7 +8,6 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogAction,
-  AlertDialogCancel
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +32,7 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      console.log("RegionSelectionAlertDialog opened, fetching regions");
       const regions = getStoredCountryRegions();
       setCountriesWithRegions(regions);
       
@@ -92,10 +92,9 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
     }
     
     // Call the onComplete callback with the selected country and region
+    // The AlertDialogAction component will automatically close the dialog
     onComplete(selectedCountry, selectedRegion);
-    
-    // Explicitly close the dialog - AlertDialog handles this better
-    onOpenChange(false);
+    console.log("Region selection complete handled by AlertDialog");
   };
 
   return (
@@ -148,7 +147,7 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
           </div>
         </div>
         <AlertDialogFooter>
-          <AlertDialogAction onClick={handleContinue} className="w-full">Continue</AlertDialogAction>
+          <AlertDialogAction onClick={handleContinue}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

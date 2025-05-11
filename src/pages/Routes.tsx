@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
@@ -177,14 +178,16 @@ const RoutesList = () => {
     setSelectedCountry(country);
     setSelectedRegion(region);
     
-    // Update route state
+    // Update route state - this should trigger UI updates
     setRouteRegion(country, region);
     
     // Show confirmation toast
     toast.success(`Selected region: ${region}, ${country}`);
     
-    // Force close dialog by directly setting state
+    // Force close both dialogs
     setRegionSelectionOpen(false);
+    
+    console.log("Region change complete in RoutesList");
   };
 
   const handleCreateRoute = () => {
