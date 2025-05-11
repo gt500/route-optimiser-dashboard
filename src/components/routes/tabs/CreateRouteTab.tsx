@@ -9,6 +9,7 @@ import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteEndpoints from '../RouteEndpoints';
 import RouteOptimizationPanel from '../RouteOptimizationPanel';
+import { Button } from '@/components/ui/button'; // Added this import to fix the error
 
 interface CreateRouteTabProps {
   route: {
