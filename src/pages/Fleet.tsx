@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 import { useFleetData } from '@/hooks/useFleetData';
 import MaintenanceScheduleTable from '@/components/fleet/MaintenanceScheduleTable';
+import FuelCostEditor from '@/components/fleet/costs/FuelCostEditor';
 
 import VehicleStatusCards from '@/components/fleet/overview/VehicleStatusCards';
 import VehicleTable from '@/components/fleet/overview/VehicleTable';
@@ -47,6 +48,7 @@ const Fleet = () => {
   
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [fuelCost, setFuelCost] = useState(21.95); // Default fuel cost
 
   const statusCounts = {
     available: vehicles.filter(v => v.status === 'Available').length,
@@ -93,6 +95,11 @@ const Fleet = () => {
     return `${vehicleMaintenance[0].type}: ${vehicleMaintenance[0].date}`;
   };
 
+  const handleFuelCostUpdate = (newCost: number) => {
+    setFuelCost(newCost);
+    // In a real app, we would also update this in a database or global state
+  };
+
   return (
     <div className="space-y-6 animate-fade-in bg-black text-white">
       <div className="flex items-center justify-between">
@@ -121,6 +128,17 @@ const Fleet = () => {
         <TabsContent value="overview" className="space-y-6">
           {/* Status Cards */}
           <VehicleStatusCards statusCounts={statusCounts} />
+
+          {/* Add Fuel Cost Editor */}
+          <Card className="bg-black/70 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white">Operational Parameters</CardTitle>
+              <CardDescription className="text-white/60">Update vehicle operational costs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FuelCostEditor value={fuelCost} onUpdate={handleFuelCostUpdate} />
+            </CardContent>
+          </Card>
 
           {/* Vehicle Table */}
           <Card className="hover:shadow-md transition-shadow duration-300 bg-black/70 border-white/10">
