@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus, TruckIcon, RefreshCw } from 'lucide-react';
+
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VehicleEditDialog } from '@/components/fleet/VehicleEditDialog';
 import { useFleetData } from '@/hooks/useFleetData';
 import MaintenanceScheduleTable from '@/components/fleet/MaintenanceScheduleTable';
-import FuelCostEditor from '@/components/fleet/costs/FuelCostEditor';
-
-import VehicleStatusCards from '@/components/fleet/overview/VehicleStatusCards';
-import VehicleTable from '@/components/fleet/overview/VehicleTable';
-import MetricsCards from '@/components/fleet/overview/MetricsCards';
+import FleetHeader from '@/components/fleet/FleetHeader';
+import FleetOverviewContent from '@/components/fleet/overview/FleetOverviewContent';
 import CostTables from '@/components/fleet/costs/CostTables';
 import CostSummaryCard from '@/components/fleet/costs/CostSummaryCard';
+import { useFleetMaintenanceHelper } from '@/hooks/fleet/useFleetMaintenanceHelper';
+import { useFleetCostState } from '@/hooks/fleet/useFleetCostState';
+import { useFleetVehicleEditor } from '@/hooks/fleet/useFleetVehicleEditor';
 
 const variableCosts = [
   { type: '15inch Tyres', description: '4 Tyres', cost: 2115, notes: 'lasts 4-5 months' },
@@ -46,77 +44,31 @@ const Fleet = () => {
     sampleTimeline
   } = useFleetData();
   
-  const [editingVehicle, setEditingVehicle] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [fuelCost, setFuelCost] = useState(21.95); // Default fuel cost
+  // Custom hooks for managing Fleet page state
+  const { fuelCost, handleFuelCostUpdate } = useFleetCostState();
+  const { getUpcomingMaintenanceByVehicle } = useFleetMaintenanceHelper(maintenanceItems);
+  const { 
+    editingVehicle, 
+    isDialogOpen, 
+    handleEditVehicle, 
+    handleSaveVehicle, 
+    handleAddVehicle, 
+    closeDialog 
+  } = useFleetVehicleEditor(saveVehicle);
 
+  // Calculate status counts for the status cards
   const statusCounts = {
     available: vehicles.filter(v => v.status === 'Available').length,
     onRoute: vehicles.filter(v => v.status === 'On Route').length,
     maintenance: vehicles.filter(v => v.status === 'Maintenance').length,
   };
 
-  const handleEditVehicle = (vehicle) => {
-    setEditingVehicle(vehicle);
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveVehicle = (updatedVehicle) => {
-    saveVehicle(updatedVehicle).then(() => {
-      setIsDialogOpen(false);
-      setEditingVehicle(null);
-    });
-  };
-
-  const handleAddVehicle = () => {
-    setEditingVehicle({
-      id: '',
-      name: 'Leyland Ashok Phoenix', // Updated to Leyland Ashok Phoenix
-      licensePlate: '',
-      status: 'Available',
-      capacity: 80,
-      load: 0,
-      fuelLevel: 100,
-      location: '',
-      lastService: new Date().toISOString().split('T')[0],
-      country: 'South Africa',
-      region: '',
-      startDate: '2025-04-16'
-    });
-    setIsDialogOpen(true);
-  };
-
-  const getUpcomingMaintenanceByVehicle = (vehicle) => {
-    const startDate = "2025-04-15";
-    const vehicleMaintenance = maintenanceItems
-      .filter(item => item.vehicleId === vehicle.id && item.date >= startDate)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    if (vehicleMaintenance.length === 0) return "No upcoming maintenance";
-    return `${vehicleMaintenance[0].type}: ${vehicleMaintenance[0].date}`;
-  };
-
-  const handleFuelCostUpdate = (newCost: number) => {
-    setFuelCost(newCost);
-    // In a real app, we would also update this in a database or global state
-  };
-
   return (
     <div className="space-y-6 animate-fade-in bg-black text-white">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Fleet Management</h1>
-          <p className="text-muted-foreground">Monitor and manage delivery vehicles</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={refreshData} size="icon" variant="outline">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button onClick={handleAddVehicle} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Vehicle
-          </Button>
-        </div>
-      </div>
+      <FleetHeader 
+        onAddVehicle={handleAddVehicle}
+        onRefreshData={refreshData}
+      />
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="bg-black/50 border-white/10">
@@ -125,65 +77,17 @@ const Fleet = () => {
           <TabsTrigger value="costs">Cost Analysis</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="space-y-6">
-          {/* Status Cards */}
-          <VehicleStatusCards statusCounts={statusCounts} />
-
-          {/* Add Fuel Cost Editor */}
-          <Card className="bg-black/70 border-white/10">
-            <CardHeader>
-              <CardTitle className="text-white">Operational Parameters</CardTitle>
-              <CardDescription className="text-white/60">Update vehicle operational costs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FuelCostEditor value={fuelCost} onUpdate={handleFuelCostUpdate} />
-            </CardContent>
-          </Card>
-
-          {/* Vehicle Table */}
-          <Card className="hover:shadow-md transition-shadow duration-300 bg-black/70 border-white/10">
-            <CardHeader>
-              <CardTitle className="text-white">Vehicle Fleet</CardTitle>
-              <CardDescription className="text-white/60">Status and details of all vehicles</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="py-4 text-center text-white/60">Loading vehicle data...</div>
-              ) : (
-                <VehicleTable 
-                  vehicles={vehicles}
-                  isLoading={isLoading}
-                  onEditVehicle={handleEditVehicle}
-                  getUpcomingMaintenanceByVehicle={getUpcomingMaintenanceByVehicle}
-                />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* New: List of upcoming maintenance for each vehicle based on start date */}
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Upcoming Maintenance</h2>
-            <div className="space-y-2">
-              {vehicles.map((vehicle) => (
-                <div
-                  key={vehicle.id}
-                  className="border border-white/10 rounded-md p-2 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <span className="font-medium">
-                    {vehicle.name} ({vehicle.licensePlate || "No plate"})
-                  </span>
-                  <span className="text-sm text-amber-300">
-                    {getUpcomingMaintenanceByVehicle(vehicle)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Metrics Cards */}
-          <MetricsCards 
-            maintenanceItems={maintenanceItems} 
-            performanceMetrics={performanceMetrics} 
+        <TabsContent value="overview">
+          <FleetOverviewContent
+            vehicles={vehicles}
+            statusCounts={statusCounts}
+            maintenanceItems={maintenanceItems}
+            performanceMetrics={performanceMetrics}
+            isLoading={isLoading}
+            fuelCost={fuelCost}
+            onFuelCostUpdate={handleFuelCostUpdate}
+            onEditVehicle={handleEditVehicle}
+            getUpcomingMaintenanceByVehicle={getUpcomingMaintenanceByVehicle}
           />
         </TabsContent>
         
@@ -213,10 +117,7 @@ const Fleet = () => {
       
       <VehicleEditDialog 
         isOpen={isDialogOpen}
-        onClose={() => {
-          setIsDialogOpen(false);
-          setEditingVehicle(null);
-        }}
+        onClose={closeDialog}
         vehicle={editingVehicle}
         onSave={handleSaveVehicle}
       />
