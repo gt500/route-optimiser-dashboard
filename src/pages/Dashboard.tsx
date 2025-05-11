@@ -14,8 +14,7 @@ const Dashboard = () => {
     fleetData, 
     routeOptimizationStats, 
     weeklyDeliveryData,
-    recentRoutes,
-    upcomingDeliveries
+    recentRoutes
   } = useDashboardData();
 
   return (
@@ -44,7 +43,7 @@ const Dashboard = () => {
         
         <div className="space-y-6">
           <RecentRoutes routes={recentRoutes} />
-          <UpcomingDeliveries deliveries={upcomingDeliveries} />
+          <UpcomingDeliveries />
         </div>
       </div>
     </DashboardShell>

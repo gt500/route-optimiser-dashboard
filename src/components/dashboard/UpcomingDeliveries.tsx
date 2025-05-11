@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useRouteData } from '@/hooks/fleet/useRouteData';
+import { toast } from 'sonner';
 
 interface DeliveryItemProps {
   id: string;
@@ -15,11 +17,40 @@ interface DeliveryItemProps {
 }
 
 interface UpcomingDeliveriesProps {
-  deliveries: DeliveryItemProps[];
+  deliveries?: DeliveryItemProps[];
 }
 
-const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) => {
+const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: propDeliveries }) => {
   const navigate = useNavigate();
+  const [deliveries, setDeliveries] = useState<DeliveryItemProps[]>([]);
+  const { fetchActiveRoutes, isLoading } = useRouteData();
+  
+  // Fetch active routes directly to ensure sync with routes page
+  useEffect(() => {
+    const loadActiveRoutes = async () => {
+      try {
+        const activeRoutes = await fetchActiveRoutes();
+        
+        // Transform active routes into the delivery format
+        const formattedDeliveries = activeRoutes.map(route => ({
+          id: route.id,
+          name: route.name,
+          date: route.date,
+          locationsCount: route.stops?.length || 0,
+          cylindersCount: route.total_cylinders || 0,
+          status: route.status
+        })).slice(0, 3); // Take only first 3
+        
+        setDeliveries(formattedDeliveries);
+      } catch (error) {
+        console.error('Error loading active routes for dashboard:', error);
+        toast.error('Failed to load upcoming deliveries');
+        setDeliveries([]);
+      }
+    };
+    
+    loadActiveRoutes();
+  }, [fetchActiveRoutes]);
   
   const handleNavigateToRoutes = () => {
     // Navigate to routes page with active tab selected
@@ -38,7 +69,16 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) =
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {deliveries.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
+              <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <div className="font-medium">Loading deliveries...</div>
+              </div>
+            </div>
+          ) : deliveries.length > 0 ? (
             deliveries.map((delivery) => (
               <div key={delivery.id} className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
                 <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
@@ -47,7 +87,7 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries }) =
                 <div className="flex-1">
                   <div className="font-medium">{delivery.name}</div>
                   <div className="text-sm text-gray-400">
-                    {delivery.locationsCount || 0} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
+                    {delivery.locationsCount} locations • {delivery.cylindersCount} cylinders • {new Date(delivery.date).toLocaleDateString()}
                   </div>
                 </div>
                 <div className={`px-2 py-1 text-xs font-medium rounded-full ${

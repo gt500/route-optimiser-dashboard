@@ -12,7 +12,6 @@ export const useDashboardData = () => {
   const [routeOptimizationStats, setRouteOptimizationStats] = useState<any>(null);
   const [weeklyDeliveryData, setWeeklyDeliveryData] = useState<any>(null);
   const [recentRoutes, setRecentRoutes] = useState<any[]>([]);
-  const [upcomingDeliveries, setUpcomingDeliveries] = useState<any[]>([]);
   const { toast } = useToast();
   const routeDataHook = useRouteData();
 
@@ -35,16 +34,10 @@ export const useDashboardData = () => {
       
       // Get recent and upcoming routes
       const routeHistory = await routeDataHook.fetchRouteHistory();
-      const activeRoutes = await routeDataHook.fetchActiveRoutes();
       
       // Set recent routes (last 3 completed routes)
       const recentRoutesData = routeHistory
         .filter(route => route.status === 'completed')
-        .slice(0, 3);
-      
-      // Set upcoming deliveries (next 3 scheduled routes)
-      const upcomingDeliveriesData = activeRoutes
-        .filter(route => route.status === 'scheduled' || route.status === 'in_progress')
         .slice(0, 3);
       
       // Set the state with fetched data
@@ -52,14 +45,12 @@ export const useDashboardData = () => {
       setRouteOptimizationStats(optimizationStats);
       setWeeklyDeliveryData(weeklyData);
       setRecentRoutes(recentRoutesData);
-      setUpcomingDeliveries(upcomingDeliveriesData);
       
       // Log the fetched data
       console.log("Fetched fleet data:", fleetData);
       console.log("Fetched route optimization stats:", optimizationStats);
       console.log("Fetched weekly delivery data:", weeklyData);
       console.log("Recent routes:", recentRoutesData);
-      console.log("Upcoming deliveries:", upcomingDeliveriesData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast({
@@ -82,7 +73,8 @@ export const useDashboardData = () => {
     routeOptimizationStats,
     weeklyDeliveryData,
     recentRoutes,
-    upcomingDeliveries,
     fetchDashboardData
   };
 };
+
+export default useDashboardData;
