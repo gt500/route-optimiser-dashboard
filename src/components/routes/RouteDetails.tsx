@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import FuelCostEditor from './FuelCostEditor';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
-import { ChevronDown, ChevronUp, Clock, Fuel } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Fuel, Check } from 'lucide-react';
 import CylinderSelector from './LocationSelector/CylinderSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -70,7 +70,22 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
       <div className="flex justify-between items-center">
         <div className="text-lg font-medium">Route Information</div>
         
-        {route.trafficConditions && (
+        {/* Moved Confirm Load Button to the top */}
+        <Button
+          variant={isLoadConfirmed ? "secondary" : "default"}
+          size="sm"
+          onClick={onConfirmLoad}
+          disabled={route.locations.length < 2}
+          className="flex items-center gap-1"
+        >
+          {isLoadConfirmed && <Check className="h-4 w-4" />}
+          {isLoadConfirmed ? "Load Confirmed" : "Confirm Load"}
+        </Button>
+      </div>
+
+      {/* Display traffic conditions */}
+      {route.trafficConditions && (
+        <div className="flex justify-end">
           <div className={`px-3 py-1 rounded-full text-sm ${
             route.trafficConditions === 'light' 
               ? 'bg-green-100 text-green-800' 
@@ -80,8 +95,8 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           }`}>
             {route.trafficConditions.charAt(0).toUpperCase() + route.trafficConditions.slice(1)} traffic
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Start/End Locations - Only show if not hidden */}
       {!hideEndpoints && route.locations.length > 0 && (
@@ -216,7 +231,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Removed Confirm Load from here */}
       <div className="flex flex-col gap-2 pt-2">
         <Button
           variant="default"
@@ -225,15 +240,6 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
           disabled={route.locations.length < 3 || isLoadConfirmed}
         >
           Optimize Route
-        </Button>
-        
-        <Button
-          variant={isLoadConfirmed ? "secondary" : "outline"}
-          className="w-full"
-          onClick={onConfirmLoad}
-          disabled={route.locations.length < 2}
-        >
-          {isLoadConfirmed ? "✓ Load Confirmed" : "Confirm Load"}
         </Button>
       </div>
     </CardContent>

@@ -61,6 +61,7 @@ const RouteMarkers: React.FC<RouteMarkersProps> = ({
             position={[loc.latitude, loc.longitude]}
             address={loc.address}
             stopNumber={showStopNumbers ? index + 1 : undefined}
+            cylinders={loc.cylinders} // Pass cylinders information
           />
         );
       })}

@@ -19,7 +19,7 @@ interface LocationIconOptions {
 export const createDepotIconHtml = (options: DepotIconOptions = {}): string => {
   const { label, isStart = false, isEnd = false, customSize = 34 } = options;
   
-  const bgColor = isStart ? '#22c55e' : isEnd ? '#ef4444' : '#6366F1';
+  const bgColor = isStart ? '#22c55e' : isEnd ? '#ef4444' : '#3b82f6'; // Changed default to blue
   
   return `
     <div class="flex items-center justify-center rounded-full bg-white p-1 shadow-md" style="width: ${customSize}px; height: ${customSize}px;">
@@ -33,14 +33,14 @@ export const createDepotIconHtml = (options: DepotIconOptions = {}): string => {
 
 // Create location marker HTML content
 export const createLocationIconHtml = (options: LocationIconOptions = {}): string => {
-  const { label, type, color = '#6366F1', customSize = 28 } = options;
+  const { label, type, color = '#3b82f6', customSize = 28 } = options; // Changed default to blue
   
-  // Determine color based on location type
+  // Determine color based on location type, but default to blue
   let iconColor = color;
   if (type === 'Customer') {
     iconColor = '#3b82f6'; // Blue for customers
   } else if (type === 'Storage') {
-    iconColor = '#f59e0b'; // Amber for storage locations
+    iconColor = '#3b82f6'; // Changed to blue for storage locations
   } else if (type === 'end') {
     iconColor = '#ef4444'; // Red for end locations
   } else if (type === 'depot') {

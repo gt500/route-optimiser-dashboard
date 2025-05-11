@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
 import { hasValidMapboxToken } from '@/utils/route/mapboxUtils';
 import MapboxTokenInput from './map-components/MapboxTokenInput';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { LocationMarker } from './map-components/LocationMarker';
 
 interface RouteMapProps {
   locations: LocationInfo[];
@@ -44,8 +46,8 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Default map center and zoom
   const defaultCenter: [number, number] = [-33.93, 18.52];
 
-  // Custom marker icon
-  const customIcon = (color: string) => new L.Icon({
+  // Custom marker icon - blue for all markers
+  const customIcon = (color: string = 'blue') => new L.Icon({
     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
     iconSize: [25, 41],
@@ -124,57 +126,39 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
           {/* Render start location marker */}
           {startLocation && (
-            <Marker 
-              position={[startLocation.latitude, startLocation.longitude]} 
-              {...({ icon: customIcon('green') } as any)}
-            >
-              <Popup>
-                <div className="text-center">
-                  <h3 className="font-semibold">{startLocation.name}</h3>
-                  <p className="text-sm">{startLocation.address}</p>
-                </div>
-              </Popup>
-            </Marker>
+            <LocationMarker
+              id={startLocation.id}
+              name={`Start: ${startLocation.name}`}
+              position={[startLocation.latitude, startLocation.longitude]}
+              address={startLocation.address}
+              cylinders={0}
+              stopNumber={0}
+            />
           )}
 
           {/* Render end location marker */}
           {endLocation && (
-            <Marker 
-              position={[endLocation.latitude, endLocation.longitude]} 
-              {...({ icon: customIcon('red') } as any)}
-            >
-              <Popup>
-                <div className="text-center">
-                  <h3 className="font-semibold">{endLocation.name}</h3>
-                  <p className="text-sm">{endLocation.address}</p>
-                </div>
-              </Popup>
-            </Marker>
+            <LocationMarker
+              id={endLocation.id}
+              name={`End: ${endLocation.name}`}
+              position={[endLocation.latitude, endLocation.longitude]}
+              address={endLocation.address}
+              cylinders={0}
+              stopNumber={locations.length + 1}
+            />
           )}
 
           {/* Render location markers */}
-          {locations && locations.map((location) => (
-            <Marker 
+          {locations && locations.map((location, idx) => (
+            <LocationMarker
               key={location.id} 
+              id={location.id}
+              name={location.name}
               position={[location.latitude, location.longitude]}
-              {...({ icon: customIcon('grey') } as any)}
-            >
-              <Popup>
-                <div className="text-center">
-                  <h3 className="font-semibold">{location.name}</h3>
-                  <p className="text-sm">{location.address}</p>
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => handleLocationClick(location.id)}
-                  >
-                    <MapPin className="h-4 w-4 mr-2" />
-                    View Deliveries
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
+              address={location.address}
+              cylinders={location.cylinders}
+              stopNumber={idx + 1}
+            />
           ))}
         </MapContainer>
       </div>
