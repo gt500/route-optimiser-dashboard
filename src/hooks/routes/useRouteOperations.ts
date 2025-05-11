@@ -3,6 +3,7 @@ import { LocationType } from '@/components/locations/LocationEditDialog';
 import { useState } from 'react';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
 import { toast } from 'sonner';
+import { optimizeLocationOrder } from '@/utils/route/optimizationUtils';
 
 export const useRouteOperations = (
   route: RouteState,
@@ -93,29 +94,52 @@ export const useRouteOperations = (
   }) => {
     console.log("Optimizing route with params:", params);
 
+    // Check if we have enough locations to optimize
+    if (route.locations.length <= 2) {
+      toast.warning("Need at least 3 locations to optimize route");
+      return;
+    }
+
     setRoute(prevRoute => {
-      // Clone the locations array to avoid modifying the original directly
-      const optimizedLocations = [...prevRoute.locations];
+      // Get all locations excluding start and end (if they exist)
+      let middleLocations = [...prevRoute.locations];
+      let fixedStartLocation = null;
+      let fixedEndLocation = null;
 
-      // Basic optimization: sort locations by name
-      optimizedLocations.sort((a, b) => a.name.localeCompare(b.name));
+      // Extract start location if it exists
+      if (startLocation) {
+        const startIndex = middleLocations.findIndex(loc => loc.id === startLocation.id);
+        if (startIndex !== -1) {
+          fixedStartLocation = middleLocations[startIndex];
+          middleLocations.splice(startIndex, 1);
+        }
+      }
 
-      // Ensure start and end locations remain in their positions
-      const routeStartLocation = optimizedLocations.find(loc => 
-        loc.id === (startLocation?.id || ''));
-      const routeEndLocation = optimizedLocations.find(loc => 
-        loc.id === (endLocation?.id || ''));
+      // Extract end location if it exists
+      if (endLocation) {
+        const endIndex = middleLocations.findIndex(loc => loc.id === endLocation.id);
+        if (endIndex !== -1) {
+          fixedEndLocation = middleLocations[endIndex];
+          middleLocations.splice(endIndex, 1);
+        }
+      }
 
-      const filteredLocations = optimizedLocations.filter(loc =>
-        loc.id !== (startLocation?.id || '') && loc.id !== (endLocation?.id || '')
+      // Use the optimization utility to reorder the middle locations
+      const optimizedMiddle = optimizeLocationOrder(
+        fixedStartLocation || middleLocations[0],
+        middleLocations,
+        fixedEndLocation || middleLocations[middleLocations.length - 1],
+        params
       );
 
-      // Reconstruct the route with start and end locations in place
+      // Reconstruct the route with start and end fixed in place
       const newLocations = [
-        ...(routeStartLocation ? [routeStartLocation] : []),
-        ...filteredLocations,
-        ...(routeEndLocation ? [routeEndLocation] : [])
+        ...(fixedStartLocation ? [fixedStartLocation] : []),
+        ...optimizedMiddle,
+        ...(fixedEndLocation ? [fixedEndLocation] : [])
       ];
+
+      toast.success("Route optimized successfully");
 
       return {
         ...prevRoute,

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button'; // Added Button import
 import RouteDetails from '../RouteDetails';
 import RouteMap from '../RouteMap';
 import RouteLocations from '../RouteLocations';
@@ -9,7 +10,6 @@ import { VehicleConfigProps } from '@/hooks/routes/types';
 import { Vehicle } from '@/types/fleet';
 import RouteEndpoints from '../RouteEndpoints';
 import RouteOptimizationPanel from '../RouteOptimizationPanel';
-import { Button } from '@/components/ui/button'; // Added this import to fix the error
 
 interface CreateRouteTabProps {
   route: {
@@ -227,6 +227,7 @@ const CreateRouteTab: React.FC<CreateRouteTabProps> = ({
           )}
         </Card>
         
+        {/* Bottom buttons */}
         <div className="flex justify-between">
           <Button 
             variant="outline" 

@@ -20,11 +20,28 @@ export const calculateRouteMetrics = (
     waypointData?: { distance: number, duration: number }[]
   }
 ) => {
+  // Handle empty or invalid routes
+  if (!locations || locations.length === 0) {
+    return {
+      distance: 0,
+      duration: 0,
+      fuelConsumption: 0,
+      fuelCost: 0,
+      maintenanceCost: 0,
+      totalCost: 0,
+      trafficConditions: 'moderate' as 'light' | 'moderate' | 'heavy',
+      usingRealTimeData: false,
+      totalWeight: 0,
+      waypointData: []
+    };
+  }
+
   let calculatedDistance = 0;
   let calculatedDuration = 0;
   let useRoutingMachineData = false;
   let waypointDataModified: { distance: number; duration: number }[] = [];
   
+  // Use routing machine data if available
   if (routingMachineData?.totalDistance && routingMachineData.totalDistance > 0) {
     calculatedDistance = routingMachineData.totalDistance;
     calculatedDuration = routingMachineData.totalDuration || 0;
@@ -38,13 +55,19 @@ export const calculateRouteMetrics = (
   else if (locations.length > 1) {
     waypointDataModified = [{ distance: 0, duration: 0 }]; // First point has zero distance/duration
     
+    // Calculate distance and duration between each pair of consecutive locations
     for (let i = 0; i < locations.length - 1; i++) {
-      const lat1 = locations[i].lat || 0;
-      const lon1 = locations[i].long || 0;
-      const lat2 = locations[i + 1].lat || 0;
-      const lon2 = locations[i + 1].long || 0;
+      const loc1 = locations[i];
+      const loc2 = locations[i + 1];
       
-      const distance = calculateDistance(lat1, lon1, lat2, lon2);
+      // Skip if coordinates are missing
+      if (loc1.lat === undefined || loc1.long === undefined || 
+          loc2.lat === undefined || loc2.long === undefined) {
+        console.warn(`Missing coordinates for route segment ${i}`, { loc1, loc2 });
+        continue;
+      }
+      
+      const distance = calculateDistance(loc1.lat, loc1.long, loc2.lat, loc2.long);
       calculatedDistance += distance;
       
       // Calculate segment duration based on distance
@@ -55,13 +78,11 @@ export const calculateRouteMetrics = (
       
       calculatedDuration += totalSegmentTime;
       
-      // Add this segment's data to our waypoint data
-      if (i > 0) {
-        waypointDataModified.push({
-          distance: Math.max(0.1, distance),
-          duration: Math.max(1, totalSegmentTime)
-        });
-      }
+      // Add segment data to waypoint data
+      waypointDataModified.push({
+        distance: Math.max(0.1, distance),
+        duration: Math.max(1, totalSegmentTime)
+      });
     }
   }
   
@@ -74,6 +95,7 @@ export const calculateRouteMetrics = (
     calculatedDuration = locations.length * MIN_STOP_TIME_MINUTES;
   }
   
+  // Calculate weight and apply optimization parameters
   const totalWeight = calculateTotalWeight(locations);
   const trafficMultiplier = params.avoidTraffic ? 0.9 : 1.0;
   const fuelMultiplier = params.prioritizeFuel ? 0.9 : 1.0;
@@ -89,6 +111,7 @@ export const calculateRouteMetrics = (
     const hourOfDay = new Date().getHours();
     let realTimeTrafficFactor = 1.0;
     
+    // Simulate time-based traffic patterns
     if ((hourOfDay >= 7 && hourOfDay <= 9) || (hourOfDay >= 16 && hourOfDay <= 18)) {
       realTimeTrafficFactor = 1.2;
       trafficConditions = 'heavy';
@@ -100,6 +123,7 @@ export const calculateRouteMetrics = (
       trafficConditions = 'light';
     }
     
+    // Only adjust duration if not using routing machine data
     if (!useRoutingMachineData) {
       calculatedDuration = calculatedDuration * realTimeTrafficFactor;
     }
@@ -114,6 +138,7 @@ export const calculateRouteMetrics = (
   const fuelCost = Math.max(0, fuelConsumption * fuelCostPerLiter);
   const maintenanceCost = finalDistance * 0.85;
   
+  // Build and return the metrics object
   return {
     distance: Math.max(0.1, Math.round(finalDistance * 10) / 10),
     duration: Math.max(1, Math.round(calculatedDuration)),

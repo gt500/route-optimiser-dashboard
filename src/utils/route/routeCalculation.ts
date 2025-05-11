@@ -109,6 +109,12 @@ export function calculateWaypointData(
     const start = coordinates[i];
     const end = coordinates[i + 1];
     
+    if (!start || !end || start.lat === undefined || start.long === undefined || 
+        end.lat === undefined || end.long === undefined) {
+      console.warn('Invalid coordinate data', { start, end });
+      continue;
+    }
+    
     // Calculate direct distance
     const directDist = calculateDirectDistance(
       start.lat, start.long, end.lat, end.long
@@ -123,8 +129,8 @@ export function calculateWaypointData(
     // Calculate travel time
     const travelTime = calculateTravelTime(roadDist, terrainType, trafficFactor);
     
-    // Add to results (skip first point which is already added with zeros)
-    if (i > 0) {
+    // Add to results
+    if (i > 0 || results.length === 0) {
       results.push({
         distance: parseFloat(roadDist.toFixed(2)),
         duration: parseFloat(travelTime.toFixed(1))
@@ -140,6 +146,15 @@ export function calculateRouteMetrics(
   coordinates: Array<{lat: number, long: number}>,
   trafficCondition: 'light' | 'moderate' | 'heavy' = 'moderate'
 ): {totalDistance: number, totalDuration: number, waypointData: Array<{distance: number, duration: number}>} {
+  // Ensure we have valid data
+  if (!coordinates || coordinates.length < 2) {
+    return {
+      totalDistance: 0,
+      totalDuration: 0,
+      waypointData: []
+    };
+  }
+  
   const waypointData = calculateWaypointData(coordinates, trafficCondition);
   
   // Calculate totals from waypoint data
