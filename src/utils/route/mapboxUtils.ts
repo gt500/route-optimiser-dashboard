@@ -9,7 +9,9 @@ export const setMapboxToken = (token: string): void => {
 
 // Retrieve Mapbox token from local storage
 export const getMapboxToken = (): string => {
-  return localStorage.getItem('mapboxToken') || '';
+  const storedToken = localStorage.getItem('mapboxToken');
+  // If no token in localStorage, return the default one
+  return storedToken || 'pk.eyJ1IjoiZ3Q1MDAiLCJhIjoiY21hank4enU2MGN2bjJpcXYyamM2MGkwZiJ9.hVmRpENHJ7MkFK9neF_9hQ';
 };
 
 // Check if we have a valid token

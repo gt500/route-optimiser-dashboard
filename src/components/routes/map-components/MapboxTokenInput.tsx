@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { setMapboxToken, hasValidMapboxToken } from '@/utils/route/mapboxUtils';
+import { setMapboxToken, hasValidMapboxToken, getMapboxToken } from '@/utils/route/mapboxUtils';
 import { toast } from 'sonner';
 
 interface MapboxTokenInputProps {
@@ -10,7 +10,14 @@ interface MapboxTokenInputProps {
 }
 
 const MapboxTokenInput: React.FC<MapboxTokenInputProps> = ({ onTokenSet }) => {
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(getMapboxToken());
+  
+  useEffect(() => {
+    // If we already have a valid token on component mount, call onTokenSet
+    if (hasValidMapboxToken()) {
+      onTokenSet();
+    }
+  }, [onTokenSet]);
   
   const handleSaveToken = () => {
     if (!token || token.length < 10) {

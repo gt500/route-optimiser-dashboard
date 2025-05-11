@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TileLayerProps } from '@/hooks/fleet/types/routeTypes';
-import { hasValidMapboxToken } from '@/utils/route/mapboxUtils';
+import { hasValidMapboxToken, getMapboxToken } from '@/utils/route/mapboxUtils';
 import MapboxTokenInput from './map-components/MapboxTokenInput';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { LocationMarker } from './map-components/LocationMarker';
@@ -39,9 +39,14 @@ const RouteMap: React.FC<RouteMapProps> = ({
   onRouteDataUpdate
 }) => {
   const [map, setMap] = useState<L.Map | null>(null);
-  const [showMapboxInput, setShowMapboxInput] = useState(!hasValidMapboxToken());
+  const [showMapboxInput, setShowMapboxInput] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Initialize token check
+  useEffect(() => {
+    setShowMapboxInput(!hasValidMapboxToken());
+  }, []);
 
   // Default map center and zoom
   const defaultCenter: [number, number] = [-33.93, 18.52];
