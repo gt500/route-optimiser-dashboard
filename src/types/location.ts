@@ -34,6 +34,7 @@ export interface LocationInfo {
   status?: string;
   region?: string;
   country?: string;
+  cylinders?: number;  // Added this property
 }
 
 export interface SupabaseLocation {
@@ -55,6 +56,7 @@ export interface LocationPoint {
   address: string;  // Changed from optional to required for consistency
   latitude: number;
   longitude: number;
+  cylinders?: number;  // Added this property
 }
 
 export interface NamedCoords {

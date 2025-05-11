@@ -66,17 +66,33 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   };
 
   return (
-    <Marker {...markerProps}>
-      {/* Standard popup when clicked */}
-      <Popup>
-        <div className="p-1">
-          <h3 className="font-medium text-sm">{name}</h3>
-          {stopNumber && <p className="text-xs text-gray-600">Stop #{stopNumber}</p>}
-          {address && <p className="text-xs text-gray-600">{address}</p>}
-          {cylinders > 0 && <p className="text-xs font-medium text-blue-600">Delivery: {cylinders} cylinders</p>}
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <Marker {...markerProps}>
+          {/* Standard popup when clicked */}
+          <Popup>
+            <div className="p-1">
+              <h3 className="font-medium text-sm">{name}</h3>
+              {stopNumber && <p className="text-xs text-gray-600">Stop #{stopNumber}</p>}
+              {address && <p className="text-xs text-gray-600">{address}</p>}
+              {cylinders > 0 && <p className="text-xs font-medium text-blue-600">Delivery: {cylinders} cylinders</p>}
+            </div>
+          </Popup>
+        </Marker>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-64 p-2">
+        <div>
+          <h3 className="font-bold text-sm">{name}</h3>
+          {address && <p className="text-xs text-gray-600 mb-1">{address}</p>}
+          {cylinders > 0 && (
+            <div className="flex items-center mt-1 bg-blue-50 p-1 rounded">
+              <span className="text-xs font-medium text-blue-600">Delivery: {cylinders} cylinders</span>
+            </div>
+          )}
+          {stopNumber && <p className="text-xs text-gray-500 mt-1">Stop #{stopNumber}</p>}
         </div>
-      </Popup>
-    </Marker>
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 
