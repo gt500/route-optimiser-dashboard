@@ -32,12 +32,12 @@ export const useSaveRoute = (
       const totalCylinders = Math.max(0, route.cylinders);
       const estimatedCost = Math.max(0, route.fuelCost);
 
-      // Create route record - ensuring we match the exact schema expected by Supabase
+      // Create route record - ensuring we set the status to 'scheduled' for active routes
       const { data, error } = await supabase.from('routes').insert({
         id: routeId,
         name: `${route.locations[0]?.name} to ${route.locations[route.locations.length - 1]?.name}`,
         date: new Date().toISOString(),
-        status: 'scheduled',
+        status: 'scheduled', // Explicitly set to 'scheduled' to ensure it appears in active routes
         total_distance: totalDistance,
         total_duration: totalDuration,
         estimated_cost: estimatedCost,
@@ -140,6 +140,13 @@ export const useSaveRoute = (
       console.log('Route saved successfully:', data);
       setIsLoadConfirmed(true);
       toast.success('Load confirmed and route scheduled');
+      
+      // Force refresh of active routes to show the new route immediately
+      try {
+        await fetch('/api/routes/refresh-cache', { method: 'POST' });
+      } catch (err) {
+        console.log('Cache refresh not available, active routes will update on next reload');
+      }
     } catch (err) {
       console.error('Error in handleConfirmLoad:', err);
       toast.error('Failed to confirm load');

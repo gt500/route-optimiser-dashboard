@@ -1,55 +1,102 @@
-
 import { mockRoutes } from './mockRouteData';
 import { RouteData, RouteStats, WeeklyData } from '../types/routeTypes';
 
+// Cache for route results
+const routeCache = {
+  allRoutes: null as RouteData[] | null,
+  activeRoutes: null as RouteData[] | null,
+  historyRoutes: null as RouteData[] | null,
+  lastFetch: 0
+};
+
+// Cache lifetime in milliseconds (5 seconds)
+const CACHE_LIFETIME = 5000;
+
 /**
- * Fetch all routes
+ * Fetch all routes with caching for better performance
  */
 export const fetchRoutes = async (): Promise<RouteData[]> => {
-  console.log("Fetching all routes from mockRoutes:", mockRoutes);
-  // In a real app, this would fetch from an API
+  console.log("Fetching all routes from mockRoutes");
   
-  // Return a copy with the correct vehicle name
-  return mockRoutes.map(route => ({
+  const now = Date.now();
+  const cacheExpired = now - routeCache.lastFetch > CACHE_LIFETIME;
+  
+  // Use cache if available and not expired
+  if (routeCache.allRoutes && !cacheExpired) {
+    console.log("Using cached routes data");
+    return [...routeCache.allRoutes]; // Return a copy to prevent unintended mutations
+  }
+  
+  // Reset cache to get fresh data
+  routeCache.allRoutes = mockRoutes.map(route => ({
     ...route,
     vehicle_name: 'Leyland Ashok Phoenix'
   }));
+  
+  routeCache.lastFetch = now;
+  
+  console.log(`Retrieved ${routeCache.allRoutes.length} routes`);
+  return [...routeCache.allRoutes]; // Return a copy
 };
 
 /**
- * Fetch active routes (scheduled or in-progress)
+ * Fetch active routes (scheduled or in-progress) with efficient caching
  */
 export const fetchActiveRoutes = async (): Promise<RouteData[]> => {
   console.log("Fetching active routes");
-  const data = await fetchRoutes();
-  const activeRoutes = data.filter(route => 
+  
+  const now = Date.now();
+  const cacheExpired = now - routeCache.lastFetch > CACHE_LIFETIME;
+  
+  if (routeCache.activeRoutes && !cacheExpired) {
+    console.log("Using cached active routes data");
+    return [...routeCache.activeRoutes]; // Return a copy
+  }
+  
+  // Get all routes first (which handles its own caching)
+  const allRoutes = await fetchRoutes();
+  
+  routeCache.activeRoutes = allRoutes.filter(route => 
     route.status === 'scheduled' || route.status === 'in_progress'
   ).map(route => ({
     ...route,
     vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
   }));
-  console.log("Active routes:", activeRoutes);
-  return activeRoutes;
+  
+  console.log(`Found ${routeCache.activeRoutes.length} active routes`);
+  return [...routeCache.activeRoutes]; // Return a copy
 };
 
 /**
- * Fetch completed or cancelled routes
+ * Fetch completed or cancelled routes with caching
  */
 export const fetchRouteHistory = async (): Promise<RouteData[]> => {
   console.log("Fetching route history");
-  const data = await fetchRoutes();
-  const historyRoutes = data.filter(route => 
+  
+  const now = Date.now();
+  const cacheExpired = now - routeCache.lastFetch > CACHE_LIFETIME;
+  
+  if (routeCache.historyRoutes && !cacheExpired) {
+    console.log("Using cached history routes data");
+    return [...routeCache.historyRoutes]; // Return a copy
+  }
+  
+  // Get all routes first (with caching)
+  const allRoutes = await fetchRoutes();
+  
+  routeCache.historyRoutes = allRoutes.filter(route => 
     route.status === 'completed' || route.status === 'cancelled'
   ).map(route => ({
     ...route,
     vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
   }));
-  console.log("History routes:", historyRoutes);
-  return historyRoutes;
+  
+  console.log(`Found ${routeCache.historyRoutes.length} history routes`);
+  return [...routeCache.historyRoutes]; // Return a copy
 };
 
 /**
- * Update a route's status in our mock database
+ * Update a route's status in our mock database with improved cache invalidation
  */
 export const updateRouteStatus = async (routeId: string, status: string): Promise<boolean> => {
   console.log(`Updating route ${routeId} status to ${status}`);
@@ -65,8 +112,13 @@ export const updateRouteStatus = async (routeId: string, status: string): Promis
       vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
     };
     
+    // Invalidate cache to force fresh data on next fetch
+    routeCache.lastFetch = 0;
+    routeCache.allRoutes = null;
+    routeCache.activeRoutes = null;
+    routeCache.historyRoutes = null;
+    
     console.log(`Route ${routeId} updated to status: ${status}`);
-    console.log("Updated mockRoutes:", mockRoutes);
     return true;
   }
   

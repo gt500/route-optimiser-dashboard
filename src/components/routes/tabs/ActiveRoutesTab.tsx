@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { toast } from 'sonner';
@@ -15,27 +15,22 @@ interface ActiveRoutesTabProps {
 const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesTabProps) => {
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
+  
+  // Get the optimized hooks
   const { 
     fetchActiveRoutes, 
     startRoute, 
-    completeRoute, 
-    fetchRoutes
+    completeRoute,
+    isLoading: isHookLoading,
+    processingRoutes
   } = useRouteData();
   const { fetchVehicles } = useVehiclesData();
 
   // Load routes when component mounts or when highlightedDeliveryId changes
-  useEffect(() => {
-    loadRoutes();
-  }, [highlightedDeliveryId]);
-
-  const loadRoutes = async () => {
+  const loadRoutes = useCallback(async () => {
     console.log("Loading active routes...");
     setIsLoading(true);
     try {
-      // First refresh all routes to ensure we have the latest data
-      await fetchRoutes();
-      
       let activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
       
@@ -55,14 +50,18 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchActiveRoutes, fetchVehicles]);
 
+  // Load routes when component mounts or when highlightedDeliveryId changes
+  useEffect(() => {
+    loadRoutes();
+  }, [loadRoutes, highlightedDeliveryId]);
+
+  // Optimized route start handler
   const handleStartRoute = async (routeId: string) => {
     console.log(`Starting route with ID: ${routeId} in ActiveRoutesTab`);
     
     try {
-      setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
-      
       // Call the startRoute function from the hook
       const success = await startRoute(routeId);
       
@@ -78,54 +77,36 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       } else {
         toast.error('Failed to start route');
       }
-      
-      // Reload routes to ensure everything is up-to-date
-      await loadRoutes();
     } catch (error) {
       console.error('Error starting route:', error);
       toast.error('Failed to start route');
-    } finally {
-      setProcessingRoutes(prev => {
-        const updated = { ...prev };
-        delete updated[routeId];
-        return updated;
-      });
     }
   };
 
+  // Optimized route completion handler
   const handleCompleteRoute = async (routeId: string) => {
     console.log(`Completing route with ID: ${routeId} in ActiveRoutesTab`);
     
     try {
-      setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
-      
       // Call the completeRoute function from the hook
       const success = await completeRoute(routeId);
       
       if (success) {
-        // Update local state for immediate feedback
+        // Update local state immediately for better UX
         setRoutes(prev => prev.filter(route => route.id !== routeId));
         
         toast.success('Route completed successfully');
       } else {
         toast.error('Failed to complete route');
       }
-      
-      // Reload routes to ensure everything is up-to-date
-      await loadRoutes();
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
-    } finally {
-      setProcessingRoutes(prev => {
-        const updated = { ...prev };
-        delete updated[routeId];
-        return updated;
-      });
     }
   };
 
-  if (isLoading) {
+  // Show loading state
+  if (isLoading || isHookLoading) {
     return (
       <Card>
         <CardHeader>
@@ -136,6 +117,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     );
   }
 
+  // Show empty state if no routes
   if (routes.length === 0) {
     return (
       <Card>
@@ -150,6 +132,7 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     );
   }
 
+  // Show populated routes table
   return (
     <Card>
       <CardHeader>

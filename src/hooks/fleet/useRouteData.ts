@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { RouteData } from './types/routeTypes';
 import { mockRoutes } from './routes/mockRouteData';
@@ -17,56 +16,117 @@ import {
 export type { RouteData } from './types/routeTypes';
 
 export const useRouteData = () => {
-  const [routes, setRoutes] = useState<RouteData[]>(
-    // Ensure correct vehicle names on initialization
-    mockRoutes.map(route => ({
-      ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
-    }))
-  );
+  const [routes, setRoutes] = useState<RouteData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
+  // Load routes on first mount
+  useEffect(() => {
+    fetchRoutes();
+  }, []);
+
+  // Auto-refresh mechanism
+  useEffect(() => {
+    // Check if we're processing any routes - if so, refresh more frequently
+    const isProcessing = Object.keys(processingRoutes).length > 0;
+    const refreshInterval = isProcessing ? 3000 : 20000; // 3s if processing, 20s otherwise
+    
+    const timer = setTimeout(() => {
+      fetchRoutes().then(() => {
+        setLastRefresh(Date.now());
+      });
+    }, refreshInterval);
+    
+    return () => clearTimeout(timer);
+  }, [lastRefresh, processingRoutes]);
+
+  // Main fetch function with optimized caching
   const fetchRoutes = useCallback(async () => {
     console.log("Fetching all routes in useRouteData hook");
-    const freshRoutes = await fetchRoutesQuery();
+    setIsLoading(true);
     
-    // Set the routes with the correct vehicle name
-    const routesWithCorrectVehicles = freshRoutes.map(route => ({
-      ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
-    }));
-    
-    setRoutes(routesWithCorrectVehicles);
-    return routesWithCorrectVehicles;
+    try {
+      const freshRoutes = await fetchRoutesQuery();
+      
+      // Set the routes with the correct vehicle name
+      const routesWithCorrectVehicles = freshRoutes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
+      
+      setRoutes(routesWithCorrectVehicles);
+      return routesWithCorrectVehicles;
+    } catch (error) {
+      console.error("Error fetching routes:", error);
+      toast.error("Failed to load routes");
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
   
   const fetchRouteData = useCallback(async () => {
     console.log("Fetching route data in useRouteData hook");
-    const routes = await fetchRoutesQuery();
-    return routes.map(route => ({
-      ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
-    }));
+    try {
+      const routes = await fetchRoutesQuery();
+      return routes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
+    } catch (error) {
+      console.error("Error fetching route data:", error);
+      return [];
+    }
   }, []);
   
+  // Optimized to use cached data when possible
   const fetchActiveRoutes = useCallback(async () => {
     console.log("Fetching active routes in useRouteData hook");
-    const routes = await fetchActiveRoutesQuery();
-    return routes.map(route => ({
-      ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
-    }));
-  }, []);
+    try {
+      // If we already have routes loaded, filter them in memory
+      if (routes.length > 0) {
+        const activeRoutes = routes.filter(route => 
+          route.status === 'scheduled' || route.status === 'in_progress'
+        );
+        console.log('Using cached active routes:', activeRoutes.length);
+        return activeRoutes;
+      }
+      
+      // Otherwise fetch from API
+      const freshRoutes = await fetchActiveRoutesQuery();
+      return freshRoutes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
+    } catch (error) {
+      console.error("Error fetching active routes:", error);
+      return [];
+    }
+  }, [routes]);
   
   const fetchRouteHistory = useCallback(async () => {
     console.log("Fetching route history in useRouteData hook");
-    const routes = await fetchRouteHistoryQuery();
-    return routes.map(route => ({
-      ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
-    }));
-  }, []);
+    try {
+      // If we already have routes loaded, filter them in memory
+      if (routes.length > 0) {
+        return routes.filter(route => 
+          route.status === 'completed' || route.status === 'cancelled'
+        );
+      }
+      
+      const routes = await fetchRouteHistoryQuery();
+      return routes.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
+    } catch (error) {
+      console.error("Error fetching route history:", error);
+      return [];
+    }
+  }, [routes]);
   
+  // Other query methods (unchanged)
   const fetchRouteDataByName = useCallback(async (routeName: string) => {
     console.log(`Fetching route data for ${routeName} in useRouteData hook`);
     const routes = await fetchRouteDataByNameQuery(routeName);
@@ -86,13 +146,11 @@ export const useRouteData = () => {
     return await getOptimizationStatsQuery(routes);
   }, [routes.length]);
 
+  // Optimized route status update
   const startRoute = useCallback(async (routeId: string) => {
     console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1200));
       
       // Update the route status directly via the API function
       const success = await updateRouteStatus(routeId, 'in_progress');
@@ -101,7 +159,7 @@ export const useRouteData = () => {
         throw new Error('Failed to update route status');
       }
       
-      // Update local state to reflect the change
+      // Update local state to reflect the change immediately
       setRoutes(prevRoutes => 
         prevRoutes.map(route => 
           route.id === routeId 
@@ -129,22 +187,20 @@ export const useRouteData = () => {
     }
   }, [fetchRoutes]);
 
+  // Optimized route completion
   const completeRoute = useCallback(async (routeId: string) => {
     console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Update the route status directly via the API function
+      // Update the route status
       const success = await updateRouteStatus(routeId, 'completed');
       
       if (!success) {
         throw new Error('Failed to update route status');
       }
       
-      // Update local state to reflect the change
+      // Update local state immediately
       setRoutes(prevRoutes => 
         prevRoutes.map(route => 
           route.id === routeId 
@@ -172,8 +228,10 @@ export const useRouteData = () => {
     }
   }, [fetchRoutes]);
 
+  // Return all hooks and state
   return {
     routes,
+    isLoading,
     processingRoutes,
     fetchRoutes,
     startRoute,

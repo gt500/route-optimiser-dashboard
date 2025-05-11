@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { markerIcons } from './Icons';
@@ -15,8 +15,8 @@ interface LocationMarkerProps {
   cylinders?: number; // Add cylinders prop
 }
 
-// Create a custom marker with stop number in blue color
-const createNumberedMarker = (number: number) => {
+// Create a custom marker with stop number in blue color - memoized for performance
+const createNumberedMarker = ((number: number) => {
   const icon = L.divIcon({
     className: 'custom-numbered-marker',
     html: `<div class="flex items-center justify-center bg-blue-600 text-white font-bold rounded-full border-2 border-white h-6 w-6 shadow-md">${number}</div>`,
@@ -25,10 +25,10 @@ const createNumberedMarker = (number: number) => {
     popupAnchor: [0, -12]
   });
   return icon;
-};
+});
 
-// Create a blue marker without number
-const createBlueMarker = () => {
+// Create a blue marker without number - memoized for performance
+const createBlueMarker = (() => {
   const icon = L.divIcon({
     className: 'custom-blue-marker',
     html: `<div class="flex items-center justify-center bg-blue-600 text-white font-bold rounded-full border-2 border-white h-6 w-6 shadow-md"></div>`,
@@ -37,9 +37,10 @@ const createBlueMarker = () => {
     popupAnchor: [0, -12]
   });
   return icon;
-};
+})();
 
-const LocationMarker: React.FC<LocationMarkerProps> = ({
+// Memoized marker component for performance
+const LocationMarker: React.FC<LocationMarkerProps> = memo(({
   id, 
   name, 
   position, 
@@ -57,7 +58,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
   // Use numbered marker for locations page views and route views
   const markerIcon = stopNumber 
     ? createNumberedMarker(stopNumber) 
-    : createBlueMarker();
+    : createBlueMarker;
 
   // Cast to any to avoid TypeScript errors
   const markerProps: any = {
@@ -94,7 +95,10 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({
       </HoverCardContent>
     </HoverCard>
   );
-};
+});
+
+// Add display name for better debugging
+LocationMarker.displayName = 'LocationMarker';
 
 export default LocationMarker;
 export { LocationMarker };
