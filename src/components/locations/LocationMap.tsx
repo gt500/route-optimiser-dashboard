@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,6 +18,28 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
   // Define default center if no locations or bounds calculated
   const defaultCenter: [number, number] = [-33.93, 18.52]; // Cape Town
   
+  // Add useEffect to clean up Leaflet remnants when component unmounts
+  useEffect(() => {
+    // Clean up function that runs when component unmounts
+    return () => {
+      // Remove any leftover Leaflet containers
+      const leafletContainers = document.querySelectorAll('.leaflet-container');
+      leafletContainers.forEach(container => {
+        if (!document.body.contains(container)) {
+          container.remove();
+        }
+      });
+      
+      // Clean up any other Leaflet-related elements that might be lingering
+      const leafletElements = document.querySelectorAll('.leaflet-control-container, .leaflet-pane');
+      leafletElements.forEach(element => {
+        if (!document.body.contains(element.parentElement)) {
+          element.remove();
+        }
+      });
+    };
+  }, []);
+  
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -30,6 +52,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ locations }) => {
             style={{ height: '100%', width: '100%' }}
             // Use as 'any' to bypass TypeScript errors
             {...({ center: defaultCenter, zoom: 12 } as any)}
+            key="location-map" // Add a key to ensure re-rendering
           >
             {/* Using TileLayer with proper type cast */}
             <TileLayer

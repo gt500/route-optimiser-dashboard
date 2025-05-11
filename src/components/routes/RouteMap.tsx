@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -46,6 +46,27 @@ const RouteMap: React.FC<RouteMapProps> = ({
   // Initialize token check
   useEffect(() => {
     setShowMapboxInput(!hasValidMapboxToken());
+  }, []);
+
+  // Clean up Leaflet artifacts when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear any Leaflet containers that might be left behind
+      const leafletContainers = document.querySelectorAll('.leaflet-container');
+      leafletContainers.forEach(container => {
+        if (!document.body.contains(container)) {
+          container.remove();
+        }
+      });
+      
+      // Clean up other Leaflet elements
+      const leafletElements = document.querySelectorAll('.leaflet-control-container, .leaflet-pane');
+      leafletElements.forEach(element => {
+        if (!document.body.contains(element.parentElement)) {
+          element.remove();
+        }
+      });
+    };
   }, []);
 
   // Default map center and zoom
@@ -114,6 +135,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
           // Use type casting to avoid TypeScript errors with center and zoom props
           whenReady={(mapInstance: any) => setMap(mapInstance.target)}
           attributionControl={false}
+          key="route-map" // Add a key to ensure re-rendering
           // Type cast to avoid errors
           {...({ center: defaultCenter, zoom: 12 } as any)}
         >
