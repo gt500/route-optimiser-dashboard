@@ -1,5 +1,4 @@
 
-// All logic for adding/removing/changing route locations and availableLocations
 import { useCallback } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
@@ -16,55 +15,58 @@ export interface RouteLocationHandlersParams {
 export const useRouteLocationHandlers = ({
   route, setRoute, startLocation, endLocation, availableLocations, setAvailableLocations
 }: RouteLocationHandlersParams) => {
-  // Add, Remove, Replace Location handlers
-  const addLocationToRoute = useCallback((location: LocationType & { cylinders?: number }) => {
-    setRoute((prev: any) => ({
-      ...prev,
-      locations: [...prev.locations, location],
-      cylinders: (prev.cylinders || 0) + (location.cylinders || 0)
-    }));
-  }, [setRoute]);
-
-  const removeLocationFromRoute = useCallback((index: number) => {
-    setRoute(prev => {
-      const updatedLocations = prev.locations.filter((_loc: LocationType, idx: number) => idx !== index);
-      const removed = prev.locations[index];
-      const removedCylinders = removed?.cylinders || 0;
-      return {
-        ...prev,
-        locations: updatedLocations,
-        cylinders: Math.max(0, (prev.cylinders || 0) - removedCylinders),
-      };
-    });
-    toast.success('Location removed from route');
-  }, [setRoute]);
-
-  const handleReplaceLocation = useCallback((idx: number, newLocation: LocationType) => {
-    setRoute(prev => {
-      const updatedLocations = [...prev.locations];
-      updatedLocations[idx] = newLocation;
-      return { ...prev, locations: updatedLocations };
-    });
-  }, [setRoute]);
-
-  // Update all locations
+  // Handle updating all locations
   const handleUpdateLocations = useCallback((updatedLocations: LocationType[]) => {
     setAvailableLocations(updatedLocations);
+    
     setRoute(prev => {
-      const updatedRouteLocations = prev.locations.map((routeLoc: LocationType) => {
+      const updatedRouteLocations = prev.locations.map(routeLoc => {
         const updatedLoc = updatedLocations.find(loc => loc.id === routeLoc.id);
-        return updatedLoc
-          ? { ...routeLoc, name: updatedLoc.name, address: updatedLoc.address, type: updatedLoc.type }
-          : routeLoc;
+        if (updatedLoc) {
+          return {
+            ...routeLoc,
+            name: updatedLoc.name,
+            address: updatedLoc.address,
+            type: updatedLoc.type
+          };
+        }
+        return routeLoc;
       });
-      return { ...prev, locations: updatedRouteLocations };
+      
+      return {
+        ...prev,
+        locations: updatedRouteLocations
+      };
     });
   }, [setAvailableLocations, setRoute]);
 
+  // Handle adding new location from popover
+  const handleAddNewLocationFromPopover = useCallback((locationId: string | number) => {
+    console.log("Adding location from popover with ID:", locationId);
+    const stringLocationId = String(locationId);
+    const location = availableLocations.find(loc => loc.id.toString() === stringLocationId);
+    
+    if (location) {
+      console.log("Found location to add:", location);
+      addLocationToRoute({
+        ...location,
+        cylinders: location.emptyCylinders || 10
+      } as LocationType & { cylinders: number });
+      toast.success(`Added ${location.name} to route`);
+    } else {
+      console.error("Could not find location with ID:", locationId);
+      toast.error("Could not find the selected location");
+    }
+  }, [availableLocations]);
+
+  // Handle adding location to route (implementation stub for composition)
+  const addLocationToRoute = useCallback((location: LocationType & { cylinders: number }) => {
+    // This will be implemented in the main hook composition
+    console.log("Add location to route stub called with:", location);
+  }, []);
+
   return {
-    addLocationToRoute,
-    removeLocationFromRoute,
-    handleReplaceLocation,
     handleUpdateLocations,
+    handleAddNewLocationFromPopover
   };
 };

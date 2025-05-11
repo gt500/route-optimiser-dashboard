@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { RouteState, OptimizationParams, VehicleConfigProps } from './types';
