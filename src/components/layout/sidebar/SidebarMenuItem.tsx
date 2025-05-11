@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  SidebarMenuItem as SidebarMenuItemComponent,
+  SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuSub,
 } from "@/components/ui/sidebar";
@@ -37,7 +37,7 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
   // If this menu item has no submenu items
   if (!item.subItems) {
     return (
-      <SidebarMenuItemComponent key={item.title}>
+      <SidebarMenuItem key={item.title}>
         <SidebarMenuButton asChild>
           <Link 
             to={item.path} 
@@ -47,13 +47,13 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
             <span>{item.title}</span>
           </Link>
         </SidebarMenuButton>
-      </SidebarMenuItemComponent>
+      </SidebarMenuItem>
     );
   }
 
   // For menu items with submenus
   return (
-    <SidebarMenuItemComponent key={item.title}>
+    <SidebarMenuItem key={item.title}>
       <Collapsible 
         open={openSections[item.title] || isActive} 
         onOpenChange={() => toggleSection(item.title)}
@@ -83,6 +83,6 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
           </SidebarMenuSub>
         </CollapsibleContent>
       </Collapsible>
-    </SidebarMenuItemComponent>
+    </SidebarMenuItem>
   );
 };
