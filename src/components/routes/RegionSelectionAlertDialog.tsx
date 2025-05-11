@@ -1,19 +1,27 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { 
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 import { toast } from 'sonner';
 
-interface RegionSelectionDialogProps {
+interface RegionSelectionAlertDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: (country: string, region: string) => void;
 }
 
-const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
+const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
   open,
   onOpenChange,
   onComplete
@@ -44,7 +52,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
         }
       }
     }
-  }, [open]); // Re-initialize when dialog opens
+  }, [open]);
 
   useEffect(() => {
     if (selectedCountry) {
@@ -83,25 +91,22 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       return;
     }
     
-    // First call the onComplete callback with the selected country and region
+    // Call the onComplete callback with the selected country and region
     onComplete(selectedCountry, selectedRegion);
     
-    // Then explicitly close the dialog with a slight delay to ensure state updates
-    setTimeout(() => {
-      console.log("Explicitly closing dialog after selection complete");
-      onOpenChange(false);
-    }, 10);
+    // Explicitly close the dialog - AlertDialog handles this better
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Select Delivery Region</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="sm:max-w-[425px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Select Delivery Region</AlertDialogTitle>
+          <AlertDialogDescription>
             Choose the country and region for your delivery route
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="country">Country</Label>
@@ -142,18 +147,12 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
             )}
           </div>
         </div>
-        <DialogFooter>
-          <Button 
-            type="button" 
-            onClick={handleContinue} 
-            className="w-full"
-          >
-            Continue
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <AlertDialogFooter>
+          <AlertDialogAction onClick={handleContinue} className="w-full">Continue</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
-export default RegionSelectionDialog;
+export default RegionSelectionAlertDialog;

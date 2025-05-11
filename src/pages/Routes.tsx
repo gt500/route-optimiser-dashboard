@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
@@ -11,6 +10,7 @@ import RouteHeader from '@/components/routes/RouteHeader';
 import RouteTabs from '@/components/routes/RouteTabs';
 import RouteInitialLocation from '@/components/routes/RouteInitialLocation';
 import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
+import RegionSelectionAlertDialog from '@/components/routes/RegionSelectionAlertDialog';
 
 const initialLocations: LocationType[] = [
   { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
@@ -183,14 +183,14 @@ const RoutesList = () => {
     // Show confirmation toast
     toast.success(`Selected region: ${region}, ${country}`);
     
-    // Explicitly close dialog
+    // Force close dialog by directly setting state
     setRegionSelectionOpen(false);
   };
 
   const handleCreateRoute = () => {
     handleCreateNewRoute();
     console.log("Opening region selection dialog from handleCreateRoute");
-    // Set a short timeout to ensure the route is created before opening the dialog
+    // Set a delay to ensure the state has been updated before opening the dialog
     setTimeout(() => {
       setRegionSelectionOpen(true);
     }, 100);
@@ -263,12 +263,20 @@ const RoutesList = () => {
         onSave={handleSaveNewLocation}
       />
 
+      {/* Use both dialog implementations for redundancy */}
       <RouteInitialLocation
         activeTab={activeTab}
         isLoadConfirmed={isLoadConfirmed}
         regionSelectionOpen={regionSelectionOpen}
         setRegionSelectionOpen={setRegionSelectionOpen}
         onRegionChange={handleRegionChange}
+      />
+      
+      {/* Alternative AlertDialog implementation for more reliable closing */}
+      <RegionSelectionAlertDialog
+        open={regionSelectionOpen}
+        onOpenChange={setRegionSelectionOpen}
+        onComplete={handleRegionChange}
       />
     </div>
   );

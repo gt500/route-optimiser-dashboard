@@ -27,17 +27,22 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
 
   const handleRegionComplete = (country: string, region: string) => {
     console.log("Region selection completed with:", country, region);
+    
+    // Call the parent handler with selected region data
     onRegionChange(country, region);
     
-    // Explicitly confirm the dialog is closed
-    console.log("Forcing region selection dialog to close after selection");
+    // Force close the dialog
+    console.log("Closing region selection dialog after selection complete");
     setRegionSelectionOpen(false);
   };
 
   return (
     <RegionSelectionDialog
       open={regionSelectionOpen}
-      onOpenChange={setRegionSelectionOpen}
+      onOpenChange={(open) => {
+        console.log("Dialog onOpenChange called with:", open);
+        setRegionSelectionOpen(open);
+      }}
       onComplete={handleRegionComplete}
     />
   );
