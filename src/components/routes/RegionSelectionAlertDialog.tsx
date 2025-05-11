@@ -29,6 +29,7 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -91,15 +92,31 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
       return;
     }
     
+    setIsSubmitting(true);
+    
     // Pass the selected values to the parent
     onComplete(selectedCountry, selectedRegion);
     
     // Close dialog
     onOpenChange(false);
+    
+    // Reset submission state
+    setTimeout(() => {
+      setIsSubmitting(false);
+    }, 500);
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog 
+      open={open} 
+      onOpenChange={(newState) => {
+        // Prevent closing dialog by clicking outside when submitting
+        if (isSubmitting && newState === false) {
+          return;
+        }
+        onOpenChange(newState);
+      }}
+    >
       <AlertDialogContent className="sm:max-w-[425px]">
         <AlertDialogHeader>
           <AlertDialogTitle>Select Delivery Region</AlertDialogTitle>
@@ -148,7 +165,9 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
           </div>
         </div>
         <AlertDialogFooter>
-          <AlertDialogAction onClick={handleContinue}>Continue</AlertDialogAction>
+          <AlertDialogAction onClick={handleContinue} disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Continue'}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

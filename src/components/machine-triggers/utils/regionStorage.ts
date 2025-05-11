@@ -39,6 +39,14 @@ export const getStoredCountryRegions = (): CountryRegion[] => {
     return parsedData;
   } catch (error) {
     console.error('Error retrieving regions from localStorage:', error);
+    
+    // Ensure defaults are stored for next time
+    try {
+      saveCountryRegions(DEFAULT_REGIONS);
+    } catch (e) {
+      console.error('Failed to save default regions to localStorage:', e);
+    }
+    
     return DEFAULT_REGIONS;
   }
 };
@@ -49,6 +57,17 @@ export const saveCountryRegions = (regions: CountryRegion[]): void => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
   } catch (error) {
     console.error('Error saving regions to localStorage:', error);
+  }
+};
+
+// Reset to default regions
+export const resetToDefaultRegions = (): CountryRegion[] => {
+  try {
+    saveCountryRegions(DEFAULT_REGIONS);
+    return DEFAULT_REGIONS;
+  } catch (error) {
+    console.error('Error resetting to default regions:', error);
+    return DEFAULT_REGIONS;
   }
 };
 
@@ -66,4 +85,17 @@ export const addCountry = (country: string): CountryRegion[] => {
   }
   
   return regions;
+};
+
+// Get all available countries
+export const getAvailableCountries = (): string[] => {
+  const regions = getStoredCountryRegions();
+  return regions.map(r => r.country);
+};
+
+// Get all regions for a specific country
+export const getRegionsForCountry = (country: string): string[] => {
+  const regions = getStoredCountryRegions();
+  const countryData = regions.find(r => r.country === country);
+  return countryData?.regions || [];
 };

@@ -22,6 +22,7 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -84,17 +85,31 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       return;
     }
     
-    // Call onComplete first, then close the dialog
+    setIsSubmitting(true);
+    
+    // Call onComplete with the selected values
     onComplete(selectedCountry, selectedRegion);
     
-    // Close the dialog after a small delay to ensure the callback completes
+    // Close the dialog immediately
+    onOpenChange(false);
+    
+    // Reset submission state after a short delay
     setTimeout(() => {
-      onOpenChange(false);
-    }, 50);
+      setIsSubmitting(false);
+    }, 500);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newState) => {
+        // Prevent closing dialog by clicking outside when submitting
+        if (isSubmitting && newState === false) {
+          return;
+        }
+        onOpenChange(newState);
+      }}
+    >
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Select Delivery Region</DialogTitle>
@@ -147,8 +162,9 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
             type="button" 
             onClick={handleContinue} 
             className="w-full"
+            disabled={isSubmitting}
           >
-            Continue
+            {isSubmitting ? 'Saving...' : 'Continue'}
           </Button>
         </DialogFooter>
       </DialogContent>

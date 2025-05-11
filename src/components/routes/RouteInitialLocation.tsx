@@ -19,13 +19,16 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
 }) => {
   // Open region selection dialog when on create tab and not confirmed
   useEffect(() => {
-    if (activeTab === 'create' && !isLoadConfirmed && !regionSelectionOpen) {
+    if (activeTab === 'create' && !isLoadConfirmed) {
       console.log("Opening region selection dialog from useEffect in RouteInitialLocation");
-      setTimeout(() => {
+      // Use a slight delay to ensure state is properly set
+      const timer = setTimeout(() => {
         setRegionSelectionOpen(true);
-      }, 100);
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
-  }, [activeTab, isLoadConfirmed, regionSelectionOpen, setRegionSelectionOpen]);
+  }, [activeTab, isLoadConfirmed, setRegionSelectionOpen]);
 
   const handleRegionComplete = (country: string, region: string) => {
     console.log("Region selection completed in RouteInitialLocation with:", country, region);
@@ -35,15 +38,31 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
       return;
     }
     
-    // Handle the region change
+    // First invoke the callback to update the state
     onRegionChange(country, region);
+    
     console.log("Region change propagated to parent from RouteInitialLocation");
+    
+    // Clear the dialog state after a short delay
+    setTimeout(() => {
+      setRegionSelectionOpen(false);
+    }, 100);
   };
 
   return (
     <RegionSelectionDialog
       open={regionSelectionOpen}
-      onOpenChange={setRegionSelectionOpen}
+      onOpenChange={(open) => {
+        console.log("RegionSelectionDialog onOpenChange called with:", open);
+        if (!open) {
+          // When closing without selection, give a short delay
+          setTimeout(() => {
+            setRegionSelectionOpen(false);
+          }, 100);
+        } else {
+          setRegionSelectionOpen(true);
+        }
+      }}
       onComplete={handleRegionComplete}
     />
   );
