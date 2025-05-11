@@ -75,7 +75,10 @@ export const useRouteManagement = (initialLocations: LocationType[] = []) => {
     setAvailableLocations,
     vehicleConfig,
     setIsLoadConfirmed,
-    updateVehicleConfig
+    updateVehicleConfig,
+    setStartLocation,
+    setEndLocation,
+    addLocationToRoute
   );
 
   return {
