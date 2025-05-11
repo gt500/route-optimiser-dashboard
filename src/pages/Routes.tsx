@@ -1,60 +1,35 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import LocationEditDialog from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
-import { useLocation } from 'react-router-dom';
 import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
 import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
+import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
+
+// Import new components and hooks
 import RouteHeader from '@/components/routes/RouteHeader';
 import RouteTabs from '@/components/routes/RouteTabs';
 import RouteInitialLocation from '@/components/routes/RouteInitialLocation';
-import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 import RegionSelectionAlertDialog from '@/components/routes/RegionSelectionAlertDialog';
+import RouteActionButtons from '@/components/routes/RouteActionButtons';
+import RouteHeaderTitle from '@/components/routes/RouteHeaderTitle';
+import { useRegionSelection } from '@/hooks/routes/useRegionSelection';
+import { useLocationManagement } from '@/hooks/routes/useLocationManagement';
+import { useRoutePageState } from '@/hooks/routes/useRoutePageState';
 
-const initialLocations: LocationType[] = [
-  { id: "1", name: 'Afrox Epping Depot', address: 'Epping Industria, Cape Town', lat: -33.93631, long: 18.52759, type: 'Storage', fullCylinders: 100, emptyCylinders: 0 },
-  { id: "5", name: 'Pick n Pay TableView', address: 'Table View, Cape Town', lat: -33.8258, long: 18.4881, type: 'Customer', fullCylinders: 0, emptyCylinders: 18 },
-  { id: "6", name: 'SUPERSPAR Parklands', address: 'Parklands, Cape Town', lat: -33.815781, long: 18.495968, type: 'Customer', fullCylinders: 0, emptyCylinders: 12 },
-  { id: "7", name: 'West Coast Village', address: 'West Coast, Cape Town', lat: -33.803329, long: 18.485944, type: 'Customer', fullCylinders: 0, emptyCylinders: 16 },
-  { id: "8", name: 'KWIKSPAR Paarl', address: 'Paarl, Western Cape', lat: -33.708061, long: 18.962563, type: 'Customer', fullCylinders: 0, emptyCylinders: 10 },
-  { id: "9", name: 'SUPERSPAR Plattekloof', address: 'Plattekloof, Cape Town', lat: -33.873642, long: 18.578856, type: 'Customer', fullCylinders: 0, emptyCylinders: 14 },
-  { id: "10", name: 'OK Foods Strand', address: 'Strand, Western Cape', lat: -34.12169719, long: 18.836937, type: 'Customer', fullCylinders: 0, emptyCylinders: 9 },
-  { id: "11", name: 'OK Urban Sonstraal', address: 'Sonstraal, Western Cape', lat: -33.511, long: 18.3945, type: 'Customer', fullCylinders: 0, emptyCylinders: 11 },
-  { id: "12", name: 'Clara Anna', address: 'Clara Anna, Western Cape', lat: -33.818184, long: 18.632576, type: 'Customer', fullCylinders: 0, emptyCylinders: 7 },
-  { id: "13", name: 'Laborie', address: 'Laborie, Western Cape', lat: -33.764587, long: 18.960768, type: 'Customer', fullCylinders: 0, emptyCylinders: 13 },
-  { id: "14", name: 'Burgundy Square', address: 'Burgundy, Cape Town', lat: -33.841858, long: 18.545229, type: 'Customer', fullCylinders: 0, emptyCylinders: 15 },
-  { id: "15", name: 'Shell Sea Point', address: 'Sea Point, Cape Town', lat: -33.4812, long: 18.3855, type: 'Storage', fullCylinders: 75, emptyCylinders: 0 },
-  { id: "16", name: 'Shell Hugo Street', address: 'Hugo Street, Cape Town', lat: -33.900848, long: 18.564976, type: 'Storage', fullCylinders: 80, emptyCylinders: 0 },
-  { id: "17", name: 'Shell Meadowridge', address: 'Meadowridge, Cape Town', lat: -34.038963, long: 18.455086, type: 'Storage', fullCylinders: 65, emptyCylinders: 0 },
-  { id: "18", name: 'Simonsrust Shopping Centre', address: 'Simonsrust, Western Cape', lat: -33.926464, long: 18.877136, type: 'Customer', fullCylinders: 0, emptyCylinders: 19 },
-  { id: "19", name: 'Shell Stellenbosch Square', address: 'Stellenbosch, Western Cape', lat: -33.976185, long: 18.843523, type: 'Storage', fullCylinders: 70, emptyCylinders: 0 },
-  { id: "20", name: 'Willowridge Shopping Centre', address: 'Willowridge, Western Cape', lat: -33.871166, long: 18.63283, type: 'Customer', fullCylinders: 0, emptyCylinders: 17 },
-  { id: "21", name: 'Zevenwacht', address: 'Zevenwacht, Western Cape', lat: -33.949867, long: 18.696407, type: 'Customer', fullCylinders: 0, emptyCylinders: 21 },
-  { id: "22", name: 'Killarney Shell', address: 'Killarney, Cape Town', lat: -33.854279, long: 18.516291, type: 'Storage', fullCylinders: 85, emptyCylinders: 0 }
-];
+// Import initial locations from a separate file
+import { initialRouteLocations } from '@/data/initialRouteLocations';
 
 const RoutesList = () => {
-  const location = useLocation();
-  const locationState = location.state as { activeTab?: string; highlightDelivery?: string } | null;
-  
-  const [activeTab, setActiveTab] = useState(locationState?.activeTab || 'create');
-  const [highlightedDeliveryId, setHighlightedDeliveryId] = useState<string | null>(
-    locationState?.highlightDelivery || null
-  );
-  const [newLocationDialog, setNewLocationDialog] = useState(false);
-  const [regionSelectionOpen, setRegionSelectionOpen] = useState(false);
-  
-  // Initialize with default values if available
+  // Initialize region selection
   const defaultRegions = getStoredCountryRegions();
   const defaultCountry = defaultRegions.length > 0 ? defaultRegions[0].country : 'South Africa';
   const defaultRegion = defaultRegions.length > 0 && defaultRegions[0].regions.length > 0 
     ? defaultRegions[0].regions[0] 
     : 'Western Cape';
-    
-  const [selectedCountry, setSelectedCountry] = useState<string>(defaultCountry);
-  const [selectedRegion, setSelectedRegion] = useState<string>(defaultRegion);
-  
+
   const { vehicles, fetchVehicles } = useVehiclesData();
 
   const {
@@ -81,34 +56,52 @@ const RoutesList = () => {
     replaceLocation,
     setAvailableLocations,
     setRouteRegion
-  } = useRouteManagement(initialLocations);
+  } = useRouteManagement(initialRouteLocations);
+
+  // Initialize region selection hook
+  const { 
+    selectedCountry,
+    selectedRegion,
+    regionSelectionOpen,
+    setRegionSelectionOpen,
+    handleRegionChange,
+    openRegionSelection
+  } = useRegionSelection(defaultCountry, defaultRegion);
+
+  // Location management hook
+  const {
+    newLocationDialog,
+    setNewLocationDialog,
+    addNewLocation,
+    handleSaveNewLocation
+  } = useLocationManagement(
+    availableLocations,
+    setAvailableLocations,
+    handleUpdateLocations,
+    selectedCountry,
+    selectedRegion
+  );
+
+  // Route page state management
+  const { 
+    activeTab, 
+    setActiveTab,
+    highlightedDeliveryId,
+    handleOptimizeRoute,
+    isOptimizeDisabled
+  } = useRoutePageState(
+    initialRouteLocations,
+    () => handleOptimize(routeOptimizationDefaultParams),
+    handleConfirmLoad,
+    handleCreateNewRoute,
+    isLoadConfirmed,
+    route
+  );
 
   // Load vehicles on component mount
   useEffect(() => {
     fetchVehicles();
   }, [fetchVehicles]);
-
-  // Handle URL state updates
-  useEffect(() => {
-    if (locationState?.activeTab) {
-      setActiveTab(locationState.activeTab);
-    }
-    
-    if (locationState?.highlightDelivery) {
-      setHighlightedDeliveryId(locationState.highlightDelivery);
-    }
-  }, [location, locationState]);
-
-  // Auto-clear the highlight after timeout
-  useEffect(() => {
-    if (highlightedDeliveryId) {
-      const timer = setTimeout(() => {
-        setHighlightedDeliveryId(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [highlightedDeliveryId]);
   
   // Initialize route with default region if available
   useEffect(() => {
@@ -139,54 +132,11 @@ const RoutesList = () => {
   }, [route.locations]);
 
   // Handler functions
-  const addNewLocation = () => {
-    setNewLocationDialog(true);
-  };
-
-  const handleSaveNewLocation = async (location: LocationType) => {
-    const newLocationId = crypto.randomUUID();
-    
-    const newLocation = {
-      ...location,
-      id: newLocationId,
-      country: selectedCountry,
-      region: selectedRegion
-    };
-    
-    const updatedLocations = [...availableLocations, newLocation];
-    setAvailableLocations(updatedLocations);
-    handleUpdateLocations(updatedLocations);
-    toast.success(`Added new location: ${location.name}`);
-  };
-  
-  const handleOptimizeRoute = () => {
-    handleOptimize(routeOptimizationDefaultParams);
-  };
-
   const handleVehicleChange = (vehicleId: string) => {
     setSelectedVehicle(vehicleId === "" ? null : vehicleId);
     toast.success(vehicleId === "" 
       ? "Vehicle assignment removed" 
       : `Vehicle assigned: ${vehicles.find(v => v.id === vehicleId)?.name}`);
-  };
-
-  const handleRegionChange = (country: string, region: string) => {
-    console.log("Region changed in RoutesList:", country, region);
-    
-    // Update local state
-    setSelectedCountry(country);
-    setSelectedRegion(region);
-    
-    // Update route state - this should trigger UI updates
-    setRouteRegion(country, region);
-    
-    // Show confirmation toast
-    toast.success(`Selected region: ${region}, ${country}`);
-    
-    // Force close both dialogs
-    setRegionSelectionOpen(false);
-    
-    console.log("Region change complete in RoutesList");
   };
 
   const handleCreateRoute = () => {
@@ -214,19 +164,19 @@ const RoutesList = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header component with new props */}
-      <RouteHeader
-        onAddNewLocation={addNewLocation}
-        onOpenRegionSelection={() => {
-          console.log("Opening region selection from header button");
-          setRegionSelectionOpen(true);
-        }}
-        onCreateNewRoute={handleCreateRoute}
-        onOptimize={handleOptimizeRoute}
-        onConfirmLoad={handleConfirmLoad}
-        isLoadConfirmed={isLoadConfirmed}
-        isOptimizeDisabled={route.locations.length < 3 || isLoadConfirmed}
-      />
+      {/* Header section */}
+      <div className="flex justify-between items-start">
+        <RouteHeaderTitle />
+        <RouteActionButtons 
+          onAddNewLocation={addNewLocation}
+          onOpenRegionSelection={openRegionSelection}
+          onCreateNewRoute={handleCreateRoute}
+          onOptimize={handleOptimizeRoute}
+          onConfirmLoad={handleConfirmLoad}
+          isLoadConfirmed={isLoadConfirmed}
+          isOptimizeDisabled={isOptimizeDisabled}
+        />
+      </div>
 
       {/* Tabs component */}
       <RouteTabs
@@ -261,7 +211,7 @@ const RoutesList = () => {
         onRegionChange={handleRegionChange}
       />
 
-      {/* Dialogs - keep existing code */}
+      {/* Dialogs */}
       <LocationEditDialog 
         open={newLocationDialog}
         onOpenChange={setNewLocationDialog}
