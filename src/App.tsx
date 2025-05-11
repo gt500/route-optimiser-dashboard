@@ -20,6 +20,7 @@ import DailyReports from "./pages/reports/delivery/DailyReports";
 import WeeklyReports from "./pages/reports/delivery/WeeklyReports";
 import MonthlyReports from "./pages/reports/delivery/MonthlyReports";
 import MachineTriggers from "./pages/MachineTriggers";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,9 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Root/Index route */}
+            <Route path="/index" element={<Index />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

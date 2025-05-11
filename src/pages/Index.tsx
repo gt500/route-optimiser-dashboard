@@ -5,10 +5,10 @@ import { Navigate } from 'react-router-dom';
 const Index = () => {
   // Add console log to debug the redirection
   useEffect(() => {
-    console.log('Index component mounted, redirecting to dashboard');
+    console.log('Index component mounted, redirecting to root dashboard');
   }, []);
 
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/" replace />;
 };
 
 export default Index;
