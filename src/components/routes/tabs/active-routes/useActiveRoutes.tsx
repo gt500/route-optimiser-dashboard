@@ -47,6 +47,13 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
   // Load routes when component mounts or when highlightedDeliveryId changes
   useEffect(() => {
     loadRoutes();
+    
+    // Set up a periodic refresh for active routes (every 10 seconds)
+    const refreshInterval = setInterval(() => {
+      loadRoutes();
+    }, 10000);
+    
+    return () => clearInterval(refreshInterval);
   }, [loadRoutes, highlightedDeliveryId]);
 
   // Optimized route start handler
@@ -66,6 +73,8 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         );
         
         toast.success('Route started successfully');
+        // Force reload routes
+        loadRoutes();
       } else {
         toast.error('Failed to start route');
       }
@@ -88,6 +97,8 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         setRoutes(prev => prev.filter(route => route.id !== routeId));
         
         toast.success('Route completed successfully');
+        // Force reload routes
+        loadRoutes();
       } else {
         toast.error('Failed to complete route');
       }

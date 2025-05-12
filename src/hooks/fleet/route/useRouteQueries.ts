@@ -49,21 +49,15 @@ export const useRouteQueries = (routes: RouteData[]) => {
     }
   }, []);
   
-  // Optimized to use cached data when possible
+  // Optimized to force fresh data fetch for active routes
   const fetchActiveRoutes = useCallback(async () => {
     console.log("Fetching active routes in useRouteData hook");
     try {
-      // If we already have routes loaded, filter them in memory
-      if (routes.length > 0) {
-        const activeRoutes = routes.filter(route => 
-          route.status === 'scheduled' || route.status === 'in_progress'
-        );
-        console.log('Using cached active routes:', activeRoutes.length);
-        return activeRoutes;
-      }
-      
-      // Otherwise fetch from API
+      // Always fetch from API for active routes to ensure fresh data
       const freshRoutes = await fetchActiveRoutesQuery();
+      
+      console.log('Fetched active routes:', freshRoutes);
+      
       return freshRoutes.map(route => ({
         ...route,
         vehicle_name: 'Leyland Ashok Phoenix'
@@ -72,7 +66,7 @@ export const useRouteQueries = (routes: RouteData[]) => {
       console.error("Error fetching active routes:", error);
       return [];
     }
-  }, [routes]);
+  }, []);
   
   const fetchRouteHistory = useCallback(async () => {
     console.log("Fetching route history in useRouteData hook");

@@ -30,7 +30,7 @@ export const useSaveRoute = (
       const totalDistance = Math.max(5.0, route.distance);
       const totalDuration = Math.max(30, route.estimatedDuration || 0);
       const totalCylinders = Math.max(0, route.cylinders);
-      const estimatedCost = Math.max(0, route.fuelCost);
+      const estimatedCost = Math.round((route.fuelCost + route.maintenanceCost) * 100) / 100;
 
       // Create route record - ensuring we set the status to 'scheduled' for active routes
       const { data, error } = await supabase.from('routes').insert({
@@ -141,7 +141,7 @@ export const useSaveRoute = (
       setIsLoadConfirmed(true);
       toast.success('Load confirmed and route scheduled');
       
-      // Force refresh of active routes to show the new route immediately
+      // Invalidate the route cache to force a refresh
       try {
         await fetch('/api/routes/refresh-cache', { method: 'POST' });
       } catch (err) {

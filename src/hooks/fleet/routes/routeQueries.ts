@@ -9,8 +9,8 @@ const routeCache = {
   lastFetch: 0
 };
 
-// Cache lifetime in milliseconds (5 seconds)
-const CACHE_LIFETIME = 5000;
+// Cache lifetime in milliseconds (2 seconds - shortened for better responsiveness)
+const CACHE_LIFETIME = 2000;
 
 /**
  * Fetch all routes with caching for better performance
@@ -45,26 +45,22 @@ export const fetchRoutes = async (): Promise<RouteData[]> => {
 export const fetchActiveRoutes = async (): Promise<RouteData[]> => {
   console.log("Fetching active routes");
   
-  const now = Date.now();
-  const cacheExpired = now - routeCache.lastFetch > CACHE_LIFETIME;
-  
-  if (routeCache.activeRoutes && !cacheExpired) {
-    console.log("Using cached active routes data");
-    return [...routeCache.activeRoutes]; // Return a copy
-  }
-  
+  // Always get fresh data for active routes
   // Get all routes first (which handles its own caching)
   const allRoutes = await fetchRoutes();
   
-  routeCache.activeRoutes = allRoutes.filter(route => 
+  const activeRoutes = allRoutes.filter(route => 
     route.status === 'scheduled' || route.status === 'in_progress'
   ).map(route => ({
     ...route,
     vehicle_name: 'Leyland Ashok Phoenix' // Ensure vehicle name is always correct
   }));
   
-  console.log(`Found ${routeCache.activeRoutes.length} active routes`);
-  return [...routeCache.activeRoutes]; // Return a copy
+  // Update cache
+  routeCache.activeRoutes = [...activeRoutes];
+  
+  console.log(`Found ${activeRoutes.length} active routes`);
+  return activeRoutes;
 };
 
 /**

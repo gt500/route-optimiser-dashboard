@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import FuelCostEditor from './FuelCostEditor';
 import { VehicleConfigProps } from '@/hooks/useRouteManagement';
 import { Vehicle } from '@/types/fleet';
-import { ChevronDown, ChevronUp, Clock, Fuel } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Fuel, Car, Route } from 'lucide-react';
 import CylinderSelector from './LocationSelector/CylinderSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -20,6 +20,7 @@ interface RouteDetailsProps {
     locations: any[];
     trafficConditions: 'light' | 'moderate' | 'heavy';
     estimatedDuration: number;
+    waypointData?: { distance: number; duration: number }[];
   };
   onFuelCostUpdate: (newCost: number) => void;
   onOptimize: () => void;
@@ -45,6 +46,7 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
   hideEndpoints = false,
 }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isSegmentsOpen, setIsSegmentsOpen] = useState(false);
 
   // Helper function to format numbers for display
   const formatNumber = (value: number, decimals: number = 2): string => {
@@ -121,6 +123,63 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         </div>
       </div>
 
+      {/* Route Segments */}
+      {route.waypointData && route.waypointData.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <div className="font-medium text-sm">Route Segments</div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 px-2 text-xs"
+              onClick={() => setIsSegmentsOpen(!isSegmentsOpen)}
+            >
+              {isSegmentsOpen ? (
+                <>
+                  <ChevronUp className="h-3 w-3 mr-1" />
+                  Hide
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3 mr-1" />
+                  Show
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {isSegmentsOpen && (
+            <div className="border rounded-md overflow-hidden text-sm">
+              <div className="grid grid-cols-3 gap-2 py-1 px-2 bg-gray-50 font-medium border-b">
+                <div>Stop</div>
+                <div>Distance</div>
+                <div>Duration</div>
+              </div>
+              <div className="max-h-40 overflow-y-auto">
+                {route.locations.map((location, index) => {
+                  const segmentData = index > 0 ? route.waypointData?.[index - 1] : null;
+                  return (
+                    <div key={`segment-${index}`} className="grid grid-cols-3 gap-2 py-1.5 px-2 border-b last:border-b-0">
+                      <div className="text-xs">{location.name}</div>
+                      <div>
+                        {index === 0 ? '—' : (
+                          <span>{formatNumber(segmentData?.distance || 0, 1)} km</span>
+                        )}
+                      </div>
+                      <div>
+                        {index === 0 ? '—' : (
+                          <span>{formatTime(segmentData?.duration || 0)}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Vehicle Selection */}
       <div className="space-y-1">
         <div className="font-medium text-sm">Assign Vehicle</div>
@@ -169,18 +228,24 @@ const RouteDetails: React.FC<RouteDetailsProps> = ({
         
         <div className="space-y-1">
           <div className="flex justify-between items-center text-sm py-1 border-b">
-            <span>Fuel</span>
+            <div className="flex items-center">
+              <Fuel className="h-3.5 w-3.5 mr-1.5 text-blue-600" />
+              <span>Fuel</span>
+            </div>
             <span className="font-medium">{formatNumber(route.fuelCost)}</span>
           </div>
           
           {isAdvancedOpen && (
             <>
               <div className="flex justify-between items-center text-sm py-1 border-b">
-                <span>Fuel consumption</span>
+                <span className="pl-5">Fuel consumption</span>
                 <span>{formatNumber(route.fuelConsumption)} L</span>
               </div>
               <div className="flex justify-between items-center text-sm py-1 border-b">
-                <span>Maintenance</span>
+                <div className="flex items-center">
+                  <Car className="h-3.5 w-3.5 mr-1.5 text-gray-600" />
+                  <span>Maintenance</span>
+                </div>
                 <span>{formatNumber(route.maintenanceCost)}</span>
               </div>
               <div className="py-1">
