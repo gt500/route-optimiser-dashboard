@@ -1,4 +1,4 @@
-import { useToast } from "@/hooks/use-toast"
+
 import {
   Toast,
   ToastClose,
@@ -7,9 +7,19 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 
 export function Toaster() {
   const { toasts } = useToast()
+  
+  if (!toasts || !Array.isArray(toasts)) {
+    console.warn("Toast array is undefined or not an array")
+    return (
+      <ToastProvider>
+        <ToastViewport />
+      </ToastProvider>
+    )
+  }
 
   return (
     <ToastProvider>
