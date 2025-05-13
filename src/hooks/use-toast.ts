@@ -1,6 +1,5 @@
 import * as React from "react"
-
-import { useToast as useShadcnToast, type ToastActionElement } from "@/components/ui/toast"
+import { Toast as ToastPrimitive } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
@@ -9,7 +8,8 @@ export type ToastProps = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
-  action?: ToastActionElement
+  action?: React.ReactElement
+  variant?: "default" | "destructive" // Add the variant property
   open: boolean
 }
 
@@ -120,7 +120,6 @@ const initialState: State = {
 
 export function useToast() {
   const [state, dispatch] = React.useReducer(reducer, initialState)
-  const { toast: shadcnToast } = useShadcnToast()
 
   React.useEffect(() => {
     state.toasts.forEach((toast) => {
@@ -188,5 +187,11 @@ export function useToast() {
   }
 }
 
-export { toast } from "@/components/ui/toast"
-export type { ToastActionElement } from "@/components/ui/toast"
+// Create a simple toast function that can be imported directly
+export const toast = (props: Omit<ToastProps, "id" | "open">) => {
+  const { toast: toastFunc } = useToast()
+  return toastFunc(props)
+}
+
+// Re-export the ToastActionElement type
+export type ToastActionElement = React.ReactElement
