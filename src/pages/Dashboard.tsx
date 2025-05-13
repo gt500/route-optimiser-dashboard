@@ -1,12 +1,22 @@
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
-import DeliveryOverviewChart from '@/components/dashboard/DeliveryOverviewChart';
-import RecentRoutes from '@/components/dashboard/RecentRoutes';
-import UpcomingDeliveries from '@/components/dashboard/UpcomingDeliveries';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDashboardData } from '@/hooks/dashboard/useDashboardData';
+
+// Lazy load components that aren't needed immediately
+const DeliveryOverviewChart = lazy(() => import('@/components/dashboard/DeliveryOverviewChart'));
+const RecentRoutes = lazy(() => import('@/components/dashboard/RecentRoutes'));
+const UpcomingDeliveries = lazy(() => import('@/components/dashboard/UpcomingDeliveries'));
+
+// Loading component
+const ComponentLoader = () => (
+  <div className="space-y-4 w-full">
+    <Skeleton className="h-[200px] w-full" />
+  </div>
+);
 
 const Dashboard = () => {
   const { 
@@ -34,16 +44,22 @@ const Dashboard = () => {
       <div className="grid gap-6 mt-6 grid-cols-1 lg:grid-cols-2">
         <div className="space-y-6">
           <div className="mt-6">
-            <DeliveryOverviewChart 
-              isLoading={isLoading} 
-              weeklyDeliveryData={weeklyDeliveryData} 
-            />
+            <Suspense fallback={<ComponentLoader />}>
+              <DeliveryOverviewChart 
+                isLoading={isLoading} 
+                weeklyDeliveryData={weeklyDeliveryData} 
+              />
+            </Suspense>
           </div>
         </div>
         
         <div className="space-y-6">
-          <RecentRoutes routes={recentRoutes} />
-          <UpcomingDeliveries />
+          <Suspense fallback={<ComponentLoader />}>
+            <RecentRoutes routes={recentRoutes} />
+          </Suspense>
+          <Suspense fallback={<ComponentLoader />}>
+            <UpcomingDeliveries />
+          </Suspense>
         </div>
       </div>
     </DashboardShell>

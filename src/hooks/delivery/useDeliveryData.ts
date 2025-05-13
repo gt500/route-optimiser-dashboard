@@ -1,19 +1,8 @@
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
-import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
-import { DeliveryData as DeliveryDataType } from './types';
-
-// Define the interface for the hook's return type
-interface UseDeliveryDataReturn {
-  deliveries: DeliveryDataType[];
-  isLoading: boolean;
-  fetchDeliveryData: () => Promise<DeliveryDataType[]>;
-  fetchDeliveries: () => Promise<DeliveryDataType[]>;
-  transformRouteToDelivery: (route: RouteData) => DeliveryDataType;
-}
-
-// This interface is for the dashboard display - renamed to make the distinction clearer
+// Using types from your existing imports
 export interface DashboardDeliveryData {
   id: string;
   name: string;
@@ -23,68 +12,66 @@ export interface DashboardDeliveryData {
   status: string;
 }
 
-export const useDeliveryData = (selectedDate?: Date | undefined): UseDeliveryDataReturn => {
-  const [deliveries, setDeliveries] = useState<DeliveryDataType[]>([]);
+export interface DeliveryData {
+  id: string;
+  siteName: string;
+  date: string;
+  cylinders: number;
+  status: string;
+}
+
+export const useDeliveryData = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { fetchActiveRoutes } = useRouteData();
-  
-  // Transform route data to delivery format for the dashboard - use useCallback to memoize
-  const transformRouteToDelivery = useCallback((route: RouteData): DeliveryDataType => ({
-    id: route.id,
-    siteName: route.name,
-    cylinders: route.total_cylinders || 0,
-    kms: route.total_distance || 0,
-    fuelCost: route.estimated_cost || 0,
-    date: format(new Date(route.date), 'yyyy-MM-dd'),
-    latitude: 0, // Default values since we're not provided this in the route data
-    longitude: 0, // Default values since we're not provided this in the route data
-    region: '', // Default value
-    country: '' // Default value
-  }), []);
-  
-  // Fetch active routes and transform them to delivery format - use useCallback to memoize
-  const fetchDeliveries = useCallback(async (): Promise<DeliveryDataType[]> => {
+  const [error, setError] = useState<Error | null>(null);
+  const [deliveryData, setDeliveryData] = useState<DeliveryData[]>([]);
+
+  const fetchDeliveries = useCallback(async (): Promise<DeliveryData[]> => {
     try {
-      // Only set loading state if we don't already have data
-      if (deliveries.length === 0) {
-        setIsLoading(true);
+      setIsLoading(true);
+      setError(null);
+      
+      // If we already have deliveries loaded, return them
+      if (deliveryData.length > 0) {
+        return deliveryData;
       }
       
-      const routes = await fetchActiveRoutes();
-      const transformedDeliveries = routes.map(transformRouteToDelivery);
+      // Otherwise fetch from database
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, name, date, total_cylinders, status')
+        .eq('status', 'scheduled')
+        .order('date', { ascending: true })
+        .limit(5);
       
-      // Only update state if data has changed (simple length check)
-      if (
-        transformedDeliveries.length !== deliveries.length ||
-        JSON.stringify(transformedDeliveries) !== JSON.stringify(deliveries)
-      ) {
-        setDeliveries(transformedDeliveries);
+      if (error) {
+        throw new Error(error.message);
       }
       
-      return transformedDeliveries;
-    } catch (error) {
-      console.error('Error fetching deliveries:', error);
-      return deliveries; // Return current state on error to prevent UI flicker
+      const mappedData: DeliveryData[] = data.map(item => ({
+        id: item.id,
+        siteName: item.name,
+        date: item.date,
+        cylinders: item.total_cylinders,
+        status: item.status
+      }));
+      
+      setDeliveryData(mappedData);
+      return mappedData;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch deliveries';
+      console.error('Error fetching deliveries:', errorMessage);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      toast.error('Failed to load upcoming deliveries');
+      return [];
     } finally {
       setIsLoading(false);
     }
-  }, [fetchActiveRoutes, transformRouteToDelivery, deliveries]);
-  
-  // Add this method to maintain compatibility with DailyReports component
-  const fetchDeliveryData = useCallback(async (): Promise<DeliveryDataType[]> => {
-    return fetchDeliveries();
-  }, [fetchDeliveries]);
-  
-  // Only fetch on mount or when selectedDate changes
-  useEffect(() => {
-    fetchDeliveries();
-  }, [selectedDate]);
-  
+  }, [deliveryData]);
+
   return {
-    deliveries,
     isLoading,
-    fetchDeliveries,
-    fetchDeliveryData,
-    transformRouteToDelivery
+    error,
+    deliveryData,
+    fetchDeliveries
   };
 };
