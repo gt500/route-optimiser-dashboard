@@ -31,7 +31,7 @@ export const useDeliveryData = (selectedDate?: Date) => {
       // Fetch from database
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_cylinders, status, latitude, longitude, region, country, actual_distance, actual_duration, traffic, fuel_cost')
+        .select('id, name, date, total_cylinders, status, fuel_cost')
         .eq('date', dateStr)
         .order('name', { ascending: true });
       
@@ -39,21 +39,23 @@ export const useDeliveryData = (selectedDate?: Date) => {
         throw new Error(error.message);
       }
       
-      const mappedData: DeliveryData[] = data.map(item => ({
+      // Safe mapping with type checking
+      const mappedData: DeliveryData[] = (data || []).map(item => ({
         id: item.id,
         siteName: item.name,
         date: item.date,
         cylinders: item.total_cylinders || 0,
-        kms: item.actual_distance || 0,
+        kms: 0, // Will be set by route calculations
         fuelCost: item.fuel_cost || 0,
         status: item.status,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        region: item.region,
-        country: item.country,
-        actualDistance: item.actual_distance,
-        actualDuration: item.actual_duration,
-        traffic: item.traffic
+        // Add default values for optional properties
+        latitude: 0,
+        longitude: 0,
+        region: '',
+        country: '',
+        actualDistance: 0,
+        actualDuration: 0,
+        traffic: 'moderate'
       }));
       
       setDeliveries(mappedData);
@@ -85,14 +87,22 @@ export const useDeliveryData = (selectedDate?: Date) => {
         throw new Error(error.message);
       }
       
-      const mappedData: DeliveryData[] = data.map(item => ({
+      const mappedData: DeliveryData[] = (data || []).map(item => ({
         id: item.id,
         siteName: item.name,
         date: item.date,
         cylinders: item.total_cylinders || 0,
         kms: 0,
         fuelCost: 0,
-        status: item.status
+        status: item.status,
+        // Add default values for optional properties
+        latitude: 0,
+        longitude: 0,
+        region: '',
+        country: '',
+        actualDistance: 0,
+        actualDuration: 0,
+        traffic: 'moderate'
       }));
       
       return mappedData;

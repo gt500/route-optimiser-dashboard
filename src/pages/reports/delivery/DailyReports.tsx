@@ -53,8 +53,8 @@ const DailyReports = () => {
     .map(delivery => ({
       id: delivery.id,
       name: delivery.siteName,
-      latitude: delivery.latitude,
-      longitude: delivery.longitude,
+      latitude: delivery.latitude || 0,
+      longitude: delivery.longitude || 0,
       address: `${delivery.cylinders} cylinders`
     }))
     .filter(loc => loc.latitude && loc.longitude);
