@@ -6,11 +6,14 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 import { AppSidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNavigation } from "./sidebar/SidebarNavigation";
 
 export function AppSidebar() {
+  console.log("Rendering AppSidebar");
+  
   return (
     <Sidebar>
       <AppSidebarHeader />

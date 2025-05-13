@@ -24,48 +24,52 @@ import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <TooltipProvider>
+const App = () => {
+  console.log("Rendering App component");
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
         <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Root/Index route */}
-            <Route path="/index" element={<Index />} />
-            
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/routes" element={<RoutesList />} />
-                <Route path="/machine-triggers" element={<MachineTriggers />} />
-                <Route path="/locations" element={<Locations />} />
-                <Route path="/fleet" element={<Fleet />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/settings" element={<Settings />} />
-                
-                {/* Reports routes */}
-                <Route path="/reports" element={<ReportsLayout />}>
-                  <Route index element={<Navigate to="/reports/delivery/daily" replace />} />
-                  <Route path="delivery">
-                    <Route path="daily" element={<DailyReports />} />
-                    <Route path="weekly" element={<WeeklyReports />} />
-                    <Route path="monthly" element={<MonthlyReports />} />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              
+              {/* Root/Index route */}
+              <Route path="/index" element={<Index />} />
+              
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/routes" element={<RoutesList />} />
+                  <Route path="/machine-triggers" element={<MachineTriggers />} />
+                  <Route path="/locations" element={<Locations />} />
+                  <Route path="/fleet" element={<Fleet />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/settings" element={<Settings />} />
+                  
+                  {/* Reports routes */}
+                  <Route path="/reports" element={<ReportsLayout />}>
+                    <Route index element={<Navigate to="/reports/delivery/daily" replace />} />
+                    <Route path="delivery">
+                      <Route path="daily" element={<DailyReports />} />
+                      <Route path="weekly" element={<WeeklyReports />} />
+                      <Route path="monthly" element={<MonthlyReports />} />
+                    </Route>
                   </Route>
                 </Route>
               </Route>
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </TooltipProvider>
         </AuthProvider>
-      </TooltipProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

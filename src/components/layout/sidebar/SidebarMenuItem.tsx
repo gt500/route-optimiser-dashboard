@@ -39,7 +39,7 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
     e.preventDefault();
     e.stopPropagation();
     toggleSection(item.title);
-    console.log(`Toggling section: ${item.title}`);
+    console.log(`Toggling section: ${item.title}, isActive: ${isActive}`);
   };
 
   // If this menu item has no submenu items
@@ -50,6 +50,7 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
           <Link 
             to={item.path} 
             className={`flex items-center gap-3 ${isActive ? 'font-medium text-primary' : ''}`}
+            onClick={() => console.log(`Navigating to ${item.path}`)}
           >
             <item.icon className="h-5 w-5" />
             <span>{item.title}</span>

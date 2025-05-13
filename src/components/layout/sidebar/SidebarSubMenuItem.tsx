@@ -33,6 +33,19 @@ export const SidebarSubMenuItem: React.FC<SidebarSubMenuItemProps> = ({
     return location.pathname.startsWith(path);
   };
 
+  // Handle link click
+  const handleLinkClick = () => {
+    console.log(`Navigating to submenu item: ${subItem.path}`);
+  };
+
+  // Handle toggle click
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleSection(subItem.title);
+    console.log(`Toggling submenu section: ${subItem.title}`);
+  };
+
   // Handle nested submenu rendering
   if (subItem.isSubmenu) {
     return (
@@ -44,6 +57,7 @@ export const SidebarSubMenuItem: React.FC<SidebarSubMenuItemProps> = ({
           <CollapsibleTrigger asChild>
             <SidebarMenuSubButton 
               className={`w-full justify-between ${isActive ? 'font-medium text-primary' : ''}`}
+              onClick={handleToggleClick}
             >
               <span>{subItem.title}</span>
               <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -58,7 +72,7 @@ export const SidebarSubMenuItem: React.FC<SidebarSubMenuItemProps> = ({
                     size="sm"
                     className={isSubItemActive(nestedItem.path) ? 'font-medium text-primary' : ''}
                   >
-                    <Link to={nestedItem.path}>
+                    <Link to={nestedItem.path} onClick={handleLinkClick}>
                       <span>{nestedItem.title}</span>
                     </Link>
                   </SidebarMenuSubButton>
@@ -78,7 +92,7 @@ export const SidebarSubMenuItem: React.FC<SidebarSubMenuItemProps> = ({
         asChild
         className={isSubItemActive(subItem.path) ? 'font-medium text-primary' : ''}
       >
-        <Link to={subItem.path}>
+        <Link to={subItem.path} onClick={handleLinkClick}>
           <span>{subItem.title}</span>
         </Link>
       </SidebarMenuSubButton>
