@@ -31,7 +31,7 @@ export const useDeliveryData = (selectedDate?: Date) => {
       // Fetch from database
       const { data, error } = await supabase
         .from('routes')
-        .select('id, name, date, total_cylinders, status, fuel_cost')
+        .select('id, name, date, total_cylinders, status, estimated_cost')
         .eq('date', dateStr)
         .order('name', { ascending: true });
       
@@ -41,13 +41,13 @@ export const useDeliveryData = (selectedDate?: Date) => {
       
       // Safe mapping with type checking
       const mappedData: DeliveryData[] = (data || []).map(item => ({
-        id: item.id,
-        siteName: item.name,
-        date: item.date,
+        id: item.id || '',
+        siteName: item.name || '',
+        date: item.date || '',
         cylinders: item.total_cylinders || 0,
         kms: 0, // Will be set by route calculations
-        fuelCost: item.fuel_cost || 0,
-        status: item.status,
+        fuelCost: item.estimated_cost || 0,
+        status: item.status || 'pending',
         // Add default values for optional properties
         latitude: 0,
         longitude: 0,
@@ -88,13 +88,13 @@ export const useDeliveryData = (selectedDate?: Date) => {
       }
       
       const mappedData: DeliveryData[] = (data || []).map(item => ({
-        id: item.id,
-        siteName: item.name,
-        date: item.date,
+        id: item.id || '',
+        siteName: item.name || '',
+        date: item.date || '',
         cylinders: item.total_cylinders || 0,
         kms: 0,
         fuelCost: 0,
-        status: item.status,
+        status: item.status || 'scheduled',
         // Add default values for optional properties
         latitude: 0,
         longitude: 0,

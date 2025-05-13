@@ -204,6 +204,7 @@ const transformRouteDataToDeliveries = (
         kms: parseFloat(distanceForThisDelivery.toFixed(1)),
         fuelCost: parseFloat(segmentFuelCost.toFixed(2)),
         date: formattedDateStr,
+        status: 'completed', // Adding the missing status property
         latitude: delivery.latitude,
         longitude: delivery.longitude,
         actualDistance: parseFloat(distanceForThisDelivery.toFixed(1))
