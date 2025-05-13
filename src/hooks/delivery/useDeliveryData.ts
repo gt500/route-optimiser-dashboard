@@ -1,6 +1,6 @@
 
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { DeliveryData as DeliveryDataType } from './types';
 
@@ -25,11 +25,11 @@ export interface DashboardDeliveryData {
 
 export const useDeliveryData = (selectedDate?: Date | undefined): UseDeliveryDataReturn => {
   const [deliveries, setDeliveries] = useState<DeliveryDataType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { fetchActiveRoutes } = useRouteData();
   
-  // Transform route data to delivery format for the dashboard
-  const transformRouteToDelivery = (route: RouteData): DeliveryDataType => ({
+  // Transform route data to delivery format for the dashboard - use useCallback to memoize
+  const transformRouteToDelivery = useCallback((route: RouteData): DeliveryDataType => ({
     id: route.id,
     siteName: route.name,
     cylinders: route.total_cylinders || 0,
@@ -40,29 +40,42 @@ export const useDeliveryData = (selectedDate?: Date | undefined): UseDeliveryDat
     longitude: 0, // Default values since we're not provided this in the route data
     region: '', // Default value
     country: '' // Default value
-  });
+  }), []);
   
-  // Fetch active routes and transform them to delivery format
-  const fetchDeliveries = async (): Promise<DeliveryDataType[]> => {
-    setIsLoading(true);
+  // Fetch active routes and transform them to delivery format - use useCallback to memoize
+  const fetchDeliveries = useCallback(async (): Promise<DeliveryDataType[]> => {
     try {
+      // Only set loading state if we don't already have data
+      if (deliveries.length === 0) {
+        setIsLoading(true);
+      }
+      
       const routes = await fetchActiveRoutes();
       const transformedDeliveries = routes.map(transformRouteToDelivery);
-      setDeliveries(transformedDeliveries);
+      
+      // Only update state if data has changed (simple length check)
+      if (
+        transformedDeliveries.length !== deliveries.length ||
+        JSON.stringify(transformedDeliveries) !== JSON.stringify(deliveries)
+      ) {
+        setDeliveries(transformedDeliveries);
+      }
+      
       return transformedDeliveries;
     } catch (error) {
       console.error('Error fetching deliveries:', error);
-      return [];
+      return deliveries; // Return current state on error to prevent UI flicker
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchActiveRoutes, transformRouteToDelivery, deliveries]);
   
   // Add this method to maintain compatibility with DailyReports component
-  const fetchDeliveryData = async (): Promise<DeliveryDataType[]> => {
+  const fetchDeliveryData = useCallback(async (): Promise<DeliveryDataType[]> => {
     return fetchDeliveries();
-  };
+  }, [fetchDeliveries]);
   
+  // Only fetch on mount or when selectedDate changes
   useEffect(() => {
     fetchDeliveries();
   }, [selectedDate]);
