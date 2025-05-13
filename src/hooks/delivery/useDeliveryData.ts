@@ -1,6 +1,17 @@
 
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { DeliveryData as DeliveryDataType } from './types';
+
+// Define the interface for the hook's return type
+interface UseDeliveryDataReturn {
+  deliveries: DeliveryDataType[];
+  isLoading: boolean;
+  fetchDeliveryData: () => Promise<DeliveryDataType[]>;
+  fetchDeliveries: () => Promise<DeliveryDataType[]>;
+  transformRouteToDelivery: (route: RouteData) => DeliveryDataType;
+}
 
 export interface DeliveryData {
   id: string;
@@ -11,23 +22,27 @@ export interface DeliveryData {
   status: string;
 }
 
-export const useDeliveryData = () => {
-  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
+export const useDeliveryData = (selectedDate?: Date | undefined): UseDeliveryDataReturn => {
+  const [deliveries, setDeliveries] = useState<DeliveryDataType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { fetchActiveRoutes } = useRouteData();
   
-  // Transform route data to delivery format
-  const transformRouteToDelivery = (route: RouteData): DeliveryData => ({
+  // Transform route data to delivery format for the dashboard
+  const transformRouteToDelivery = (route: RouteData): DeliveryDataType => ({
     id: route.id,
-    name: route.name,
-    date: route.date,
-    locationsCount: route.stops?.length || 0,
-    cylindersCount: route.total_cylinders || 0,
-    status: route.status
+    siteName: route.name,
+    cylinders: route.total_cylinders || 0,
+    kms: route.total_distance || 0,
+    fuelCost: route.estimated_cost || 0,
+    date: format(new Date(route.date), 'yyyy-MM-dd'),
+    latitude: 0, // Default values since we're not provided this in the route data
+    longitude: 0, // Default values since we're not provided this in the route data
+    region: '', // Default value
+    country: '' // Default value
   });
   
   // Fetch active routes and transform them to delivery format
-  const fetchDeliveries = async () => {
+  const fetchDeliveries = async (): Promise<DeliveryDataType[]> => {
     setIsLoading(true);
     try {
       const routes = await fetchActiveRoutes();
@@ -42,14 +57,20 @@ export const useDeliveryData = () => {
     }
   };
   
+  // Add this method to maintain compatibility with DailyReports component
+  const fetchDeliveryData = async (): Promise<DeliveryDataType[]> => {
+    return fetchDeliveries();
+  };
+  
   useEffect(() => {
     fetchDeliveries();
-  }, []);
+  }, [selectedDate]);
   
   return {
     deliveries,
     isLoading,
     fetchDeliveries,
+    fetchDeliveryData,
     transformRouteToDelivery
   };
 };

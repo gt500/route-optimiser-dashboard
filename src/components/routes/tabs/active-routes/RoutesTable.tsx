@@ -61,7 +61,8 @@ const RoutesTable = ({
 
   return (
     <div className="overflow-x-auto">
-      <style jsx>{`
+      <style>
+        {`
         .pulse-highlight {
           animation: highlight-pulse 2s ease-in-out;
         }
@@ -71,7 +72,8 @@ const RoutesTable = ({
           50% { background-color: rgba(var(--primary), 0.1); }
           100% { background-color: transparent; }
         }
-      `}</style>
+        `}
+      </style>
       <Table>
         <TableHeader>
           <TableRow>
