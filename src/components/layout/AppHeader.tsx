@@ -20,7 +20,7 @@ import { AlertIndicator } from '@/components/notifications/AlertIndicator';
 export function AppHeader() {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile } = useSidebar();
   
   // Get page title based on route
   const getPageTitle = () => {
@@ -63,7 +63,7 @@ export function AppHeader() {
 
   // Handle sidebar toggle with debugging
   const handleSidebarToggle = () => {
-    console.log("Attempting to toggle sidebar");
+    console.log("Sidebar toggle clicked");
     toggleSidebar();
   };
 
@@ -75,6 +75,7 @@ export function AppHeader() {
           size="icon" 
           className="h-7 w-7" 
           onClick={handleSidebarToggle}
+          aria-label="Toggle sidebar"
         >
           <SidebarTrigger />
         </Button>
