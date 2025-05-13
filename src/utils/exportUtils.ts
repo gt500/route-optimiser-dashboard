@@ -1,10 +1,13 @@
+
 import { jsPDF } from 'jspdf';
 // @ts-ignore - We need to ignore the import error for autotable as it's a plugin
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 
-// Extend jsPDF with autotable using declaration merging
+// Define the interface for jsPDF with autoTable plugin
+// This is a better way to handle the extension than using declaration merging
+// which can cause issues when the module can't be found
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
@@ -49,11 +52,12 @@ export const exportToPDF = (
 ) => {
   try {
     // Create PDF document with explicit unit
+    // Create the jsPDF instance first
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
-    }) as jsPDFWithAutoTable;
+    });
     
     // Add title
     const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
@@ -89,7 +93,8 @@ export const exportToPDF = (
     
     // Define an autoTable function with explicit typing
     try {
-      doc.autoTable({
+      // Use type assertion to tell TypeScript that doc has the autoTable method
+      (doc as unknown as jsPDFWithAutoTable).autoTable({
         head: [tableColumns],
         body: tableRows,
         startY: date ? 30 : 20,
@@ -104,7 +109,7 @@ export const exportToPDF = (
       console.error('Error adding table to PDF:', tableError);
       
       // Alternative approach if autotable fails
-      if (!doc.autoTable) {
+      if (!(doc as unknown as jsPDFWithAutoTable).autoTable) {
         console.log('AutoTable not available, using basic text output');
         let y = date ? 40 : 30;
         const lineHeight = 8;
