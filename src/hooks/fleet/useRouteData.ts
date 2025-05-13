@@ -32,13 +32,29 @@ export const useRouteData = () => {
   // Get action methods from the actions hook
   const actions = useRouteActions(routes, setRoutes, setProcessingRoutes, fetchRoutes);
   
-  // Set up auto-refresh mechanism
-  useRouteRefresh(processingRoutes, lastRefresh, setLastRefresh, fetchRoutes);
-  
-  // Load routes on first mount
-  useEffect(() => {
+  // Set up auto-refresh mechanism with memoized callback to prevent infinite loops
+  const refreshCallback = useCallback(() => {
     fetchRoutes();
   }, [fetchRoutes]);
+  
+  useRouteRefresh(processingRoutes, lastRefresh, setLastRefresh, refreshCallback);
+  
+  // Load routes on first mount only
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadInitialRoutes = async () => {
+      if (mounted) {
+        await fetchRoutes();
+      }
+    };
+    
+    loadInitialRoutes();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);  // Empty dependency array means this only runs once
 
   // Return all hooks and state
   return {

@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 interface DeliveryItemProps {
   id: string;
   name: string;
   date: string;
-  locationsCount?: number; // Optional to match the data structure
+  locationsCount?: number;
   cylindersCount: number;
   status: string;
 }
@@ -23,12 +23,21 @@ interface UpcomingDeliveriesProps {
 const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: propDeliveries }) => {
   const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState<DeliveryItemProps[]>([]);
-  const { fetchActiveRoutes, isLoading } = useRouteData();
+  const [isLoading, setIsLoading] = useState(true);
+  const { fetchActiveRoutes } = useRouteData();
   
-  // Fetch active routes directly to ensure sync with routes page
+  // Fetch active routes only once on component mount
   useEffect(() => {
+    // Only load active routes if no deliveries were passed as props
+    if (propDeliveries) {
+      setDeliveries(propDeliveries);
+      setIsLoading(false);
+      return;
+    }
+
     const loadActiveRoutes = async () => {
       try {
+        setIsLoading(true);
         const activeRoutes = await fetchActiveRoutes();
         
         // Transform active routes into the delivery format
@@ -44,13 +53,19 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: pro
         setDeliveries(formattedDeliveries);
       } catch (error) {
         console.error('Error loading active routes for dashboard:', error);
-        toast.error('Failed to load upcoming deliveries');
+        toast({
+          title: "Error",
+          description: "Failed to load upcoming deliveries",
+          variant: "destructive"
+        });
         setDeliveries([]);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     loadActiveRoutes();
-  }, [fetchActiveRoutes]);
+  }, [fetchActiveRoutes, propDeliveries]); // Only re-run if these dependencies change
   
   const handleNavigateToRoutes = () => {
     // Navigate to routes page with active tab selected
@@ -112,7 +127,7 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: pro
                 <Truck className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <div className="font-medium">No deliveries scheduled for today</div>
+                <div className="font-medium">No deliveries scheduled</div>
                 <div className="text-sm text-gray-400">Schedule deliveries in the Routes section</div>
               </div>
               <Button 
