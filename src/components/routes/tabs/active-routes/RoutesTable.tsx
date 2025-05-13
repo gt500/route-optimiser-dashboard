@@ -26,31 +26,52 @@ const RoutesTable = ({
   // Debug to help troubleshoot
   console.log("RoutesTable rendering with routes:", routes);
   console.log("Processing routes:", processingRoutes);
+  console.log("Highlighted delivery ID:", highlightedDeliveryId);
 
   // Effect to scroll to the highlighted route
   useEffect(() => {
     if (highlightedDeliveryId && highlightedRowRef.current) {
-      highlightedRowRef.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center' 
-      });
+      console.log(`Scrolling to highlighted route: ${highlightedDeliveryId}`);
       
-      // Add a brief highlight animation
-      highlightedRowRef.current.classList.add('bg-primary/10');
-      
-      // Remove the highlight after animation
-      const timer = setTimeout(() => {
+      // Add a brief delay to ensure the DOM is fully rendered
+      setTimeout(() => {
         if (highlightedRowRef.current) {
-          highlightedRowRef.current.classList.remove('bg-primary/10');
+          highlightedRowRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          
+          // Add a brief highlight animation
+          highlightedRowRef.current.classList.add('bg-primary/20');
+          highlightedRowRef.current.classList.add('pulse-highlight');
+          
+          // Remove the highlight after animation
+          const timer = setTimeout(() => {
+            if (highlightedRowRef.current) {
+              highlightedRowRef.current.classList.remove('bg-primary/20');
+              highlightedRowRef.current.classList.remove('pulse-highlight');
+            }
+          }, 3000);
+          
+          return () => clearTimeout(timer);
         }
-      }, 2500);
-      
-      return () => clearTimeout(timer);
+      }, 300);
     }
   }, [highlightedDeliveryId, routes]);
 
   return (
     <div className="overflow-x-auto">
+      <style jsx>{`
+        .pulse-highlight {
+          animation: highlight-pulse 2s ease-in-out;
+        }
+        
+        @keyframes highlight-pulse {
+          0% { background-color: rgba(var(--primary), 0.3); }
+          50% { background-color: rgba(var(--primary), 0.1); }
+          100% { background-color: transparent; }
+        }
+      `}</style>
       <Table>
         <TableHeader>
           <TableRow>
@@ -98,6 +119,13 @@ const RoutesTable = ({
               </TableCell>
             </TableRow>
           ))}
+          {routes.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                No active routes found
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

@@ -4,68 +4,22 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useRouteData } from '@/hooks/fleet/useRouteData';
-import { toast } from '@/components/ui/use-toast';
+import { useDeliveryData, DeliveryData } from '@/hooks/delivery/useDeliveryData';
 
-interface DeliveryItemProps {
-  id: string;
-  name: string;
-  date: string;
-  locationsCount?: number;
-  cylindersCount: number;
-  status: string;
-}
-
-interface UpcomingDeliveriesProps {
-  deliveries?: DeliveryItemProps[];
-}
-
-const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: propDeliveries }) => {
+const UpcomingDeliveries: React.FC = () => {
   const navigate = useNavigate();
-  const [deliveries, setDeliveries] = useState<DeliveryItemProps[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { fetchActiveRoutes } = useRouteData();
+  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
+  const { isLoading, fetchDeliveries } = useDeliveryData();
   
-  // Fetch active routes only once on component mount
   useEffect(() => {
-    // Only load active routes if no deliveries were passed as props
-    if (propDeliveries) {
-      setDeliveries(propDeliveries);
-      setIsLoading(false);
-      return;
-    }
-
-    const loadActiveRoutes = async () => {
-      try {
-        setIsLoading(true);
-        const activeRoutes = await fetchActiveRoutes();
-        
-        // Transform active routes into the delivery format
-        const formattedDeliveries = activeRoutes.map(route => ({
-          id: route.id,
-          name: route.name,
-          date: route.date,
-          locationsCount: route.stops?.length || 0,
-          cylindersCount: route.total_cylinders || 0,
-          status: route.status
-        })).slice(0, 3); // Take only first 3
-        
-        setDeliveries(formattedDeliveries);
-      } catch (error) {
-        console.error('Error loading active routes for dashboard:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load upcoming deliveries",
-          variant: "destructive"
-        });
-        setDeliveries([]);
-      } finally {
-        setIsLoading(false);
-      }
+    const loadDeliveries = async () => {
+      const fetchedDeliveries = await fetchDeliveries();
+      // Take only the first 3 deliveries for display
+      setDeliveries(fetchedDeliveries.slice(0, 3));
     };
     
-    loadActiveRoutes();
-  }, [fetchActiveRoutes, propDeliveries]); // Only re-run if these dependencies change
+    loadDeliveries();
+  }, [fetchDeliveries]);
   
   const handleNavigateToRoutes = () => {
     // Navigate to routes page with active tab selected
@@ -116,6 +70,7 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: pro
                   size="sm" 
                   variant="ghost" 
                   onClick={() => handleNavigateToDelivery(delivery.id)}
+                  aria-label={`View delivery ${delivery.name}`}
                 >
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -134,6 +89,7 @@ const UpcomingDeliveries: React.FC<UpcomingDeliveriesProps> = ({ deliveries: pro
                 size="sm" 
                 variant="ghost"
                 onClick={handleNavigateToRoutes}
+                aria-label="Go to routes"
               >
                 <ArrowRight className="h-4 w-4" />
               </Button>
