@@ -4,18 +4,31 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDeliveryData, DeliveryData } from '@/hooks/delivery/useDeliveryData';
+import { useDeliveryData, DashboardDeliveryData } from '@/hooks/delivery/useDeliveryData';
+import { DeliveryData } from '@/hooks/delivery/types';
+import { RouteData } from '@/hooks/fleet/useRouteData';
 
 const UpcomingDeliveries: React.FC = () => {
   const navigate = useNavigate();
-  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
-  const { isLoading, fetchDeliveries } = useDeliveryData();
+  const [dashboardDeliveries, setDashboardDeliveries] = useState<DashboardDeliveryData[]>([]);
+  const { isLoading, fetchDeliveries, transformRouteToDelivery } = useDeliveryData();
   
   useEffect(() => {
     const loadDeliveries = async () => {
       const fetchedDeliveries = await fetchDeliveries();
+      
+      // Transform the DeliveryData from types.ts to DashboardDeliveryData format
+      const transformedForDashboard = fetchedDeliveries.map(delivery => ({
+        id: delivery.id,
+        name: delivery.siteName,
+        date: delivery.date,
+        locationsCount: 1, // Default value since we don't have this info
+        cylindersCount: delivery.cylinders,
+        status: 'scheduled' // Default status
+      }));
+      
       // Take only the first 3 deliveries for display
-      setDeliveries(fetchedDeliveries.slice(0, 3));
+      setDashboardDeliveries(transformedForDashboard.slice(0, 3));
     };
     
     loadDeliveries();
@@ -47,8 +60,8 @@ const UpcomingDeliveries: React.FC = () => {
                 <div className="font-medium">Loading deliveries...</div>
               </div>
             </div>
-          ) : deliveries.length > 0 ? (
-            deliveries.map((delivery) => (
+          ) : dashboardDeliveries.length > 0 ? (
+            dashboardDeliveries.map((delivery) => (
               <div key={delivery.id} className="flex items-center gap-4 p-3 rounded-lg bg-gray-800">
                 <div className="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
                   <Calendar className="h-5 w-5" />

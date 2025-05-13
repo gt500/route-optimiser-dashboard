@@ -13,7 +13,8 @@ interface UseDeliveryDataReturn {
   transformRouteToDelivery: (route: RouteData) => DeliveryDataType;
 }
 
-export interface DeliveryData {
+// This interface is for the dashboard display - renamed to make the distinction clearer
+export interface DashboardDeliveryData {
   id: string;
   name: string;
   date: string;
