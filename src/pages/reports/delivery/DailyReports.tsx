@@ -19,13 +19,13 @@ const DailyReports = () => {
   
   const { deliveries, isLoading, fetchDeliveryData } = useDeliveryData(date);
   
-  // Ensure the data is fetched on component mount
+  // Ensure the data is fetched on component mount and when date changes
   useEffect(() => {
     if (date) {
       console.log("Initializing daily reports with date:", format(date, 'yyyy-MM-dd'));
       fetchDeliveryData();
     }
-  }, []);
+  }, [date, fetchDeliveryData]);
   
   const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
   const filteredDeliveries = deliveries.filter(

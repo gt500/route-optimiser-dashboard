@@ -1,8 +1,10 @@
+
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { DeliveryData } from './types';
+import { format } from 'date-fns';
 
-// Using types from your existing imports
 export interface DashboardDeliveryData {
   id: string;
   name: string;
@@ -12,30 +14,66 @@ export interface DashboardDeliveryData {
   status: string;
 }
 
-export interface DeliveryData {
-  id: string;
-  siteName: string;
-  date: string;
-  cylinders: number;
-  status: string;
-}
-
-export const useDeliveryData = () => {
+export const useDeliveryData = (selectedDate?: Date) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [deliveryData, setDeliveryData] = useState<DeliveryData[]>([]);
+  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
 
+  const fetchDeliveryData = useCallback(async (): Promise<void> => {
+    if (!selectedDate) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      
+      // Fetch from database
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, name, date, total_cylinders, status, latitude, longitude, region, country, actual_distance, actual_duration, traffic, fuel_cost')
+        .eq('date', dateStr)
+        .order('name', { ascending: true });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      const mappedData: DeliveryData[] = data.map(item => ({
+        id: item.id,
+        siteName: item.name,
+        date: item.date,
+        cylinders: item.total_cylinders || 0,
+        kms: item.actual_distance || 0,
+        fuelCost: item.fuel_cost || 0,
+        status: item.status,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        region: item.region,
+        country: item.country,
+        actualDistance: item.actual_distance,
+        actualDuration: item.actual_duration,
+        traffic: item.traffic
+      }));
+      
+      setDeliveries(mappedData);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch deliveries';
+      console.error('Error fetching deliveries:', errorMessage);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      toast.error('Failed to load delivery data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedDate]);
+
+  // Function for dashboard to fetch upcoming deliveries
   const fetchDeliveries = useCallback(async (): Promise<DeliveryData[]> => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // If we already have deliveries loaded, return them
-      if (deliveryData.length > 0) {
-        return deliveryData;
-      }
-      
-      // Otherwise fetch from database
+      // Fetch upcoming deliveries for dashboard
       const { data, error } = await supabase
         .from('routes')
         .select('id, name, date, total_cylinders, status')
@@ -51,11 +89,12 @@ export const useDeliveryData = () => {
         id: item.id,
         siteName: item.name,
         date: item.date,
-        cylinders: item.total_cylinders,
+        cylinders: item.total_cylinders || 0,
+        kms: 0,
+        fuelCost: 0,
         status: item.status
       }));
       
-      setDeliveryData(mappedData);
       return mappedData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch deliveries';
@@ -66,12 +105,13 @@ export const useDeliveryData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [deliveryData]);
+  }, []);
 
   return {
+    deliveries,
     isLoading,
     error,
-    deliveryData,
+    fetchDeliveryData,
     fetchDeliveries
   };
 };
