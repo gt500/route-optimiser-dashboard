@@ -6,8 +6,10 @@ import { AppHeader } from './AppHeader';
 import { Outlet } from 'react-router-dom';
 
 export function AppLayout() {
+  console.log("Rendering AppLayout");
+  
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col">

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SidebarMenu } from "@/components/ui/sidebar";
 import { SidebarMenuItemComponent } from "./SidebarMenuItem";
 import { menuItems } from "./SidebarMenuData";
@@ -16,6 +16,11 @@ export const SidebarNavigation: React.FC = () => {
       [title]: !prev[title]
     }));
   };
+
+  // Add console logging to help debug sidebar interactions
+  useEffect(() => {
+    console.log("Current open sections:", openSections);
+  }, [openSections]);
 
   return (
     <SidebarMenu>

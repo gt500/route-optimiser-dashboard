@@ -4,7 +4,7 @@ import { Bell, LogOut, Search, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'react-router-dom';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import { AlertIndicator } from '@/components/notifications/AlertIndicator';
 export function AppHeader() {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { toggleSidebar } = useSidebar();
   
   // Get page title based on route
   const getPageTitle = () => {
@@ -39,6 +40,9 @@ export function AppHeader() {
       case '/machine-triggers':
         return 'Machine Triggers';
       default:
+        if (location.pathname.includes('/reports')) {
+          return 'Reports';
+        }
         return 'Dashboard';
     }
   };
@@ -57,10 +61,23 @@ export function AppHeader() {
   // Show the logo only on the routes page
   const showLogo = location.pathname === '/routes';
 
+  // Handle sidebar toggle with debugging
+  const handleSidebarToggle = () => {
+    console.log("Attempting to toggle sidebar");
+    toggleSidebar();
+  };
+
   return (
     <header className="h-16 border-b border-border bg-background/95 backdrop-blur-sm flex items-center px-4 sticky top-0 z-30">
       <div className="md:hidden">
-        <SidebarTrigger />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7" 
+          onClick={handleSidebarToggle}
+        >
+          <SidebarTrigger />
+        </Button>
       </div>
       {showLogo && (
         <img 

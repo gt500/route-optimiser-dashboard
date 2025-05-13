@@ -34,6 +34,14 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
 
   const isActive = isActivePath(item.path);
 
+  // Handle click event to ensure proper propagation
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleSection(item.title);
+    console.log(`Toggling section: ${item.title}`);
+  };
+
   // If this menu item has no submenu items
   if (!item.subItems) {
     return (
@@ -61,6 +69,7 @@ export const SidebarMenuItemComponent: React.FC<SidebarMenuItemProps> = ({
         <CollapsibleTrigger asChild>
           <SidebarMenuButton 
             className={`w-full justify-between ${isActive ? 'font-medium text-primary' : ''}`}
+            onClick={handleToggleClick}
           >
             <div className="flex items-center gap-3">
               <item.icon className="h-5 w-5" />
