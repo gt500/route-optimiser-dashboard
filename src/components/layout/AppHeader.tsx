@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertIndicator } from '@/components/notifications/AlertIndicator';
+import { Menu } from 'lucide-react';
 
 export function AppHeader() {
   const location = useLocation();
@@ -63,7 +64,7 @@ export function AppHeader() {
 
   // Handle sidebar toggle with debugging
   const handleSidebarToggle = () => {
-    console.log("Sidebar toggle clicked");
+    console.log("Sidebar toggle clicked in AppHeader");
     toggleSidebar();
   };
 
@@ -77,7 +78,7 @@ export function AppHeader() {
           onClick={handleSidebarToggle}
           aria-label="Toggle sidebar"
         >
-          <SidebarTrigger />
+          <Menu className="h-5 w-5" />
         </Button>
       </div>
       {showLogo && (

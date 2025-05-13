@@ -2,9 +2,10 @@
 import React from "react";
 import { SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Menu } from "lucide-react";
 
 export const AppSidebarHeader: React.FC = () => {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile } = useSidebar();
   
   const handleToggle = () => {
     console.log("Sidebar header toggle clicked");
@@ -25,7 +26,9 @@ export const AppSidebarHeader: React.FC = () => {
       <SidebarTrigger 
         className="hidden md:flex" 
         onClick={handleToggle}
-      />
+      >
+        <Menu className="h-5 w-5" />
+      </SidebarTrigger>
     </SidebarHeader>
   );
 };

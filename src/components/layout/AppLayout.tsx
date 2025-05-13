@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
@@ -7,6 +7,11 @@ import { Outlet } from 'react-router-dom';
 
 export function AppLayout() {
   console.log("Rendering AppLayout");
+  
+  // Log when the layout mounts to help debug sidebar issues
+  useEffect(() => {
+    console.log("AppLayout mounted - sidebar should initialize here");
+  }, []);
   
   return (
     <SidebarProvider defaultOpen={true}>
