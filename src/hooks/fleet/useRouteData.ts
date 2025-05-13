@@ -33,8 +33,9 @@ export const useRouteData = () => {
   const actions = useRouteActions(routes, setRoutes, setProcessingRoutes, fetchRoutes);
   
   // Set up auto-refresh mechanism with memoized callback to prevent infinite loops
+  // Fix: Make sure refreshCallback returns the Promise from fetchRoutes
   const refreshCallback = useCallback(() => {
-    fetchRoutes();
+    return fetchRoutes();
   }, [fetchRoutes]);
   
   useRouteRefresh(processingRoutes, lastRefresh, setLastRefresh, refreshCallback);
