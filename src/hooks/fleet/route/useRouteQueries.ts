@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { RouteData } from '../types/routeTypes';
@@ -9,12 +10,13 @@ import {
   getWeeklyDeliveryData as getWeeklyDeliveryDataQuery,
   getOptimizationStats as getOptimizationStatsQuery
 } from '../routes/routeQueries';
+import { handleSupabaseError } from '@/utils/supabaseUtils';
 
 /**
- * Hook containing query methods for route data
+ * Hook containing query methods for route data with improved security
  */
 export const useRouteQueries = (routes: RouteData[]) => {
-  // Main fetch function with optimized caching
+  // Main fetch function with optimized caching and error handling
   const fetchRoutes = useCallback(async () => {
     console.log("Fetching all routes in useRouteData hook");
     
@@ -29,8 +31,7 @@ export const useRouteQueries = (routes: RouteData[]) => {
       
       return routesWithCorrectVehicles;
     } catch (error) {
-      console.error("Error fetching routes:", error);
-      toast.error("Failed to load routes");
+      handleSupabaseError(error, "Error fetching routes");
       return [];
     }
   }, []);
@@ -44,12 +45,12 @@ export const useRouteQueries = (routes: RouteData[]) => {
         vehicle_name: 'Leyland Ashok Phoenix'
       }));
     } catch (error) {
-      console.error("Error fetching route data:", error);
+      handleSupabaseError(error, "Error fetching route data");
       return [];
     }
   }, []);
   
-  // Optimized to force fresh data fetch for active routes
+  // Optimized to force fresh data fetch for active routes with error handling
   const fetchActiveRoutes = useCallback(async () => {
     console.log("Fetching active routes in useRouteData hook");
     try {
@@ -63,7 +64,7 @@ export const useRouteQueries = (routes: RouteData[]) => {
         vehicle_name: 'Leyland Ashok Phoenix'
       }));
     } catch (error) {
-      console.error("Error fetching active routes:", error);
+      handleSupabaseError(error, "Error fetching active routes");
       return [];
     }
   }, []);
@@ -84,29 +85,54 @@ export const useRouteQueries = (routes: RouteData[]) => {
         vehicle_name: 'Leyland Ashok Phoenix'
       }));
     } catch (error) {
-      console.error("Error fetching route history:", error);
+      handleSupabaseError(error, "Error fetching route history");
       return [];
     }
   }, [routes]);
   
   const fetchRouteDataByName = useCallback(async (routeName: string) => {
+    if (!routeName || typeof routeName !== 'string') {
+      console.error('Invalid route name provided');
+      return [];
+    }
+    
     console.log(`Fetching route data for ${routeName} in useRouteData hook`);
-    const routeData = await fetchRouteDataByNameQuery(routeName);
-    return routeData.map(route => ({
-      ...route,
-      vehicle_name: 'Leyland Ashok Phoenix'
-    }));
+    try {
+      const routeData = await fetchRouteDataByNameQuery(routeName);
+      return routeData.map(route => ({
+        ...route,
+        vehicle_name: 'Leyland Ashok Phoenix'
+      }));
+    } catch (error) {
+      handleSupabaseError(error, `Error fetching route data for ${routeName}`);
+      return [];
+    }
   }, []);
   
   const getWeeklyDeliveryData = useCallback(async () => {
     console.log("Getting weekly delivery data in useRouteData hook");
-    return await getWeeklyDeliveryDataQuery();
+    try {
+      return await getWeeklyDeliveryDataQuery();
+    } catch (error) {
+      handleSupabaseError(error, "Error fetching weekly delivery data");
+      return [];
+    }
   }, []);
   
   const getOptimizationStats = useCallback(async () => {
     console.log("Getting optimization stats in useRouteData hook");
-    return await getOptimizationStatsQuery(routes);
-  }, [routes.length]);
+    try {
+      return await getOptimizationStatsQuery(routes);
+    } catch (error) {
+      handleSupabaseError(error, "Error fetching optimization stats");
+      return {
+        fuelSaved: 0,
+        distanceSaved: 0,
+        timeSaved: 0,
+        costSaved: 0
+      };
+    }
+  }, [routes.length, routes]);
 
   return {
     fetchRoutes,

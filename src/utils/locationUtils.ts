@@ -2,6 +2,7 @@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { LocationInfo, LocationType, SupabaseLocation } from '@/types/location';
+import { handleSupabaseError, validateInput } from './supabaseUtils';
 
 export const fetchLocationsFromAPI = async (): Promise<LocationInfo[]> => {
   try {
@@ -10,8 +11,7 @@ export const fetchLocationsFromAPI = async (): Promise<LocationInfo[]> => {
       .select('*');
 
     if (error) {
-      console.error('Error fetching locations:', error);
-      toast.error('Failed to fetch locations');
+      handleSupabaseError(error, 'Failed to fetch locations');
       return [];
     }
 
@@ -57,19 +57,36 @@ export const fetchLocationsFromAPI = async (): Promise<LocationInfo[]> => {
     }
     return [];
   } catch (error) {
-    console.error('Error in fetchLocations:', error);
-    toast.error('Failed to fetch locations');
+    handleSupabaseError(error, 'Error in fetchLocations');
     return [];
   }
 };
 
 export const saveLocationToAPI = async (location: LocationType): Promise<boolean> => {
   try {
+    // Validate required fields
+    const validation = validateInput(location, ['name', 'address', 'lat', 'long', 'type']);
+    if (!validation.isValid) {
+      toast.error(validation.message || 'Missing required location data');
+      return false;
+    }
+    
+    // Validate coordinates
+    const latitude = parseFloat(String(location.lat));
+    const longitude = parseFloat(String(location.long));
+    
+    if (isNaN(latitude) || isNaN(longitude) || 
+        latitude < -90 || latitude > 90 || 
+        longitude < -180 || longitude > 180) {
+      toast.error('Invalid coordinates provided');
+      return false;
+    }
+    
     const locationData = {
       name: location.name,
       address: location.address,
-      latitude: location.lat,
-      longitude: location.long,
+      latitude: latitude,
+      longitude: longitude,
       type: location.type,
       open_time: location.open_time || '08:00',
       close_time: location.close_time || '17:00',
@@ -87,8 +104,8 @@ export const saveLocationToAPI = async (location: LocationType): Promise<boolean
         .select();
       
       if (error) {
-        console.error('Error updating location:', error);
-        throw error;
+        handleSupabaseError(error, 'Error updating location');
+        return false;
       }
       
       console.log('Updated location:', data);
@@ -106,8 +123,8 @@ export const saveLocationToAPI = async (location: LocationType): Promise<boolean
         .select();
       
       if (error) {
-        console.error('Error creating location:', error);
-        throw error;
+        handleSupabaseError(error, 'Error creating location');
+        return false;
       }
       
       console.log('Created new location:', data);
@@ -115,26 +132,33 @@ export const saveLocationToAPI = async (location: LocationType): Promise<boolean
       return true;
     }
   } catch (error) {
-    console.error('Error saving location:', error);
-    toast.error('Failed to save location');
+    handleSupabaseError(error, 'Error saving location');
     return false;
   }
 };
 
 export const deleteLocationFromAPI = async (locationId: string): Promise<boolean> => {
   try {
+    // Validate the locationId
+    if (!locationId || typeof locationId !== 'string' || locationId.trim() === '') {
+      toast.error('Invalid location ID');
+      return false;
+    }
+    
     const { error } = await supabase
       .from('locations')
       .delete()
       .eq('id', locationId);
     
-    if (error) throw error;
+    if (error) {
+      handleSupabaseError(error, 'Error deleting location');
+      return false;
+    }
     
     toast.success('Location permanently deleted');
     return true;
   } catch (error) {
-    console.error('Error deleting location:', error);
-    toast.error('Failed to delete location');
+    handleSupabaseError(error, 'Error deleting location');
     return false;
   }
 };
@@ -144,9 +168,22 @@ export const filterLocations = (
   searchTerm: string, 
   activeTab: string
 ): LocationInfo[] => {
+  // Validate inputs to prevent filtering issues
+  if (!Array.isArray(locations)) {
+    console.error('Invalid locations array provided to filterLocations');
+    return [];
+  }
+  
+  const term = (searchTerm || '').toLowerCase();
+  
   return locations.filter(location => {
-    const matchesSearch = location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         location.address.toLowerCase().includes(searchTerm.toLowerCase());
+    // Skip any malformed location objects
+    if (!location || typeof location.name !== 'string' || typeof location.address !== 'string') {
+      return false;
+    }
+    
+    const matchesSearch = location.name.toLowerCase().includes(term) ||
+                         location.address.toLowerCase().includes(term);
     
     if (activeTab === 'all') return matchesSearch;
     if (activeTab === 'customers') return matchesSearch && location.type === 'Customer';

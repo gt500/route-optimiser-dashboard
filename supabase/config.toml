@@ -52,5 +52,16 @@ enable_confirmations = false
 # Configure Edge Functions
 [functions]
 [functions.calculate-route]
-verify_jwt = false
+verify_jwt = true
 
+[functions.send-notification]
+verify_jwt = true
+
+[functions.send-notification.weekly-report]
+verify_jwt = true
+
+[functions.send-notification.route-update]
+verify_jwt = true
+
+[functions.send-notification.delivery-update]
+verify_jwt = true

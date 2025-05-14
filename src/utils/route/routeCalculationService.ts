@@ -1,4 +1,3 @@
-
 import { LocationInfo, LocationType } from '@/types/location';
 import { calculateDistance } from './distanceUtils';
 import { getCurrentTrafficCondition } from './trafficUtils';
@@ -108,15 +107,28 @@ export const calculateRouteMetrics = async (
     // Attempt to get route data from the Supabase edge function
     if (useRealTimeData) {
       try {
+        // Sanitize and validate waypoint data
         const waypoints = locations.map(loc => ({
-          latitude: loc.latitude,
-          longitude: loc.longitude
-        }));
+          latitude: Number(loc.latitude),
+          longitude: Number(loc.longitude)
+        })).filter(wp => !isNaN(wp.latitude) && !isNaN(wp.longitude));
+        
+        // Don't proceed if we don't have enough valid waypoints
+        if (waypoints.length < 2) {
+          console.warn('Not enough valid waypoints for route calculation');
+          throw new Error('Invalid waypoint data');
+        }
+        
+        // Sanitize route name
+        const sanitizedRouteName = routeName?.trim() || '';
         
         const { data, error } = await supabase.functions.invoke('calculate-route', {
           body: { 
             waypoints, 
-            routeName
+            routeName: sanitizedRouteName
+          },
+          headers: {
+            'Content-Type': 'application/json'
           }
         });
         
@@ -134,9 +146,9 @@ export const calculateRouteMetrics = async (
             data.trafficConditions === 'heavy' ? 'heavy' : 'moderate';
           
           return {
-            totalDistance: data.distance,
-            totalDuration: data.duration,
-            segments: data.waypointData || [],
+            totalDistance: Number(data.distance) || 0,
+            totalDuration: Number(data.duration) || 0,
+            segments: Array.isArray(data.waypointData) ? data.waypointData : [],
             trafficConditions: validTrafficCondition
           };
         }
