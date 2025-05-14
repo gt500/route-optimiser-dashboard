@@ -53,9 +53,8 @@ export const useCreateRouteState = (route: UseCreateRouteStateProps, propTransfo
     }));
   }, [propTransformedLocations, computedLocations]);
 
-  const handleOptimizeClick = (optimizeFn: () => void) => {
+  const handleOptimizeClick = () => {
     setIsOptimizationPanelVisible(true);
-    optimizeFn();
   };
 
   return {
@@ -65,6 +64,6 @@ export const useCreateRouteState = (route: UseCreateRouteStateProps, propTransfo
     setIsOptimizationPanelVisible,
     getRouteName,
     displayLocations,
-    handleOptimizeClick: (optimizeFn: () => void) => handleOptimizeClick(optimizeFn)
+    handleOptimizeClick
   };
 };

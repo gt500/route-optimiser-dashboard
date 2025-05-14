@@ -98,7 +98,13 @@ export const CreateRouteContent: React.FC<CreateRouteContentProps> = ({
     getRouteName,
     displayLocations,
     handleOptimizeClick
-  } = useCreateRouteState(route, transformedLocations, onOptimize);
+  } = useCreateRouteState(route, transformedLocations);
+
+  // Handle optimize with the passed optimize function
+  const handleOptimize = () => {
+    handleOptimizeClick();
+    onOptimize();
+  };
 
   return (
     <div className="space-y-4">
@@ -126,7 +132,7 @@ export const CreateRouteContent: React.FC<CreateRouteContentProps> = ({
         setActiveTab={setActiveTab}
         route={route}
         onFuelCostUpdate={onFuelCostUpdate}
-        onOptimize={handleOptimizeClick}
+        onOptimize={handleOptimize}
         isLoadConfirmed={isLoadConfirmed}
         onConfirmLoad={onConfirmLoad}
         vehicleConfig={vehicleConfig}
