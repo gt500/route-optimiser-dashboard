@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { FULL_LOAD_PER_SITE } from '@/hooks/delivery/types';
 import { exportToPDF, printData } from '@/utils/exportUtils';
+import { routeLegendData, getColorClass } from '@/components/analytics/data/routeLegendData';
 import { RouteChart } from './RouteChart';
 import { RouteCardGrid } from './RouteCardGrid';
 import RouteDetailDialog from '@/components/analytics/RouteDetailDialog';
@@ -225,8 +226,6 @@ const RouteEfficiencyChart: React.FC<RouteEfficiencyChartProps> = ({
 
 // Helper function to process routes data
 const processRoutesData = async (completedRoutes: any[], allRoutes: any[]) => {
-  import { routeLegendData, getColorClass } from '@/components/analytics/data/routeLegendData';
-  
   // Create a collection of routes by type/name
   const routesByType: Record<string, any[]> = {};
   
@@ -304,18 +303,6 @@ const processRoutesData = async (completedRoutes: any[], allRoutes: any[]) => {
     routesByType: processedRouteData,
     chartDataArray
   };
-};
-
-export const getColorClass = (colorHex: string): string => {
-  switch (colorHex) {
-    case '#0088FE': return 'bg-blue-500';
-    case '#00C49F': return 'bg-emerald-500';
-    case '#FFBB28': return 'bg-amber-500';
-    case '#FF8042': return 'bg-orange-500';
-    case '#8884d8': return 'bg-purple-500';
-    case '#82ca9d': return 'bg-green-500';
-    default: return 'bg-gray-500';
-  }
 };
 
 export default RouteEfficiencyChart;
