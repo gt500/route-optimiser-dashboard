@@ -16,15 +16,25 @@ export const useRouteData = () => {
   
   // Add ref to track initial mount and prevent duplicate fetches
   const initialFetchDone = useRef(false);
+  const isFetchingRoutes = useRef(false);
 
   // Get query methods from the query hook
   const queries = useRouteQueries(routes);
   
   // Wrapper for fetchRoutes that updates state
   const fetchRoutes = useCallback(async () => {
+    // Prevent multiple simultaneous fetches that could cause redirection
+    if (isFetchingRoutes.current) {
+      console.log("Already fetching routes, skipping duplicate fetch");
+      return routes;
+    }
+    
     try {
+      isFetchingRoutes.current = true;
       setIsLoading(true);
+      console.log("Fetching all routes in useRouteData hook");
       const fetchedRoutes = await queries.fetchRoutes();
+      console.log(`Retrieved ${fetchedRoutes.length} routes`);
       setRoutes(fetchedRoutes);
       return fetchedRoutes;
     } catch (error) {
@@ -32,8 +42,9 @@ export const useRouteData = () => {
       return [];
     } finally {
       setIsLoading(false);
+      isFetchingRoutes.current = false;
     }
-  }, [queries]);
+  }, [queries, routes]);
 
   // Get action methods from the actions hook
   const actions = useRouteActions(routes, setRoutes, setProcessingRoutes, fetchRoutes);

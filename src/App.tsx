@@ -45,14 +45,19 @@ const App = () => {
             <Routes>
               <Route path="/auth" element={<Auth />} />
               
-              {/* Redirect /index to root to avoid potential loops */}
+              {/* Fix: Use a more specific path for index to avoid ambiguity */}
               <Route path="/index" element={<Navigate to="/" replace />} />
               
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
+                  {/* Set exact path for root to avoid conflicting with other routes */}
                   <Route path="/" element={<Dashboard />} />
+                  
+                  {/* Ensure routes paths are properly configured */}
+                  <Route path="/routes/*" element={<RoutesList />} />
                   <Route path="/routes" element={<RoutesList />} />
+                  
                   <Route path="/machine-triggers" element={<MachineTriggers />} />
                   <Route path="/locations" element={<Locations />} />
                   <Route path="/fleet" element={<Fleet />} />
