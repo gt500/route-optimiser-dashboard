@@ -20,4 +20,5 @@ export interface AnalyticsData {
   optimizationPercentage?: number;
 }
 
-// We remove the duplicate exports here, as the types are already exported above
+// We re-export these types so they are accessible across the application
+export type { AnalyticsData, TimePeriod };
