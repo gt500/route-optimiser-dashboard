@@ -2,7 +2,7 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAnalyticsData, TimePeriod } from '@/hooks/useAnalyticsData';
+import { useAnalyticsData, TimePeriod } from '@/hooks/analytics';
 import { DownloadIcon, RefreshCw, AlertCircle } from 'lucide-react';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import MetricsCards from '@/components/analytics/MetricsCards';
