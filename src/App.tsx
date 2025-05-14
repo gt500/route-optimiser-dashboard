@@ -20,9 +20,18 @@ import DailyReports from "./pages/reports/delivery/DailyReports";
 import WeeklyReports from "./pages/reports/delivery/WeeklyReports";
 import MonthlyReports from "./pages/reports/delivery/MonthlyReports";
 import MachineTriggers from "./pages/MachineTriggers";
-import Index from "./pages/Index";
+// Remove Index import as we're simplifying the routing
 
-const queryClient = new QueryClient();
+// Configure React Query with error handling to prevent loops
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false, // Don't retry failed queries to prevent potential loops
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetch frequency
+    },
+  },
+});
 
 const App = () => {
   console.log("Rendering App component");
@@ -37,8 +46,8 @@ const App = () => {
             <Routes>
               <Route path="/auth" element={<Auth />} />
               
-              {/* Root/Index route */}
-              <Route path="/index" element={<Index />} />
+              {/* Redirect /index to root to avoid potential loops */}
+              <Route path="/index" element={<Navigate to="/" replace />} />
               
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>

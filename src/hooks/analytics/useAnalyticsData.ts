@@ -12,6 +12,7 @@ import { getPeriodDates } from '../analyticsDateUtils';
 export const useAnalyticsData = () => {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     deliveries: 0,
     deliveriesChange: 0,
@@ -30,6 +31,9 @@ export const useAnalyticsData = () => {
 
   // Use useCallback to prevent unnecessary function recreation
   const fetchData = useCallback(async () => {
+    // Prevent duplicate fetches
+    if (isLoading) return;
+    
     // Track if component is still mounted
     let isMounted = true;
     setIsLoading(true);
@@ -60,6 +64,7 @@ export const useAnalyticsData = () => {
 
       if (isMounted) {
         setAnalyticsData(processedData);
+        setIsInitialized(true);
       }
 
       console.log('Analytics data loaded successfully');
@@ -79,17 +84,20 @@ export const useAnalyticsData = () => {
     return () => {
       isMounted = false;
     };
-  }, [timePeriod]);
+  }, [timePeriod, isLoading]); // Add isLoading to dependencies to prevent concurrent fetches
 
-  // Effect to fetch data when timePeriod changes
+  // Effect to fetch data when timePeriod changes, but only once per change
   useEffect(() => {
-    const controller = new AbortController();
-    fetchData();
-    
-    return () => {
-      controller.abort();
-    };
-  }, [fetchData, timePeriod]);
+    // Only fetch if not initialized or if time period changes after initialization
+    if (!isInitialized || timePeriod) {
+      const controller = new AbortController();
+      fetchData();
+      
+      return () => {
+        controller.abort();
+      };
+    }
+  }, [fetchData, timePeriod, isInitialized]);
 
   return {
     analyticsData,

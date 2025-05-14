@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouteQueries } from './route/useRouteQueries';
 import { useRouteActions } from './route/useRouteActions';
 import { useRouteRefresh } from './route/useRouteRefresh';
@@ -13,21 +13,30 @@ export const useRouteData = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
   const [lastRefresh, setLastRefresh] = useState(Date.now());
+  
+  // Add ref to track initial mount and prevent duplicate fetches
+  const initialFetchDone = useRef(false);
 
   // Get query methods from the query hook
   const queries = useRouteQueries(routes);
   
   // Wrapper for fetchRoutes that updates state
   const fetchRoutes = useCallback(async () => {
+    // Prevent duplicate fetches while already loading
+    if (isLoading) return [];
+    
     setIsLoading(true);
     try {
       const fetchedRoutes = await queries.fetchRoutes();
       setRoutes(fetchedRoutes);
       return fetchedRoutes;
+    } catch (error) {
+      console.error("Error fetching routes:", error);
+      return [];
     } finally {
       setIsLoading(false);
     }
-  }, [queries]);
+  }, [queries, isLoading]);
 
   // Get action methods from the actions hook
   const actions = useRouteActions(routes, setRoutes, setProcessingRoutes, fetchRoutes);
@@ -45,7 +54,9 @@ export const useRouteData = () => {
     let mounted = true;
     
     const loadInitialRoutes = async () => {
-      if (mounted) {
+      // Only fetch routes once on initial mount
+      if (mounted && !initialFetchDone.current) {
+        initialFetchDone.current = true;
         await fetchRoutes();
       }
     };
@@ -55,7 +66,7 @@ export const useRouteData = () => {
     return () => {
       mounted = false;
     };
-  }, []);  // Empty dependency array means this only runs once
+  }, [fetchRoutes]);  
 
   // Return all hooks and state
   return {

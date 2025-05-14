@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useRouteData } from '@/hooks/fleet/useRouteData';
 import { FleetApi } from '@/api/fleet.api';
@@ -14,11 +14,18 @@ export const useDashboardData = () => {
   const [recentRoutes, setRecentRoutes] = useState<any[]>([]);
   const { toast } = useToast();
   const routeDataHook = useRouteData();
+  
+  // Add ref to track initial fetch
+  const dataFetchedRef = useRef(false);
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
+    // Prevent duplicate fetches
+    if (dataFetchedRef.current) return;
+    
     try {
       setIsLoading(true);
+      dataFetchedRef.current = true;
       
       // Fetch all the data we need
       const fleetData = await fleetApi.fetchFleetData();
@@ -64,7 +71,15 @@ export const useDashboardData = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    let mounted = true;
+    
+    if (mounted && !dataFetchedRef.current) {
+      fetchDashboardData();
+    }
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return {
