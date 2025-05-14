@@ -22,11 +22,8 @@ export const useRouteData = () => {
   
   // Wrapper for fetchRoutes that updates state
   const fetchRoutes = useCallback(async () => {
-    // Prevent duplicate fetches while already loading
-    if (isLoading) return [];
-    
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const fetchedRoutes = await queries.fetchRoutes();
       setRoutes(fetchedRoutes);
       return fetchedRoutes;
@@ -36,13 +33,12 @@ export const useRouteData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [queries, isLoading]);
+  }, [queries]);
 
   // Get action methods from the actions hook
   const actions = useRouteActions(routes, setRoutes, setProcessingRoutes, fetchRoutes);
   
   // Set up auto-refresh mechanism with memoized callback to prevent infinite loops
-  // Fix: Make sure refreshCallback returns the Promise from fetchRoutes
   const refreshCallback = useCallback(() => {
     return fetchRoutes();
   }, [fetchRoutes]);

@@ -2,8 +2,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { useLocation } from 'react-router-dom';
-import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
-import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 
 export const useRoutePageState = (
   initialLocations: LocationType[],

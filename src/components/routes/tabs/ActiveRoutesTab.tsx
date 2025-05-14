@@ -30,8 +30,22 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     isLoading,
     processingRoutes,
     handleStartRoute,
-    handleCompleteRoute
+    handleCompleteRoute,
+    loadRoutes
   } = useActiveRoutes(deliveryToHighlight);
+
+  // Add effect to force load routes when component mounts
+  useEffect(() => {
+    // Initial load
+    loadRoutes();
+    
+    // Set up a periodic refresh
+    const intervalId = setInterval(() => {
+      loadRoutes();
+    }, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [loadRoutes]);
 
   return (
     <ActiveRoutesContent

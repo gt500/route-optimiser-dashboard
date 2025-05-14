@@ -21,8 +21,8 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
   // Load routes when component mounts or when highlightedDeliveryId changes
   const loadRoutes = useCallback(async () => {
     console.log("Loading active routes...");
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       let activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
       
@@ -43,18 +43,6 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
       setIsLoading(false);
     }
   }, [fetchActiveRoutes, fetchVehicles]);
-
-  // Load routes when component mounts or when highlightedDeliveryId changes
-  useEffect(() => {
-    loadRoutes();
-    
-    // Set up a periodic refresh for active routes (every 10 seconds)
-    const refreshInterval = setInterval(() => {
-      loadRoutes();
-    }, 10000);
-    
-    return () => clearInterval(refreshInterval);
-  }, [loadRoutes, highlightedDeliveryId]);
 
   // Optimized route start handler
   const handleStartRoute = async (routeId: string) => {

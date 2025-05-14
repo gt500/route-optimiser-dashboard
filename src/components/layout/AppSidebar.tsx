@@ -13,12 +13,11 @@ import { SidebarNavigation } from "./sidebar/SidebarNavigation";
 
 export function AppSidebar() {
   console.log("Rendering AppSidebar");
-  const { openMobile, isMobile } = useSidebar();
+  const { isMobile } = useSidebar();
   
-  // Automatically open sidebar on initial load for desktop
+  // Debugging logs
   useEffect(() => {
     console.log("AppSidebar mounted, isMobile:", isMobile);
-    // This is just for debugging purposes
   }, [isMobile]);
   
   return (

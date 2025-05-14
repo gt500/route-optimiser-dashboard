@@ -20,7 +20,6 @@ import DailyReports from "./pages/reports/delivery/DailyReports";
 import WeeklyReports from "./pages/reports/delivery/WeeklyReports";
 import MonthlyReports from "./pages/reports/delivery/MonthlyReports";
 import MachineTriggers from "./pages/MachineTriggers";
-// Remove Index import as we're simplifying the routing
 
 // Configure React Query with error handling to prevent loops
 const queryClient = new QueryClient({
