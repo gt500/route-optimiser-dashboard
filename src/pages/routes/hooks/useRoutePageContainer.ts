@@ -1,36 +1,20 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import LocationEditDialog from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
-import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
-import useRouteManagement, { defaultVehicleConfig } from '@/hooks/useRouteManagement';
-import { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
+import useRouteManagement, { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
 import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
-
-// Import new components and hooks
-import RouteHeader from '@/components/routes/RouteHeader';
-import RouteTabs from '@/components/routes/RouteTabs';
-import RouteInitialLocation from '@/components/routes/RouteInitialLocation';
-import RegionSelectionAlertDialog from '@/components/routes/RegionSelectionAlertDialog';
-import RouteActionButtons from '@/components/routes/RouteActionButtons';
-import RouteHeaderTitle from '@/components/routes/RouteHeaderTitle';
 import { useRegionSelection } from '@/hooks/routes/useRegionSelection';
 import { useLocationManagement } from '@/hooks/routes/useLocationManagement';
 import { useRoutePageState } from '@/hooks/routes/useRoutePageState';
 
-// Import initial locations from a separate file
-import { initialRouteLocations } from '@/data/initialRouteLocations';
-
-const RoutesList = () => {
+export const useRoutePageContainer = (initialRouteLocations: LocationType[] = []) => {
   // Initialize region selection
   const defaultRegions = getStoredCountryRegions();
   const defaultCountry = defaultRegions.length > 0 ? defaultRegions[0].country : 'South Africa';
   const defaultRegion = defaultRegions.length > 0 && defaultRegions[0].regions.length > 0 
     ? defaultRegions[0].regions[0] 
     : 'Western Cape';
-
-  const { vehicles, fetchVehicles } = useVehiclesData();
 
   const {
     route,
@@ -97,11 +81,6 @@ const RoutesList = () => {
     isLoadConfirmed,
     route
   );
-
-  // Load vehicles on component mount
-  useEffect(() => {
-    fetchVehicles();
-  }, [fetchVehicles]);
   
   // Initialize route with default region if available
   useEffect(() => {
@@ -136,7 +115,7 @@ const RoutesList = () => {
     setSelectedVehicle(vehicleId === "" ? null : vehicleId);
     toast.success(vehicleId === "" 
       ? "Vehicle assignment removed" 
-      : `Vehicle assigned: ${vehicles.find(v => v.id === vehicleId)?.name}`);
+      : `Vehicle assigned`);
   };
 
   const handleCreateRoute = () => {
@@ -162,80 +141,52 @@ const RoutesList = () => {
     }
   };
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header section */}
-      <div className="flex justify-between items-start">
-        <RouteHeaderTitle />
-        <RouteActionButtons 
-          onAddNewLocation={addNewLocation}
-          onOpenRegionSelection={openRegionSelection}
-          onCreateNewRoute={handleCreateRoute}
-          onOptimize={handleOptimizeRoute}
-          onConfirmLoad={handleConfirmLoad}
-          isLoadConfirmed={isLoadConfirmed}
-          isOptimizeDisabled={isOptimizeDisabled}
-        />
-      </div>
-
-      {/* Tabs component */}
-      <RouteTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        route={route}
-        availableLocations={availableLocations}
-        startLocation={startLocation}
-        endLocation={endLocation}
-        filteredAvailableLocations={filteredAvailableLocations}
-        transformedLocations={transformedLocations}
-        onStartLocationChange={handleStartLocationChange}
-        onEndLocationChange={handleEndLocationChange}
-        onAddLocationToRoute={addLocationToRoute}
-        onRemoveLocation={handleRemoveLocation}
-        onAddNewLocation={handleAddNewLocationFromPopover}
-        onOptimize={handleOptimizeRoute}
-        onUpdateLocations={handleUpdateLocations}
-        onFuelCostUpdate={handleFuelCostUpdate}
-        onRouteDataUpdate={handleRouteDataUpdate}
-        onConfirmLoad={handleConfirmLoad}
-        onReplaceLocation={handleReplaceLocation}
-        isLoadConfirmed={isLoadConfirmed}
-        isSyncingLocations={isSyncingLocations}
-        vehicleConfig={vehicleConfig || defaultVehicleConfig}
-        vehicles={vehicles}
-        selectedVehicle={selectedVehicle}
-        onVehicleChange={handleVehicleChange}
-        highlightedDeliveryId={highlightedDeliveryId}
-        selectedCountry={selectedCountry}
-        selectedRegion={selectedRegion}
-        onRegionChange={handleRegionChange}
-      />
-
-      {/* Dialogs */}
-      <LocationEditDialog 
-        open={newLocationDialog}
-        onOpenChange={setNewLocationDialog}
-        location={null}
-        onSave={handleSaveNewLocation}
-      />
-
-      {/* Use both dialog implementations for redundancy */}
-      <RouteInitialLocation
-        activeTab={activeTab}
-        isLoadConfirmed={isLoadConfirmed}
-        regionSelectionOpen={regionSelectionOpen}
-        setRegionSelectionOpen={setRegionSelectionOpen}
-        onRegionChange={handleRegionChange}
-      />
-      
-      {/* Alternative AlertDialog implementation for more reliable closing */}
-      <RegionSelectionAlertDialog
-        open={regionSelectionOpen}
-        onOpenChange={setRegionSelectionOpen}
-        onComplete={handleRegionChange}
-      />
-    </div>
-  );
+  return {
+    // State
+    route,
+    availableLocations,
+    startLocation,
+    endLocation,
+    isLoadConfirmed,
+    isSyncingLocations,
+    vehicleConfig,
+    selectedVehicle,
+    filteredAvailableLocations,
+    transformedLocations,
+    activeTab,
+    regionSelectionOpen,
+    newLocationDialog,
+    highlightedDeliveryId,
+    isOptimizeDisabled,
+    selectedCountry,
+    selectedRegion,
+    
+    // Setters
+    setActiveTab,
+    setSelectedVehicle,
+    setNewLocationDialog,
+    setRegionSelectionOpen,
+    
+    // Handlers
+    handleStartLocationChange,
+    handleEndLocationChange,
+    addLocationToRoute,
+    removeLocationFromRoute,
+    handleOptimize,
+    handleCreateNewRoute,
+    handleFuelCostUpdate,
+    handleRouteDataUpdate,
+    handleAddNewLocationFromPopover,
+    handleConfirmLoad,
+    handleUpdateLocations,
+    replaceLocation,
+    handleSaveNewLocation,
+    handleRegionChange,
+    openRegionSelection,
+    handleVehicleChange,
+    handleCreateRoute,
+    handleRemoveLocation,
+    handleReplaceLocation,
+    handleOptimizeRoute
+  };
 };
-
-export default RoutesList;

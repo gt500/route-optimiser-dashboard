@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import RoutesList from "./pages/Routes";
+import RoutesList from "./pages/routes"; // Updated import path
 import Locations from "./pages/Locations";
 import Fleet from "./pages/Fleet";
 import Analytics from "./pages/Analytics";
