@@ -20,5 +20,4 @@ export interface AnalyticsData {
   optimizationPercentage?: number;
 }
 
-// We re-export these types so they are accessible across the application
-export type { AnalyticsData, TimePeriod };
+// Removed duplicate export line that was causing the error
