@@ -17,7 +17,7 @@ import {
   Area,
   ResponsiveContainer
 } from 'recharts';
-import { TimePeriod } from '@/hooks/useAnalyticsData';
+import { TimePeriod } from '@/hooks/analyticsTypes';
 import { COLORS } from '../data/routeLegendData';
 
 interface OverviewChartsProps {
