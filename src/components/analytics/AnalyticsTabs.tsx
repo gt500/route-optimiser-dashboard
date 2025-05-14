@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useCallback } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { AnalyticsData, TimePeriod } from '@/hooks/analyticsTypes';
@@ -29,12 +29,12 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({
   onRouteLegendOpen
 }) => {
   // Using state to track the active tab to help with debugging if needed
-  const [activeTab, setActiveTab] = React.useState('overview');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const handleTabChange = (value: string) => {
+  const handleTabChange = useCallback((value: string) => {
     console.log(`Switching to tab: ${value}`);
     setActiveTab(value);
-  };
+  }, []);
 
   return (
     <Tabs 
@@ -50,30 +50,36 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({
       </TabsList>
       
       <Suspense fallback={<TabFallback />}>
-        <TabsContent value="overview">
-          <OverviewTab 
-            analyticsData={analyticsData}
-            timePeriod={timePeriod}
-            isLoading={isLoading}
-          />
-        </TabsContent>
+        {activeTab === 'overview' && (
+          <TabsContent value="overview">
+            <OverviewTab 
+              analyticsData={analyticsData}
+              timePeriod={timePeriod}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+        )}
         
-        <TabsContent value="costs">
-          <CostsTab 
-            analyticsData={analyticsData}
-            isLoading={isLoading}
-          />
-        </TabsContent>
+        {activeTab === 'costs' && (
+          <TabsContent value="costs">
+            <CostsTab 
+              analyticsData={analyticsData}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+        )}
         
-        <TabsContent value="routes">
-          <RoutesTab 
-            isLoading={isLoading}
-            onRouteLegendOpen={onRouteLegendOpen}
-          />
-        </TabsContent>
+        {activeTab === 'routes' && (
+          <TabsContent value="routes">
+            <RoutesTab 
+              isLoading={isLoading}
+              onRouteLegendOpen={onRouteLegendOpen}
+            />
+          </TabsContent>
+        )}
       </Suspense>
     </Tabs>
   );
 };
 
-export default AnalyticsTabs;
+export default React.memo(AnalyticsTabs);

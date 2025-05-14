@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { fetchAnalyticsData } from './analyticsDataFetcher';
 import { processAnalyticsData } from './analyticsDataProcessor';
@@ -13,6 +13,7 @@ export const useAnalyticsData = () => {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const fetchInProgressRef = useRef(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     deliveries: 0,
     deliveriesChange: 0,
@@ -31,11 +32,14 @@ export const useAnalyticsData = () => {
 
   // Use useCallback to prevent unnecessary function recreation
   const fetchData = useCallback(async () => {
-    // Prevent duplicate fetches
-    if (isLoading) return;
+    // Prevent duplicate fetches with a ref instead of state to avoid re-renders
+    if (fetchInProgressRef.current) {
+      console.log('Analytics fetch already in progress, skipping duplicate fetch');
+      return;
+    }
     
-    // Track if component is still mounted
-    let isMounted = true;
+    // Set our ref to indicate fetch is in progress
+    fetchInProgressRef.current = true;
     setIsLoading(true);
 
     try {
@@ -50,9 +54,6 @@ export const useAnalyticsData = () => {
         locationsData
       } = await fetchAnalyticsData(startDate, endDate, previousStartDate, previousEndDate);
 
-      // Check if the component is still mounted before updating state
-      if (!isMounted) return;
-
       // Process the data to calculate metrics and chart data
       const processedData = processAnalyticsData(
         routesData, 
@@ -62,41 +63,28 @@ export const useAnalyticsData = () => {
         timePeriod
       );
 
-      if (isMounted) {
-        setAnalyticsData(processedData);
-        setIsInitialized(true);
-      }
-
+      setAnalyticsData(processedData);
+      setIsInitialized(true);
       console.log('Analytics data loaded successfully');
 
     } catch (error) {
       console.error('Error fetching analytics data:', error);
-      if (isMounted) {
-        toast.error('Failed to load analytics data');
-      }
+      toast.error('Failed to load analytics data');
     } finally {
-      if (isMounted) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
+      // Reset our ref to indicate fetch is complete
+      fetchInProgressRef.current = false;
     }
-
-    // Return a cleanup function to set isMounted to false
-    return () => {
-      isMounted = false;
-    };
-  }, [timePeriod, isLoading]); // Add isLoading to dependencies to prevent concurrent fetches
+  }, [timePeriod]); // Only timePeriod is a dependency now
 
   // Effect to fetch data when timePeriod changes, but only once per change
   useEffect(() => {
     // Only fetch if not initialized or if time period changes after initialization
     if (!isInitialized || timePeriod) {
-      const controller = new AbortController();
       fetchData();
-      
-      return () => {
-        controller.abort();
-      };
     }
+    
+    // No need for a cleanup function with our new approach
   }, [fetchData, timePeriod, isInitialized]);
 
   return {

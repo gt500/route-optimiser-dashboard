@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy, useState, useCallback } from 'react';
 import { useAnalyticsData } from '@/hooks/analytics';
 import { TimePeriod } from '@/hooks/analyticsTypes';
 import { useRouteData } from '@/hooks/fleet/useRouteData';
@@ -31,7 +31,7 @@ const Analytics = () => {
     setDetailTitle
   } = useAnalyticsDetailDialog({ routeDataHook });
 
-  const handlePeriodChange = (value: string) => {
+  const handlePeriodChange = useCallback((value: string) => {
     try {
       setTimePeriod(value as TimePeriod);
     } catch (error) {
@@ -42,9 +42,9 @@ const Analytics = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, [setTimePeriod]);
 
-  const handleRefreshData = () => {
+  const handleRefreshData = useCallback(() => {
     try {
       fetchData();
       toast({
@@ -59,7 +59,11 @@ const Analytics = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, [fetchData]);
+
+  const handleRouteLegendOpen = useCallback(() => {
+    setRouteLegendOpen(true);
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -106,7 +110,7 @@ const Analytics = () => {
             analyticsData={analyticsData}
             timePeriod={timePeriod}
             isLoading={isLoading}
-            onRouteLegendOpen={() => setRouteLegendOpen(true)}
+            onRouteLegendOpen={handleRouteLegendOpen}
           />
         </Suspense>
       </AnalyticsErrorBoundary>
