@@ -13,11 +13,17 @@ interface RouteLocationsProps {
   availableLocations: LocationType[];
   startLocation: LocationType | null;
   endLocation: LocationType | null;
-  onAddLocation: (location: LocationType & { cylinders: number }) => void;
+  onAddLocation?: (location: LocationType & { cylinders: number }) => void;
+  onAddLocationToRoute?: (location: LocationType & { cylinders: number }) => void;
   onRemoveLocation: (locationId: string | number) => void;
   onStartLocationChange: (locationId: string) => void;
   onEndLocationChange: (locationId: string) => void;
   onMoveLocation?: (dragIndex: number, hoverIndex: number) => void;
+  onAddNewLocation?: (locationId: string | number) => void;
+  onReplaceLocation?: (index: number, newLocationId: string) => void;
+  isSyncingLocations?: boolean;
+  allowSameStartEndLocation?: boolean;
+  hideEndpoints?: boolean;
 }
 
 const RouteLocations: React.FC<RouteLocationsProps> = ({
@@ -26,10 +32,13 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
   startLocation,
   endLocation,
   onAddLocation,
+  onAddLocationToRoute,
   onRemoveLocation,
   onStartLocationChange,
   onEndLocationChange,
-  onMoveLocation
+  onMoveLocation,
+  allowSameStartEndLocation,
+  hideEndpoints
 }) => {
   // Use the cylinder state custom hook
   const {
@@ -37,20 +46,23 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
     handleChangeCylinderCount,
     getCylinderCount,
     addLocationWithCylinders
-  } = useCylinderState(availableLocations, onAddLocation);
+  } = useCylinderState(availableLocations, onAddLocation || onAddLocationToRoute || (() => {}));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardContent className="p-6">
           <div className="space-y-6">
-            <RouteEndpoints
-              startLocation={startLocation}
-              endLocation={endLocation}
-              availableLocations={availableLocations}
-              onStartLocationChange={onStartLocationChange}
-              onEndLocationChange={onEndLocationChange}
-            />
+            {!hideEndpoints && (
+              <RouteEndpoints
+                startLocation={startLocation}
+                endLocation={endLocation}
+                availableLocations={availableLocations}
+                onStartLocationChange={onStartLocationChange}
+                onEndLocationChange={onEndLocationChange}
+                allowSameStartEndLocation={allowSameStartEndLocation}
+              />
+            )}
 
             <RouteStopsList
               routeLocations={routeLocations}
@@ -71,7 +83,7 @@ const RouteLocations: React.FC<RouteLocationsProps> = ({
             getCylinderCount={getCylinderCount}
             handleChangeCylinderCount={handleChangeCylinderCount}
             addLocationWithCylinders={addLocationWithCylinders}
-            onAddLocationToRoute={onAddLocation}
+            onAddLocationToRoute={onAddLocationToRoute || onAddLocation || (() => {})}
           />
         </CardContent>
       </Card>

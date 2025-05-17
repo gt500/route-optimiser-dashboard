@@ -8,11 +8,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface RouteStopsListProps {
   routeLocations: LocationType[];
   onRemoveLocation: (index: number) => void;
+  onMoveLocation?: (dragIndex: number, hoverIndex: number) => void;
 }
 
 const RouteStopsList: React.FC<RouteStopsListProps> = ({ 
   routeLocations, 
-  onRemoveLocation 
+  onRemoveLocation,
+  onMoveLocation 
 }) => {
   if (routeLocations.length === 0) {
     return (
