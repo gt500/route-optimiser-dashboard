@@ -1,116 +1,81 @@
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { LocationType } from '@/types/location';
-import RouteEndpoints from './RouteEndpoints';
 import RouteStopsList from './RouteStopsList';
+import RouteEndpoints from './RouteEndpoints';
 import AvailableLocations from './AvailableLocations';
 import useCylinderState from './hooks/useCylinderState';
-import TruckWeightIndicator from '../../reports/TruckWeightIndicator';
 
 interface RouteLocationsProps {
+  routeLocations: LocationType[];
   availableLocations: LocationType[];
   startLocation: LocationType | null;
   endLocation: LocationType | null;
-  routeLocations: LocationType[];
+  onAddLocation: (location: LocationType & { cylinders: number }) => void;
+  onRemoveLocation: (locationId: string | number) => void;
   onStartLocationChange: (locationId: string) => void;
   onEndLocationChange: (locationId: string) => void;
-  onAddLocationToRoute: (location: LocationType & { cylinders: number }) => void;
-  onRemoveLocation: (index: number) => void;
-  onAddNewLocation: (locationId: string) => void;
-  onReplaceLocation: (index: number, newLocationId: string) => void;
-  isSyncingLocations: boolean;
-  allowSameStartEndLocation?: boolean;
-  hideEndpoints?: boolean;
+  onMoveLocation?: (dragIndex: number, hoverIndex: number) => void;
 }
 
 const RouteLocations: React.FC<RouteLocationsProps> = ({
+  routeLocations,
   availableLocations,
   startLocation,
   endLocation,
-  routeLocations,
+  onAddLocation,
+  onRemoveLocation,
   onStartLocationChange,
   onEndLocationChange,
-  onAddLocationToRoute,
-  onRemoveLocation,
-  onAddNewLocation,
-  onReplaceLocation,
-  isSyncingLocations,
-  allowSameStartEndLocation = false,
-  hideEndpoints = false
+  onMoveLocation
 }) => {
-  // Use the cylinder state hook to manage cylinder counts
-  const { 
-    locationCylinders, 
-    getCylinderCount, 
-    handleChangeCylinderCount, 
+  // Use the cylinder state custom hook
+  const {
+    locationCylinders,
+    handleChangeCylinderCount,
+    getCylinderCount,
     addLocationWithCylinders
-  } = useCylinderState(availableLocations, onAddLocationToRoute);
+  } = useCylinderState(availableLocations, onAddLocation);
 
-  if (isSyncingLocations) {
-    return (
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2">Loading route stops...</span>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            <RouteEndpoints
+              startLocation={startLocation}
+              endLocation={endLocation}
+              availableLocations={availableLocations}
+              onStartLocationChange={onStartLocationChange}
+              onEndLocationChange={onEndLocationChange}
+            />
+
+            <RouteStopsList
+              routeLocations={routeLocations}
+              onRemoveLocation={onRemoveLocation}
+              onMoveLocation={onMoveLocation}
+            />
           </div>
         </CardContent>
       </Card>
-    );
-  }
 
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          {/* Endpoints Section */}
-          {!hideEndpoints && (
-            <RouteEndpoints 
-              availableLocations={availableLocations}
-              startLocation={startLocation}
-              endLocation={endLocation}
-              onStartLocationChange={onStartLocationChange}
-              onEndLocationChange={onEndLocationChange}
-              allowSameStartEndLocation={allowSameStartEndLocation}
-            />
-          )}
-
-          {/* Route Stops Section */}
-          <div>
-            <h3 className="text-lg font-medium">Route Stops</h3>
-            <p className="text-sm text-muted-foreground mb-2">
-              Add and arrange stops for your delivery route
-            </p>
-            
-            <TruckWeightIndicator
-              totalCylinders={routeLocations.reduce((sum, loc) => sum + (loc.emptyCylinders || 0), 0)}
-              locations={routeLocations}
-              startLocationId={startLocation?.id}
-              endLocationId={endLocation?.id}
-            />
-
-            <RouteStopsList 
-              routeLocations={routeLocations}
-              onRemoveLocation={onRemoveLocation}
-            />
-          </div>
-
-          {/* Available Route Stops Section */}
-          <AvailableLocations 
+      <Card>
+        <CardContent className="p-6">
+          <AvailableLocations
             availableLocations={availableLocations}
             routeLocations={routeLocations}
+            startLocationId={startLocation?.id}
+            endLocationId={endLocation?.id}
             getCylinderCount={getCylinderCount}
             handleChangeCylinderCount={handleChangeCylinderCount}
             addLocationWithCylinders={addLocationWithCylinders}
-            onAddLocationToRoute={onAddLocationToRoute}
-            startLocationId={startLocation?.id}
-            endLocationId={endLocation?.id}
+            onAddLocationToRoute={onAddLocation}
           />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
