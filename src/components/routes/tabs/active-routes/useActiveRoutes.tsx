@@ -29,8 +29,21 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
       // Ensure all routes have the correct vehicle name
       activeRoutes = activeRoutes.map(route => ({
         ...route,
-        vehicle_name: 'Leyland Ashok Phoenix'
+        vehicle_name: route.vehicle_name || 'Leyland Ashok Phoenix'
       }));
+      
+      // Highlight route with the specified delivery if it exists
+      if (highlightedDeliveryId) {
+        activeRoutes = activeRoutes.map(route => {
+          if (route.stops && route.stops.some(stop => stop.id === highlightedDeliveryId)) {
+            return {
+              ...route,
+              highlighted: true
+            };
+          }
+          return route;
+        });
+      }
       
       setRoutes(activeRoutes);
       
@@ -42,9 +55,16 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchActiveRoutes, fetchVehicles]);
+  }, [fetchActiveRoutes, fetchVehicles, highlightedDeliveryId]);
 
-  // Optimized route start handler
+  // Force refresh routes when highlightedDeliveryId changes
+  useEffect(() => {
+    if (highlightedDeliveryId) {
+      loadRoutes();
+    }
+  }, [highlightedDeliveryId, loadRoutes]);
+
+  // Optimized route start handler with better error handling
   const handleStartRoute = async (routeId: string) => {
     console.log(`Starting route with ID: ${routeId} in useActiveRoutes`);
     
@@ -63,16 +83,19 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         toast.success('Route started successfully');
         // Force reload routes
         loadRoutes();
+        return true;
       } else {
         toast.error('Failed to start route');
+        return false;
       }
     } catch (error) {
       console.error('Error starting route:', error);
       toast.error('Failed to start route');
+      return false;
     }
   };
 
-  // Optimized route completion handler
+  // Optimized route completion handler with better error handling
   const handleCompleteRoute = async (routeId: string) => {
     console.log(`Completing route with ID: ${routeId} in useActiveRoutes`);
     
@@ -87,12 +110,15 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         toast.success('Route completed successfully');
         // Force reload routes
         loadRoutes();
+        return true;
       } else {
         toast.error('Failed to complete route');
+        return false;
       }
     } catch (error) {
       console.error('Error completing route:', error);
       toast.error('Failed to complete route');
+      return false;
     }
   };
 

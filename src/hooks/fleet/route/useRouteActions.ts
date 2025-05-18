@@ -16,7 +16,7 @@ export const useRouteActions = (
 
   // Optimized route status update
   const startRoute = useCallback(async (routeId: string) => {
-    console.log(`Starting route with ID: ${routeId} in useRouteData hook`);
+    console.log(`Starting route with ID: ${routeId} in useRouteActions hook`);
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'starting' }));
       
@@ -55,9 +55,9 @@ export const useRouteActions = (
     }
   }, [fetchRoutes, setRoutes, setProcessingRoutes]);
 
-  // Optimized route completion
+  // Optimized route completion with improved feedback
   const completeRoute = useCallback(async (routeId: string) => {
-    console.log(`Completing route with ID: ${routeId} in useRouteData hook`);
+    console.log(`Completing route with ID: ${routeId} in useRouteActions hook`);
     try {
       setProcessingRoutes(prev => ({ ...prev, [routeId]: 'completing' }));
       
@@ -68,11 +68,11 @@ export const useRouteActions = (
         throw new Error('Failed to update route status');
       }
       
-      // Update local state immediately
+      // Update local state immediately for better UI feedback
       setRoutes(prevRoutes => 
         prevRoutes.map(route => 
           route.id === routeId 
-            ? { ...route, status: 'completed', vehicle_name: 'Leyland Ashok Phoenix' } 
+            ? { ...route, status: 'completed', vehicle_name: route.vehicle_name || 'Leyland Ashok Phoenix' } 
             : route
         )
       );

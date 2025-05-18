@@ -1,54 +1,41 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
-import { useLocation } from 'react-router-dom';
+import { RouteState } from './types';
 
 export const useRoutePageState = (
-  initialLocations: LocationType[],
+  initialRouteLocations: LocationType[],
   handleOptimize: () => void,
   handleConfirmLoad: () => void,
   handleCreateNewRoute: () => void,
   isLoadConfirmed: boolean,
-  route: any
+  route: RouteState
 ) => {
-  const location = useLocation();
-  const locationState = location.state as { activeTab?: string; highlightDelivery?: string } | null;
+  // Initialize with the "create" tab since we need to create routes first
+  const [activeTab, setActiveTab] = useState("create");
+  const [highlightedDeliveryId, setHighlightedDeliveryId] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState(locationState?.activeTab || 'create');
-  const [highlightedDeliveryId, setHighlightedDeliveryId] = useState<string | null>(
-    locationState?.highlightDelivery || null
-  );
+  // Check if route can be optimized (enough locations)
+  const isOptimizeDisabled = route.locations.length < 3;
   
-  // Handle URL state updates
+  // When load is confirmed, switch to active tab to view the created route
   useEffect(() => {
-    if (locationState?.activeTab) {
-      setActiveTab(locationState.activeTab);
+    if (isLoadConfirmed) {
+      setTimeout(() => {
+        // Switch to the active tab to show the newly created route
+        setActiveTab("active");
+      }, 1200); // Delay to allow the toast notification to be visible first
+    }
+  }, [isLoadConfirmed]);
+  
+  // Optimize route handler
+  const handleOptimizeRoute = useCallback(() => {
+    if (isOptimizeDisabled) {
+      return;
     }
     
-    if (locationState?.highlightDelivery) {
-      setHighlightedDeliveryId(locationState.highlightDelivery);
-    }
-  }, [location, locationState]);
-
-  // Auto-clear the highlight after timeout
-  useEffect(() => {
-    if (highlightedDeliveryId) {
-      const timer = setTimeout(() => {
-        setHighlightedDeliveryId(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [highlightedDeliveryId]);
-
-  // Handler for optimize button
-  const handleOptimizeRoute = () => {
     handleOptimize();
-  };
-    
-  const isOptimizeDisabled = useMemo(() => {
-    return route.locations.length < 3 || isLoadConfirmed;
-  }, [route.locations.length, isLoadConfirmed]);
+  }, [isOptimizeDisabled, handleOptimize]);
   
   return {
     activeTab,

@@ -1,169 +1,228 @@
 
 import { useState, useCallback } from 'react';
-import { RouteState, VehicleConfigProps } from './types';
 import { LocationType } from '@/components/locations/LocationEditDialog';
+import { RouteState } from './types';
 import { toast } from 'sonner';
+import { calculateRouteMetrics } from '@/utils/route/routeCalculationService';
 
 export const useRouteHandlers = (
   route: RouteState,
-  setRoute: React.Dispatch<React.SetStateAction<RouteState>>,
+  setRoute: (fn: (route: RouteState) => RouteState) => void,
   startLocation: LocationType | null,
-  setStartLocation: React.Dispatch<React.SetStateAction<LocationType | null>>,
+  setStartLocation: (location: LocationType | null) => void,
   endLocation: LocationType | null,
-  setEndLocation: React.Dispatch<React.SetStateAction<LocationType | null>>,
+  setEndLocation: (location: LocationType | null) => void,
   availableLocations: LocationType[],
-  setAvailableLocations: React.Dispatch<React.SetStateAction<LocationType[]>>,
-  vehicleConfig: VehicleConfigProps,
-  setIsLoadConfirmed: React.Dispatch<React.SetStateAction<boolean>>,
-  updateVehicleConfig: (config: Partial<VehicleConfigProps>) => void
+  setAvailableLocations: (locations: LocationType[]) => void,
+  vehicleConfig: any,
+  setIsLoadConfirmed: (isConfirmed: boolean) => void,
+  updateVehicleConfig: (config: any) => void
 ) => {
-  const handleFuelCostUpdate = useCallback((newCost: number) => {
-    console.log("Fuel cost updated to:", newCost);
-    toast.success(`Fuel cost updated to R${newCost.toFixed(2)}/L`);
-  }, []);
 
-  const handleRouteDataUpdate = useCallback((
+  // Start location change handler
+  const handleStartLocationChange = useCallback((locationId: string) => {
+    // Find the location in available locations
+    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
+    
+    if (location) {
+      setStartLocation(location);
+      console.log(`Start location set to ${location.name}`);
+    }
+  }, [availableLocations, setStartLocation]);
+
+  // End location change handler
+  const handleEndLocationChange = useCallback((locationId: string) => {
+    // Find the location in available locations
+    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
+    
+    if (location) {
+      setEndLocation(location);
+      console.log(`End location set to ${location.name}`);
+    }
+  }, [availableLocations, setEndLocation]);
+
+  // Create a new route handler
+  const handleCreateNewRoute = useCallback(() => {
+    // Reset route state
+    setRoute(prev => ({
+      ...prev,
+      distance: 0,
+      fuelConsumption: 0,
+      fuelCost: 0,
+      maintenanceCost: 0,
+      totalCost: 0,
+      cylinders: 0,
+      locations: [],
+      trafficConditions: 'moderate',
+      estimatedDuration: 0,
+      waypointData: []
+    }));
+    
+    // Reset start and end locations
+    setStartLocation(null);
+    setEndLocation(null);
+    
+    // Reset load confirmation
+    setIsLoadConfirmed(false);
+    
+    toast.success("New route created");
+  }, [setRoute, setStartLocation, setEndLocation, setIsLoadConfirmed]);
+
+  // Update fuel cost handler
+  const handleFuelCostUpdate = useCallback((newCost: number) => {
+    updateVehicleConfig({
+      ...vehicleConfig,
+      fuelPrice: newCost
+    });
+    
+    // Recalculate fuel costs
+    setRoute(prev => ({
+      ...prev,
+      fuelCost: prev.fuelConsumption * newCost,
+      totalCost: prev.maintenanceCost + (prev.fuelConsumption * newCost)
+    }));
+    
+    toast.success(`Fuel cost updated to R${newCost.toFixed(2)}/L`);
+  }, [vehicleConfig, updateVehicleConfig, setRoute]);
+
+  // Handle route data updates (from routing service or manual)
+  const handleRouteDataUpdate = useCallback(async (
     distance: number, 
     duration: number, 
     trafficConditions?: 'light' | 'moderate' | 'heavy',
     coordinates?: [number, number][],
     waypointData?: { distance: number; duration: number }[]
   ) => {
-    console.log("Received route data update:", { 
-      distance, duration, 
-      trafficInfo: trafficConditions,
-      waypoints: waypointData?.length || 0
-    });
+    // Ensure we have all locations with coordinates
+    const routeLocationsWithCoords = route.locations.map(loc => ({
+      latitude: loc.lat || 0,
+      longitude: loc.long || 0,
+      name: loc.name,
+      id: loc.id
+    }));
     
-    // Ensure we have valid minimum values
-    const validDistance = distance > 0 ? distance : Math.max(5.0 * route.locations.length, 0.1);
-    const validDuration = duration > 0 ? duration : Math.max(15 * route.locations.length, 1);
+    // If we have start and end locations, add them to the computation
+    let fullRoutePoints = [...routeLocationsWithCoords];
+    if (startLocation && startLocation.lat && startLocation.long) {
+      fullRoutePoints.unshift({
+        latitude: startLocation.lat,
+        longitude: startLocation.long,
+        name: startLocation.name,
+        id: startLocation.id
+      });
+    }
+    if (endLocation && endLocation.lat && endLocation.long) {
+      fullRoutePoints.push({
+        latitude: endLocation.lat,
+        longitude: endLocation.long,
+        name: endLocation.name,
+        id: endLocation.id
+      });
+    }
     
+    // Calculate route metrics if we don't have waypointData
+    if (!waypointData && fullRoutePoints.length >= 2) {
+      try {
+        console.log("Calculating route metrics for path with", fullRoutePoints.length, "points");
+        const routeMetrics = await calculateRouteMetrics(fullRoutePoints);
+        
+        if (routeMetrics) {
+          distance = routeMetrics.totalDistance;
+          duration = routeMetrics.totalDuration;
+          waypointData = routeMetrics.segments;
+          trafficConditions = routeMetrics.trafficConditions;
+          console.log("Route calculation complete:", {
+            distance,
+            duration,
+            segments: waypointData.length,
+            traffic: trafficConditions
+          });
+        }
+      } catch (error) {
+        console.error("Error calculating route metrics:", error);
+      }
+    }
+    
+    // Update route with new data
     setRoute(prev => {
-      // Use the fuel calculation utility to get more accurate consumption based on valid distance
-      const consumption = (validDistance * vehicleConfig.baseConsumption) / 100;
-      const cost = consumption * vehicleConfig.fuelPrice;
+      // Calculate fuel consumption based on distance
+      const fuelConsumption = Math.max(0, distance * 0.12);
+      const fuelCost = fuelConsumption * vehicleConfig.fuelPrice;
+      const maintenanceCost = Math.max(0, distance * 0.85);
       
-      console.log(`Route data updated: distance=${validDistance}km, duration=${validDuration}mins, consumption=${consumption}L, cost=${cost}`);
+      // Calculate cylinders if necessary
+      const totalCylinders = prev.locations.reduce((sum, loc) => {
+        return sum + (loc.emptyCylinders || loc.cylinders || 0);
+      }, 0);
+      
+      // Prepare updated locations with segment data
+      const updatedLocations = [...prev.locations];
+      
+      if (waypointData && waypointData.length > 0) {
+        // Associate segment data with locations (skip first point which has zero distance)
+        for (let i = 0; i < updatedLocations.length; i++) {
+          const waypointIndex = i + 1; // +1 because first waypoint is for start location
+          if (waypointData[waypointIndex]) {
+            updatedLocations[i] = {
+              ...updatedLocations[i],
+              segmentDistance: waypointData[waypointIndex].distance,
+              segmentDuration: waypointData[waypointIndex].duration,
+              segmentCost: (waypointData[waypointIndex].distance * vehicleConfig.fuelPrice * 0.12).toFixed(2)
+            };
+          }
+        }
+      }
       
       return {
         ...prev,
-        distance: validDistance,
-        estimatedDuration: validDuration,
-        fuelConsumption: consumption,
-        fuelCost: cost,
+        distance,
+        estimatedDuration: duration,
+        fuelConsumption,
+        fuelCost,
+        maintenanceCost,
+        totalCost: fuelCost + maintenanceCost,
+        cylinders: totalCylinders,
         trafficConditions: trafficConditions || prev.trafficConditions,
-        waypointData: waypointData || []
+        waypointData: waypointData || prev.waypointData,
+        locations: updatedLocations
       };
     });
-  }, [route.locations.length, vehicleConfig, setRoute]);
+  }, [route.locations, startLocation, endLocation, setRoute, vehicleConfig.fuelPrice]);
+
+  // Add a new location from a popover
+  const handleAddNewLocationFromPopover = useCallback((locationId: string | number) => {
+    const location = availableLocations.find(loc => loc.id.toString() === locationId.toString());
+    
+    if (location) {
+      // Add the location to the route (with default 1 cylinder)
+      setRoute(prev => ({
+        ...prev,
+        locations: [
+          ...prev.locations,
+          {
+            ...location,
+            cylinders: 1,
+            emptyCylinders: 1
+          }
+        ]
+      }));
+      
+      toast.success(`Added ${location.name} to route`);
+    }
+  }, [availableLocations, setRoute]);
+
+  // Update all locations
+  const handleUpdateLocations = useCallback((newLocations: LocationType[]) => {
+    setAvailableLocations(newLocations);
+  }, [setAvailableLocations]);
 
   return {
-    handleStartLocationChange: useCallback((locationId: string) => {
-      console.log("Setting start location to:", locationId);
-      const location = availableLocations.find(loc => loc.id === locationId);
-      
-      if (location) {
-        setStartLocation(location);
-        
-        setRoute(prev => {
-          // Start location should be at the beginning of the locations array
-          const filteredLocations = prev.locations.filter(
-            loc => loc.id !== location.id && loc.id !== (endLocation?.id || '')
-          );
-          
-          return {
-            ...prev,
-            locations: [
-              location,
-              ...filteredLocations,
-              ...(endLocation ? [endLocation] : [])
-            ]
-          };
-        });
-      }
-    }, [availableLocations, endLocation, setRoute, setStartLocation]),
-
-    handleEndLocationChange: useCallback((locationId: string) => {
-      console.log("Setting end location to:", locationId);
-      const location = availableLocations.find(loc => loc.id === locationId);
-      
-      if (location) {
-        setEndLocation(location);
-        
-        setRoute(prev => {
-          // End location should be at the end of the locations array
-          const filteredLocations = prev.locations.filter(
-            loc => loc.id !== location.id && loc.id !== (startLocation?.id || '')
-          );
-          
-          return {
-            ...prev,
-            locations: [
-              ...(startLocation ? [startLocation] : []),
-              ...filteredLocations,
-              location
-            ]
-          };
-        });
-      }
-    }, [availableLocations, startLocation, setEndLocation, setRoute]),
-
-    handleCreateNewRoute: useCallback(() => {
-      console.log("Creating new route");
-      // Reset route state
-      setRoute({
-        distance: 0,
-        fuelConsumption: 0,
-        fuelCost: 0,
-        maintenanceCost: 0,
-        totalCost: 0,
-        cylinders: 0,
-        locations: [],
-        availableLocations: [],
-        trafficConditions: 'moderate',
-        estimatedDuration: 0,
-        usingRealTimeData: false,
-        country: '',
-        region: '',
-        waypointData: []
-      });
-      
-      // Reset start and end locations
-      setStartLocation(null);
-      setEndLocation(null);
-      
-      // Reset load confirmation
-      setIsLoadConfirmed(false);
-      
-      toast.success("Created new route");
-    }, [setRoute, setStartLocation, setEndLocation, setIsLoadConfirmed]),
-
+    handleStartLocationChange,
+    handleEndLocationChange,
+    handleCreateNewRoute,
     handleFuelCostUpdate,
     handleRouteDataUpdate,
-    handleAddNewLocationFromPopover: useCallback((locationId: string | number) => {
-      console.log("Adding new location from popover:", locationId);
-      // Find the location by ID
-      const location = availableLocations.find(loc => loc.id === locationId);
-      
-      if (location) {
-        // Assume cylinders value in popover is set to a default
-        const locationWithCylinders = {
-          ...location,
-          cylinders: 10 // Default value when added from popover
-        };
-        
-        // Reuse addLocationToRoute logic (implemented in useRouteOperations)
-        // This will be provided via the composed hook
-        toast.success(`Added ${location.name} to route`);
-      } else {
-        toast.error("Location not found");
-      }
-    }, [availableLocations]),
-
-    handleUpdateLocations: useCallback((newLocations: LocationType[]) => {
-      console.log("Updating all locations:", newLocations.length);
-      setAvailableLocations(newLocations);
-    }, [setAvailableLocations])
+    handleAddNewLocationFromPopover,
+    handleUpdateLocations,
   };
 };

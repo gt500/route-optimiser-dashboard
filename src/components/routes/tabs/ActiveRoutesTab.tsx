@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useActiveRoutes } from './active-routes/useActiveRoutes';
 import ActiveRoutesContent from './active-routes/ActiveRoutesContent';
@@ -57,13 +58,32 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     return () => clearInterval(intervalId);
   }, [loadRoutes]);
 
+  // Handler for route actions to provide immediate feedback
+  const onRouteAction = async (actionType: 'start' | 'complete', routeId: string) => {
+    try {
+      if (actionType === 'start') {
+        await handleStartRoute(routeId);
+      } else if (actionType === 'complete') {
+        await handleCompleteRoute(routeId);
+      }
+      
+      // Force an immediate refresh of the routes after action
+      setTimeout(() => {
+        loadRoutes();
+      }, 300);
+      
+    } catch (error) {
+      console.error(`Error during ${actionType} action:`, error);
+    }
+  };
+
   return (
     <ActiveRoutesContent
       routes={routes}
       isLoading={isLoading}
       processingRoutes={processingRoutes}
-      onStartRoute={handleStartRoute}
-      onCompleteRoute={handleCompleteRoute}
+      onStartRoute={(routeId) => onRouteAction('start', routeId)}
+      onCompleteRoute={(routeId) => onRouteAction('complete', routeId)}
       onCreateRoute={onCreateRoute}
       highlightedDeliveryId={deliveryToHighlight}
     />

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Cylinder } from 'lucide-react';
+import { Cylinder, Clock, ArrowRightLeft } from 'lucide-react';
 import { LocationType } from '@/types/location';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -39,6 +39,18 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
             <div>
               <span className="font-medium">{index + 1}. {location.name}</span>
               <p className="text-xs text-muted-foreground">{location.address}</p>
+              {location.segmentDistance && (
+                <div className="flex items-center space-x-1 mt-1">
+                  <ArrowRightLeft className="h-3 w-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">{location.segmentDistance.toFixed(1)} km</span>
+                  {location.segmentDuration && (
+                    <>
+                      <Clock className="h-3 w-3 text-gray-500 ml-2" />
+                      <span className="text-xs text-gray-500">{Math.round(location.segmentDuration)} min</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
