@@ -1,4 +1,3 @@
-
 import { Icon, DivIcon } from 'leaflet';
 
 export interface LocationType {
@@ -18,6 +17,9 @@ export interface LocationType {
   distance?: number;
   fuel_cost?: number;
   cylinders?: number;
+  segmentDistance?: number;
+  segmentDuration?: number;
+  segmentCost?: number;
 }
 
 export interface LocationInfo {

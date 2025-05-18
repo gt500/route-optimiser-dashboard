@@ -39,11 +39,11 @@ const RouteStopsList: React.FC<RouteStopsListProps> = ({
             <div>
               <span className="font-medium">{index + 1}. {location.name}</span>
               <p className="text-xs text-muted-foreground">{location.address}</p>
-              {location.segmentDistance && (
+              {location.segmentDistance !== undefined && (
                 <div className="flex items-center space-x-1 mt-1">
                   <ArrowRightLeft className="h-3 w-3 text-gray-500" />
                   <span className="text-xs text-gray-500">{location.segmentDistance.toFixed(1)} km</span>
-                  {location.segmentDuration && (
+                  {location.segmentDuration !== undefined && (
                     <>
                       <Clock className="h-3 w-3 text-gray-500 ml-2" />
                       <span className="text-xs text-gray-500">{Math.round(location.segmentDuration)} min</span>

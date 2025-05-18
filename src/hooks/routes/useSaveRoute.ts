@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { RouteState } from './types';
@@ -79,9 +78,9 @@ export const useSaveRoute = (
           }
 
           // For other stops, use the pre-calculated segment metrics if available
-          let segmentDistance = loc.segmentDistance || 0;
-          let segmentDuration = loc.segmentDuration || 0;
-          let segmentFuelCost = loc.segmentCost || 0;
+          let segmentDistance = loc.segmentDistance !== undefined ? loc.segmentDistance : 0;
+          let segmentDuration = loc.segmentDuration !== undefined ? loc.segmentDuration : 0;
+          let segmentFuelCost = loc.segmentCost !== undefined ? loc.segmentCost : 0;
           
           // If we don't have segment-specific data, calculate from waypoint data or distribute evenly
           if (!segmentDistance) {

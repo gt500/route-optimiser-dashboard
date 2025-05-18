@@ -98,7 +98,8 @@ export const useRouteHandlers = (
       latitude: loc.lat || 0,
       longitude: loc.long || 0,
       name: loc.name,
-      id: loc.id
+      id: loc.id,
+      address: loc.address || '' // Add address property to fix TypeScript error
     }));
     
     // If we have start and end locations, add them to the computation
@@ -108,7 +109,8 @@ export const useRouteHandlers = (
         latitude: startLocation.lat,
         longitude: startLocation.long,
         name: startLocation.name,
-        id: startLocation.id
+        id: startLocation.id,
+        address: startLocation.address || '' // Add address property
       });
     }
     if (endLocation && endLocation.lat && endLocation.long) {
@@ -116,7 +118,8 @@ export const useRouteHandlers = (
         latitude: endLocation.lat,
         longitude: endLocation.long,
         name: endLocation.name,
-        id: endLocation.id
+        id: endLocation.id,
+        address: endLocation.address || '' // Add address property
       });
     }
     
