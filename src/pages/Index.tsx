@@ -6,7 +6,6 @@ const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Add console log to debug the redirection
   useEffect(() => {
     console.log('Index component mounted, redirection flow starting', location);
     
@@ -24,9 +23,10 @@ const Index = () => {
       return;
     }
     
-    // Default redirect to dashboard only if not coming from routes
+    // Default redirect to dashboard if not coming from routes
     if (location.pathname === '/' && !wasAttemptingRoutes && !fromRegionSelection) {
       console.log('Default redirect to dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [location, navigate]);
 
