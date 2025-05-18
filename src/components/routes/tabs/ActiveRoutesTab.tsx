@@ -1,5 +1,4 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, memo, useMemo } from 'react';
 import { useActiveRoutes } from './active-routes/useActiveRoutes';
 import ActiveRoutesContent from './active-routes/ActiveRoutesContent';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,16 +8,23 @@ interface ActiveRoutesTabProps {
   highlightedDeliveryId?: string | null;
 }
 
-const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesTabProps) => {
+// Use memo to prevent unnecessary re-renders
+const ActiveRoutesTab = memo(({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesTabProps) => {
   // Check for highlighted delivery from route state
   const location = useLocation();
   const navigate = useNavigate();
-  const routeState = location.state as { highlightDelivery?: string } | null;
+  
+  // Use memoization to prevent unnecessary recalculations
+  const routeState = useMemo(() => 
+    location.state as { highlightDelivery?: string } | null,
+  [location.state]);
   
   // Use the highlighted delivery from props or route state
-  const deliveryToHighlight = highlightedDeliveryId || (routeState?.highlightDelivery || null);
+  const deliveryToHighlight = useMemo(() => 
+    highlightedDeliveryId || (routeState?.highlightDelivery || null),
+  [highlightedDeliveryId, routeState]);
   
-  // Log for debugging
+  // Log for debugging - only when the value changes
   useEffect(() => {
     if (deliveryToHighlight) {
       console.log(`ActiveRoutesTab will highlight delivery: ${deliveryToHighlight}`);
@@ -45,18 +51,14 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
     }
   }, [location.pathname, routeState]);
 
-  // Add effect to force load routes when component mounts
+  // Initial load happens in useActiveRoutes hook now
+  // This effect is just for cleaning up timeouts/intervals
   useEffect(() => {
-    // Initial load
-    loadRoutes();
-    
-    // Set up a periodic refresh
-    const intervalId = setInterval(() => {
-      loadRoutes();
-    }, 10000); // Refresh every 10 seconds
-    
-    return () => clearInterval(intervalId);
-  }, [loadRoutes]);
+    return () => {
+      // Cleanup function will run when component unmounts
+      console.log('ActiveRoutesTab unmounted - cleaning up');
+    };
+  }, []);
 
   // Handler for route actions to provide immediate feedback
   const onRouteAction = async (actionType: 'start' | 'complete', routeId: string) => {
@@ -66,12 +68,6 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       } else if (actionType === 'complete') {
         await handleCompleteRoute(routeId);
       }
-      
-      // Force an immediate refresh of the routes after action
-      setTimeout(() => {
-        loadRoutes();
-      }, 300);
-      
     } catch (error) {
       console.error(`Error during ${actionType} action:`, error);
     }
@@ -88,6 +84,6 @@ const ActiveRoutesTab = ({ onCreateRoute, highlightedDeliveryId }: ActiveRoutesT
       highlightedDeliveryId={deliveryToHighlight}
     />
   );
-};
+});
 
 export default ActiveRoutesTab;

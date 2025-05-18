@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouteData, RouteData } from '@/hooks/fleet/useRouteData';
 import { useVehiclesData } from '@/hooks/fleet/useVehiclesData';
 import { toast } from 'sonner';
@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
   
   // Get the optimized hooks
   const { 
@@ -20,11 +22,25 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
 
   // Load routes when component mounts or when highlightedDeliveryId changes
   const loadRoutes = useCallback(async () => {
+    // Prevent duplicate concurrent fetches
+    if (loadingRef.current) {
+      return;
+    }
+    
+    // Throttle fetches to no more than once per second
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 1000) {
+      return;
+    }
+    
     console.log("Loading active routes...");
     try {
+      loadingRef.current = true;
       setIsLoading(true);
+      
       let activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
+      lastFetchTimeRef.current = Date.now();
       
       // Ensure all routes have the correct vehicle name
       activeRoutes = activeRoutes.map(route => ({
@@ -54,73 +70,83 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
       toast.error('Failed to load active routes');
     } finally {
       setIsLoading(false);
+      loadingRef.current = false;
     }
   }, [fetchActiveRoutes, fetchVehicles, highlightedDeliveryId]);
 
-  // Force refresh routes when highlightedDeliveryId changes
+  // Only fetch when highlightedDeliveryId changes, not on every render
   useEffect(() => {
-    if (highlightedDeliveryId) {
+    loadRoutes();
+    
+    // Set up a periodic refresh with a reasonable interval
+    const intervalId = setInterval(() => {
       loadRoutes();
-    }
-  }, [highlightedDeliveryId, loadRoutes]);
+    }, 15000); // Refresh every 15 seconds instead of 10
+    
+    return () => clearInterval(intervalId);
+  }, [loadRoutes]);
 
   // Optimized route start handler with better error handling
-  const handleStartRoute = async (routeId: string) => {
+  const handleStartRoute = useCallback(async (routeId: string) => {
     console.log(`Starting route with ID: ${routeId} in useActiveRoutes`);
     
     try {
+      // Update UI optimistically
+      setRoutes(prev => 
+        prev.map(route => 
+          route.id === routeId ? { ...route, status: 'in_progress', vehicle_name: 'Leyland Ashok Phoenix' } : route
+        )
+      );
+      
       // Call the startRoute function from the hook
       const success = await startRoute(routeId);
       
       if (success) {
-        // Update local state for immediate feedback
-        setRoutes(prev => 
-          prev.map(route => 
-            route.id === routeId ? { ...route, status: 'in_progress', vehicle_name: 'Leyland Ashok Phoenix' } : route
-          )
-        );
-        
         toast.success('Route started successfully');
-        // Force reload routes
-        loadRoutes();
         return true;
       } else {
+        // Revert optimistic update on failure
+        await loadRoutes();
         toast.error('Failed to start route');
         return false;
       }
     } catch (error) {
       console.error('Error starting route:', error);
+      // Revert optimistic update on error
+      await loadRoutes();
       toast.error('Failed to start route');
       return false;
     }
-  };
+  }, [startRoute, loadRoutes]);
 
   // Optimized route completion handler with better error handling
-  const handleCompleteRoute = async (routeId: string) => {
+  const handleCompleteRoute = useCallback(async (routeId: string) => {
     console.log(`Completing route with ID: ${routeId} in useActiveRoutes`);
     
     try {
+      // Update UI optimistically
+      setRoutes(prev => prev.filter(route => route.id !== routeId));
+      
       // Call the completeRoute function from the hook
       const success = await completeRoute(routeId);
       
       if (success) {
-        // Update local state immediately for better UX
-        setRoutes(prev => prev.filter(route => route.id !== routeId));
-        
         toast.success('Route completed successfully');
-        // Force reload routes
-        loadRoutes();
         return true;
       } else {
+        // Revert optimistic update on failure
+        await loadRoutes();
         toast.error('Failed to complete route');
         return false;
       }
     } catch (error) {
       console.error('Error completing route:', error);
+      // Revert optimistic update on error
+      await loadRoutes();
       toast.error('Failed to complete route');
       return false;
     }
-  };
+  }, [completeRoute, loadRoutes]);
 
   return {
     routes,

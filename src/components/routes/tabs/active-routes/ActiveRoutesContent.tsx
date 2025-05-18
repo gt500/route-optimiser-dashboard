@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteData } from '@/hooks/fleet/useRouteData';
 import RoutesTable from './RoutesTable';
@@ -16,7 +16,8 @@ interface ActiveRoutesContentProps {
   highlightedDeliveryId?: string | null;
 }
 
-const ActiveRoutesContent = ({
+// Use memo to prevent unnecessary re-renders
+const ActiveRoutesContent = memo(({
   routes,
   isLoading,
   processingRoutes,
@@ -71,6 +72,6 @@ const ActiveRoutesContent = ({
       </CardContent>
     </Card>
   );
-};
+});
 
 export default ActiveRoutesContent;

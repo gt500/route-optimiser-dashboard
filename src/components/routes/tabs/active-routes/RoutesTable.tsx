@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import RouteStatusBadge from './RouteStatusBadge';
 import RouteActionButtons from './RouteActionButtons';
@@ -13,7 +13,8 @@ interface RoutesTableProps {
   highlightedDeliveryId?: string | null;
 }
 
-const RoutesTable = ({ 
+// Use memo to prevent unnecessary re-renders
+const RoutesTable = memo(({ 
   routes, 
   processingRoutes, 
   onStartRoute, 
@@ -22,19 +23,29 @@ const RoutesTable = ({
 }: RoutesTableProps) => {
   // Ref to scroll to the highlighted row
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+  // Ref to track if we've already scrolled to this highlight
+  const hasScrolledRef = useRef<string | null>(null);
 
-  // Debug to help troubleshoot
-  console.log("RoutesTable rendering with routes:", routes);
-  console.log("Processing routes:", processingRoutes);
-  console.log("Highlighted delivery ID:", highlightedDeliveryId);
-
-  // Effect to scroll to the highlighted route
+  // Only log on initial render or when props change
   useEffect(() => {
-    if (highlightedDeliveryId && highlightedRowRef.current) {
+    console.log("RoutesTable rendering with routes:", routes.length);
+    console.log("Processing routes:", Object.keys(processingRoutes).length);
+    console.log("Highlighted delivery ID:", highlightedDeliveryId);
+  }, [routes.length, Object.keys(processingRoutes).length, highlightedDeliveryId]);
+
+  // Effect to scroll to the highlighted route - only run when ID changes
+  useEffect(() => {
+    // Only scroll if we have a new highlighted ID that we haven't scrolled to yet
+    if (highlightedDeliveryId && 
+        highlightedRowRef.current && 
+        hasScrolledRef.current !== highlightedDeliveryId) {
       console.log(`Scrolling to highlighted route: ${highlightedDeliveryId}`);
       
+      // Track that we've scrolled to this ID
+      hasScrolledRef.current = highlightedDeliveryId;
+      
       // Add a brief delay to ensure the DOM is fully rendered
-      setTimeout(() => {
+      const timerId = setTimeout(() => {
         if (highlightedRowRef.current) {
           highlightedRowRef.current.scrollIntoView({ 
             behavior: 'smooth', 
@@ -46,18 +57,34 @@ const RoutesTable = ({
           highlightedRowRef.current.classList.add('pulse-highlight');
           
           // Remove the highlight after animation
-          const timer = setTimeout(() => {
+          const cleanupTimer = setTimeout(() => {
             if (highlightedRowRef.current) {
               highlightedRowRef.current.classList.remove('bg-primary/20');
               highlightedRowRef.current.classList.remove('pulse-highlight');
             }
           }, 3000);
           
-          return () => clearTimeout(timer);
+          return () => clearTimeout(cleanupTimer);
         }
       }, 300);
+      
+      return () => clearTimeout(timerId);
     }
-  }, [highlightedDeliveryId, routes]);
+  }, [highlightedDeliveryId]);
+
+  const getHighlightRoute = () => {
+    if (!highlightedDeliveryId) return null;
+    
+    // Find the route containing this delivery
+    for (const route of routes) {
+      if (route.id === highlightedDeliveryId) return route.id;
+      if (route.stops?.some(stop => stop.id === highlightedDeliveryId)) return route.id;
+    }
+    return null;
+  };
+
+  // Find the route to highlight
+  const highlightedRouteId = getHighlightRoute();
 
   return (
     <div className="overflow-x-auto">
@@ -68,8 +95,8 @@ const RoutesTable = ({
         }
         
         @keyframes highlight-pulse {
-          0% { background-color: rgba(var(--primary), 0.3); }
-          50% { background-color: rgba(var(--primary), 0.1); }
+          0% { background-color: rgba(59, 130, 246, 0.3); }
+          50% { background-color: rgba(59, 130, 246, 0.1); }
           100% { background-color: transparent; }
         }
         `}
@@ -89,9 +116,9 @@ const RoutesTable = ({
           {routes.map((route) => (
             <TableRow 
               key={route.id}
-              ref={route.id === highlightedDeliveryId ? highlightedRowRef : null}
+              ref={route.id === highlightedRouteId ? highlightedRowRef : null}
               className={`transition-colors duration-300 ${
-                route.id === highlightedDeliveryId ? 'bg-primary/10' : ''
+                route.id === highlightedRouteId ? 'bg-primary/10' : ''
               }`}
             >
               <TableCell className="font-medium">{route.name}</TableCell>
@@ -132,6 +159,6 @@ const RoutesTable = ({
       </Table>
     </div>
   );
-};
+});
 
 export default RoutesTable;
