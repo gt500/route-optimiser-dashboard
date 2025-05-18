@@ -41,9 +41,14 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
 
   // Ensure we stay on the routes page
   useEffect(() => {
-    if (open && !location.pathname.includes('/routes')) {
-      console.log('Redirecting back to routes page from dialog');
-      navigate('/routes', { replace: true });
+    if (open) {
+      // Set a flag to prevent redirection to dashboard
+      sessionStorage.setItem('attempting_routes', 'true');
+      
+      if (!location.pathname.includes('/routes')) {
+        console.log('Redirecting back to routes page from dialog');
+        navigate('/routes', { replace: true });
+      }
     }
   }, [open, location.pathname, navigate]);
 

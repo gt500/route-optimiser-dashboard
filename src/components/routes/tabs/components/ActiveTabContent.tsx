@@ -28,13 +28,17 @@ const ActiveTabContent: React.FC<ActiveTabContentProps> = memo(({
   
   // Only redirect if we're not on the routes page and not coming from a region selection
   useEffect(() => {
-    if (!location.pathname.includes('/routes') && !sessionStorage.getItem('from_region_selection')) {
+    // Set flag to indicate we're trying to access routes
+    if (!location.pathname.includes('/routes')) {
+      console.log('Setting attempting_routes flag');
+      sessionStorage.setItem('attempting_routes', 'true');
+      
       console.log('Redirecting to routes page from ActiveTabContent');
       navigate('/routes', { replace: true, state: location.state });
     }
     
-    // Clean up the flag if it exists
-    if (sessionStorage.getItem('from_region_selection')) {
+    // Clean up the flag if it exists and we're on the routes page
+    if (location.pathname.includes('/routes') && sessionStorage.getItem('from_region_selection')) {
       sessionStorage.removeItem('from_region_selection');
     }
   }, [location.pathname, navigate, location.state]);
