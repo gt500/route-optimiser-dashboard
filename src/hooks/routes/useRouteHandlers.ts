@@ -170,7 +170,8 @@ export const useRouteHandlers = (
               ...updatedLocations[i],
               segmentDistance: waypointData[waypointIndex].distance,
               segmentDuration: waypointData[waypointIndex].duration,
-              segmentCost: (waypointData[waypointIndex].distance * vehicleConfig.fuelPrice * 0.12).toFixed(2)
+              // Fix: Convert string to number by parsing it as a float
+              segmentCost: parseFloat((waypointData[waypointIndex].distance * vehicleConfig.fuelPrice * 0.12).toFixed(2))
             };
           }
         }
