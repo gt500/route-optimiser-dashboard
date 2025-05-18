@@ -26,11 +26,16 @@ const ActiveTabContent: React.FC<ActiveTabContentProps> = memo(({
     highlightedDeliveryId || (routeState?.highlightDelivery || null),
   [highlightedDeliveryId, routeState]);
   
-  // Ensure we're on the routes page, but only check once
+  // Only redirect if we're not on the routes page and not coming from a region selection
   useEffect(() => {
-    if (!location.pathname.includes('/routes')) {
+    if (!location.pathname.includes('/routes') && !sessionStorage.getItem('from_region_selection')) {
       console.log('Redirecting to routes page from ActiveTabContent');
       navigate('/routes', { replace: true, state: location.state });
+    }
+    
+    // Clean up the flag if it exists
+    if (sessionStorage.getItem('from_region_selection')) {
+      sessionStorage.removeItem('from_region_selection');
     }
   }, [location.pathname, navigate, location.state]);
 

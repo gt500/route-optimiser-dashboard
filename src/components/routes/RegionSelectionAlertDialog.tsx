@@ -64,6 +64,11 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
   const handleComplete = () => {
     if (selectedCountry && selectedRegion) {
       console.log("AlertDialog completing with region:", selectedCountry, selectedRegion);
+      
+      // Set a flag to prevent redirection to dashboard
+      sessionStorage.setItem('from_region_selection', 'true');
+      sessionStorage.setItem('attempting_routes', 'true');
+      
       onComplete(selectedCountry, selectedRegion);
       
       // Ensure we stay on routes page

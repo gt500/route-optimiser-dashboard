@@ -66,6 +66,11 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
     
     if (selectedCountry && selectedRegion) {
       console.log("Completing region selection with:", selectedCountry, selectedRegion);
+      
+      // Set a flag to prevent redirection to dashboard
+      sessionStorage.setItem('from_region_selection', 'true');
+      sessionStorage.setItem('attempting_routes', 'true');
+      
       onComplete(selectedCountry, selectedRegion);
       
       // Ensure we're staying on the routes page with the create tab active

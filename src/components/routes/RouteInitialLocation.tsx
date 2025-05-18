@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import RegionSelectionDialog from '@/components/routes/RegionSelectionDialog';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface RouteInitialLocationProps {
   activeTab: string;
@@ -17,6 +18,9 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
   setRegionSelectionOpen,
   onRegionChange
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   // Open region selection dialog when on create tab and not confirmed
   useEffect(() => {
     if (activeTab === 'create' && !isLoadConfirmed) {
@@ -42,6 +46,11 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
     onRegionChange(country, region);
     
     console.log("Region change propagated to parent from RouteInitialLocation");
+    
+    // Explicitly ensure we stay on the routes page with active create tab
+    if (!location.pathname.includes('/routes')) {
+      navigate('/routes', { replace: true });
+    }
     
     // Clear the dialog state after a short delay to ensure state updates properly
     setTimeout(() => {

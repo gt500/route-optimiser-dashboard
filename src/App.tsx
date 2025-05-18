@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +19,7 @@ import DailyReports from "./pages/reports/delivery/DailyReports";
 import WeeklyReports from "./pages/reports/delivery/WeeklyReports";
 import MonthlyReports from "./pages/reports/delivery/MonthlyReports";
 import MachineTriggers from "./pages/MachineTriggers";
+import Index from "./pages/Index";
 
 // Configure React Query with error handling to prevent loops
 const queryClient = new QueryClient({
@@ -45,14 +45,15 @@ const App = () => {
             <Routes>
               <Route path="/auth" element={<Auth />} />
               
-              {/* Fix: Use a more specific path for index to avoid ambiguity */}
+              {/* Route component to handle initial redirection logic */}
+              <Route path="/" element={<Index />} />
               <Route path="/index" element={<Navigate to="/" replace />} />
               
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
-                  {/* Set exact path for root to avoid conflicting with other routes */}
-                  <Route path="/" element={<Dashboard />} />
+                  {/* Dashboard as separate route */}
+                  <Route path="/dashboard" element={<Dashboard />} />
                   
                   {/* Ensure routes paths are properly configured */}
                   <Route path="/routes/*" element={<RoutesList />} />

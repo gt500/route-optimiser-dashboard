@@ -8,16 +8,25 @@ const Index = () => {
   
   // Add console log to debug the redirection
   useEffect(() => {
-    console.log('Index component mounted, redirecting to root dashboard', location);
+    console.log('Index component mounted, redirection flow starting', location);
     
     // Check if we were trying to access routes but got redirected
     const wasAttemptingRoutes = sessionStorage.getItem('attempting_routes');
+    const fromRegionSelection = sessionStorage.getItem('from_region_selection');
     
-    if (wasAttemptingRoutes) {
+    if (wasAttemptingRoutes || fromRegionSelection) {
       console.log('Detected attempted routes access, redirecting back to routes');
+      // Clean up flags
       sessionStorage.removeItem('attempting_routes');
+      sessionStorage.removeItem('from_region_selection');
+      // Redirect with replace to avoid navigation history issues
       navigate('/routes', { replace: true });
       return;
+    }
+    
+    // Default redirect to dashboard only if not coming from routes
+    if (location.pathname === '/' && !wasAttemptingRoutes && !fromRegionSelection) {
+      console.log('Default redirect to dashboard');
     }
   }, [location, navigate]);
 

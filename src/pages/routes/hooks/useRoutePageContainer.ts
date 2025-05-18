@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
@@ -96,10 +95,13 @@ export const useRoutePageContainer = (initialRouteLocations: LocationType[] = []
     // Set route region and ensure we stay on routes page
     setRouteRegion(country, region);
     
+    // Set flags to ensure we stay on routes page
+    sessionStorage.setItem('from_region_selection', 'true');
+    sessionStorage.setItem('attempting_routes', 'true');
+    
     // Ensure we're on routes page with create tab active
     if (!location.pathname.includes('/routes')) {
       console.log('Navigating to routes page after region selection');
-      sessionStorage.setItem('attempting_routes', 'true');
       navigate('/routes', { replace: true });
     }
     
