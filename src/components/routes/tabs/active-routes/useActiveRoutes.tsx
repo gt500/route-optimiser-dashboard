@@ -9,6 +9,7 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const loadingRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
+  const cachedRoutesRef = useRef<RouteData[]>([]);
   
   // Get the optimized hooks
   const { 
@@ -21,22 +22,34 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
   const { fetchVehicles } = useVehiclesData();
 
   // Load routes when component mounts or when highlightedDeliveryId changes
-  const loadRoutes = useCallback(async () => {
+  const loadRoutes = useCallback(async (forceRefresh = false) => {
     // Prevent duplicate concurrent fetches
     if (loadingRef.current) {
+      console.log("Already loading routes, skipping duplicate fetch");
       return;
     }
     
-    // Throttle fetches to no more than once per second
+    // Throttle fetches to no more than once every 2 seconds unless forced
     const now = Date.now();
-    if (now - lastFetchTimeRef.current < 1000) {
-      return;
+    if (!forceRefresh && now - lastFetchTimeRef.current < 2000) {
+      console.log("Throttling route fetches, using cached data");
+      
+      // If we have cached data, use it immediately
+      if (cachedRoutesRef.current.length > 0) {
+        setRoutes(cachedRoutesRef.current);
+        return;
+      }
     }
     
     console.log("Loading active routes...");
     try {
       loadingRef.current = true;
       setIsLoading(true);
+      
+      // Use the cached data to show something immediately while loading
+      if (cachedRoutesRef.current.length > 0) {
+        setRoutes(cachedRoutesRef.current);
+      }
       
       let activeRoutes = await fetchActiveRoutes();
       console.log('Loaded active routes:', activeRoutes);
@@ -61,10 +74,15 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         });
       }
       
+      // Update the cache and state
+      cachedRoutesRef.current = activeRoutes;
       setRoutes(activeRoutes);
       
-      // Refresh vehicle data to ensure statuses are in sync with routes
-      await fetchVehicles();
+      // Refresh vehicle data without blocking the UI update
+      fetchVehicles().catch(err => {
+        console.error("Background vehicle fetch failed:", err);
+      });
+      
     } catch (error) {
       console.error('Error loading routes:', error);
       toast.error('Failed to load active routes');
@@ -74,14 +92,21 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
     }
   }, [fetchActiveRoutes, fetchVehicles, highlightedDeliveryId]);
 
-  // Only fetch when highlightedDeliveryId changes, not on every render
+  // Only fetch when component mounts or highlightedDeliveryId changes, not on every render
   useEffect(() => {
+    // Initial load with whatever we have in cache first
+    if (cachedRoutesRef.current.length > 0) {
+      setRoutes(cachedRoutesRef.current);
+      setIsLoading(false);
+    }
+    
+    // Then fetch fresh data
     loadRoutes();
     
-    // Set up a periodic refresh with a reasonable interval
+    // Set up a periodic refresh with a more reasonable interval (30 seconds)
     const intervalId = setInterval(() => {
       loadRoutes();
-    }, 15000); // Refresh every 15 seconds instead of 10
+    }, 30000); 
     
     return () => clearInterval(intervalId);
   }, [loadRoutes]);
@@ -106,14 +131,14 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         return true;
       } else {
         // Revert optimistic update on failure
-        await loadRoutes();
+        loadRoutes(true);
         toast.error('Failed to start route');
         return false;
       }
     } catch (error) {
       console.error('Error starting route:', error);
       // Revert optimistic update on error
-      await loadRoutes();
+      loadRoutes(true);
       toast.error('Failed to start route');
       return false;
     }
@@ -135,14 +160,14 @@ export const useActiveRoutes = (highlightedDeliveryId?: string | null) => {
         return true;
       } else {
         // Revert optimistic update on failure
-        await loadRoutes();
+        loadRoutes(true);
         toast.error('Failed to complete route');
         return false;
       }
     } catch (error) {
       console.error('Error completing route:', error);
       // Revert optimistic update on error
-      await loadRoutes();
+      loadRoutes(true);
       toast.error('Failed to complete route');
       return false;
     }

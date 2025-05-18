@@ -26,21 +26,13 @@ const ActiveTabContent: React.FC<ActiveTabContentProps> = memo(({
     highlightedDeliveryId || (routeState?.highlightDelivery || null),
   [highlightedDeliveryId, routeState]);
   
-  // Log when active routes component mounts or updates - only when values change
+  // Ensure we're on the routes page, but only check once
   useEffect(() => {
-    console.log('Active routes tab content mounted/updated', { 
-      highlightedDeliveryId, 
-      routeState: routeState ? 'present' : 'not present', 
-      deliveryToHighlight,
-      currentPath: location.pathname
-    });
-    
-    // Ensure we're on the routes page
     if (!location.pathname.includes('/routes')) {
       console.log('Redirecting to routes page from ActiveTabContent');
-      navigate('/routes', { replace: true });
+      navigate('/routes', { replace: true, state: location.state });
     }
-  }, [highlightedDeliveryId, routeState, deliveryToHighlight, location.pathname, navigate]);
+  }, [location.pathname, navigate, location.state]);
 
   return (
     <ActiveRoutesTab 
@@ -48,6 +40,9 @@ const ActiveTabContent: React.FC<ActiveTabContentProps> = memo(({
       highlightedDeliveryId={deliveryToHighlight}
     />
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo to prevent unnecessary re-renders
+  return prevProps.highlightedDeliveryId === nextProps.highlightedDeliveryId;
 });
 
 export default ActiveTabContent;

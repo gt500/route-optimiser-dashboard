@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import RouteStatusBadge from './RouteStatusBadge';
 import RouteActionButtons from './RouteActionButtons';
@@ -13,7 +13,7 @@ interface RoutesTableProps {
   highlightedDeliveryId?: string | null;
 }
 
-// Use memo to prevent unnecessary re-renders
+// Use memo with custom equality function to prevent unnecessary re-renders
 const RoutesTable = memo(({ 
   routes, 
   processingRoutes, 
@@ -25,13 +25,20 @@ const RoutesTable = memo(({
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
   // Ref to track if we've already scrolled to this highlight
   const hasScrolledRef = useRef<string | null>(null);
+  // Ref for animation timeouts to clean them up
+  const animationTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
-  // Only log on initial render or when props change
-  useEffect(() => {
-    console.log("RoutesTable rendering with routes:", routes.length);
-    console.log("Processing routes:", Object.keys(processingRoutes).length);
-    console.log("Highlighted delivery ID:", highlightedDeliveryId);
-  }, [routes.length, Object.keys(processingRoutes).length, highlightedDeliveryId]);
+  // Get highlighted route ID with memoization
+  const highlightedRouteId = useMemo(() => {
+    if (!highlightedDeliveryId) return null;
+    
+    // Find the route containing this delivery
+    for (const route of routes) {
+      if (route.id === highlightedDeliveryId) return route.id;
+      if (route.stops?.some(stop => stop.id === highlightedDeliveryId)) return route.id;
+    }
+    return null;
+  }, [routes, highlightedDeliveryId]);
 
   // Effect to scroll to the highlighted route - only run when ID changes
   useEffect(() => {
@@ -64,27 +71,52 @@ const RoutesTable = memo(({
             }
           }, 3000);
           
-          return () => clearTimeout(cleanupTimer);
+          animationTimeoutsRef.current.push(cleanupTimer);
         }
       }, 300);
       
-      return () => clearTimeout(timerId);
+      animationTimeoutsRef.current.push(timerId);
     }
+    
+    // Cleanup all animation timeouts on unmount
+    return () => {
+      animationTimeoutsRef.current.forEach(clearTimeout);
+      animationTimeoutsRef.current = [];
+    };
   }, [highlightedDeliveryId]);
 
-  const getHighlightRoute = () => {
-    if (!highlightedDeliveryId) return null;
-    
-    // Find the route containing this delivery
-    for (const route of routes) {
-      if (route.id === highlightedDeliveryId) return route.id;
-      if (route.stops?.some(stop => stop.id === highlightedDeliveryId)) return route.id;
-    }
-    return null;
-  };
-
-  // Find the route to highlight
-  const highlightedRouteId = getHighlightRoute();
+  // Memoize the route items to prevent unnecessary re-renders
+  const routeItems = useMemo(() => {
+    return routes.map((route) => (
+      <TableRow 
+        key={route.id}
+        ref={route.id === highlightedRouteId ? highlightedRowRef : null}
+        className={`transition-colors duration-300 ${
+          route.id === highlightedRouteId ? 'bg-primary/10' : ''
+        }`}
+      >
+        <TableCell className="font-medium">{route.name}</TableCell>
+        <TableCell>{new Date(route.date).toLocaleDateString()}</TableCell>
+        <TableCell>{route.stops?.length || 0} stops</TableCell>
+        <TableCell>
+          <RouteStatusBadge status={route.status} />
+        </TableCell>
+        <TableCell>
+          {/* Always show Leyland Ashok Phoenix regardless of what's in the data */}
+          Leyland Ashok Phoenix
+        </TableCell>
+        <TableCell className="text-right">
+          <RouteActionButtons 
+            routeId={route.id} 
+            status={route.status}
+            processingRoutes={processingRoutes} 
+            onStart={onStartRoute}
+            onComplete={onCompleteRoute}
+          />
+        </TableCell>
+      </TableRow>
+    ));
+  }, [routes, highlightedRouteId, processingRoutes, onStartRoute, onCompleteRoute]);
 
   return (
     <div className="overflow-x-auto">
@@ -113,41 +145,7 @@ const RoutesTable = memo(({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {routes.map((route) => (
-            <TableRow 
-              key={route.id}
-              ref={route.id === highlightedRouteId ? highlightedRowRef : null}
-              className={`transition-colors duration-300 ${
-                route.id === highlightedRouteId ? 'bg-primary/10' : ''
-              }`}
-            >
-              <TableCell className="font-medium">{route.name}</TableCell>
-              <TableCell>{new Date(route.date).toLocaleDateString()}</TableCell>
-              <TableCell>{route.stops?.length || 0} stops</TableCell>
-              <TableCell>
-                <RouteStatusBadge status={route.status} />
-              </TableCell>
-              <TableCell>
-                {/* Always show Leyland Ashok Phoenix regardless of what's in the data */}
-                Leyland Ashok Phoenix
-              </TableCell>
-              <TableCell className="text-right">
-                <RouteActionButtons 
-                  routeId={route.id} 
-                  status={route.status}
-                  processingRoutes={processingRoutes} 
-                  onStart={(id) => {
-                    console.log("Start route clicked in RoutesTable for:", id);
-                    onStartRoute(id);
-                  }}
-                  onComplete={(id) => {
-                    console.log("Complete route clicked in RoutesTable for:", id);
-                    onCompleteRoute(id);
-                  }}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+          {routeItems}
           {routes.length === 0 && (
             <TableRow>
               <TableCell colSpan={6} className="text-center py-6 text-gray-500">
@@ -159,6 +157,32 @@ const RoutesTable = memo(({
       </Table>
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Custom equality check to prevent unnecessary re-renders
+  if (prevProps.routes.length !== nextProps.routes.length) return false;
+  if (prevProps.highlightedDeliveryId !== nextProps.highlightedDeliveryId) return false;
+  
+  // Compare route IDs for equality
+  const prevIds = new Set(prevProps.routes.map(r => r.id));
+  const nextIds = new Set(nextProps.routes.map(r => r.id));
+  if (prevIds.size !== nextIds.size) return false;
+  
+  // Check if any routes have been added or removed
+  for (const id of prevIds) {
+    if (!nextIds.has(id)) return false;
+  }
+  
+  // Check if any processing states have changed
+  const prevProcessingKeys = Object.keys(prevProps.processingRoutes);
+  const nextProcessingKeys = Object.keys(nextProps.processingRoutes);
+  if (prevProcessingKeys.length !== nextProcessingKeys.length) return false;
+  
+  for (const key of prevProcessingKeys) {
+    if (prevProps.processingRoutes[key] !== nextProps.processingRoutes[key]) return false;
+  }
+  
+  // Routes collection and processing state are the same
+  return true;
 });
 
 export default RoutesTable;

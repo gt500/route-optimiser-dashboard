@@ -14,19 +14,39 @@ export const useRouteData = () => {
   const [processingRoutes, setProcessingRoutes] = useState<Record<string, string>>({});
   const [lastRefresh, setLastRefresh] = useState(Date.now());
   
-  // Add ref to track initial mount and prevent duplicate fetches
+  // Add refs to track initial mount and prevent duplicate fetches
   const initialFetchDone = useRef(false);
   const isFetchingRoutes = useRef(false);
+  const requestsQueue = useRef<(() => void)[]>([]);
+  
+  // Process queued requests one at a time
+  const processQueue = useCallback(() => {
+    if (requestsQueue.current.length > 0 && !isFetchingRoutes.current) {
+      const nextRequest = requestsQueue.current.shift();
+      if (nextRequest) nextRequest();
+    }
+  }, []);
 
   // Get query methods from the query hook
   const queries = useRouteQueries(routes);
   
-  // Wrapper for fetchRoutes that updates state
+  // Wrapper for fetchRoutes that updates state with debouncing
   const fetchRoutes = useCallback(async () => {
-    // Prevent multiple simultaneous fetches that could cause redirection
+    // If already fetching, queue this request for later
     if (isFetchingRoutes.current) {
-      console.log("Already fetching routes, skipping duplicate fetch");
-      return routes;
+      return new Promise<RouteData[]>(resolve => {
+        const queuedFetch = async () => {
+          try {
+            const result = await fetchRoutes();
+            resolve(result);
+          } catch (error) {
+            console.error("Error in queued fetch:", error);
+            resolve([]);
+          }
+        };
+        
+        requestsQueue.current.push(queuedFetch);
+      });
     }
     
     try {
@@ -43,8 +63,10 @@ export const useRouteData = () => {
     } finally {
       setIsLoading(false);
       isFetchingRoutes.current = false;
+      // Process next queued request if any
+      setTimeout(processQueue, 0);
     }
-  }, [queries, routes]);
+  }, [queries, processQueue]);
 
   // Get action methods from the actions hook
   const actions = useRouteActions(routes, setRoutes, setProcessingRoutes, fetchRoutes);

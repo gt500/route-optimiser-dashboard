@@ -1,6 +1,5 @@
 
 import { useCallback } from 'react';
-import { toast } from 'sonner';
 import type { RouteData } from '../types/routeTypes';
 import {
   fetchRoutes as fetchRoutesQuery,
@@ -12,11 +11,16 @@ import {
 } from '../routes/routeQueries';
 import { handleSupabaseError } from '@/utils/supabaseUtils';
 
+// Cache for active routes
+let activeRoutesCache: RouteData[] = [];
+let lastActiveFetchTime = 0;
+const CACHE_TTL = 10000; // 10 seconds TTL for the cache
+
 /**
- * Hook containing query methods for route data with improved security
+ * Hook containing query methods for route data with improved caching
  */
 export const useRouteQueries = (routes: RouteData[]) => {
-  // Main fetch function with optimized caching and error handling
+  // Main fetch function with optimized caching
   const fetchRoutes = useCallback(async () => {
     console.log("Fetching all routes in useRouteData hook");
     
@@ -50,21 +54,42 @@ export const useRouteQueries = (routes: RouteData[]) => {
     }
   }, []);
   
-  // Optimized to force fresh data fetch for active routes with error handling
+  // Optimized to use cache for active routes
   const fetchActiveRoutes = useCallback(async () => {
-    console.log("Fetching active routes in useRouteData hook");
+    const now = Date.now();
+    
+    // Use cache if it's still fresh enough
+    if (activeRoutesCache.length > 0 && (now - lastActiveFetchTime < CACHE_TTL)) {
+      console.log("Using cached active routes data");
+      return activeRoutesCache;
+    }
+    
+    console.log("Fetching active routes in useRouteData hook (cache expired or empty)");
     try {
-      // Always fetch from API for active routes to ensure fresh data
+      // Fetch from API with fresh data
       const freshRoutes = await fetchActiveRoutesQuery();
       
       console.log('Fetched active routes:', freshRoutes);
       
-      return freshRoutes.map(route => ({
+      // Update cache
+      const processedRoutes = freshRoutes.map(route => ({
         ...route,
         vehicle_name: 'Leyland Ashok Phoenix'
       }));
+      
+      activeRoutesCache = processedRoutes;
+      lastActiveFetchTime = now;
+      
+      return processedRoutes;
     } catch (error) {
       handleSupabaseError(error, "Error fetching active routes");
+      
+      // Return cache even if expired on error
+      if (activeRoutesCache.length > 0) {
+        console.log("Returning stale cache after fetch error");
+        return activeRoutesCache;
+      }
+      
       return [];
     }
   }, []);
