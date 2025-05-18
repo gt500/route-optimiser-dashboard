@@ -43,7 +43,7 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
     
     console.log("Region change propagated to parent from RouteInitialLocation");
     
-    // Clear the dialog state after a short delay
+    // Clear the dialog state after a short delay to ensure state updates properly
     setTimeout(() => {
       setRegionSelectionOpen(false);
     }, 100);
@@ -54,14 +54,7 @@ const RouteInitialLocation: React.FC<RouteInitialLocationProps> = ({
       open={regionSelectionOpen}
       onOpenChange={(open) => {
         console.log("RegionSelectionDialog onOpenChange called with:", open);
-        if (!open) {
-          // When closing without selection, give a short delay
-          setTimeout(() => {
-            setRegionSelectionOpen(false);
-          }, 100);
-        } else {
-          setRegionSelectionOpen(true);
-        }
+        setRegionSelectionOpen(open);
       }}
       onComplete={handleRegionComplete}
     />

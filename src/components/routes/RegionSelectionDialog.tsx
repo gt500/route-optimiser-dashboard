@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 import { MapPin } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface RegionSelectionDialogProps {
   open: boolean;
@@ -24,6 +25,8 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
   onOpenChange,
   onComplete
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const countryRegions = getStoredCountryRegions();
   
   const [selectedCountry, setSelectedCountry] = useState<string>(
@@ -35,6 +38,14 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
       ? countryRegions[0].regions[0]
       : ''
   );
+
+  // Ensure we stay on the routes page
+  useEffect(() => {
+    if (open && !location.pathname.includes('/routes')) {
+      console.log('Redirecting back to routes page from dialog');
+      navigate('/routes', { replace: true });
+    }
+  }, [open, location.pathname, navigate]);
 
   // Get regions for the selected country
   const availableRegions = selectedCountry
@@ -49,10 +60,18 @@ const RegionSelectionDialog: React.FC<RegionSelectionDialogProps> = ({
   };
 
   // Handle dialog close
-  const handleComplete = () => {
+  const handleComplete = (e: React.MouseEvent) => {
+    // Prevent default to avoid any unwanted navigation
+    e.preventDefault();
+    
     if (selectedCountry && selectedRegion) {
       console.log("Completing region selection with:", selectedCountry, selectedRegion);
       onComplete(selectedCountry, selectedRegion);
+      
+      // Ensure we're staying on the routes page with the create tab active
+      if (!location.pathname.includes('/routes')) {
+        navigate('/routes', { replace: true });
+      }
     }
   };
 

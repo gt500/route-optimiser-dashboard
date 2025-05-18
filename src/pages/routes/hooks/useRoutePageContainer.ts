@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { LocationType } from '@/components/locations/LocationEditDialog';
 import { toast } from 'sonner';
 import useRouteManagement, { routeOptimizationDefaultParams } from '@/hooks/useRouteManagement';
@@ -7,8 +7,12 @@ import { getStoredCountryRegions } from '@/components/machine-triggers/utils/reg
 import { useRegionSelection } from '@/hooks/routes/useRegionSelection';
 import { useLocationManagement } from '@/hooks/routes/useLocationManagement';
 import { useRoutePageState } from '@/hooks/routes/useRoutePageState';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const useRoutePageContainer = (initialRouteLocations: LocationType[] = []) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // Initialize region selection
   const defaultRegions = getStoredCountryRegions();
   const defaultCountry = defaultRegions.length > 0 ? defaultRegions[0].country : 'South Africa';
@@ -48,7 +52,7 @@ export const useRoutePageContainer = (initialRouteLocations: LocationType[] = []
     selectedRegion,
     regionSelectionOpen,
     setRegionSelectionOpen,
-    handleRegionChange,
+    handleRegionChange: baseHandleRegionChange,
     openRegionSelection
   } = useRegionSelection(defaultCountry, defaultRegion);
 
@@ -81,6 +85,30 @@ export const useRoutePageContainer = (initialRouteLocations: LocationType[] = []
     isLoadConfirmed,
     route
   );
+  
+  // Ensure we stay on the routes page after region selection
+  const handleRegionChange = useCallback((country: string, region: string) => {
+    console.log("Region change in useRoutePageContainer:", country, region);
+    
+    // Call the base handler
+    baseHandleRegionChange(country, region);
+    
+    // Set route region and ensure we stay on routes page
+    setRouteRegion(country, region);
+    
+    // Ensure we're on routes page with create tab active
+    if (!location.pathname.includes('/routes')) {
+      console.log('Navigating to routes page after region selection');
+      sessionStorage.setItem('attempting_routes', 'true');
+      navigate('/routes', { replace: true });
+    }
+    
+    // Make sure we're on create tab
+    if (activeTab !== 'create') {
+      setActiveTab('create');
+    }
+    
+  }, [baseHandleRegionChange, setRouteRegion, location.pathname, navigate, activeTab, setActiveTab]);
   
   // Initialize route with default region if available
   useEffect(() => {
@@ -123,6 +151,9 @@ export const useRoutePageContainer = (initialRouteLocations: LocationType[] = []
     console.log("Opening region selection dialog from handleCreateRoute");
     // Set a delay to ensure the state has been updated before opening the dialog
     setTimeout(() => {
+      if (!location.pathname.includes('/routes')) {
+        navigate('/routes', { replace: true });
+      }
       setRegionSelectionOpen(true);
     }, 100);
   };

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +13,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getStoredCountryRegions } from '@/components/machine-triggers/utils/regionStorage';
 import { MapPin } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface RegionSelectionAlertDialogProps {
   open: boolean;
@@ -25,6 +26,8 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
   onOpenChange,
   onComplete
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const countryRegions = getStoredCountryRegions();
   
   const [selectedCountry, setSelectedCountry] = useState<string>(
@@ -36,6 +39,14 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
       ? countryRegions[0].regions[0]
       : ''
   );
+
+  // Ensure we stay on the routes page
+  useEffect(() => {
+    if (open && !location.pathname.includes('/routes')) {
+      console.log('Redirecting back to routes page from alert dialog');
+      navigate('/routes', { replace: true });
+    }
+  }, [open, location.pathname, navigate]);
 
   // Get regions for the selected country
   const availableRegions = selectedCountry
@@ -52,7 +63,13 @@ const RegionSelectionAlertDialog: React.FC<RegionSelectionAlertDialogProps> = ({
   // Handle dialog complete
   const handleComplete = () => {
     if (selectedCountry && selectedRegion) {
+      console.log("AlertDialog completing with region:", selectedCountry, selectedRegion);
       onComplete(selectedCountry, selectedRegion);
+      
+      // Ensure we stay on routes page
+      if (!location.pathname.includes('/routes')) {
+        navigate('/routes', { replace: true });
+      }
     }
   };
 

@@ -1,7 +1,7 @@
 
 import React, { useEffect, memo, useMemo } from 'react';
 import ActiveRoutesTab from '../ActiveRoutesTab';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface ActiveTabContentProps {
   onCreateRoute: () => void;
@@ -14,6 +14,7 @@ const ActiveTabContent: React.FC<ActiveTabContentProps> = memo(({
   highlightedDeliveryId 
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Use memoization to prevent unnecessary recalculations
   const routeState = useMemo(() => 
@@ -30,9 +31,16 @@ const ActiveTabContent: React.FC<ActiveTabContentProps> = memo(({
     console.log('Active routes tab content mounted/updated', { 
       highlightedDeliveryId, 
       routeState: routeState ? 'present' : 'not present', 
-      deliveryToHighlight 
+      deliveryToHighlight,
+      currentPath: location.pathname
     });
-  }, [highlightedDeliveryId, routeState, deliveryToHighlight]);
+    
+    // Ensure we're on the routes page
+    if (!location.pathname.includes('/routes')) {
+      console.log('Redirecting to routes page from ActiveTabContent');
+      navigate('/routes', { replace: true });
+    }
+  }, [highlightedDeliveryId, routeState, deliveryToHighlight, location.pathname, navigate]);
 
   return (
     <ActiveRoutesTab 
